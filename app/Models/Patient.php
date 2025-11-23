@@ -132,7 +132,11 @@ class Patient extends Authenticatable
         $departmentIds = [];
         
         // Get from many-to-many relationship
-        if ($this->relationLoaded('departments') || $this->departments()->exists()) {
+        if ($this->relationLoaded('departments')) {
+            $departmentIds = $this->departments->pluck('id')->toArray();
+        } elseif ($this->departments()->exists()) {
+            // Load the relationship if it exists but isn't loaded
+            $this->load('departments');
             $departmentIds = $this->departments->pluck('id')->toArray();
         }
         
@@ -492,13 +496,21 @@ class Patient extends Authenticatable
                 return false;
             }
             
-            // Get patient's department IDs (from both pivot table and legacy department_id)
-            $patientDepartmentIds = $this->getDepartmentIds();
-            
-            // Check if there's any intersection between doctor's and patient's departments
-            if (!empty($patientDepartmentIds)) {
-                $intersection = array_intersect($doctorDepartmentIds, $patientDepartmentIds);
-                if (!empty($intersection)) {
+            // Check if patient's departments intersect with doctor's departments
+            // Use database query like the scope does, not loaded relationships
+            if (!empty($doctorDepartmentIds)) {
+                // Check if patient has any departments in common with doctor's departments
+                // Using many-to-many relationship (current implementation)
+                $hasMatchingDepartment = $this->departments()
+                    ->whereIn('departments.id', $doctorDepartmentIds)
+                    ->exists();
+                
+                if ($hasMatchingDepartment) {
+                    return true;
+                }
+                
+                // OR fallback to legacy department_id field (for backward compatibility)
+                if ($this->department_id && in_array($this->department_id, $doctorDepartmentIds)) {
                     return true;
                 }
             }
