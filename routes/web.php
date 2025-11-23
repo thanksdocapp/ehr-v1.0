@@ -737,6 +737,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::prefix('email-management')->name('email-management.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\EmailManagementController::class, 'index'])->name('index');
             Route::get('/logs', [\App\Http\Controllers\Admin\EmailManagementController::class, 'logs'])->name('logs');
+            Route::get('/{emailLog}', [\App\Http\Controllers\Admin\EmailManagementController::class, 'show'])->name('show');
             Route::get('/statistics', [\App\Http\Controllers\Admin\EmailManagementController::class, 'statistics'])->name('statistics');
             Route::post('/resend/{id}', [\App\Http\Controllers\Admin\EmailManagementController::class, 'resendEmail'])->name('resend');
             Route::delete('/logs/{id}', [\App\Http\Controllers\Admin\EmailManagementController::class, 'deleteEmailLog'])->name('logs.delete');
