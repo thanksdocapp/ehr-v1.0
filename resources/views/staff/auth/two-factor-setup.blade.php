@@ -11,16 +11,16 @@
 <!-- Status Update Modal pattern: place outside section to avoid z-index issues -->
 <!-- Enable 2FA Modal -->
 <div class="modal fade" id="enableModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title">Enable Two-Factor Authentication</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('staff.two-factor.enable') }}" method="POST">
                 @csrf
                 <div class="modal-body">
-                    <p>Choose your preferred 2FA method:</p>
+                    <p class="mb-3">Choose your preferred 2FA method:</p>
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="radio" name="method" id="methodEmail" value="email" checked>
                         <label class="form-check-label" for="methodEmail">
@@ -28,14 +28,14 @@
                             <small class="text-muted">Receive verification codes via email</small>
                         </label>
                     </div>
-                    <div class="alert alert-info">
+                    <div class="alert alert-info mb-0">
                         <i class="fas fa-info-circle me-2"></i>
                         <small>After enabling 2FA, you'll receive recovery codes. Save them in a secure location.</small>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">
+                <div class="modal-footer d-flex flex-column flex-sm-row gap-2">
+                    <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success w-100 w-sm-auto">
                         <i class="fas fa-check me-2"></i>Enable 2FA
                     </button>
                 </div>
@@ -46,7 +46,7 @@
 
 <!-- Disable 2FA Modal -->
 <div class="modal fade" id="disableModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">Disable Two-Factor Authentication</h5>
@@ -65,9 +65,9 @@
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">
+                <div class="modal-footer d-flex flex-column flex-sm-row gap-2">
+                    <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger w-100 w-sm-auto">
                         <i class="fas fa-times me-2"></i>Disable 2FA
                     </button>
                 </div>
@@ -78,7 +78,7 @@
 
 <!-- Regenerate Recovery Codes Modal -->
 <div class="modal fade" id="regenerateModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-warning text-dark">
                 <h5 class="modal-title">Regenerate Recovery Codes</h5>
@@ -97,9 +97,9 @@
                         <input type="password" class="form-control" id="regenerate_password" name="password" required>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning">
+                <div class="modal-footer d-flex flex-column flex-sm-row gap-2">
+                    <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning w-100 w-sm-auto">
                         <i class="fas fa-sync me-2"></i>Regenerate Codes
                     </button>
                 </div>
@@ -139,23 +139,23 @@
     
     @if(isset($isRequired) && $isRequired)
         <div class="alert alert-info" role="alert">
-            <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>2FA Required</h5>
-            <p class="mb-0">Two-factor authentication is required by your administrator. You cannot disable it until this policy is changed.</p>
+            <h5 class="alert-heading mb-2"><i class="fas fa-info-circle me-2"></i>2FA Required</h5>
+            <p class="mb-0 text-break">Two-factor authentication is required by your administrator. You cannot disable it until this policy is changed.</p>
         </div>
     @endif
     
     @if(isset($isForcedSetup) && $isForcedSetup || (isset($isForced) && $isForced))
         <div class="alert alert-danger border-2" role="alert" style="border-color: #dc3545 !important;">
-            <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>2FA Setup Required - Navigation Locked</h5>
+            <h5 class="alert-heading mb-2"><i class="fas fa-exclamation-triangle me-2"></i>2FA Setup Required - Navigation Locked</h5>
             <p class="mb-2"><strong>You must enable two-factor authentication to access the system.</strong></p>
-            <p class="mb-0 small">You cannot navigate away from this page until 2FA is enabled. All other navigation has been disabled.</p>
+            <p class="mb-0 small text-break">You cannot navigate away from this page until 2FA is enabled. All other navigation has been disabled.</p>
         </div>
     @endif
     
     @if(isset($isForced) && $isForced && !isset($isForcedSetup))
         <div class="alert alert-warning" role="alert">
-            <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Setup Required</h5>
-            <p class="mb-0">You must enable two-factor authentication to access your account. Please complete the setup below.</p>
+            <h5 class="alert-heading mb-2"><i class="fas fa-exclamation-triangle me-2"></i>Setup Required</h5>
+            <p class="mb-0 text-break">You must enable two-factor authentication to access your account. Please complete the setup below.</p>
         </div>
     @endif
     
@@ -203,29 +203,31 @@
                 </div>
                 <div class="card-body">
                     <div class="row align-items-center">
-                        <div class="col-md-8">
+                        <div class="col-12 col-md-8 mb-3 mb-md-0">
                             <h6 class="mb-2">Current Status</h6>
-                            @if($status['enabled'])
-                                <span class="badge bg-success fs-6">
-                                    <i class="fas fa-check-circle me-1"></i>Enabled
-                                </span>
-                                @if($status['confirmed'])
-                                    <span class="badge bg-info fs-6 ms-2">
-                                        <i class="fas fa-shield-alt me-1"></i>Confirmed
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                @if($status['enabled'])
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-check-circle me-1"></i>Enabled
                                     </span>
+                                    @if($status['confirmed'])
+                                        <span class="badge bg-info fs-6">
+                                            <i class="fas fa-shield-alt me-1"></i>Confirmed
+                                        </span>
+                                    @else
+                                        <span class="badge bg-warning fs-6">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Pending Confirmation
+                                        </span>
+                                    @endif
                                 @else
-                                    <span class="badge bg-warning fs-6 ms-2">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>Pending Confirmation
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="fas fa-times-circle me-1"></i>Disabled
                                     </span>
                                 @endif
-                            @else
-                                <span class="badge bg-danger fs-6">
-                                    <i class="fas fa-times-circle me-1"></i>Disabled
-                                </span>
-                            @endif
+                            </div>
                             
                             @if($status['enabled'])
-                                <p class="mt-3 mb-0">
+                                <p class="mt-2 mb-0">
                                     <strong>Method:</strong> {{ ucfirst($status['method']) }}<br>
                                     <strong>Recovery Codes:</strong> {{ $status['recovery_codes_count'] }} remaining<br>
                                     @if($status['last_used'])
@@ -234,19 +236,19 @@
                                 </p>
                             @endif
                         </div>
-                        <div class="col-md-4 text-end">
+                        <div class="col-12 col-md-4 text-start text-md-end">
                             @if($status['enabled'])
                                 @if(isset($isRequired) && $isRequired)
-                                    <button class="btn btn-secondary" disabled title="2FA is required by administrator">
+                                    <button class="btn btn-secondary w-100 w-md-auto" disabled title="2FA is required by administrator">
                                         <i class="fas fa-lock me-2"></i>Cannot Disable
                                     </button>
                                 @else
-                                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#disableModal">
+                                    <button class="btn btn-danger w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#disableModal">
                                         <i class="fas fa-times me-2"></i>Disable 2FA
                                     </button>
                                 @endif
                             @else
-                                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enableModal">
+                                <button class="btn btn-success w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#enableModal">
                                     <i class="fas fa-shield-alt me-2"></i>Enable 2FA
                                 </button>
                             @endif
@@ -277,7 +279,7 @@
                             </div>
                         @endif
                         
-                        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#regenerateModal">
+                        <button class="btn btn-warning w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#regenerateModal">
                             <i class="fas fa-sync me-2"></i>Regenerate Recovery Codes
                         </button>
                     </div>
@@ -315,6 +317,72 @@
 </div>
 
 @endsection
+
+@push('styles')
+<style>
+    /* Mobile Responsive Styles */
+    @media (max-width: 576px) {
+        .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+        }
+        
+        .modal-content {
+            border-radius: 0.5rem;
+        }
+        
+        .modal-header {
+            padding: 1rem;
+        }
+        
+        .modal-body {
+            padding: 1rem;
+        }
+        
+        .modal-footer {
+            padding: 1rem;
+        }
+        
+        .alert {
+            padding: 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        .alert-heading {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+        
+        .page-title h1 {
+            font-size: 1.5rem;
+        }
+        
+        .page-subtitle {
+            font-size: 0.875rem;
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.35em 0.65em;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        
+        .col-lg-8, .col-lg-4 {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+@endpush
 
 @section('scripts')
 <script>
