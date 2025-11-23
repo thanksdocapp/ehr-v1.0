@@ -2388,39 +2388,28 @@ use Illuminate\Support\Facades\Storage;
                 });
             }
 
-            // Custom dropdown functionality for sidebar
-            $('.sidebar-menu .dropdown-toggle').off('click').on('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
+            // Initialize Bootstrap dropdowns for sidebar (Bootstrap 5 handles this natively)
+            // Just ensure proper styling and close behavior
+            $('.sidebar-menu .dropdown-toggle').on('click', function(e) {
+                // Let Bootstrap handle the dropdown, but close other dropdowns
                 const $this = $(this);
-                const $dropdown = $this.next('.dropdown-menu');
+                const $currentDropdown = $this.closest('.dropdown');
                 
-                // Close other dropdowns first
-                $('.sidebar-menu .dropdown-menu').not($dropdown).removeClass('show');
-                $('.sidebar-menu .dropdown-toggle').not(this).attr('aria-expanded', 'false');
-                
-                // Toggle current dropdown
-                if ($dropdown.hasClass('show')) {
-                    $dropdown.removeClass('show');
-                    $this.attr('aria-expanded', 'false');
-                } else {
-                    $dropdown.addClass('show');
-                    $this.attr('aria-expanded', 'true');
-                }
-            });
-
-            // Close dropdowns when clicking outside
-            $(document).on('click', function(e) {
-                if (!$(e.target).closest('.sidebar-menu .dropdown').length) {
-                    $('.sidebar-menu .dropdown-menu').removeClass('show');
-                    $('.sidebar-menu .dropdown-toggle').attr('aria-expanded', 'false');
-                }
-            });
-
-            // Prevent dropdown menu clicks from closing the dropdown
-            $('.sidebar-menu .dropdown-menu').on('click', function(e) {
-                e.stopPropagation();
+                // Close other dropdowns in sidebar
+                $('.sidebar-menu .dropdown').not($currentDropdown).each(function() {
+                    const $otherToggle = $(this).find('.dropdown-toggle');
+                    const $otherMenu = $(this).find('.dropdown-menu');
+                    if ($otherMenu.hasClass('show')) {
+                        // Use Bootstrap's dropdown instance to hide
+                        const dropdownInstance = bootstrap.Dropdown.getInstance($otherToggle[0]);
+                        if (dropdownInstance) {
+                            dropdownInstance.hide();
+                        } else {
+                            $otherMenu.removeClass('show');
+                            $otherToggle.attr('aria-expanded', 'false');
+                        }
+                    }
+                });
             });
 
             // Auto-hide alerts
