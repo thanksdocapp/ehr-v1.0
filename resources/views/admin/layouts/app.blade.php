@@ -196,28 +196,25 @@ use Illuminate\Support\Facades\Storage;
         }
 
         .sidebar-menu .dropdown-menu {
-            background: rgba(0, 0, 0, 0.4);
-            border: none;
-            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
-            margin: 0;
-            padding: 0;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            padding: 5px 0;
+            min-width: 200px;
+            margin-top: 5px;
             border-radius: 8px;
             backdrop-filter: blur(10px);
             position: static;
             transform: none;
             width: 100%;
             float: none;
-            overflow: hidden;
-            max-height: 0;
-            opacity: 0;
-            transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+            display: none;
         }
 
         .sidebar-menu .dropdown-menu.show {
-            max-height: 500px;
+            display: block;
             overflow-y: auto;
-            opacity: 1;
-            padding: 5px 0;
+            max-height: 500px;
         }
 
         .sidebar-menu .dropdown-item {
