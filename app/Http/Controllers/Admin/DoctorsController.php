@@ -270,7 +270,7 @@ class DoctorsController extends Controller
         }
         
         // Check if critical information changed and notify patients
-        $this->handleDoctorUpdateNotifications($doctor, $oldAvailability, null, $oldPhone, $oldDepartmentId, $emailService);
+        $this->handleDoctorUpdateNotifications($doctor, $oldAvailability, $oldPhone, $oldDepartmentId, $emailService);
         
         // Sync with user model if user exists
         if ($doctor->user_id && $doctor->user) {
