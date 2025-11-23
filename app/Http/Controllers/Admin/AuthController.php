@@ -125,6 +125,7 @@ class AuthController extends Controller
                 }
                 
                 $request->session()->regenerate();
+                $request->session()->regenerateToken();
                 
                 // Update last login
                 $user->update(['last_login_at' => now()]);
