@@ -95,27 +95,43 @@ class EmailNotificationService
             $settings = SiteSetting::getSettings();
             
             if (isset($settings['smtp_host']) && $settings['smtp_host']) {
+                // Set default mailer to smtp
+                Config::set('mail.default', 'smtp');
+                
+                // Configure SMTP settings
                 Config::set('mail.mailers.smtp.host', $settings['smtp_host']);
                 Config::set('mail.mailers.smtp.port', $settings['smtp_port'] ?? 587);
                 Config::set('mail.mailers.smtp.username', $settings['smtp_username'] ?? '');
                 Config::set('mail.mailers.smtp.password', $settings['smtp_password'] ?? '');
-                Config::set('mail.mailers.smtp.encryption', $settings['smtp_encryption'] ?? 'tls');
+                
+                // Handle encryption - 'none' means no encryption
+                $encryption = $settings['smtp_encryption'] ?? 'tls';
+                if ($encryption === 'none') {
+                    Config::set('mail.mailers.smtp.encryption', null);
+                } else {
+                    Config::set('mail.mailers.smtp.encryption', $encryption);
+                }
                 
                 // Set from email address
                 if (isset($settings['from_email']) && $settings['from_email']) {
                     Config::set('mail.from.address', $settings['from_email']);
-                    Config::set('mail.from.name', $settings['hospital_name'] ?? config('app.name'));
+                    Config::set('mail.from.name', $settings['from_name'] ?? $settings['hospital_name'] ?? config('app.name'));
                 }
                 
                 Log::info('Mail configuration updated from database', [
                     'host' => $settings['smtp_host'],
                     'port' => $settings['smtp_port'] ?? 587,
-                    'encryption' => $settings['smtp_encryption'] ?? 'tls'
+                    'encryption' => $encryption,
+                    'username' => $settings['smtp_username'] ?? '',
+                    'from_email' => $settings['from_email'] ?? ''
                 ]);
+            } else {
+                Log::warning('SMTP host not configured in database settings');
             }
         } catch (Exception $e) {
-            Log::warning('Failed to configure mail from database', [
-                'error' => $e->getMessage()
+            Log::error('Failed to configure mail from database', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }
@@ -199,32 +215,48 @@ class EmailNotificationService
                         $message->from($fromEmail, $fromName);
                     }
                 });
+                
+                // Update log status to sent
+                $log->update([
+                    'status' => 'sent',
+                    'sent_at' => now()
+                ]);
+                
+                Log::info('Email sent successfully', [
+                    'log_id' => $log->id,
+                    'recipient' => $log->recipient_email,
+                    'template' => $log->template?->name
+                ]);
+
+                // Update template stats
+                if ($log->template) {
+                    $log->template->increment('sent_count');
+                    $log->template->update(['last_used_at' => now()]);
+                }
+                
+                // Dispatch success event
+                event(new EmailSent($log));
+                
+            } catch (\Exception $e) {
+                // Other email sending errors
+                $errorMessage = $e->getMessage();
+                $log->update([
+                    'status' => 'failed',
+                    'error_message' => $errorMessage
+                ]);
+                
+                Log::error('Failed to send email', [
+                    'log_id' => $log->id,
+                    'recipient' => $to,
+                    'error' => $errorMessage,
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                throw $e;
             } finally {
                 // Restore original queue connection
                 Config::set('queue.default', $originalQueueConnection);
             }
-
-            // Update log status - check if email was actually sent
-            // Mail::send() doesn't throw exceptions on failure, so we need to check differently
-            $log->update([
-                'status' => 'sent',
-                'sent_at' => now()
-            ]);
-            
-            Log::info('Email sent successfully', [
-                'log_id' => $log->id,
-                'recipient' => $log->recipient_email,
-                'template' => $log->template?->name
-            ]);
-
-            // Update template stats
-            if ($log->template) {
-                $log->template->increment('sent_count');
-                $log->template->update(['last_used_at' => now()]);
-            }
-
-            // Dispatch success event
-            event(new EmailSent($log));
 
             return true;
         } catch (Exception $e) {
