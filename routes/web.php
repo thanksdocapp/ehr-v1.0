@@ -703,7 +703,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/settings/backup', [\App\Http\Controllers\Admin\SettingsController::class, 'updateBackup'])->name('settings.backup.update');
         Route::put('/settings/backup', [\App\Http\Controllers\Admin\SettingsController::class, 'updateBackup']);
         Route::get('/settings/security-logs', [\App\Http\Controllers\Admin\SettingsController::class, 'securityLogs'])->name('settings.security-logs');
-        Route::get('/settings/system-info', [\App\Http\Controllers\Admin\SettingsController::class, 'systemInfo'])->name('settings.system-info');
+        Route::get('/settings/system-info', [\App\Http\Controllers\Admin\SettingsController::class, 'systemInfo'])->name('settings.system-info'); // Route name: admin.settings.system-info
         Route::get('/settings/php-info', [\App\Http\Controllers\Admin\SettingsController::class, 'phpInfo'])->name('settings.php-info');
         
         // Role-Based Menu Visibility
@@ -713,7 +713,7 @@ Route::group(['middleware' => 'installed'], function () {
         
         // Custom Menu Items
         Route::resource('custom-menu-items', \App\Http\Controllers\Admin\CustomMenuItemController::class)->except(['show']);
-        Route::get('/settings/custom-menu-items', [\App\Http\Controllers\Admin\CustomMenuItemController::class, 'index'])->name('custom-menu-items.index');
+        // Note: The resource route above already creates the index route, so we don't need a duplicate
         
         // Settings API Routes
         Route::post('/settings/test-email', [\App\Http\Controllers\Admin\SettingsController::class, 'testEmail'])->name('settings.test-email');

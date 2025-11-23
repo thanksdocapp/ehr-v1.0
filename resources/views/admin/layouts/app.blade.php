@@ -2116,7 +2116,7 @@ use Illuminate\Support\Facades\Storage;
             <!-- Developer Tools -->
             <div class="menu-item">
                 <div class="dropdown">
-                    <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.tools.*') ? 'active' : '' }}" role="button" aria-expanded="false">
+                    <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.tools.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                         <i class="menu-icon fas fa-tools"></i>
                         <span class="menu-text">Developer Tools</span>
                     </a>

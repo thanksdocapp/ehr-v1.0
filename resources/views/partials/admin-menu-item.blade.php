@@ -25,7 +25,7 @@
     @case('patient-management')
         <div class="menu-item">
             <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle" role="button" aria-expanded="false">
+                <a href="#" class="menu-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                     <i class="menu-icon fas {{ $icon }}"></i>
                     <span class="menu-text">{{ $label }}</span>
                 </a>
@@ -59,7 +59,7 @@
     @case('medical-records')
         <div class="menu-item">
             <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle" role="button" aria-expanded="false">
+                <a href="#" class="menu-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                     <i class="menu-icon fas {{ $icon }}"></i>
                     <span class="menu-text">{{ $label }}</span>
                 </a>
@@ -76,7 +76,7 @@
     @case('billing-management')
         <div class="menu-item">
             <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle" role="button" aria-expanded="false">
+                <a href="#" class="menu-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                     <i class="menu-icon fas {{ $icon }}"></i>
                     <span class="menu-text">{{ $label }}</span>
                 </a>
@@ -101,7 +101,7 @@
     @case('staff-management')
         <div class="menu-item">
             <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle" role="button" aria-expanded="false">
+                <a href="#" class="menu-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                     <i class="menu-icon fas {{ $icon }}"></i>
                     <span class="menu-text">{{ $label }}</span>
                 </a>
@@ -116,7 +116,7 @@
     @case('communication')
         <div class="menu-item">
             <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle" role="button" aria-expanded="false">
+                <a href="#" class="menu-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                     <i class="menu-icon fas {{ $icon }}"></i>
                     <span class="menu-text">{{ $label }}</span>
                 </a>
@@ -133,7 +133,7 @@
     @case('advanced-reports')
         <div class="menu-item">
             <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.advanced-reports.*') ? 'active' : '' }}" role="button" aria-expanded="false">
+                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.advanced-reports.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                     <i class="menu-icon fas {{ $icon }}"></i>
                     <span class="menu-text">{{ $label }}</span>
                 </a>
@@ -170,7 +170,7 @@
     @case('system-settings')
         <div class="menu-item">
             <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.role-menu-visibility.*') ? 'active' : '' }}" role="button" aria-expanded="false">
+                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.role-menu-visibility.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                     <i class="menu-icon fas {{ $icon }}"></i>
                     <span class="menu-text">{{ $label }}</span>
                 </a>
