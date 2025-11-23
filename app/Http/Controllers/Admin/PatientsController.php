@@ -540,6 +540,36 @@ class PatientsController extends Controller
     /**
      * Display the specified patient.
      */
+    /**
+     * Download patient ID document or guardian ID document.
+     */
+    public function downloadDocument(Patient $patient, $type)
+    {
+        // Check if user has permission to view this patient
+        if (!Auth::user()->is_admin && !$patient->isVisibleTo(Auth::user())) {
+            abort(403, 'You do not have permission to access this document.');
+        }
+
+        $documentPath = null;
+        $filename = null;
+
+        if ($type === 'patient_id') {
+            $documentPath = $patient->patient_id_document_path;
+            $filename = 'patient_id_' . $patient->patient_id . '_' . basename($documentPath);
+        } elseif ($type === 'guardian_id') {
+            $documentPath = $patient->guardian_id_document_path;
+            $filename = 'guardian_id_' . $patient->patient_id . '_' . basename($documentPath);
+        } else {
+            abort(404, 'Invalid document type.');
+        }
+
+        if (!$documentPath || !Storage::disk('private')->exists($documentPath)) {
+            abort(404, 'Document not found.');
+        }
+
+        return Storage::disk('private')->download($documentPath, $filename);
+    }
+
     public function show(Patient $patient)
     {
         // Check if user can access this patient using policy

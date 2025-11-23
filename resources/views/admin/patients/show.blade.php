@@ -2,6 +2,10 @@
 
 @section('title', 'Patient Details')
 
+@php
+    use Illuminate\Support\Facades\Storage;
+@endphp
+
 @section('content')
 <div class="container-fluid">
     <!-- Patient Alert Bar -->
@@ -25,6 +29,22 @@
                 <div class="doctor-card-body">
                     <div class="row">
                         <div class="col-md-8">
+                            <!-- Patient Photo -->
+                            @if($patient->photo)
+                            <div class="row mb-4">
+                                <div class="col-12 text-center">
+                                    <div class="mb-3">
+                                        <img src="{{ $patient->photo_url }}" alt="Patient Photo" 
+                                             class="img-thumbnail rounded-circle" 
+                                             style="width: 150px; height: 150px; object-fit: cover;">
+                                        <div class="mt-2">
+                                            <small class="text-muted">Patient Photo</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
+
                             <div class="row mb-4">
                                 <div class="col-12">
                                     <h4 class="text-primary border-bottom pb-2">Personal Information</h4>
@@ -261,6 +281,10 @@
                                             <td class="fw-bold">Postal Code:</td>
                                             <td>{{ $patient->postal_code ?: 'Not provided' }}</td>
                                         </tr>
+                                        <tr>
+                                            <td class="fw-bold">Country:</td>
+                                            <td>{{ $patient->country ?: 'Not provided' }}</td>
+                                        </tr>
                                     </table>
                                 </div>
                             </div>
@@ -273,13 +297,13 @@
                                     <table class="table table-borderless">
                                         <tr>
                                             <td class="fw-bold">Emergency Contact Name:</td>
-                                            <td>{{ $patient->emergency_contact_name ?: 'Not provided' }}</td>
+                                            <td>{{ $patient->emergency_contact ?: 'Not provided' }}</td>
                                         </tr>
                                         <tr>
                                             <td class="fw-bold">Emergency Contact Phone:</td>
                                             <td>
-                                                @if($patient->emergency_contact_phone)
-                                                    <a href="tel:{{ $patient->emergency_contact_phone }}">{{ $patient->emergency_contact_phone }}</a>
+                                                @if($patient->emergency_phone)
+                                                    <a href="tel:{{ $patient->emergency_phone }}">{{ $patient->emergency_phone }}</a>
                                                 @else
                                                     <span class="text-muted">Not provided</span>
                                                 @endif
@@ -326,19 +350,137 @@
                                     </div>
                                     
                                     <div class="mb-3">
-                                        <label class="fw-bold">Medical History:</label>
+                                        <label class="fw-bold">Medical Conditions:</label>
                                         <div class="mt-2">
-                                            @if($patient->medical_history)
+                                            @if($patient->medical_conditions && count($patient->medical_conditions) > 0)
+                                                @foreach($patient->medical_conditions as $condition)
+                                                    <span class="badge bg-info text-dark me-1 mb-1">{{ $condition }}</span>
+                                                @endforeach
+                                            @else
+                                                <span class="text-muted">No medical conditions recorded</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="fw-bold">Medical History/Notes:</label>
+                                        <div class="mt-2">
+                                            @if($patient->notes)
                                                 <div class="border rounded p-3 bg-light">
-                                                    {!! nl2br(e($patient->medical_history)) !!}
+                                                    {!! nl2br(e($patient->notes)) !!}
                                                 </div>
                                             @else
-                                                <span class="text-muted">No medical history recorded</span>
+                                                <span class="text-muted">No additional notes recorded</span>
                                             @endif
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Uploaded Documents Section -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h4 class="text-primary border-bottom pb-2">Uploaded Documents</h4>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="fw-bold">Patient ID Document:</label>
+                                        <div class="mt-2">
+                                            @if($patient->patient_id_document_path)
+                                                @php
+                                                    $documentPath = $patient->patient_id_document_path;
+                                                    // Documents are stored in private storage, so we need to use a route to access them
+                                                    // For now, we'll show the filename and create a download link
+                                                    $filename = basename($documentPath);
+                                                @endphp
+                                                <a href="{{ route('admin.patients.download-document', ['patient' => $patient->id, 'type' => 'patient_id']) }}" 
+                                                   class="btn btn-sm btn-outline-primary" 
+                                                   target="_blank">
+                                                    <i class="fas fa-file-pdf me-1"></i>View/Download Document
+                                                </a>
+                                                <small class="text-muted d-block mt-1">{{ $filename }}</small>
+                                            @else
+                                                <span class="text-muted">No document uploaded</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="fw-bold">Guardian ID Document:</label>
+                                        <div class="mt-2">
+                                            @if($patient->guardian_id_document_path)
+                                                @php
+                                                    $documentPath = $patient->guardian_id_document_path;
+                                                    // Documents are stored in private storage, so we need to use a route to access them
+                                                    $filename = basename($documentPath);
+                                                @endphp
+                                                <a href="{{ route('admin.patients.download-document', ['patient' => $patient->id, 'type' => 'guardian_id']) }}" 
+                                                   class="btn btn-sm btn-outline-primary" 
+                                                   target="_blank">
+                                                    <i class="fas fa-file-pdf me-1"></i>View/Download Document
+                                                </a>
+                                                <small class="text-muted d-block mt-1">{{ $filename }}</small>
+                                            @else
+                                                <span class="text-muted">No document uploaded</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- GP Information Section -->
+                            @if($patient->consent_share_with_gp || $patient->gp_name || $patient->gp_email)
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h4 class="text-primary border-bottom pb-2">GP (General Practitioner) Information</h4>
+                                </div>
+                                <div class="col-12">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td class="fw-bold">Consent to Share with GP:</td>
+                                            <td>
+                                                @if($patient->consent_share_with_gp)
+                                                    <span class="badge bg-success">Yes</span>
+                                                @else
+                                                    <span class="badge bg-secondary">No</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        @if($patient->consent_share_with_gp)
+                                        <tr>
+                                            <td class="fw-bold">GP Name:</td>
+                                            <td>{{ $patient->gp_name ?: 'Not provided' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">GP Email:</td>
+                                            <td>
+                                                @if($patient->gp_email)
+                                                    <a href="mailto:{{ $patient->gp_email }}">{{ $patient->gp_email }}</a>
+                                                @else
+                                                    <span class="text-muted">Not provided</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">GP Phone:</td>
+                                            <td>
+                                                @if($patient->gp_phone)
+                                                    <a href="tel:{{ $patient->gp_phone }}">{{ $patient->gp_phone }}</a>
+                                                @else
+                                                    <span class="text-muted">Not provided</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">GP Address:</td>
+                                            <td>{{ $patient->gp_address ?: 'Not provided' }}</td>
+                                        </tr>
+                                        @endif
+                                    </table>
+                                </div>
+                            </div>
+                            @endif
 
                             <!-- Appointments Section -->
                             <div class="row mb-4">

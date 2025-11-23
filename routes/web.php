@@ -193,6 +193,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/patients/create', [\App\Http\Controllers\Staff\PatientsController::class, 'create'])->name('patients.create');
         Route::post('/patients', [\App\Http\Controllers\Staff\PatientsController::class, 'store'])->name('patients.store');
         Route::get('/patients/{patient}', [\App\Http\Controllers\Staff\PatientsController::class, 'show'])->name('patients.show');
+        Route::get('/patients/{patient}/download-document/{type}', [\App\Http\Controllers\Staff\PatientsController::class, 'downloadDocument'])->name('patients.download-document');
         Route::get('/patients/{patient}/edit', [\App\Http\Controllers\Staff\PatientsController::class, 'edit'])->name('patients.edit');
         Route::put('/patients/{patient}', [\App\Http\Controllers\Staff\PatientsController::class, 'update'])->name('patients.update');
         // Note: Staff cannot delete patients
@@ -504,6 +505,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/patients/import', [\App\Http\Controllers\Admin\PatientsController::class, 'showImport'])->name('patients.import');
         Route::post('/patients/import/csv', [\App\Http\Controllers\Admin\PatientsController::class, 'importCsv'])->name('patients.import.csv');
         Route::resource('patients', \App\Http\Controllers\Admin\PatientsController::class);
+        Route::get('/patients/{patient}/download-document/{type}', [\App\Http\Controllers\Admin\PatientsController::class, 'downloadDocument'])->name('patients.download-document');
         
         // Patient Alerts - All Alerts List
         Route::get('/alerts', [\App\Http\Controllers\Admin\AlertsController::class, 'index'])->name('alerts.index');

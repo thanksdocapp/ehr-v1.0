@@ -4,6 +4,10 @@
 @section('page-title', 'Patient Details')
 @section('page-subtitle', 'Complete patient information and medical history')
 
+@php
+    use Illuminate\Support\Facades\Storage;
+@endphp
+
 @section('content')
 <div class="fade-in-up">
 
@@ -34,6 +38,22 @@
                     <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
                 </div>
                 <div class="doctor-card-body">
+                    <!-- Patient Photo -->
+                    @if($patient->photo)
+                    <div class="row mb-4">
+                        <div class="col-12 text-center">
+                            <div class="mb-3">
+                                <img src="{{ $patient->photo_url }}" alt="Patient Photo" 
+                                     class="img-thumbnail rounded-circle" 
+                                     style="width: 150px; height: 150px; object-fit: cover;">
+                                <div class="mt-2">
+                                    <small class="text-muted">Patient Photo</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -155,7 +175,7 @@
                         </div>
                     </div>
                     
-                    @if($patient->address)
+                    @if($patient->address || $patient->city || $patient->state || $patient->country || $patient->postal_code)
                     <div class="row">
                         <div class="col-12">
                             <div class="mb-3">
@@ -165,8 +185,225 @@
                         </div>
                     </div>
                     @endif
+                    
+                    @if($patient->city || $patient->state || $patient->country || $patient->postal_code)
+                    <div class="row">
+                        <div class="col-md-6">
+                            @if($patient->city)
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">City</label>
+                                <div class="form-control-plaintext">{{ $patient->city }}</div>
+                            </div>
+                            @endif
+                            @if($patient->state)
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">State</label>
+                                <div class="form-control-plaintext">{{ $patient->state }}</div>
+                            </div>
+                            @endif
+                        </div>
+                        <div class="col-md-6">
+                            @if($patient->country)
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Country</label>
+                                <div class="form-control-plaintext">{{ $patient->country }}</div>
+                            </div>
+                            @endif
+                            @if($patient->postal_code)
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Postal Code</label>
+                                <div class="form-control-plaintext">{{ $patient->postal_code }}</div>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
+
+            <!-- Insurance Information -->
+            @if($patient->insurance_provider || $patient->insurance_number)
+            <div class="doctor-card mb-4">
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-shield-alt me-2"></i>Insurance Information</h5>
+                </div>
+                <div class="doctor-card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Insurance Provider</label>
+                                <div class="form-control-plaintext">{{ $patient->insurance_provider ?? 'Not provided' }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Insurance Number</label>
+                                <div class="form-control-plaintext">{{ $patient->insurance_number ?? 'Not provided' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- Medical Information -->
+            <div class="doctor-card mb-4">
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-heartbeat me-2"></i>Medical Information</h5>
+                </div>
+                <div class="doctor-card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Allergies</label>
+                        <div class="mt-2">
+                            @if($patient->allergies && count($patient->allergies) > 0)
+                                @foreach($patient->allergies as $allergy)
+                                    <span class="badge bg-warning text-dark me-1 mb-1">{{ $allergy }}</span>
+                                @endforeach
+                            @else
+                                <span class="text-muted">No allergies recorded</span>
+                            @endif
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Medical Conditions</label>
+                        <div class="mt-2">
+                            @if($patient->medical_conditions && count($patient->medical_conditions) > 0)
+                                @foreach($patient->medical_conditions as $condition)
+                                    <span class="badge bg-info text-dark me-1 mb-1">{{ $condition }}</span>
+                                @endforeach
+                            @else
+                                <span class="text-muted">No medical conditions recorded</span>
+                            @endif
+                        </div>
+                    </div>
+                    
+                    @if($patient->notes)
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Additional Notes</label>
+                        <div class="border rounded p-3 bg-light mt-2">
+                            {!! nl2br(e($patient->notes)) !!}
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Uploaded Documents -->
+            @if($patient->patient_id_document_path || $patient->guardian_id_document_path)
+            <div class="doctor-card mb-4">
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-file-upload me-2"></i>Uploaded Documents</h5>
+                </div>
+                <div class="doctor-card-body">
+                    <div class="row">
+                        @if($patient->patient_id_document_path)
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Patient ID Document</label>
+                                <div class="mt-2">
+                                    @php
+                                        $documentPath = $patient->patient_id_document_path;
+                                        $filename = basename($documentPath);
+                                    @endphp
+                                    <a href="{{ route('staff.patients.download-document', ['patient' => $patient->id, 'type' => 'patient_id']) }}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       target="_blank">
+                                        <i class="fas fa-file-pdf me-1"></i>View/Download Document
+                                    </a>
+                                    <small class="text-muted d-block mt-1">{{ $filename }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                        
+                        @if($patient->guardian_id_document_path)
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Guardian ID Document</label>
+                                <div class="mt-2">
+                                    @php
+                                        $documentPath = $patient->guardian_id_document_path;
+                                        $filename = basename($documentPath);
+                                    @endphp
+                                    <a href="{{ route('staff.patients.download-document', ['patient' => $patient->id, 'type' => 'guardian_id']) }}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       target="_blank">
+                                        <i class="fas fa-file-pdf me-1"></i>View/Download Document
+                                    </a>
+                                    <small class="text-muted d-block mt-1">{{ $filename }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- GP Information -->
+            @if($patient->consent_share_with_gp || $patient->gp_name || $patient->gp_email)
+            <div class="doctor-card mb-4">
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2"></i>GP (General Practitioner) Information</h5>
+                </div>
+                <div class="doctor-card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Consent to Share with GP</label>
+                                <div class="form-control-plaintext">
+                                    @if($patient->consent_share_with_gp)
+                                        <span class="badge bg-success">Yes</span>
+                                    @else
+                                        <span class="badge bg-secondary">No</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    @if($patient->consent_share_with_gp)
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">GP Name</label>
+                                <div class="form-control-plaintext">{{ $patient->gp_name ?? 'Not provided' }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">GP Email</label>
+                                <div class="form-control-plaintext">
+                                    @if($patient->gp_email)
+                                        <a href="mailto:{{ $patient->gp_email }}">{{ $patient->gp_email }}</a>
+                                    @else
+                                        <span class="text-muted">Not provided</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">GP Phone</label>
+                                <div class="form-control-plaintext">
+                                    @if($patient->gp_phone)
+                                        <a href="tel:{{ $patient->gp_phone }}">{{ $patient->gp_phone }}</a>
+                                    @else
+                                        <span class="text-muted">Not provided</span>
+                                    @endif
+                                </div>
+                            </div>
+                            @if($patient->gp_address)
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">GP Address</label>
+                                <div class="form-control-plaintext">{{ $patient->gp_address }}</div>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
 
             <!-- Emergency Contact -->
             <div class="doctor-card mb-4">
