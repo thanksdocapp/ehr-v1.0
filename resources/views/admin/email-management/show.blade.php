@@ -320,8 +320,10 @@
                             <tr>
                                 <td>Template:</td>
                                 <td>
-                                    @if($emailLog->emailTemplate)
-                                        <span class="badge bg-secondary">{{ $emailLog->emailTemplate->name }}</span>
+                                    @if($emailLog->template)
+                                        <span class="badge bg-secondary">{{ $emailLog->template->name }}</span>
+                                    @elseif($emailLog->email_template_id)
+                                        <span class="text-muted">Template ID: {{ $emailLog->email_template_id }} (not found)</span>
                                     @else
                                         <span class="text-muted">No template</span>
                                     @endif

@@ -140,11 +140,11 @@ class EmailNotificationService
             $ccEmails = $log->cc_emails;
             $bccEmails = $log->bcc_emails;
             $attachments = $log->attachments;
-            $fromEmail = $log->emailTemplate && $log->emailTemplate->sender_email 
-                ? $log->emailTemplate->sender_email 
+            $fromEmail = $log->template && $log->template->sender_email 
+                ? $log->template->sender_email 
                 : null;
-            $fromName = $log->emailTemplate && $log->emailTemplate->sender_name 
-                ? $log->emailTemplate->sender_name 
+            $fromName = $log->template && $log->template->sender_name 
+                ? $log->template->sender_name 
                 : null;
             
             // Build the email - send synchronously to avoid closure serialization
@@ -214,13 +214,13 @@ class EmailNotificationService
             Log::info('Email sent successfully', [
                 'log_id' => $log->id,
                 'recipient' => $log->recipient_email,
-                'template' => $log->emailTemplate?->name
+                'template' => $log->template?->name
             ]);
 
             // Update template stats
-            if ($log->emailTemplate) {
-                $log->emailTemplate->increment('sent_count');
-                $log->emailTemplate->update(['last_used_at' => now()]);
+            if ($log->template) {
+                $log->template->increment('sent_count');
+                $log->template->update(['last_used_at' => now()]);
             }
 
             // Dispatch success event
@@ -259,7 +259,7 @@ class EmailNotificationService
                 'error' => $errorMessage,
                 'trace' => $e->getTraceAsString(),
                 'recipient' => $log->recipient_email,
-                'template' => $log->emailTemplate?->name
+                'template' => $log->template?->name
             ]);
 
             // Update log status with helpful error message
