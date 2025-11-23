@@ -1101,16 +1101,79 @@ class MedicalRecordsController extends Controller
             // Update the medical record reference to the fresh instance
             $medicalRecord = $currentRecordCheck;
 
-            // Validate file type and size
-            $allowedMimes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'zip', 'rar'];
+            // Validate file type and size - SECURITY: Validate actual MIME type, not just extension
+            $allowedMimeTypes = [
+                // Documents
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+                'text/plain',
+                // Images
+                'image/jpeg',
+                'image/jpg',
+                'image/png',
+                'image/gif',
+                // Archives (restricted - should be scanned)
+                'application/zip',
+                'application/x-rar-compressed',
+                'application/x-rar',
+            ];
+            
+            $allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'zip', 'rar'];
+            
+            // Get actual MIME type and extension
+            $mimeType = $file->getMimeType();
             $extension = strtolower($file->getClientOriginalExtension());
             
-            if (!in_array($extension, $allowedMimes)) {
+            // Validate both MIME type and extension for security
+            if (!in_array($mimeType, $allowedMimeTypes) || !in_array($extension, $allowedExtensions)) {
+                \Log::warning('Invalid file upload attempt', [
+                    'filename' => $file->getClientOriginalName(),
+                    'mime_type' => $mimeType,
+                    'extension' => $extension,
+                    'user_id' => $user->id ?? null,
+                ]);
                 continue; // Skip invalid file types
+            }
+            
+            // Additional security: Verify extension matches MIME type
+            $mimeToExtension = [
+                'application/pdf' => 'pdf',
+                'application/msword' => 'doc',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+                'application/vnd.ms-excel' => 'xls',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+                'text/plain' => 'txt',
+                'image/jpeg' => ['jpg', 'jpeg'],
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'application/zip' => 'zip',
+                'application/x-rar-compressed' => 'rar',
+                'application/x-rar' => 'rar',
+            ];
+            
+            $expectedExtensions = is_array($mimeToExtension[$mimeType] ?? null) 
+                ? $mimeToExtension[$mimeType] 
+                : [$mimeToExtension[$mimeType] ?? ''];
+            
+            if (!in_array($extension, $expectedExtensions)) {
+                \Log::warning('File extension does not match MIME type', [
+                    'filename' => $file->getClientOriginalName(),
+                    'mime_type' => $mimeType,
+                    'extension' => $extension,
+                    'expected_extensions' => $expectedExtensions,
+                ]);
+                continue; // Skip suspicious files
             }
 
             // Check file size (10MB max)
             if ($file->getSize() > 10 * 1024 * 1024) {
+                \Log::warning('File too large', [
+                    'filename' => $file->getClientOriginalName(),
+                    'size' => $file->getSize(),
+                ]);
                 continue; // Skip files larger than 10MB
             }
 

@@ -17,18 +17,18 @@ use App\Http\Controllers\Api\V1\NotificationApiController;
 |
 */
 
-// Public routes (no authentication required)
+// Public routes (no authentication required) - with rate limiting
 Route::prefix('v1')->group(function () {
     
-    // Authentication routes
-    Route::prefix('auth')->group(function () {
+    // Authentication routes - strict rate limiting to prevent brute force
+    Route::prefix('auth')->middleware('throttle:auth')->group(function () {
         Route::post('/register/patient', [AuthController::class, 'registerPatient']);
         Route::post('/login/patient', [AuthController::class, 'loginPatient']);
         Route::post('/login/staff', [AuthController::class, 'loginStaff']);
     });
 
-    // Public information routes
-    Route::prefix('public')->group(function () {
+    // Public information routes - rate limited to prevent abuse
+    Route::prefix('public')->middleware('throttle:public-api')->group(function () {
         Route::get('/departments', [DepartmentApiController::class, 'index']);
         Route::get('/departments/{id}', [DepartmentApiController::class, 'show']);
         Route::get('/departments/search', [DepartmentApiController::class, 'search']);
@@ -46,8 +46,8 @@ Route::prefix('v1')->group(function () {
 // Protected routes (authentication required)
 Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     
-    // Authentication management
-    Route::prefix('auth')->group(function () {
+    // Authentication management - sensitive operations with rate limiting
+    Route::prefix('auth')->middleware('throttle:sensitive')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/profile', [AuthController::class, 'profile']);
         Route::put('/profile', [AuthController::class, 'updateProfile']);
@@ -68,8 +68,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::put('/emergency-contact', [PatientApiController::class, 'updateEmergencyContact']);
         Route::put('/medical-info', [PatientApiController::class, 'updateMedicalInfo']);
         
-        // Account management
-        Route::delete('/account', [PatientApiController::class, 'deleteAccount']);
+        // Account management - sensitive operation
+        Route::delete('/account', [PatientApiController::class, 'deleteAccount'])->middleware('throttle:sensitive');
     });
 
     // Appointment management

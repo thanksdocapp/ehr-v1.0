@@ -52,6 +52,8 @@ Thumbs.db
 /public/build
 /public/mix-manifest.json
 /public/hot
+/build
+/build/*
 
 # Testing
 /coverage
@@ -63,6 +65,10 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Zip files (unless specifically needed)
+*.zip
+!/install-files/*.zip
 
 # OS files
 .DS_Store
