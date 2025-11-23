@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <!-- Background -->
+  <rect width="200" height="60" fill="#f5a623" rx="8"/>
+  
+  <!-- Flutterwave Icon -->
+  <g transform="translate(10, 15)">
+    <!-- Wave pattern -->
+    <path d="M5 15 Q15 5, 25 15 T45 15" stroke="white" stroke-width="2" fill="none"/>
+    <path d="M5 20 Q15 10, 25 20 T45 20" stroke="white" stroke-width="2" fill="none"/>
+    <path d="M5 25 Q15 15, 25 25 T45 25" stroke="white" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Flutterwave Text -->
+  <text x="60" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">Flutterwave</text>
+  <text x="60" y="40" font-family="Arial, sans-serif" font-size="10" fill="white">Seamless Payments</text>
+</svg>

@@ -1,0 +1,24 @@
+<svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="#f8f9fa"/>
+  
+  <!-- Doctor silhouette -->
+  <circle cx="150" cy="100" r="40" fill="#6c757d"/>
+  
+  <!-- Body -->
+  <path d="M100 160 Q100 140 150 140 Q200 140 200 160 L200 250 Q200 270 180 270 L120 270 Q100 270 100 250 Z" fill="#ffffff"/>
+  
+  <!-- White coat -->
+  <path d="M105 165 Q105 145 150 145 Q195 145 195 165 L195 245 Q195 265 175 265 L125 265 Q105 265 105 245 Z" fill="#ffffff" stroke="#dee2e6" stroke-width="2"/>
+  
+  <!-- Stethoscope -->
+  <path d="M130 180 Q140 170 160 170 Q180 170 170 180" stroke="#0d6efd" stroke-width="3" fill="none"/>
+  <circle cx="125" cy="185" r="8" fill="#0d6efd"/>
+  <circle cx="175" cy="185" r="8" fill="#0d6efd"/>
+  
+  <!-- Medical cross on coat -->
+  <rect x="140" y="200" width="20" height="4" fill="#dc3545"/>
+  <rect x="148" y="192" width="4" height="20" fill="#dc3545"/>
+  
+  <!-- Text -->
+  <text x="150" y="285" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#6c757d">Doctor</text>
+</svg>

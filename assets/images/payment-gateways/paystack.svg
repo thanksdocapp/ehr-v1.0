@@ -1,0 +1,7 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="80" height="80" rx="12" fill="#00C896"/>
+<path d="M50 25L30 45L35 50L55 30L50 25Z" fill="white"/>
+<path d="M30 35L25 40L30 45L35 40L30 35Z" fill="white"/>
+<path d="M45 40L40 45L45 50L50 45L45 40Z" fill="white"/>
+<text x="40" y="65" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="10" font-weight="bold">Paystack</text>
+</svg>

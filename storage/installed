@@ -1,0 +1,9 @@
+{
+    "installed_at": "2025-11-02 11:12:34",
+    "version": "1.0.0",
+    "php_version": "8.3.27",
+    "environment": "local",
+    "app_name": "NewWaves Hospital Management System",
+    "admin_created": true,
+    "installation_completed": true
+}
