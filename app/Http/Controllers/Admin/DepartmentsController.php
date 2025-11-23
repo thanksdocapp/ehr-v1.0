@@ -74,17 +74,150 @@ class DepartmentsController extends Controller
 
     public function show(Department $department)
     {
+        // Load doctors
         $department->load(['doctors' => function($query) {
             $query->active()->ordered();
         }]);
 
+        // Patient Statistics
+        $patientStats = [
+            'total' => \App\Models\Patient::where(function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->count(),
+            'active' => \App\Models\Patient::where(function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->where('is_active', true)->count(),
+            'this_month' => \App\Models\Patient::where(function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->whereMonth('created_at', now()->month)->count(),
+        ];
+
+        // Appointment Statistics
+        $appointmentStats = [
+            'total' => $department->appointments()->count(),
+            'today' => $department->appointments()->today()->count(),
+            'upcoming' => $department->appointments()->where('appointment_date', '>=', today())->where('status', '!=', 'cancelled')->count(),
+            'completed' => $department->appointments()->where('status', 'completed')->count(),
+            'pending' => $department->appointments()->where('status', 'pending')->count(),
+            'cancelled' => $department->appointments()->where('status', 'cancelled')->count(),
+            'this_month' => $department->appointments()->whereMonth('appointment_date', now()->month)->count(),
+        ];
+
+        // Doctor Statistics
+        $doctorStats = [
+            'total' => $department->doctors()->count(),
+            'active' => $department->doctors()->where('is_active', true)->count(),
+            'available' => $department->doctors()->where('is_active', true)->where('is_available_online', true)->count(),
+        ];
+
+        // Medical Records Statistics
+        $medicalRecordStats = [
+            'total' => \App\Models\MedicalRecord::whereHas('patient', function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->count(),
+            'this_month' => \App\Models\MedicalRecord::whereHas('patient', function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->whereMonth('record_date', now()->month)->count(),
+        ];
+
+        // Prescription Statistics
+        $prescriptionStats = [
+            'total' => \App\Models\Prescription::whereHas('patient', function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->count(),
+            'pending' => \App\Models\Prescription::whereHas('patient', function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->where('status', 'pending')->count(),
+            'this_month' => \App\Models\Prescription::whereHas('patient', function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->whereMonth('prescription_date', now()->month)->count(),
+        ];
+
+        // Lab Report Statistics
+        $labReportStats = [
+            'total' => \App\Models\LabReport::whereHas('patient', function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->count(),
+            'pending' => \App\Models\LabReport::whereHas('patient', function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->where('status', 'pending')->count(),
+            'this_month' => \App\Models\LabReport::whereHas('patient', function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->whereMonth('test_date', now()->month)->count(),
+        ];
+
+        // Today's Appointments
         $todayAppointments = $department->appointments()
             ->with(['patient', 'doctor'])
             ->today()
-            ->ordered()
+            ->orderBy('appointment_time')
             ->get();
 
-        return view('admin.departments.show', compact('department', 'todayAppointments'));
+        // Upcoming Appointments (next 7 days)
+        $upcomingAppointments = $department->appointments()
+            ->with(['patient', 'doctor'])
+            ->where('appointment_date', '>=', today())
+            ->where('appointment_date', '<=', today()->addDays(7))
+            ->where('status', '!=', 'cancelled')
+            ->orderBy('appointment_date')
+            ->orderBy('appointment_time')
+            ->limit(10)
+            ->get();
+
+        // Recent Patients (last 10)
+        $recentPatients = \App\Models\Patient::where(function($q) use ($department) {
+            $q->whereHas('departments', function($q2) use ($department) {
+                $q2->where('departments.id', $department->id);
+            })->orWhere('department_id', $department->id);
+        })
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Top Doctors by Appointment Count
+        $topDoctors = $department->doctors()
+            ->withCount(['appointments' => function($q) use ($department) {
+                $q->where('department_id', $department->id);
+            }])
+            ->orderBy('appointments_count', 'desc')
+            ->limit(5)
+            ->get();
+
+        return view('admin.departments.show', compact(
+            'department',
+            'todayAppointments',
+            'upcomingAppointments',
+            'patientStats',
+            'appointmentStats',
+            'doctorStats',
+            'medicalRecordStats',
+            'prescriptionStats',
+            'labReportStats',
+            'recentPatients',
+            'topDoctors'
+        ));
     }
 
     public function edit(Department $department)
