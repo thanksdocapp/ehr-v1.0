@@ -7,203 +7,452 @@
     <li class="breadcrumb-item active">Clinics</li>
 @endsection
 
+@push('styles')
+<style>
+    .modern-stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 16px;
+        padding: 1.5rem;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .modern-stat-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        transition: all 0.5s ease;
+    }
+
+    .modern-stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .modern-stat-card:hover::before {
+        top: -30%;
+        right: -30%;
+    }
+
+    .modern-stat-card.primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .modern-stat-card.success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .modern-stat-card.info {
+        background: linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%);
+    }
+
+    .modern-stat-card.warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .stat-icon-modern {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .modern-clinic-card {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        background: white;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modern-clinic-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .clinic-image-wrapper {
+        position: relative;
+        height: 220px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .clinic-image-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .modern-clinic-card:hover .clinic-image-wrapper img {
+        transform: scale(1.1);
+    }
+
+    .clinic-status-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .clinic-stats-modern {
+        display: flex;
+        justify-content: space-around;
+        padding: 1rem;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 12px;
+        margin: 1rem 0;
+    }
+
+    .clinic-stat-item {
+        text-align: center;
+        flex: 1;
+    }
+
+    .clinic-stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .modern-action-btn {
+        border: none;
+        border-radius: 10px;
+        padding: 10px 15px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .modern-action-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .filter-card-modern {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+    }
+
+    .page-header-modern {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-modern-primary {
+        background: white;
+        color: #667eea;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-modern-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        color: #667eea;
+    }
+
+    .empty-state-modern {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .empty-state-icon {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 2rem;
+        font-size: 3rem;
+        color: #667eea;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .fade-in-up {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    .stagger-1 { animation-delay: 0.1s; }
+    .stagger-2 { animation-delay: 0.2s; }
+    .stagger-3 { animation-delay: 0.3s; }
+    .stagger-4 { animation-delay: 0.4s; }
+</style>
+@endpush
+
 @section('content')
 <div class="fade-in">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0"><i class="fas fa-building me-2"></i>Clinics Management</h5>
-            <small class="text-muted">Manage clinics and their services</small>
-        </div>
-        <div>
-            <a href="{{ contextRoute('departments.create') }}" class="btn btn-doctor-primary">
-                <i class="fas fa-plus me-2"></i>Add New Clinic
-            </a>
-        </div>
-    </div>
-
-    <!-- Quick Stats -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-primary" style="font-size: 1.75rem; font-weight: 600;">{{ $departments->total() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Total Clinics</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-building text-white"></i>
-                    </div>
-                </div>
+    <!-- Modern Page Header -->
+    <div class="page-header-modern fade-in-up">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h2 class="mb-2 fw-bold">
+                    <i class="fas fa-hospital-alt me-2"></i>Clinics Management
+                </h2>
+                <p class="mb-0 opacity-90">Manage and monitor all clinics, departments, and their services</p>
             </div>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-success" style="font-size: 1.75rem; font-weight: 600;">{{ $departments->where('is_active', true)->count() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Active Clinics</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--success), #16a34a); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-check-circle text-white"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-info" style="font-size: 1.75rem; font-weight: 600;">{{ $departments->sum('doctors_count') ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Total Doctors</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--info), #0891b2); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-user-md text-white"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-warning" style="font-size: 1.75rem; font-weight: 600;">{{ $departments->sum('appointments_count') ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Total Appointments</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning), #d97706); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-calendar-check text-white"></i>
-                    </div>
-                </div>
+            <div class="mt-3 mt-md-0">
+                <a href="{{ contextRoute('departments.create') }}" class="btn-modern-primary">
+                    <i class="fas fa-plus me-2"></i>Add New Clinic
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Filters Card -->
-    <div class="doctor-card mb-4">
-        <div class="doctor-card-header">
-            <h5 class="doctor-card-title mb-0"><i class="fas fa-filter me-2"></i>Filters</h5>
+    <!-- Modern Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="modern-stat-card primary fade-in-up stagger-1">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="mb-1 opacity-75" style="font-size: 0.875rem;">Total Clinics</div>
+                        <div class="h3 mb-0 fw-bold">{{ $departments->total() ?? 0 }}</div>
+                    </div>
+                    <div class="stat-icon-modern">
+                        <i class="fas fa-building"></i>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="doctor-card-body">
-            <form method="GET" action="{{ contextRoute('departments.index') }}" class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Search</label>
-                    <input type="text" name="search" class="form-control" 
-                           placeholder="Clinic name, description..." 
+        <div class="col-lg-3 col-md-6">
+            <div class="modern-stat-card success fade-in-up stagger-2">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="mb-1 opacity-75" style="font-size: 0.875rem;">Active Clinics</div>
+                        <div class="h3 mb-0 fw-bold">{{ $departments->where('is_active', true)->count() ?? 0 }}</div>
+                    </div>
+                    <div class="stat-icon-modern">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="modern-stat-card info fade-in-up stagger-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="mb-1 opacity-75" style="font-size: 0.875rem;">Total Doctors</div>
+                        <div class="h3 mb-0 fw-bold">{{ $departments->sum('doctors_count') ?? 0 }}</div>
+                    </div>
+                    <div class="stat-icon-modern">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="modern-stat-card warning fade-in-up stagger-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="mb-1 opacity-75" style="font-size: 0.875rem;">Total Appointments</div>
+                        <div class="h3 mb-0 fw-bold">{{ $departments->sum('appointments_count') ?? 0 }}</div>
+                    </div>
+                    <div class="stat-icon-modern">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Filters Card -->
+    <div class="filter-card-modern mb-4 fade-in-up">
+        <div class="d-flex align-items-center mb-3">
+            <i class="fas fa-filter me-2 text-primary"></i>
+            <h5 class="mb-0 fw-bold">Search & Filter</h5>
+        </div>
+        <form method="GET" action="{{ contextRoute('departments.index') }}" class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">Search Clinics</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control border-start-0" 
+                           placeholder="Search by name, description..." 
                            value="{{ request('search') }}">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-control">
-                        <option value="">All Status</option>
-                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Sort By</label>
-                    <select name="sort" class="form-control">
-                        <option value="name" {{ request('sort') == 'name' ? 'selected' : '' }}>Name</option>
-                        <option value="doctors" {{ request('sort') == 'doctors' ? 'selected' : '' }}>Doctors Count</option>
-                        <option value="appointments" {{ request('sort') == 'appointments' ? 'selected' : '' }}>Appointments</option>
-                        <option value="recent" {{ request('sort') == 'recent' ? 'selected' : '' }}>Recently Added</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">&nbsp;</label>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-doctor-primary">
-                            <i class="fas fa-search me-1"></i>Search
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Sort By</label>
+                <select name="sort" class="form-select">
+                    <option value="name" {{ request('sort') == 'name' ? 'selected' : '' }}>Name</option>
+                    <option value="doctors" {{ request('sort') == 'doctors' ? 'selected' : '' }}>Doctors Count</option>
+                    <option value="appointments" {{ request('sort') == 'appointments' ? 'selected' : '' }}>Appointments</option>
+                    <option value="recent" {{ request('sort') == 'recent' ? 'selected' : '' }}>Recently Added</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label fw-semibold">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100" style="border-radius: 10px;">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
     </div>
 
-    <!-- Clinics Grid -->
-    <div class="row">
+    <!-- Modern Clinics Grid -->
+    <div class="row g-4">
         @if($departments->count() > 0)
-            @foreach($departments as $department)
-            <div class="col-lg-6 col-xl-4 mb-4">
-                <div class="doctor-card h-100">
-                    @if($department->image)
-                        <img src="{{ Storage::disk('public')->url('uploads/departments/' . $department->image) }}" 
-                             class="card-img-top" 
-                             style="height: 200px; object-fit: cover; border-radius: 0.5rem 0.5rem 0 0;"
-                             alt="{{ $department->name }}">
-                    @endif
+            @foreach($departments as $index => $department)
+            <div class="col-lg-6 col-xl-4">
+                <div class="modern-clinic-card fade-in-up" style="animation-delay: {{ ($index % 6) * 0.1 }}s !important;">
+                    <!-- Clinic Image -->
+                    <div class="clinic-image-wrapper">
+                        @if($department->image)
+                            <img src="{{ Storage::disk('public')->url('uploads/departments/' . $department->image) }}" 
+                                 alt="{{ $department->name }}">
+                        @else
+                            <div class="d-flex align-items-center justify-content-center h-100 text-white">
+                                <i class="fas fa-hospital-alt fa-4x opacity-50"></i>
+                            </div>
+                        @endif
+                        <span class="clinic-status-badge {{ $department->is_active ? 'bg-success' : 'bg-danger' }} text-white">
+                            {{ $department->is_active ? 'Active' : 'Inactive' }}
+                        </span>
+                        @if($department->is_emergency)
+                            <span class="badge bg-danger position-absolute" style="top: 15px; left: 15px;">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Emergency
+                            </span>
+                        @endif
+                    </div>
                     
-                    <div class="doctor-card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="doctor-card-title mb-0">{{ $department->name }}</h5>
-                            @if($department->is_active)
-                                <span class="badge bg-success">Active</span>
-                            @else
-                                <span class="badge bg-danger">Inactive</span>
-                            @endif
-                        </div>
+                    <!-- Clinic Content -->
+                    <div class="p-4 d-flex flex-column flex-grow-1">
+                        <h5 class="fw-bold mb-2 text-dark">{{ $department->name }}</h5>
                         
-                        <p class="text-muted mb-3">
-                            {{ Str::limit($department->description, 100) }}
+                        <p class="text-muted mb-3 small" style="line-height: 1.6;">
+                            {{ Str::limit($department->description, 120) }}
                         </p>
                         
-                        <!-- Clinic Stats -->
-                        <div class="row text-center mb-3">
-                            <div class="col-4">
-                                <div class="fw-bold text-primary">{{ $department->doctors_count }}</div>
-                                <small class="text-muted">Doctors</small>
+                        <!-- Modern Clinic Stats -->
+                        <div class="clinic-stats-modern">
+                            <div class="clinic-stat-item">
+                                <div class="clinic-stat-number">{{ $department->doctors_count }}</div>
+                                <small class="text-muted d-block mt-1">Doctors</small>
                             </div>
-                            <div class="col-4">
-                                <div class="fw-bold text-success">{{ $department->appointments_count }}</div>
-                                <small class="text-muted">Appointments</small>
+                            <div class="clinic-stat-item">
+                                <div class="clinic-stat-number">{{ $department->appointments_count }}</div>
+                                <small class="text-muted d-block mt-1">Appointments</small>
                             </div>
-                            <div class="col-4">
-                                <div class="fw-bold text-info">{{ $department->services ? count($department->services) : 0 }}</div>
-                                <small class="text-muted">Services</small>
+                            <div class="clinic-stat-item">
+                                <div class="clinic-stat-number">{{ $department->services ? count($department->services) : 0 }}</div>
+                                <small class="text-muted d-block mt-1">Services</small>
                             </div>
                         </div>
                         
                         <!-- Clinic Info -->
-                        @if($department->head_of_department)
-                            <div class="mb-2">
-                                <small class="text-muted">Head of Clinic:</small>
-                                <div class="fw-bold">{{ $department->head_of_department }}</div>
-                            </div>
-                        @endif
+                        <div class="mb-3">
+                            @if($department->head_of_department)
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-user-tie me-2 text-primary"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Head of Clinic</small>
+                                        <strong class="text-dark">{{ $department->head_of_department }}</strong>
+                                    </div>
+                                </div>
+                            @endif
+                            
+                            @if($department->location)
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-map-marker-alt me-2 text-danger"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Location</small>
+                                        <span class="text-dark">{{ Str::limit($department->location, 30) }}</span>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                         
-                        @if($department->location)
-                            <div class="mb-3">
-                                <small class="text-muted">Location:</small>
-                                <div>{{ $department->location }}</div>
-                            </div>
-                        @endif
-                        
-                        <!-- Actions -->
-                        <div class="mt-auto">
-                            <div class="btn-group w-100" role="group">
-                                <a href="{{ contextRoute('departments.show', $department->id) }}" 
-                                   class="btn btn-outline-primary" title="View">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ contextRoute('departments.edit', $department->id) }}" 
-                                   class="btn btn-outline-secondary" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button class="btn btn-outline-info" 
-                                        onclick="viewDoctors({{ $department->id }})" 
-                                        title="View Doctors">
-                                    <i class="fas fa-user-md"></i>
-                                </button>
-                                <button class="btn btn-outline-{{ $department->is_active ? 'warning' : 'success' }}"
-                                        onclick="toggleStatus({{ $department->id }})"
-                                        title="{{ $department->is_active ? 'Deactivate' : 'Activate' }}">
-                                    <i class="fas fa-{{ $department->is_active ? 'pause' : 'play' }}"></i>
-                                </button>
-                                <button class="btn btn-outline-danger"
-                                        onclick="deleteDepartment({{ $department->id }})"
-                                        title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                        <!-- Modern Action Buttons -->
+                        <div class="mt-auto pt-3 border-top">
+                            <div class="d-grid gap-2">
+                                <div class="btn-group" role="group">
+                                    <a href="{{ contextRoute('departments.show', $department->id) }}" 
+                                       class="btn btn-primary modern-action-btn" 
+                                       title="View Details"
+                                       style="flex: 1;">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                    <a href="{{ contextRoute('departments.edit', $department->id) }}" 
+                                       class="btn btn-outline-secondary modern-action-btn" 
+                                       title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-outline-info modern-action-btn" 
+                                            onclick="viewDoctors({{ $department->id }})" 
+                                            title="View Doctors">
+                                        <i class="fas fa-user-md"></i>
+                                    </button>
+                                    <button class="btn btn-outline-{{ $department->is_active ? 'warning' : 'success' }} modern-action-btn"
+                                            onclick="toggleStatus({{ $department->id }})"
+                                            title="{{ $department->is_active ? 'Deactivate' : 'Activate' }}">
+                                        <i class="fas fa-{{ $department->is_active ? 'pause' : 'play' }}"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger modern-action-btn"
+                                            onclick="deleteDepartment({{ $department->id }})"
+                                            title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -212,15 +461,15 @@
             @endforeach
         @else
             <div class="col-12">
-                <div class="doctor-card">
-                    <div class="doctor-card-body text-center py-5">
-                        <i class="fas fa-building fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">No clinics found</h5>
-                        <p class="text-muted mb-4">No clinics match your current filters.</p>
-                        <a href="{{ contextRoute('departments.create') }}" class="btn btn-doctor-primary">
-                            <i class="fas fa-plus me-2"></i>Create First Clinic
-                        </a>
+                <div class="empty-state-modern fade-in-up">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-building"></i>
                     </div>
+                    <h4 class="fw-bold mb-2">No Clinics Found</h4>
+                    <p class="text-muted mb-4">No clinics match your current filters. Try adjusting your search criteria.</p>
+                    <a href="{{ contextRoute('departments.create') }}" class="btn btn-primary btn-lg" style="border-radius: 12px; padding: 12px 32px;">
+                        <i class="fas fa-plus me-2"></i>Create First Clinic
+                    </a>
                 </div>
             </div>
         @endif
@@ -261,13 +510,15 @@
         </div>
     </div>
 
-    <!-- Floating Action Button -->
+    <!-- Modern Floating Action Button -->
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
-        <button class="btn btn-doctor-primary rounded-circle" 
+        <button class="btn btn-primary rounded-circle shadow-lg" 
                 data-bs-toggle="modal" 
                 data-bs-target="#quickActionsModal"
-                style="width: 56px; height: 56px;">
-            <i class="fas fa-cog"></i>
+                style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; transition: all 0.3s ease;"
+                onmouseover="this.style.transform='scale(1.1)'"
+                onmouseout="this.style.transform='scale(1)'">
+            <i class="fas fa-cog fa-lg"></i>
         </button>
     </div>
 </div>
