@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "php_version": "8.3.27",
     "environment": "local",
-    "app_name": "NewWaves Hospital Management System",
+    "app_name": "ThanksDoc EPR",
     "admin_created": true,
     "installation_completed": true
 }
