@@ -130,6 +130,15 @@
         </div>
         @break
 
+    @case('email-logs')
+        <div class="menu-item">
+            <a href="{{ route('admin.email-management.logs') }}" class="menu-link {{ request()->routeIs('admin.email-management.logs') || request()->routeIs('admin.email-management.show') ? 'active' : '' }}">
+                <i class="menu-icon fas {{ $icon }}"></i>
+                <span class="menu-text">{{ $label }}</span>
+            </a>
+        </div>
+        @break
+
     @case('advanced-reports')
         <div class="menu-item">
             <div class="dropdown">

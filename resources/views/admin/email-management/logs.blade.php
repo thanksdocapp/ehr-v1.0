@@ -115,24 +115,94 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Dynamic content will be loaded here -->
+                        @forelse($emailLogs as $log)
+                            @php
+                                $statusClass = [
+                                    'sent' => 'success',
+                                    'failed' => 'danger',
+                                    'pending' => 'warning',
+                                    'queued' => 'info'
+                                ][$log->status] ?? 'secondary';
+                                
+                                $statusIcon = [
+                                    'sent' => 'check-circle',
+                                    'failed' => 'exclamation-circle',
+                                    'pending' => 'clock',
+                                    'queued' => 'hourglass-half'
+                                ][$log->status] ?? 'question-circle';
+                                
+                                $typeLabel = $log->template->name ?? ($log->metadata['type'] ?? 'General');
+                            @endphp
+                            <tr>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input email-checkbox" type="checkbox" value="{{ $log->id }}">
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted d-block">{{ $log->created_at->format('Y-m-d H:i:s') }}</small>
+                                </td>
+                                <td>{{ $log->recipient_email }}</td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 200px;" title="{{ $log->subject }}">
+                                        {{ $log->subject }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ $typeLabel }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ $statusClass }}">
+                                        <i class="fas fa-{{ $statusIcon }}"></i> {{ ucfirst($log->status) }}
+                                    </span>
+                                    @if($log->error_message)
+                                        <br><small class="text-danger">{{ Str::limit($log->error_message, 50) }}</small>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ $log->metadata['attempts'] ?? 1 }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ route('admin.email-management.show', $log->id) }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if(in_array($log->status, ['failed', 'pending']))
+                                            <button class="btn btn-sm btn-outline-success resend-email" data-email-id="{{ $log->id }}" title="Resend">
+                                                <i class="fas fa-paper-plane"></i>
+                                            </button>
+                                        @endif
+                                        <button class="btn btn-sm btn-outline-danger delete-email" data-email-id="{{ $log->id }}" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">No email logs found.</p>
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination -->
+            @if($emailLogs->hasPages())
             <div class="d-flex justify-content-between align-items-center mt-3">
                 <div>
-                    <span class="text-muted small" id="pagination-info">
-                        Showing 1-25 of 247 entries
+                    <span class="text-muted small">
+                        Showing {{ $emailLogs->firstItem() }} to {{ $emailLogs->lastItem() }} of {{ $emailLogs->total() }} entries
                     </span>
                 </div>
                 <nav>
-                    <ul class="pagination pagination-sm mb-0" id="pagination-controls">
-                        <!-- Pagination will be generated dynamically -->
-                    </ul>
+                    {{ $emailLogs->links() }}
                 </nav>
             </div>
+            @endif
         </div>
     </div>
 </div>
@@ -187,27 +257,31 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    let currentPage = 1;
     let currentEmailId = null;
     
-    // Load initial logs
-    loadEmailLogs();
-    
-    // Filter form submission
+    // Filter form submission - reload page with filters
     $('#filter-form').on('submit', function(e) {
         e.preventDefault();
-        currentPage = 1;
-        loadEmailLogs();
+        const form = $(this);
+        const url = new URL(window.location.href);
+        const formData = new FormData(form[0]);
+        
+        // Update URL parameters
+        for (let [key, value] of formData.entries()) {
+            if (value) {
+                url.searchParams.set(key, value);
+            } else {
+                url.searchParams.delete(key);
+            }
+        }
+        
+        // Reload page with filters
+        window.location.href = url.toString();
     });
     
-    // Refresh logs
+    // Refresh logs - reload page
     $('#refresh-logs').on('click', function() {
-        const btn = $(this);
-        btn.find('i').addClass('fa-spin');
-        loadEmailLogs();
-        setTimeout(() => {
-            btn.find('i').removeClass('fa-spin');
-        }, 1000);
+        window.location.reload();
     });
     
     // Select all checkbox
@@ -222,14 +296,9 @@ $(document).ready(function() {
         $('#select-all').prop('checked', totalCheckboxes === checkedCheckboxes);
     });
     
-    // View email details
-    $(document).on('click', '.view-email', function() {
-        const emailId = $(this).data('email-id');
-        loadEmailDetails(emailId);
-    });
-    
     // Individual resend
-    $(document).on('click', '.resend-email', function() {
+    $(document).on('click', '.resend-email', function(e) {
+        e.preventDefault();
         currentEmailId = $(this).data('email-id');
         $('#resendConfirmModal').modal('show');
     });
@@ -239,6 +308,26 @@ $(document).ready(function() {
         if (currentEmailId) {
             resendEmail(currentEmailId);
         }
+    });
+    
+    // Delete email
+    $(document).on('click', '.delete-email', function(e) {
+        e.preventDefault();
+        const emailId = $(this).data('email-id');
+        
+        Swal.fire({
+            title: 'Delete Email Log?',
+            text: 'This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc3545'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                deleteEmail(emailId);
+            }
+        });
     });
     
     // Bulk resend failed emails
@@ -320,279 +409,69 @@ $(document).ready(function() {
     });
 });
 
-function loadEmailLogs() {
-    const filters = $('#filter-form').serialize();
-    const tbody = $('#email-logs-table tbody');
-    
-    // Show loading
-    tbody.html(`
-        <tr>
-            <td colspan="8" class="text-center py-4">
-                <i class="fas fa-spinner fa-spin"></i> Loading email logs...
-            </td>
-        </tr>
-    `);
-    
-    // Mock data - in real implementation, this would be an AJAX call
-    setTimeout(() => {
-        const mockLogs = [
-            {
-                id: 1,
-                datetime: '2024-01-15 14:30:25',
-                recipient: 'john.doe@email.com',
-                subject: 'Appointment Confirmation - January 16, 2024',
-                type: 'appointment_confirmation',
-                status: 'sent',
-                attempts: 1,
-                error: null
-            },
-            {
-                id: 2,
-                datetime: '2024-01-15 14:25:12',
-                recipient: 'jane.smith@email.com',
-                subject: 'Welcome to ThanksDoc EHR',
-                type: 'patient_welcome',
-                status: 'sent',
-                attempts: 1,
-                error: null
-            },
-            {
-                id: 3,
-                datetime: '2024-01-15 14:20:45',
-                recipient: 'bob.wilson@email.com',
-                subject: 'Appointment Reminder - Tomorrow at 2:00 PM',
-                type: 'appointment_reminder',
-                status: 'failed',
-                attempts: 3,
-                error: 'SMTP Error: Connection timeout'
-            },
-            {
-                id: 4,
-                datetime: '2024-01-15 14:15:33',
-                recipient: 'admin@hospital.com',
-                subject: 'New Patient Registration Alert',
-                type: 'staff_notification',
-                status: 'sent',
-                attempts: 1,
-                error: null
-            },
-            {
-                id: 5,
-                datetime: '2024-01-15 14:10:18',
-                recipient: 'patient@example.com',
-                subject: 'Your Test Results Are Ready',
-                type: 'test_results',
-                status: 'pending',
-                attempts: 0,
-                error: null
-            }
-        ];
-        
-        let html = '';
-        mockLogs.forEach(log => {
-            const statusClass = {
-                'sent': 'success',
-                'failed': 'danger',
-                'pending': 'warning',
-                'queued': 'info'
-            }[log.status] || 'secondary';
-            
-            const statusIcon = {
-                'sent': 'check-circle',
-                'failed': 'exclamation-circle',
-                'pending': 'clock',
-                'queued': 'hourglass-half'
-            }[log.status] || 'question-circle';
-            
-            const typeLabels = {
-                'patient_welcome': 'Welcome',
-                'appointment_confirmation': 'Appointment',
-                'appointment_reminder': 'Reminder',
-                'test_results': 'Test Results',
-                'prescription_ready': 'Prescription',
-                'payment_reminder': 'Payment',
-                'staff_notification': 'Staff Alert'
-            };
-            
-            html += `
-                <tr>
-                    <td>
-                        <div class="form-check">
-                            <input class="form-check-input email-checkbox" type="checkbox" value="${log.id}">
-                        </div>
-                    </td>
-                    <td>
-                        <small class="text-muted d-block">${log.datetime}</small>
-                    </td>
-                    <td>${log.recipient}</td>
-                    <td>
-                        <div class="text-truncate" style="max-width: 200px;" title="${log.subject}">
-                            ${log.subject}
-                        </div>
-                    </td>
-                    <td>
-                        <span class="badge bg-secondary">${typeLabels[log.type] || log.type}</span>
-                    </td>
-                    <td>
-                        <span class="badge bg-${statusClass}">
-                            <i class="fas fa-${statusIcon}"></i> ${log.status.charAt(0).toUpperCase() + log.status.slice(1)}
-                        </span>
-                        ${log.error ? `<br><small class="text-danger">${log.error}</small>` : ''}
-                    </td>
-                    <td>
-                        <span class="badge bg-light text-dark">${log.attempts}</span>
-                    </td>
-                    <td>
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-outline-primary view-email" data-email-id="${log.id}" title="View Details">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            ${log.status === 'failed' || log.status === 'pending' ? `
-                                <button class="btn btn-sm btn-outline-success resend-email" data-email-id="${log.id}" title="Resend">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            ` : ''}
-                            <button class="btn btn-sm btn-outline-danger delete-email" data-email-id="${log.id}" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        });
-        
-        tbody.html(html);
-        updatePaginationInfo();
-    }, 500);
-}
-
-function loadEmailDetails(emailId) {
-    $('#email-detail-content').html(`
-        <div class="text-center py-4">
-            <i class="fas fa-spinner fa-spin"></i> Loading email details...
-        </div>
-    `);
-    
-    $('#emailDetailModal').modal('show');
-    
-    // Mock data - in real implementation, this would be an AJAX call
-    setTimeout(() => {
-        const mockDetail = {
-            id: emailId,
-            datetime: '2024-01-15 14:30:25',
-            recipient: 'john.doe@email.com',
-            subject: 'Appointment Confirmation - January 16, 2024',
-            type: 'appointment_confirmation',
-            status: 'sent',
-            attempts: 1,
-            error: null,
-            content: `
-                <h4>Appointment Confirmation</h4>
-                <p>Dear John Doe,</p>
-                <p>This is to confirm your appointment scheduled for:</p>
-                <ul>
-                    <li><strong>Date:</strong> January 16, 2024</li>
-                    <li><strong>Time:</strong> 2:00 PM</li>
-                    <li><strong>Doctor:</strong> Dr. Sarah Johnson</li>
-                    <li><strong>Department:</strong> Cardiology</li>
-                </ul>
-                <p>Please arrive 15 minutes before your appointment time.</p>
-                <p>Best regards,<br>ThanksDoc EHR</p>
-            `,
-            headers: {
-                'From': 'noreply@hospital.com',
-                'To': 'john.doe@email.com',
-                'Subject': 'Appointment Confirmation - January 16, 2024',
-                'Date': 'Mon, 15 Jan 2024 14:30:25 +0000',
-                'Message-ID': '<1642261825.12345@hospital.com>'
-            }
-        };
-        
-        const statusClass = {
-            'sent': 'success',
-            'failed': 'danger',
-            'pending': 'warning',
-            'queued': 'info'
-        }[mockDetail.status] || 'secondary';
-        
-        $('#email-detail-content').html(`
-            <div class="row">
-                <div class="col-md-6">
-                    <h6>Email Information</h6>
-                    <table class="table table-sm">
-                        <tr>
-                            <td><strong>ID:</strong></td>
-                            <td>${mockDetail.id}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Date & Time:</strong></td>
-                            <td>${mockDetail.datetime}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Recipient:</strong></td>
-                            <td>${mockDetail.recipient}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Subject:</strong></td>
-                            <td>${mockDetail.subject}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Type:</strong></td>
-                            <td><span class="badge bg-secondary">${mockDetail.type}</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Status:</strong></td>
-                            <td><span class="badge bg-${statusClass}">${mockDetail.status}</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Attempts:</strong></td>
-                            <td>${mockDetail.attempts}</td>
-                        </tr>
-                        ${mockDetail.error ? `
-                        <tr>
-                            <td><strong>Error:</strong></td>
-                            <td><span class="text-danger">${mockDetail.error}</span></td>
-                        </tr>
-                        ` : ''}
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <h6>Email Headers</h6>
-                    <pre class="bg-light p-2 rounded" style="font-size: 12px; max-height: 200px; overflow-y: auto;">
-${Object.entries(mockDetail.headers).map(([key, value]) => `${key}: ${value}`).join('\n')}
-                    </pre>
-                </div>
-            </div>
-            <div class="mt-3">
-                <h6>Email Content</h6>
-                <div class="border rounded p-3 bg-light" style="max-height: 300px; overflow-y: auto;">
-                    ${mockDetail.content}
-                </div>
-            </div>
-        `);
-        
-        currentEmailId = emailId;
-    }, 300);
+function deleteEmail(emailId) {
+    $.ajax({
+        url: `/admin/email-management/logs/${emailId}`,
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Deleted',
+                text: 'Email log deleted successfully.',
+                confirmButtonText: 'OK'
+            }).then(() => {
+                window.location.reload();
+            });
+        },
+        error: function(xhr) {
+            const response = xhr.responseJSON;
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: response?.message || 'Failed to delete email log.',
+                confirmButtonText: 'OK'
+            });
+        }
+    });
 }
 
 function resendEmail(emailId) {
     const btn = $('#confirm-resend');
     btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Resending...');
     
-    // Mock AJAX call
-    setTimeout(() => {
-        $('#resendConfirmModal').modal('hide');
-        Swal.fire({
-            icon: 'success',
-            title: 'Email Queued',
-            text: 'The email has been added to the queue and will be sent shortly.',
-            confirmButtonText: 'OK'
-        }).then(() => {
-            loadEmailLogs(); // Refresh the logs
-        });
-        
-        btn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Yes, Resend');
-    }, 1500);
+    $.ajax({
+        url: `/admin/email-management/resend/${emailId}`,
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            $('#resendConfirmModal').modal('hide');
+            Swal.fire({
+                icon: 'success',
+                title: 'Email Queued',
+                text: response.message || 'The email has been added to the queue and will be sent shortly.',
+                confirmButtonText: 'OK'
+            }).then(() => {
+                window.location.reload();
+            });
+        },
+        error: function(xhr) {
+            const response = xhr.responseJSON;
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: response?.message || 'Failed to resend email.',
+                confirmButtonText: 'OK'
+            });
+        },
+        complete: function() {
+            btn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Yes, Resend');
+        }
+    });
 }
 
 function getSelectedEmails() {
@@ -672,26 +551,5 @@ function clearOldLogs() {
     }, 2000);
 }
 
-function updatePaginationInfo() {
-    $('#pagination-info').text('Showing 1-5 of 247 entries');
-    
-    $('#pagination-controls').html(`
-        <li class="page-item disabled">
-            <a class="page-link" href="#" tabindex="-1">Previous</a>
-        </li>
-        <li class="page-item active">
-            <a class="page-link" href="#">1</a>
-        </li>
-        <li class="page-item">
-            <a class="page-link" href="#">2</a>
-        </li>
-        <li class="page-item">
-            <a class="page-link" href="#">3</a>
-        </li>
-        <li class="page-item">
-            <a class="page-link" href="#">Next</a>
-        </li>
-    `);
-}
 </script>
 @endpush

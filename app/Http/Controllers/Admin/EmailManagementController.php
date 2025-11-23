@@ -15,7 +15,7 @@ class EmailManagementController extends Controller
      */
     public function index(Request $request)
     {
-        $query = EmailLog::with('emailTemplate')->orderBy('created_at', 'desc');
+        $query = EmailLog::with('template')->orderBy('created_at', 'desc');
         
         // Apply filters
         if ($request->filled('status')) {
@@ -60,11 +60,47 @@ class EmailManagementController extends Controller
     }
 
     /**
+     * Display email logs list.
+     */
+    public function logs(Request $request)
+    {
+        $query = EmailLog::with('template')->orderBy('created_at', 'desc');
+        
+        // Apply filters
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        if ($request->filled('type')) {
+            $query->where('email_type', $request->type);
+        }
+        
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+        
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('recipient_email', 'like', "%{$request->search}%")
+                  ->orWhere('subject', 'like', "%{$request->search}%");
+            });
+        }
+        
+        $emailLogs = $query->paginate(25);
+        
+        return view('admin.email-management.logs', compact('emailLogs'));
+    }
+
+    /**
      * Show detailed email log.
      */
     public function show(EmailLog $emailLog)
     {
-        $emailLog->load('emailTemplate');
+        $emailLog->load('template');
         return view('admin.email-management.show', compact('emailLog'));
     }
 
@@ -188,7 +224,7 @@ class EmailManagementController extends Controller
                 'template_usage' => EmailLog::selectRaw('email_template_id, COUNT(*) as count')
                     ->whereNotNull('email_template_id')
                     ->groupBy('email_template_id')
-                    ->with('emailTemplate:id,name')
+                    ->with('template:id,name')
                     ->orderBy('count', 'desc')
                     ->limit(10)
                     ->get(),
@@ -202,6 +238,67 @@ class EmailManagementController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get email statistics: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Resend email by ID.
+     */
+    public function resendEmail($id)
+    {
+        $emailLog = EmailLog::findOrFail($id);
+        return $this->resend($emailLog, app(HospitalEmailNotificationService::class));
+    }
+
+    /**
+     * Delete email log by ID.
+     */
+    public function deleteEmailLog($id)
+    {
+        $emailLog = EmailLog::findOrFail($id);
+        return $this->destroy($emailLog);
+    }
+
+    /**
+     * Display email statistics.
+     */
+    public function statistics()
+    {
+        $stats = $this->getStats()->getData(true);
+        return view('admin.email-management.statistics', compact('stats'));
+    }
+
+    /**
+     * Send test email.
+     */
+    public function sendTestEmail(Request $request)
+    {
+        $request->validate([
+            'recipient' => 'required|email',
+            'type' => 'nullable|string'
+        ]);
+
+        try {
+            // Create a test email log
+            $emailLog = EmailLog::create([
+                'recipient_email' => $request->recipient,
+                'subject' => 'Test Email from ' . config('app.name'),
+                'body' => '<p>This is a test email to verify your email configuration.</p>',
+                'status' => 'pending',
+            ]);
+
+            // Queue the email
+            dispatch(new \App\Jobs\SendEmail($emailLog));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test email queued successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send test email: ' . $e->getMessage()
             ], 500);
         }
     }

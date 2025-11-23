@@ -201,8 +201,9 @@ class RoleMenuVisibility extends Model
                 'departments' => ['label' => 'Clinics', 'icon' => 'fa-building', 'order' => 8],
                 'staff-management' => ['label' => 'Staffs Management', 'icon' => 'fa-users-cog', 'order' => 9],
                 'communication' => ['label' => 'Communication', 'icon' => 'fa-paper-plane', 'order' => 10],
-                'advanced-reports' => ['label' => 'Advanced Reports', 'icon' => 'fa-chart-line', 'order' => 11],
-                'system-settings' => ['label' => 'System Settings', 'icon' => 'fa-cog', 'order' => 12],
+                'email-logs' => ['label' => 'Email Logs', 'icon' => 'fa-envelope-open-text', 'order' => 11],
+                'advanced-reports' => ['label' => 'Advanced Reports', 'icon' => 'fa-chart-line', 'order' => 12],
+                'system-settings' => ['label' => 'System Settings', 'icon' => 'fa-cog', 'order' => 13],
             ];
         }
         
@@ -244,6 +245,7 @@ class RoleMenuVisibility extends Model
                 'departments' => true,
                 'staff-management' => true,
                 'communication' => true,
+                'email-logs' => true,
                 'advanced-reports' => true,
                 'system-settings' => true,
             ],
