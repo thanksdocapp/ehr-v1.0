@@ -2393,10 +2393,28 @@ use Illuminate\Support\Facades\Storage;
             }
 
             // Initialize Bootstrap dropdowns for sidebar
-            // Bootstrap 5 handles dropdowns natively with data-bs-toggle="dropdown"
-            // Just ensure other dropdowns close when one opens
+            // Explicitly initialize all dropdown toggles in sidebar
+            document.querySelectorAll('.sidebar-menu .dropdown-toggle').forEach(function(toggle) {
+                // Initialize Bootstrap dropdown if not already initialized
+                if (!bootstrap.Dropdown.getInstance(toggle)) {
+                    new bootstrap.Dropdown(toggle, {
+                        boundary: 'viewport',
+                        popperConfig: {
+                            modifiers: [
+                                {
+                                    name: 'preventOverflow',
+                                    options: {
+                                        boundary: document.querySelector('.admin-sidebar')
+                                    }
+                                }
+                            ]
+                        }
+                    });
+                }
+            });
+
+            // Close other sidebar dropdowns when one opens
             document.addEventListener('show.bs.dropdown', function(e) {
-                // Close other sidebar dropdowns when one opens
                 const currentDropdown = e.target.closest('.sidebar-menu .dropdown');
                 if (currentDropdown) {
                     document.querySelectorAll('.sidebar-menu .dropdown').forEach(function(dropdown) {
