@@ -228,9 +228,8 @@ class EmailNotificationService
                     'template' => $log->template?->name
                 ]);
 
-                // Update template stats
+                // Update template last used timestamp
                 if ($log->template) {
-                    $log->template->increment('sent_count');
                     $log->template->update(['last_used_at' => now()]);
                 }
                 
