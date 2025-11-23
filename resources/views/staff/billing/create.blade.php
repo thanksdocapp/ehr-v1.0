@@ -61,17 +61,25 @@
                                         <label for="doctor" class="form-label">
                                             <i class="fas fa-user-md me-1"></i>Doctor
                                         </label>
-                                        <select name="doctor_id" id="doctor" class="form-select @error('doctor_id') is-invalid @enderror">
-                                            <option value="">Select a doctor</option>
-                                            @foreach($doctors as $doctor)
-                                                <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>
-                                                    Dr. {{ $doctor->first_name }} {{ $doctor->last_name }} - {{ $doctor->specialization ?? 'General' }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        @error('doctor_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        @if(auth()->user()->role === 'doctor' && isset($currentDoctor) && $currentDoctor)
+                                            {{-- For doctors: Show read-only field with hidden input --}}
+                                            <input type="text" class="form-control" value="Dr. {{ $currentDoctor->first_name }} {{ $currentDoctor->last_name }} - {{ $currentDoctor->specialization ?? 'General' }}" readonly>
+                                            <input type="hidden" name="doctor_id" value="{{ $currentDoctor->id }}">
+                                            <div class="form-text">This bill will be assigned to you</div>
+                                        @else
+                                            {{-- For other staff: Show dropdown --}}
+                                            <select name="doctor_id" id="doctor" class="form-select @error('doctor_id') is-invalid @enderror">
+                                                <option value="">Select a doctor</option>
+                                                @foreach($doctors as $doctor)
+                                                    <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>
+                                                        Dr. {{ $doctor->first_name }} {{ $doctor->last_name }} - {{ $doctor->specialization ?? 'General' }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('doctor_id')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        @endif
                                     </div>
 
                                     <div class="mb-3">

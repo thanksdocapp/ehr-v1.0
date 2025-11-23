@@ -251,9 +251,11 @@ class BillingsController extends Controller
         $user = Auth::user();
         $query = Patient::query()->visibleTo(Auth::user());
         $departmentId = null;
+        $currentDoctor = null;
+        
         if ($user->role === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
-            $departmentId = $doctor ? $doctor->department_id : null;
+            $currentDoctor = \App\Models\Doctor::where('user_id', $user->id)->first();
+            $departmentId = $currentDoctor ? $currentDoctor->department_id : null;
         } else {
             $departmentId = $user->department_id;
         }
@@ -261,7 +263,10 @@ class BillingsController extends Controller
             $query->byDepartment($departmentId);
         }
         $patients = $query->orderBy('first_name')->get();
-        $doctors = Doctor::orderBy('first_name')->get();
+        
+        // For doctors, don't show other doctors in dropdown
+        // For other staff, show all doctors
+        $doctors = ($user->role === 'doctor') ? collect([]) : Doctor::orderBy('first_name')->get();
         $appointments = [];
         
         // If appointment_id is provided, pre-select appointment
@@ -273,7 +278,7 @@ class BillingsController extends Controller
             }
         }
         
-        return view('staff.billing.create', compact('patients', 'doctors', 'appointments', 'selectedAppointment'));
+        return view('staff.billing.create', compact('patients', 'doctors', 'appointments', 'selectedAppointment', 'currentDoctor'));
     }
 
     /**
@@ -289,6 +294,17 @@ class BillingsController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        $doctorId = $request->doctor_id;
+        
+        // If user is a doctor, automatically assign their doctor ID
+        if ($user->role === 'doctor') {
+            $currentDoctor = \App\Models\Doctor::where('user_id', $user->id)->first();
+            if ($currentDoctor) {
+                $doctorId = $currentDoctor->id;
+            }
+        }
+        
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'nullable|exists:doctors,id',
@@ -311,7 +327,7 @@ class BillingsController extends Controller
         Billing::create([
             'bill_number' => Billing::generateBillNumber(),
             'patient_id' => $request->patient_id,
-            'doctor_id' => $request->doctor_id,
+            'doctor_id' => $doctorId,
             'appointment_id' => $request->appointment_id,
             'billing_date' => $request->billing_date,
             'due_date' => $request->due_date,
