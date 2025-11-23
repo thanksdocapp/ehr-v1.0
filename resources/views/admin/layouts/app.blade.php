@@ -126,6 +126,13 @@ use Illuminate\Support\Facades\Storage;
 
         .menu-item {
             margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .menu-item .dropdown {
+            position: relative;
+            z-index: 1;
         }
 
         .menu-link {
@@ -136,8 +143,9 @@ use Illuminate\Support\Facades\Storage;
             text-decoration: none;
             transition: all 0.3s ease;
             position: relative;
-            z-index: 10001;
+            z-index: 1;
             pointer-events: auto;
+            cursor: pointer;
         }
 
         .menu-link:hover,
@@ -219,8 +227,10 @@ use Illuminate\Support\Facades\Storage;
             margin: 2px 10px;
             transition: all 0.3s ease;
             position: relative;
-            z-index: 10002;
+            z-index: 1;
             pointer-events: auto;
+            cursor: pointer;
+            display: block;
         }
 
         .sidebar-menu .dropdown-item:hover,
