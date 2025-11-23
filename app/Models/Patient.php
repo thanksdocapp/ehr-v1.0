@@ -452,7 +452,7 @@ class Patient extends Authenticatable
             return true;
         }
         
-        // For doctors, check department intersection and created_by
+        // For doctors, check department intersection, created_by, assigned_doctor, appointments, and medical records
         if ($user->role === 'doctor') {
             $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
             
@@ -462,6 +462,21 @@ class Patient extends Authenticatable
             
             // Check if patient was created by this doctor
             if ($this->created_by_doctor_id === $doctor->id) {
+                return true;
+            }
+            
+            // Check if patient is assigned to this doctor
+            if ($this->assigned_doctor_id === $doctor->id) {
+                return true;
+            }
+            
+            // Check if doctor has appointments with this patient
+            if ($this->appointments()->where('doctor_id', $doctor->id)->exists()) {
+                return true;
+            }
+            
+            // Check if doctor has medical records for this patient
+            if ($this->medicalRecords()->where('doctor_id', $doctor->id)->exists()) {
                 return true;
             }
             
