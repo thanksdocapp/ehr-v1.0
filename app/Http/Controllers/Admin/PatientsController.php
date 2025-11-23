@@ -541,7 +541,7 @@ class PatientsController extends Controller
      * Display the specified patient.
      */
     /**
-     * Download patient ID document or guardian ID document.
+     * View patient ID document or guardian ID document (view-only, no download).
      */
     public function downloadDocument(Patient $patient, $type)
     {
@@ -551,14 +551,11 @@ class PatientsController extends Controller
         }
 
         $documentPath = null;
-        $filename = null;
 
         if ($type === 'patient_id') {
             $documentPath = $patient->patient_id_document_path;
-            $filename = 'patient_id_' . $patient->patient_id . '_' . basename($documentPath);
         } elseif ($type === 'guardian_id') {
             $documentPath = $patient->guardian_id_document_path;
-            $filename = 'guardian_id_' . $patient->patient_id . '_' . basename($documentPath);
         } else {
             abort(404, 'Invalid document type.');
         }
@@ -567,7 +564,14 @@ class PatientsController extends Controller
             abort(404, 'Document not found.');
         }
 
-        return Storage::disk('private')->download($documentPath, $filename);
+        // Serve file inline (view-only) instead of downloading
+        $file = Storage::disk('private')->get($documentPath);
+        $mimeType = Storage::disk('private')->mimeType($documentPath);
+        
+        return response($file, 200)
+            ->header('Content-Type', $mimeType)
+            ->header('Content-Disposition', 'inline; filename="' . basename($documentPath) . '"')
+            ->header('X-Content-Type-Options', 'nosniff');
     }
 
     public function show(Patient $patient)

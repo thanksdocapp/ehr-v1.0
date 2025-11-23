@@ -309,7 +309,7 @@
                                     <a href="{{ route('staff.patients.download-document', ['patient' => $patient->id, 'type' => 'patient_id']) }}" 
                                        class="btn btn-sm btn-outline-primary" 
                                        target="_blank">
-                                        <i class="fas fa-file-pdf me-1"></i>View/Download Document
+                                        <i class="fas fa-eye me-1"></i>View Document
                                     </a>
                                     <small class="text-muted d-block mt-1">{{ $filename }}</small>
                                 </div>
@@ -329,7 +329,7 @@
                                     <a href="{{ route('staff.patients.download-document', ['patient' => $patient->id, 'type' => 'guardian_id']) }}" 
                                        class="btn btn-sm btn-outline-primary" 
                                        target="_blank">
-                                        <i class="fas fa-file-pdf me-1"></i>View/Download Document
+                                        <i class="fas fa-eye me-1"></i>View Document
                                     </a>
                                     <small class="text-muted d-block mt-1">{{ $filename }}</small>
                                 </div>
