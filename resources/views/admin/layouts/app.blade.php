@@ -204,17 +204,11 @@ use Illuminate\Support\Facades\Storage;
             margin-top: 5px;
             border-radius: 8px;
             backdrop-filter: blur(10px);
-            position: static;
-            transform: none;
+            position: static !important;
+            transform: none !important;
             width: 100%;
             float: none;
-            display: none;
-        }
-
-        .sidebar-menu .dropdown-menu.show {
-            display: block;
-            overflow-y: auto;
-            max-height: 500px;
+            inset: auto !important;
         }
 
         .sidebar-menu .dropdown-item {
@@ -2368,8 +2362,11 @@ use Illuminate\Support\Facades\Storage;
             
             // Close sidebar when clicking a link on mobile (after small delay to allow navigation)
             if (window.innerWidth <= 992) {
-                $('.sidebar-menu .menu-link, .sidebar-menu .dropdown-item').off('click.mobile').on('click.mobile', function(e) {
-                    if ($(this).hasClass('dropdown-toggle')) return; // only toggle dropdowns
+                $('.sidebar-menu .menu-link:not(.dropdown-toggle), .sidebar-menu .dropdown-item').off('click.mobile').on('click.mobile', function(e) {
+                    // Don't interfere with dropdown toggles
+                    if ($(this).hasClass('dropdown-toggle')) {
+                        return;
+                    }
                     // Ensure navigation occurs even if other handlers run
                     const href = this.getAttribute('href');
                     if (href && href !== '#') {
@@ -2385,28 +2382,25 @@ use Illuminate\Support\Facades\Storage;
                 });
             }
 
-            // Initialize Bootstrap dropdowns for sidebar (Bootstrap 5 handles this natively)
-            // Just ensure proper styling and close behavior
-            $('.sidebar-menu .dropdown-toggle').on('click', function(e) {
-                // Let Bootstrap handle the dropdown, but close other dropdowns
-                const $this = $(this);
-                const $currentDropdown = $this.closest('.dropdown');
-                
-                // Close other dropdowns in sidebar
-                $('.sidebar-menu .dropdown').not($currentDropdown).each(function() {
-                    const $otherToggle = $(this).find('.dropdown-toggle');
-                    const $otherMenu = $(this).find('.dropdown-menu');
-                    if ($otherMenu.hasClass('show')) {
-                        // Use Bootstrap's dropdown instance to hide
-                        const dropdownInstance = bootstrap.Dropdown.getInstance($otherToggle[0]);
-                        if (dropdownInstance) {
-                            dropdownInstance.hide();
-                        } else {
-                            $otherMenu.removeClass('show');
-                            $otherToggle.attr('aria-expanded', 'false');
+            // Initialize Bootstrap dropdowns for sidebar
+            // Bootstrap 5 handles dropdowns natively with data-bs-toggle="dropdown"
+            // Just ensure other dropdowns close when one opens
+            document.addEventListener('show.bs.dropdown', function(e) {
+                // Close other sidebar dropdowns when one opens
+                const currentDropdown = e.target.closest('.sidebar-menu .dropdown');
+                if (currentDropdown) {
+                    document.querySelectorAll('.sidebar-menu .dropdown').forEach(function(dropdown) {
+                        if (dropdown !== currentDropdown) {
+                            const toggle = dropdown.querySelector('.dropdown-toggle');
+                            if (toggle) {
+                                const instance = bootstrap.Dropdown.getInstance(toggle);
+                                if (instance) {
+                                    instance.hide();
+                                }
+                            }
                         }
-                    }
-                });
+                    });
+                }
             });
 
             // Auto-hide alerts
