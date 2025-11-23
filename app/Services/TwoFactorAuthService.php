@@ -123,32 +123,46 @@ class TwoFactorAuthService
                 'verification_code' => $code,
                 'expires_minutes' => 10,
             ];
-            $log = $emailService->sendTemplateEmail(
-                'two_factor_code',
-                [$user->email => $user->name],
-                $variables
-            );
             
-            if (!$log) {
-                Log::error('2FA email service returned null - template may not exist or be active', [
+            try {
+                $log = $emailService->sendTemplateEmail(
+                    'two_factor_code',
+                    [$user->email => $user->name],
+                    $variables
+                );
+                
+                if (!$log) {
+                    Log::error('2FA email service returned null - template may not exist or be active', [
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'template' => 'two_factor_code',
+                    ]);
+                    return false;
+                }
+                
+                // Wait a moment for the email to be sent (since it's synchronous)
+                sleep(1);
+                
+                // Refresh log to get latest status
+                $log->refresh();
+                
+                if ($log->status !== 'sent') {
+                    Log::error('2FA template email send failed', [
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'template' => 'two_factor_code',
+                        'log_id' => $log->id,
+                        'log_status' => $log->status,
+                        'log_error' => $log->error_message,
+                    ]);
+                    return false;
+                }
+            } catch (\Exception $e) {
+                Log::error('Exception while sending 2FA email', [
                     'user_id' => $user->id,
                     'email' => $user->email,
-                    'template' => 'two_factor_code',
-                ]);
-                return false;
-            }
-            
-            // Refresh log to get latest status
-            $log->refresh();
-            
-            if ($log->status !== 'sent') {
-                Log::error('2FA template email send failed', [
-                    'user_id' => $user->id,
-                    'email' => $user->email,
-                    'template' => 'two_factor_code',
-                    'log_id' => $log->id,
-                    'log_status' => $log->status,
-                    'log_error' => $log->error_message,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
                 ]);
                 return false;
             }

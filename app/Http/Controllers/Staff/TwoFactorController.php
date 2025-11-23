@@ -294,12 +294,36 @@ class TwoFactorController extends Controller
             $sent = $this->twoFactorService->sendCode($user);
             if ($sent) {
                 return back()
-                    ->with('success', 'A new verification code has been sent to your email.')
+                    ->with('success', 'A new verification code has been sent to your email. Please check your inbox and spam folder.')
                     ->with('code_sent', true);
             }
-            return back()->with('error', 'Failed to send verification code. Please verify email settings in Admin > Settings > Email/SMTP or with your SMTP provider.');
+            
+            // Get the latest email log to provide more specific error
+            $emailLog = \App\Models\EmailLog::where('recipient_email', $user->email)
+                ->where('email_template_id', function($query) {
+                    $query->select('id')
+                        ->from('email_templates')
+                        ->where('name', 'two_factor_code')
+                        ->limit(1);
+                })
+                ->latest()
+                ->first();
+            
+            $errorMessage = 'Failed to send verification code. ';
+            if ($emailLog && $emailLog->error_message) {
+                $errorMessage .= $emailLog->error_message;
+            } else {
+                $errorMessage .= 'Please check: 1) Email template exists (Admin > Email Templates), 2) SMTP settings are configured (Admin > Settings > Email Configuration), 3) Check email logs for details.';
+            }
+            
+            return back()->with('error', $errorMessage);
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to send code: ' . $e->getMessage());
+            \Log::error('Exception in resendCode', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Failed to send code: ' . $e->getMessage() . '. Please check email configuration and logs.');
         }
     }
 

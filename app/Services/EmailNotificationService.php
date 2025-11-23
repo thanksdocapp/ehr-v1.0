@@ -27,8 +27,29 @@ class EmailNotificationService
     public function sendTemplateEmail(string $templateName, array $to, array $variables = [], array $options = [])
     {
         try {
-            // Find the template
-            $template = EmailTemplate::where('name', $templateName)->active()->firstOrFail();
+            // Find the template - first try active, then try any status
+            $template = EmailTemplate::where('name', $templateName)->active()->first();
+            
+            // If not found as active, try to find any template with this name
+            if (!$template) {
+                $template = EmailTemplate::where('name', $templateName)->first();
+                if ($template && $template->status !== 'active') {
+                    Log::warning('Email template found but not active, activating it', [
+                        'template_id' => $template->id,
+                        'template_name' => $templateName,
+                        'current_status' => $template->status
+                    ]);
+                    $template->update(['status' => 'active']);
+                }
+            }
+            
+            if (!$template) {
+                Log::error('Email template not found', [
+                    'template_name' => $templateName,
+                    'recipient' => array_key_first($to)
+                ]);
+                throw new Exception("Email template '{$templateName}' not found. Please create it in Admin > Email Templates.");
+            }
             
             // Create email log entry
             $log = EmailLog::create([
@@ -183,10 +204,17 @@ class EmailNotificationService
                 Config::set('queue.default', $originalQueueConnection);
             }
 
-            // Update log status
+            // Update log status - check if email was actually sent
+            // Mail::send() doesn't throw exceptions on failure, so we need to check differently
             $log->update([
                 'status' => 'sent',
                 'sent_at' => now()
+            ]);
+            
+            Log::info('Email sent successfully', [
+                'log_id' => $log->id,
+                'recipient' => $log->recipient_email,
+                'template' => $log->emailTemplate?->name
             ]);
 
             // Update template stats
@@ -200,16 +228,44 @@ class EmailNotificationService
 
             return true;
         } catch (Exception $e) {
-            // Log the error
-            Log::error('Failed to send email: ' . $e->getMessage(), [
+            // Check if it's an SMTP/transport error
+            $isSmtpError = str_contains($e->getMessage(), 'SMTP') || 
+                          str_contains($e->getMessage(), 'Connection') ||
+                          str_contains($e->getMessage(), 'stream_socket_client') ||
+                          str_contains($e->getMessage(), 'Could not connect');
+            
+            if ($isSmtpError) {
+                // SMTP connection errors
+                $errorMessage = 'SMTP connection failed: ' . $e->getMessage();
+                Log::error('SMTP connection error', [
+                    'log_id' => $log->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                $log->update([
+                    'status' => 'failed',
+                    'error_message' => $errorMessage . '. Please check SMTP settings in Admin > Settings > Email Configuration.'
+                ]);
+
+                event(new EmailFailed($log, $e));
+                return false;
+            }
+            
+            // Log the error with full details
+            $errorMessage = $e->getMessage();
+            Log::error('Failed to send email', [
                 'log_id' => $log->id,
-                'error' => $e->getMessage()
+                'error' => $errorMessage,
+                'trace' => $e->getTraceAsString(),
+                'recipient' => $log->recipient_email,
+                'template' => $log->emailTemplate?->name
             ]);
 
-            // Update log status
+            // Update log status with helpful error message
             $log->update([
                 'status' => 'failed',
-                'error_message' => $e->getMessage()
+                'error_message' => $errorMessage
             ]);
 
             // Dispatch failure event
