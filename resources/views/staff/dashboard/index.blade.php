@@ -1,4 +1,4 @@
-@extends('layouts.staff')
+@extends(auth()->user()->role === 'doctor' ? 'layouts.doctor' : 'layouts.staff')
 
 @section('title', 'Dashboard')
 @section('page-title', 'Dashboard Overview')
@@ -170,10 +170,10 @@
     <!-- Calendar Widget -->
     <div class="row g-4 mb-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white border-bottom">
                     <div class="d-flex align-items-center justify-content-between">
-                        <h5 class="card-title mb-0">
+                        <h5 class="card-title mb-0 fw-bold">
                             <i class="fas fa-calendar-alt text-primary me-2"></i>
                             Appointments Calendar
                         </h5>
@@ -182,8 +182,8 @@
                         </a>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div id="dashboard-calendar" style="height: 400px;"></div>
+                <div class="card-body p-3">
+                    <div id="dashboard-calendar" style="height: 400px; min-height: 400px;"></div>
                 </div>
             </div>
         </div>
@@ -503,7 +503,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = arg.event.url;
             }
         });
+        
         dashboardCalendar.render();
+        console.log('Dashboard calendar rendered successfully');
+    } else {
+        console.error('Dashboard calendar element not found!');
     }
     
     // Update current time every minute
