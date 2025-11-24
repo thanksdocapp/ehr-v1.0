@@ -9,97 +9,87 @@
 
 @section('content')
 <div class="fade-in">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0"><i class="fas fa-user-md me-2"></i>Doctors Management</h5>
-            <small class="text-muted">Manage hospital doctors and their information</small>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('admin.doctors.export.csv', request()->all()) }}" class="btn btn-success">
-                <i class="fas fa-file-export me-2"></i>Export CSV
-            </a>
-            <a href="{{ route('admin.doctors.import') }}" class="btn btn-info">
-                <i class="fas fa-file-import me-2"></i>Import CSV
-            </a>
-            <a href="{{ contextRoute('doctors.create') }}" class="btn btn-doctor-primary">
-                <i class="fas fa-plus me-2"></i>Add New Doctor
-            </a>
-        </div>
-    </div>
-
-    <!-- Quick Stats -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-primary" style="font-size: 1.75rem; font-weight: 600;">{{ $doctors->total() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Total Doctors</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-user-md text-white"></i>
-                    </div>
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">Doctors Management</h1>
+                    <p class="modern-page-subtitle">Manage hospital doctors and their information</p>
                 </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-success" style="font-size: 1.75rem; font-weight: 600;">{{ $doctors->where('is_active', true)->count() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Active Doctors</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--success), #16a34a); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-check-circle text-white"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-info" style="font-size: 1.75rem; font-weight: 600;">{{ $departments->count() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Clinics</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--info), #0891b2); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-building text-white"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-warning" style="font-size: 1.75rem; font-weight: 600;">0</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Today's Appointments</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning), #d97706); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-calendar-check text-white"></i>
-                    </div>
+                <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
+                    <a href="{{ route('admin.doctors.export.csv', request()->all()) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-file-export me-2"></i>Export CSV
+                    </a>
+                    <a href="{{ route('admin.doctors.import') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-file-import me-2"></i>Import CSV
+                    </a>
+                    <a href="{{ contextRoute('doctors.create') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-plus me-2"></i>Add New Doctor
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Filters Card -->
-    <div class="doctor-card mb-4">
-        <div class="doctor-card-header">
-            <h5 class="doctor-card-title mb-0"><i class="fas fa-filter me-2"></i>Filters</h5>
+    <!-- Modern Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-modern fade-in-up stagger-1">
+                <div class="stat-card-icon" style="background: var(--gradient-primary);">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div class="stat-card-number">{{ number_format($doctors->total() ?? 0) }}</div>
+                <div class="stat-card-label">Total Doctors</div>
+            </div>
         </div>
-        <div class="doctor-card-body">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-modern fade-in-up stagger-2">
+                <div class="stat-card-icon" style="background: var(--gradient-success);">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-card-number">{{ number_format($doctors->where('is_active', true)->count() ?? 0) }}</div>
+                <div class="stat-card-label">Active Doctors</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-modern fade-in-up stagger-3">
+                <div class="stat-card-icon" style="background: var(--gradient-info);">
+                    <i class="fas fa-building"></i>
+                </div>
+                <div class="stat-card-number">{{ number_format($departments->count() ?? 0) }}</div>
+                <div class="stat-card-label">Clinics</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-modern fade-in-up stagger-4">
+                <div class="stat-card-icon" style="background: var(--gradient-warning);">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-card-number">0</div>
+                <div class="stat-card-label">Today's Appointments</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Filters Card -->
+    <div class="modern-card mb-4">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-filter"></i>Filters
+            </h5>
+        </div>
+        <div class="modern-card-body">
             <form method="GET" action="{{ contextRoute('doctors.index') }}" class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label">Search</label>
-                    <input type="text" name="search" class="form-control" 
+                    <label class="modern-form-label">Search</label>
+                    <input type="text" name="search" class="modern-form-control" 
                            placeholder="Doctor name, email, phone..." 
                            value="{{ request('search') }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Clinic</label>
-                    <select name="department_id" class="form-control">
+                    <label class="modern-form-label">Clinic</label>
+                    <select name="department_id" class="modern-form-select">
                         <option value="">All Clinics</option>
                         @foreach($departments ?? [] as $dept)
                             <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
@@ -109,18 +99,18 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-control">
+                    <label class="modern-form-label">Status</label>
+                    <select name="status" class="modern-form-select">
                         <option value="">All Status</option>
                         <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                         <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">&nbsp;</label>
+                <div class="col-md-3">
+                    <label class="modern-form-label">&nbsp;</label>
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-doctor-primary">
-                            <i class="fas fa-search me-1"></i>Search
+                        <button type="submit" class="btn-modern btn-modern-primary">
+                            <i class="fas fa-search"></i>Search
                         </button>
                     </div>
                 </div>
@@ -128,24 +118,26 @@
         </div>
     </div>
 
-    <!-- Doctors Table -->
-    <div class="doctor-card">
-        <div class="doctor-card-header d-flex justify-content-between align-items-center">
-            <h5 class="doctor-card-title mb-0">Doctors List</h5>
+    <!-- Modern Doctors Table -->
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-list"></i>Doctors List
+            </h5>
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-secondary" onclick="exportDoctors()">
-                    <i class="fas fa-download me-1"></i>Export
+                <button class="btn-modern btn-modern-outline btn-modern-sm" onclick="exportDoctors()">
+                    <i class="fas fa-download"></i>Export
                 </button>
-                <button class="btn btn-sm btn-outline-primary" onclick="refreshTable()">
-                    <i class="fas fa-sync me-1"></i>Refresh
+                <button class="btn-modern btn-modern-outline btn-modern-sm" onclick="refreshTable()">
+                    <i class="fas fa-sync"></i>Refresh
                 </button>
             </div>
         </div>
-        <div class="doctor-card-body p-0">
+        <div class="modern-card-body">
             @if($doctors->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <div class="modern-table-wrapper">
+                    <table class="modern-table">
+                        <thead>
                             <tr>
                                 <th>
                                     <input type="checkbox" id="selectAll" class="form-check-input">

@@ -9,50 +9,54 @@
 
 @section('content')
 <div class="fade-in">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Appointments Management</h5>
-            <small class="text-muted">Manage and track all patient appointments</small>
-        </div>
-        <div>
-            <a href="{{ contextRoute('appointments.create') }}" class="btn btn-doctor-primary">
-                <i class="fas fa-plus me-2"></i>New Appointment
-            </a>
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">Appointments Management</h1>
+                    <p class="modern-page-subtitle">Manage and track all patient appointments</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a href="{{ contextRoute('appointments.create') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-plus me-2"></i>New Appointment
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Quick Search Bar -->
-    <div class="doctor-card mb-3">
-        <div class="doctor-card-body">
-            <div class="d-flex gap-2 align-items-end">
-                <div class="flex-grow-1">
-                    <label class="form-label fw-semibold">Quick Search</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+    <!-- Modern Search Bar -->
+    <div class="modern-card mb-3">
+        <div class="modern-card-body">
+            <div class="d-flex gap-2 align-items-end flex-wrap">
+                <div class="flex-grow-1" style="min-width: 300px;">
+                    <label class="modern-form-label">Quick Search</label>
+                    <div class="modern-input-group">
+                        <i class="fas fa-search modern-input-group-icon"></i>
                         <input type="text" 
                                id="quickSearch" 
                                name="search" 
-                               class="form-control form-control-lg" 
+                               class="modern-form-control" 
                                placeholder="Search by appointment #, patient name, email, phone, or doctor..." 
                                value="{{ request('search') }}">
                     </div>
                 </div>
                 <div>
-                    <button type="button" class="btn btn-outline-primary" onclick="toggleFilters()">
-                        <i class="fas fa-filter me-1"></i>Filters
+                    <button type="button" class="btn-modern btn-modern-outline" onclick="toggleFilters()">
+                        <i class="fas fa-filter"></i>Filters
                         @php
                             $activeFiltersCount = count(array_filter(request()->except(['page', 'search'])));
                         @endphp
                         @if($activeFiltersCount > 0)
-                            <span class="badge bg-primary ms-1">{{ $activeFiltersCount }}</span>
+                            <span class="badge-modern badge-modern-primary ms-1">{{ $activeFiltersCount }}</span>
                         @endif
                     </button>
                 </div>
                 <div>
                     @if(request()->hasAny(['search', 'status', 'type', 'is_online', 'date_from', 'date_to', 'doctor_id', 'department_id']))
-                        <a href="{{ contextRoute('appointments.index') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-times me-1"></i>Clear All
+                        <a href="{{ contextRoute('appointments.index') }}" class="btn-modern btn-modern-outline">
+                            <i class="fas fa-times"></i>Clear All
                         </a>
                     @endif
                 </div>
@@ -85,7 +89,7 @@
             <div class="d-flex flex-wrap gap-2 align-items-center">
                 <span class="text-muted small">Active filters:</span>
                 @foreach($activeFilters as $filter)
-                    <span class="badge bg-primary d-flex align-items-center gap-1">
+                    <span class="badge-modern badge-modern-primary d-flex align-items-center gap-1">
                         {{ $filter['label'] }}
                         <button type="button" class="btn-close btn-close-white" style="font-size: 0.65rem;" onclick="removeFilter('{{ $filter['key'] }}')"></button>
                     </span>
@@ -94,14 +98,14 @@
         </div>
     @endif
 
-    <!-- Filter Sidebar (Collapsible) -->
-    <div class="doctor-card mb-4" id="filterPanel" style="display: {{ request()->hasAny(['status', 'type', 'is_online', 'date_from', 'date_to', 'doctor_id', 'department_id', 'date_range']) ? 'block' : 'none' }};">
-        <div class="doctor-card-header">
-            <h5 class="doctor-card-title mb-0">
-                <i class="fas fa-filter me-2"></i>Advanced Filters
+    <!-- Modern Filter Panel -->
+    <div class="modern-card mb-4" id="filterPanel" style="display: {{ request()->hasAny(['status', 'type', 'is_online', 'date_from', 'date_to', 'doctor_id', 'department_id', 'date_range']) ? 'block' : 'none' }};">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-filter"></i>Advanced Filters
             </h5>
         </div>
-        <div class="doctor-card-body">
+        <div class="modern-card-body">
             <form method="GET" action="{{ contextRoute('appointments.index') }}" id="filterForm">
                 @if(request('search'))
                     <input type="hidden" name="search" value="{{ request('search') }}">
