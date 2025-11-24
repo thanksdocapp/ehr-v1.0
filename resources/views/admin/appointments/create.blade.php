@@ -10,16 +10,20 @@
 
 @section('content')
 <div class="fade-in">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0"><i class="fas fa-calendar-plus me-2"></i>Add New Appointment</h5>
-            <small class="text-muted">Create a new appointment with patient and doctor details</small>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ contextRoute('appointments.index') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Back to List
-            </a>
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">Add New Appointment</h1>
+                    <p class="modern-page-subtitle">Create a new appointment with patient and doctor details</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a href="{{ contextRoute('appointments.index') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 

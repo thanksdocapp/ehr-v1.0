@@ -10,34 +10,38 @@
 
 @section('content')
 <div class="fade-in">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Appointment Details</h5>
-            <small class="text-muted">View and manage appointment information</small>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('admin.appointments.edit', $appointment->id) }}" class="btn btn-outline-primary">
-                <i class="fas fa-edit me-2"></i>Edit
-            </a>
-            <a href="{{ route('admin.appointments.index') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Back to List
-            </a>
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">Appointment #{{ $appointment->appointment_number }}</h1>
+                    <p class="modern-page-subtitle">View and manage appointment information</p>
+                </div>
+                <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
+                    <span class="badge-modern badge-modern-{{ $appointment->status_badge }}">{{ ucfirst($appointment->status) }}</span>
+                    <span class="badge-modern badge-modern-{{ $appointment->type_badge }}">{{ ucfirst($appointment->type) }}</span>
+                    <a href="{{ route('admin.appointments.edit', $appointment->id) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </a>
+                    <a href="{{ route('admin.appointments.index') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-arrow-left me-2"></i>Back
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="row">
         <!-- Appointment Information -->
         <div class="col-lg-8">
-            <div class="doctor-card mb-4">
-                <div class="doctor-card-header d-flex justify-content-between align-items-center">
-                    <h5 class="doctor-card-title mb-0">Appointment Information</h5>
-                    <div class="d-flex gap-2">
-                        <span class="badge bg-{{ $appointment->status_badge }} fs-6">{{ ucfirst($appointment->status) }}</span>
-                        <span class="badge bg-{{ $appointment->type_badge }} fs-6">{{ ucfirst($appointment->type) }}</span>
-                    </div>
+            <div class="modern-card mb-4">
+                <div class="modern-card-header">
+                    <h5 class="modern-card-title mb-0">
+                        <i class="fas fa-calendar-check"></i>Appointment Information
+                    </h5>
                 </div>
-                <div class="doctor-card-body">
+                <div class="modern-card-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label text-muted">Appointment Number</label>

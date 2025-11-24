@@ -7,20 +7,34 @@ use Illuminate\Support\Facades\Storage;
 @section('title', 'Doctor Details')
 
 @section('content')
-<div class="container-fluid">
+<div class="fade-in">
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">{{ $doctor->title }} {{ $doctor->first_name }} {{ $doctor->last_name }}</h1>
+                    <p class="modern-page-subtitle">{{ $doctor->specialization }}</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a href="{{ contextRoute('doctors.edit', $doctor->id) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="row">
         <div class="col-12">
-            <div class="doctor-card">
-                <div class="doctor-card-header d-flex justify-content-between align-items-center">
-                    <h5 class="doctor-card-title mb-0">Doctor Details</h5>
-                    <div>
-                        <a href="{{ contextRoute('doctors.edit', $doctor->id) }}" class="btn btn-warning btn-sm">
-                            <i class="fas fa-edit"></i> Edit
-                        </a>
-                    </div>
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="modern-card-title mb-0">
+                        <i class="fas fa-user-md"></i>Doctor Details
+                    </h5>
                 </div>
                 
-                <div class="doctor-card-body">
+                <div class="modern-card-body">
                     <div class="row">
                         <div class="col-md-8">
                             <div class="row">

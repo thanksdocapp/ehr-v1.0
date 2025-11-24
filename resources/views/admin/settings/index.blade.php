@@ -9,95 +9,102 @@
 
 @section('content')
 <div class="fade-in">
-    <!-- Page Title -->
-    <div class="page-title">
-        <h1>Settings</h1>
-        <p class="page-subtitle">Manage your application settings and configurations</p>
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div>
+                <h1 class="modern-page-title">Settings</h1>
+                <p class="modern-page-subtitle">Manage your application settings and configurations</p>
+            </div>
+        </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
+    <!-- Modern Statistics Cards -->
+    <div class="row g-4 mb-4">
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-icon primary">
+            <div class="stat-card-modern fade-in-up stagger-1">
+                <div class="stat-card-icon" style="background: var(--gradient-primary);">
                     <i class="fas fa-cogs"></i>
                 </div>
-                <div class="stat-value">{{ number_format($stats['total_settings'] ?? 0) }}</div>
-                <div class="stat-label">Total Settings</div>
+                <div class="stat-card-number">{{ number_format($stats['total_settings'] ?? 0) }}</div>
+                <div class="stat-card-label">Total Settings</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-icon success">
+            <div class="stat-card-modern fade-in-up stagger-2">
+                <div class="stat-card-icon" style="background: var(--gradient-success);">
                     <i class="fas fa-check-circle"></i>
                 </div>
-                <div class="stat-value">{{ number_format($stats['active_features'] ?? 0) }}</div>
-                <div class="stat-label">Active Features</div>
+                <div class="stat-card-number">{{ number_format($stats['active_features'] ?? 0) }}</div>
+                <div class="stat-card-label">Active Features</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-icon warning">
+            <div class="stat-card-modern fade-in-up stagger-3">
+                <div class="stat-card-icon" style="background: var(--gradient-warning);">
                     <i class="fas fa-exclamation-triangle"></i>
                 </div>
-                <div class="stat-value">{{ number_format($stats['pending_updates'] ?? 0) }}</div>
-                <div class="stat-label">Pending Updates</div>
+                <div class="stat-card-number">{{ number_format($stats['pending_updates'] ?? 0) }}</div>
+                <div class="stat-card-label">Pending Updates</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-icon info">
+            <div class="stat-card-modern fade-in-up stagger-4">
+                <div class="stat-card-icon" style="background: var(--gradient-info);">
                     <i class="fas fa-heartbeat"></i>
                 </div>
-                <div class="stat-value">{{ $stats['system_health'] ?? 0 }}%</div>
-                <div class="stat-label">System Health</div>
+                <div class="stat-card-number">{{ $stats['system_health'] ?? 0 }}%</div>
+                <div class="stat-card-label">System Health</div>
             </div>
         </div>
     </div>
 
-    <!-- Settings Grid -->
-    <div class="row">
+    <!-- Modern Settings Grid -->
+    <div class="row g-4">
         <!-- General Settings -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ route('admin.settings.general') }}" class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon primary">
-                        <i class="fas fa-cog"></i>
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.settings.general') }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-1" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: var(--gradient-primary); width: 60px; height: 60px;">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">General</h5>
+                            <p class="text-muted mb-0 small">Application settings and basic configuration</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">General</div>
-                    <div class="stat-label">Application settings and basic configuration</div>
                 </div>
             </a>
         </div>
 
         <!-- Email Settings -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ route('admin.email-config') }}" class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon info">
-                        <i class="fas fa-envelope"></i>
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.email-config') }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-2" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: var(--gradient-info); width: 60px; height: 60px;">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">Email</h5>
+                            <p class="text-muted mb-0 small">Email server and template settings</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">Email</div>
-                    <div class="stat-label">Email server and template settings</div>
-                    <div class="stat-note">Redirects to Communication section</div>
                 </div>
             </a>
         </div>
 
         <!-- SMS Settings -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ route('admin.sms-config') }}" class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon warning">
-                        <i class="fas fa-sms"></i>
-                    </div>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">SMS</div>
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.sms-config') }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-3" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: var(--gradient-warning); width: 60px; height: 60px;">
+                            <i class="fas fa-sms"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">SMS</h5>
                     <div class="stat-label">SMS gateway and notification settings</div>
                     <div class="stat-note">Redirects to Communication section</div>
                 </div>
