@@ -612,8 +612,13 @@ class DashboardController extends Controller
         ])
             ->where('status', 'pending')
             ->orderBy('appointment_date', 'asc')
+            ->orderBy('appointment_time', 'asc')
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(function($appointment) {
+                $appointment->patient_name = $appointment->patient ? ($appointment->patient->first_name . ' ' . $appointment->patient->last_name) : 'N/A';
+                return $appointment;
+            });
     }
     
     /**
@@ -628,7 +633,11 @@ class DashboardController extends Controller
         ])
             ->whereDate('appointment_date', Carbon::today())
             ->orderBy('appointment_time', 'asc')
-            ->get();
+            ->get()
+            ->map(function($appointment) {
+                $appointment->patient_name = $appointment->patient ? ($appointment->patient->first_name . ' ' . $appointment->patient->last_name) : 'N/A';
+                return $appointment;
+            });
     }
     
     /**

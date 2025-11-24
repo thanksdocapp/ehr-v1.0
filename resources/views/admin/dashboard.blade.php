@@ -7,465 +7,861 @@
     <li class="breadcrumb-item active">Dashboard</li>
 @endsection
 
+@push('styles')
+<style>
+    .dashboard-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        padding: 2.5rem;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .dashboard-hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .modern-stat-card-dashboard {
+        background: white;
+        border-radius: 20px;
+        padding: 1.75rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modern-stat-card-dashboard::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--gradient-start, #667eea), var(--gradient-end, #764ba2));
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .modern-stat-card-dashboard:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .modern-stat-card-dashboard:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stat-card-icon-wrapper {
+        width: 70px;
+        height: 70px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 1.25rem;
+        position: relative;
+    }
+
+    .stat-card-icon-wrapper::after {
+        content: '';
+        position: absolute;
+        inset: -4px;
+        border-radius: 20px;
+        padding: 4px;
+        background: linear-gradient(135deg, var(--icon-gradient-start), var(--icon-gradient-end));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .modern-stat-card-dashboard:hover .stat-card-icon-wrapper::after {
+        opacity: 0.3;
+    }
+
+    .stat-card-icon-wrapper.primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        --icon-gradient-start: #667eea;
+        --icon-gradient-end: #764ba2;
+    }
+
+    .stat-card-icon-wrapper.success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        --icon-gradient-start: #11998e;
+        --icon-gradient-end: #38ef7d;
+    }
+
+    .stat-card-icon-wrapper.info {
+        background: linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%);
+        color: white;
+        --icon-gradient-start: #3494E6;
+        --icon-gradient-end: #EC6EAD;
+    }
+
+    .stat-card-icon-wrapper.warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        --icon-gradient-start: #f093fb;
+        --icon-gradient-end: #f5576c;
+    }
+
+    .stat-number-modern {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.2;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label-modern {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-subtitle-modern {
+        font-size: 0.85rem;
+        color: #718096;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stat-trend-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-top: 0.75rem;
+    }
+
+    .stat-trend-badge.positive {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .stat-trend-badge.negative {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .modern-chart-card {
+        background: white;
+        border-radius: 20px;
+        padding: 1.75rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: none;
+        height: 100%;
+    }
+
+    .chart-header-modern {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f7fafc;
+    }
+
+    .chart-title-modern {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0;
+    }
+
+    .modern-table-card {
+        background: white;
+        border-radius: 20px;
+        padding: 1.75rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: none;
+        height: 100%;
+    }
+
+    .table-header-modern {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f7fafc;
+    }
+
+    .table-modern {
+        margin: 0;
+    }
+
+    .table-modern thead th {
+        border: none;
+        padding: 1rem 0.75rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #718096;
+        background: #f7fafc;
+    }
+
+    .table-modern tbody td {
+        border: none;
+        padding: 1.25rem 0.75rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .table-modern tbody tr {
+        transition: all 0.2s ease;
+    }
+
+    .table-modern tbody tr:hover {
+        background: #f8fafc;
+        transform: translateX(4px);
+    }
+
+    .patient-avatar-modern {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .quick-action-card {
+        background: white;
+        border-radius: 20px;
+        padding: 1.75rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: none;
+        height: 100%;
+    }
+
+    .quick-action-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        margin-bottom: 0.75rem;
+    }
+
+    .quick-action-item:hover {
+        background: #f7fafc;
+        transform: translateX(4px);
+    }
+
+    .quick-action-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .empty-state-modern {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 2rem;
+        color: #667eea;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .fade-in-up {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .stagger-1 { animation-delay: 0.1s; }
+    .stagger-2 { animation-delay: 0.2s; }
+    .stagger-3 { animation-delay: 0.3s; }
+    .stagger-4 { animation-delay: 0.4s; }
+</style>
+@endpush
+
 @section('content')
 <div class="fade-in">
-    <!-- Page Title -->
-    <div class="page-title" style="margin-bottom: 15px;">
-        <h1>{{ getAppName() }} Dashboard</h1>
-        <p class="page-subtitle">Welcome back, {{ Auth::user()->name }}! Here's your hospital overview.</p>
+    <!-- Hero Section -->
+    <div class="dashboard-hero fade-in-up">
+        <div class="dashboard-hero-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="mb-2 fw-bold" style="font-size: 2.5rem;">Welcome back, {{ Auth::user()->name }}!</h1>
+                    <p class="mb-0 opacity-90" style="font-size: 1.1rem;">Here's your hospital overview for today</p>
+                    <div class="mt-3 d-flex gap-3 flex-wrap">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-calendar-day"></i>
+                            <span>{{ \Carbon\Carbon::now()->format('l, F j, Y') }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-clock"></i>
+                            <span id="currentTime">{{ \Carbon\Carbon::now()->format('h:i A') }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('admin.appointments.create') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                            <i class="fas fa-plus me-2"></i>New Appointment
+                        </a>
+                        <a href="{{ route('admin.patients.create') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                            <i class="fas fa-user-plus me-2"></i>New Patient
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Modern Stats Grid -->
-    <div class="modern-stats-grid" style="gap: 1rem; margin-bottom: 1.5rem;">
-        <!-- Total Patients Widget -->
-        <a href="{{ route('admin.patients.index') }}" class="modern-stat-card patients-card" data-aos="fade-up" data-aos-delay="50">
-            <div class="stat-card-bg"></div>
-            <div class="stat-card-content">
-                <div class="stat-header">
-                    <div class="stat-icon-modern primary">
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Total Patients -->
+        <div class="col-xl-3 col-md-6">
+            <a href="{{ route('admin.patients.index') }}" class="text-decoration-none">
+                <div class="modern-stat-card-dashboard fade-in-up stagger-1">
+                    <div class="stat-card-icon-wrapper primary">
                         <i class="fas fa-users"></i>
-                        <div class="icon-pulse"></div>
                     </div>
-                    <div class="stat-trend positive">
-                        <i class="fas fa-arrow-up"></i>
-                        <span class="trend-value">+{{ $stats['today_patients'] ?? 0 }}</span>
+                    <div class="stat-number-modern">{{ number_format($stats['total_patients'] ?? 0) }}</div>
+                    <div class="stat-label-modern">Total Patients</div>
+                    <div class="stat-subtitle-modern">
+                        <i class="fas fa-user-plus"></i>
+                        <span>{{ $stats['today_patients'] ?? 0 }} registered today</span>
                     </div>
+                    @if(isset($stats['patient_growth']) && $stats['patient_growth'] > 0)
+                        <span class="stat-trend-badge positive">
+                            <i class="fas fa-arrow-up"></i>
+                            +{{ $stats['patient_growth'] }}% this month
+                        </span>
+                    @endif
                 </div>
-                <div class="stat-body">
-                    <div class="stat-number">{{ number_format($stats['total_patients'] ?? 0) }}</div>
-                    <div class="stat-title">Total Patients</div>
-                    <div class="stat-subtitle">{{ $stats['today_patients'] ?? 0 }} registered today</div>
-                </div>
-                <div class="stat-footer">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 75%;"></div>
-                    </div>
-                </div>
-            </div>
-        </a>
+            </a>
+        </div>
 
-        <!-- Total Appointments Widget -->
-        <a href="{{ route('admin.appointments.index') }}" class="modern-stat-card appointments-card" data-aos="fade-up" data-aos-delay="100">
-            <div class="stat-card-bg"></div>
-            <div class="stat-card-content">
-                <div class="stat-header">
-                    <div class="stat-icon-modern success">
+        <!-- Total Appointments -->
+        <div class="col-xl-3 col-md-6">
+            <a href="{{ route('admin.appointments.index') }}" class="text-decoration-none">
+                <div class="modern-stat-card-dashboard fade-in-up stagger-2">
+                    <div class="stat-card-icon-wrapper success">
                         <i class="fas fa-calendar-check"></i>
-                        <div class="icon-pulse"></div>
                     </div>
-                    <div class="stat-trend positive">
-                        <i class="fas fa-plus"></i>
-                        <span class="trend-value">{{ $stats['today_appointments'] ?? 0 }}</span>
+                    <div class="stat-number-modern">{{ number_format($stats['total_appointments'] ?? 0) }}</div>
+                    <div class="stat-label-modern">Total Appointments</div>
+                    <div class="stat-subtitle-modern">
+                        <i class="fas fa-calendar-day"></i>
+                        <span>{{ $stats['today_appointments'] ?? 0 }} scheduled today</span>
                     </div>
+                    @if(isset($stats['appointment_growth']) && $stats['appointment_growth'] > 0)
+                        <span class="stat-trend-badge positive">
+                            <i class="fas fa-arrow-up"></i>
+                            +{{ $stats['appointment_growth'] }}% this month
+                        </span>
+                    @endif
                 </div>
-                <div class="stat-body">
-                    <div class="stat-number">{{ number_format($stats['total_appointments'] ?? 0) }}</div>
-                    <div class="stat-title">Total Appointments</div>
-                    <div class="stat-subtitle">{{ $stats['today_appointments'] ?? 0 }} scheduled today</div>
-                </div>
-                <div class="stat-footer">
-                    <div class="progress-bar">
-                        <div class="progress-fill success" style="width: 85%;"></div>
-                    </div>
-                </div>
-            </div>
-        </a>
+            </a>
+        </div>
 
-        <!-- Active Doctors Widget -->
-        <a href="{{ route('admin.doctors.index') }}" class="modern-stat-card doctors-card" data-aos="fade-up" data-aos-delay="150">
-            <div class="stat-card-bg"></div>
-            <div class="stat-card-content">
-                <div class="stat-header">
-                    <div class="stat-icon-modern info">
+        <!-- Total Doctors -->
+        <div class="col-xl-3 col-md-6">
+            <a href="{{ route('admin.doctors.index') }}" class="text-decoration-none">
+                <div class="modern-stat-card-dashboard fade-in-up stagger-3">
+                    <div class="stat-card-icon-wrapper info">
                         <i class="fas fa-user-md"></i>
-                        <div class="icon-pulse"></div>
                     </div>
-                    <div class="stat-trend positive">
+                    <div class="stat-number-modern">{{ number_format($stats['total_doctors'] ?? 0) }}</div>
+                    <div class="stat-label-modern">Total Doctors</div>
+                    <div class="stat-subtitle-modern">
                         <i class="fas fa-check-circle"></i>
-                        <span class="trend-value">{{ $stats['active_doctors'] ?? 0 }}</span>
+                        <span>{{ $stats['active_doctors'] ?? 0 }} active</span>
                     </div>
                 </div>
-                <div class="stat-body">
-                    <div class="stat-number">{{ number_format($stats['total_doctors'] ?? 0) }}</div>
-                    <div class="stat-title">Total Doctors</div>
-                    <div class="stat-subtitle">{{ $stats['active_doctors'] ?? 0 }} active today</div>
-                </div>
-                <div class="stat-footer">
-                    <div class="progress-bar">
-                        <div class="progress-fill info" style="width: 92%;"></div>
-                    </div>
-                </div>
-            </div>
-        </a>
+            </a>
+        </div>
 
-        <!-- Departments Widget -->
-        <a href="{{ route('admin.departments.index') }}" class="modern-stat-card departments-card" data-aos="fade-up" data-aos-delay="200">
-            <div class="stat-card-bg"></div>
-            <div class="stat-card-content">
-                <div class="stat-header">
-                    <div class="stat-icon-modern warning">
+        <!-- Total Departments -->
+        <div class="col-xl-3 col-md-6">
+            <a href="{{ route('admin.departments.index') }}" class="text-decoration-none">
+                <div class="modern-stat-card-dashboard fade-in-up stagger-4">
+                    <div class="stat-card-icon-wrapper warning">
                         <i class="fas fa-building"></i>
-                        <div class="icon-pulse"></div>
                     </div>
-                    <div class="stat-trend neutral">
-                        <i class="fas fa-chart-line"></i>
-                        <span class="trend-value">{{ $stats['active_departments'] ?? 0 }}</span>
-                    </div>
-                </div>
-                <div class="stat-body">
-                    <div class="stat-number">{{ number_format($stats['total_departments'] ?? 0) }}</div>
-                    <div class="stat-title">Departments</div>
-                    <div class="stat-subtitle">{{ $stats['active_departments'] ?? 0 }} active</div>
-                </div>
-                <div class="stat-footer">
-                    <div class="progress-bar">
-                        <div class="progress-fill warning" style="width: 100%;"></div>
+                    <div class="stat-number-modern">{{ number_format($stats['total_departments'] ?? 0) }}</div>
+                    <div class="stat-label-modern">Departments</div>
+                    <div class="stat-subtitle-modern">
+                        <i class="fas fa-check-circle"></i>
+                        <span>{{ $stats['active_departments'] ?? 0 }} active</span>
                     </div>
                 </div>
-            </div>
-        </a>
+            </a>
+        </div>
     </div>
 
     <!-- Charts Row -->
-    <div class="row">
+    <div class="row g-4 mb-4">
         <!-- Appointment Chart -->
-        <div class="col-lg-8 mb-4">
-            <div class="admin-card">
-                <div class="card-header">
-                    <h5 class="card-title">Appointment Overview (Last 30 Days)</h5>
+        <div class="col-lg-8">
+            <div class="modern-chart-card fade-in-up">
+                <div class="chart-header-modern">
+                    <h5 class="chart-title-modern">
+                        <i class="fas fa-chart-line me-2 text-primary"></i>Appointment Overview (Last 30 Days)
+                    </h5>
                 </div>
-                <div class="card-body">
-                    <canvas id="appointmentChart" height="300"></canvas>
+                <div class="chart-body" style="height: 350px; position: relative;">
+                    <canvas id="appointmentChart"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- Patient Registration Chart -->
-        <div class="col-lg-4 mb-4">
-            <div class="admin-card">
-                <div class="card-header">
-                    <h5 class="card-title">Patient Registration (Last 12 Months)</h5>
+        <div class="col-lg-4">
+            <div class="modern-chart-card fade-in-up">
+                <div class="chart-header-modern">
+                    <h5 class="chart-title-modern">
+                        <i class="fas fa-chart-bar me-2 text-info"></i>Patient Registration
+                    </h5>
                 </div>
-                <div class="card-body">
-                    <canvas id="patientChart" height="300"></canvas>
+                <div class="chart-body" style="height: 350px; position: relative;">
+                    <canvas id="patientChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Activity Tables Row -->
-    <div class="row">
+    <!-- Main Content Row -->
+    <div class="row g-4 mb-4">
         <!-- Recent Appointments -->
-        <div class="col-lg-6 mb-4">
-            <div class="admin-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title">Recent Appointments</h5>
-                    <a href="{{ route('admin.appointments.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        <div class="col-lg-8">
+            <div class="modern-table-card fade-in-up">
+                <div class="table-header-modern">
+                    <h5 class="chart-title-modern mb-0">
+                        <i class="fas fa-calendar-alt me-2 text-primary"></i>Recent Appointments
+                    </h5>
+                    <a href="{{ route('admin.appointments.index') }}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">
+                        View All <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
                 </div>
-                <div class="card-body">
-                    @if(isset($recentAppointments) && $recentAppointments->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Patient</th>
-                                        <th>Doctor</th>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($recentAppointments as $appointment)
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div>
-                                                    <div class="fw-bold">{{ $appointment->patient_name }}</div>
-                                                    <small class="text-muted">{{ $appointment->patient_email }}</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="fw-bold">{{ $appointment->doctor ? $appointment->doctor->first_name . ' ' . $appointment->doctor->last_name : 'N/A' }}</div>
-                                            <small class="text-muted">{{ $appointment->doctor->department->name ?? 'N/A' }}</small>
-                                        </td>
-                                        <td>
-                                            <div class="fw-bold">{{ formatDate($appointment->appointment_date) }}</div>
-                                            <small class="text-muted">{{ $appointment->appointment_time }}</small>
-                                        </td>
-                                        <td>
+                @if(isset($recentAppointments) && $recentAppointments->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table table-modern">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Doctor</th>
+                                    <th>Date & Time</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($recentAppointments as $appointment)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
                                             @php
-                                                $statusColors = [
-                                                    'pending' => 'warning',
-                                                    'confirmed' => 'success',
-                                                    'completed' => 'info',
-                                                    'cancelled' => 'danger'
-                                                ];
+                                                $patientName = $appointment->patient ? ($appointment->patient->first_name . ' ' . $appointment->patient->last_name) : 'N/A';
+                                                $patientInitial = $appointment->patient ? strtoupper(substr($appointment->patient->first_name ?? 'N', 0, 1)) : 'N';
+                                                $patientEmail = $appointment->patient->email ?? 'N/A';
                                             @endphp
-                                            <span class="badge bg-{{ $statusColors[$appointment->status] ?? 'secondary' }}">
-                                                {{ ucfirst($appointment->status) }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('admin.appointments.show', $appointment->id) }}" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                                            <div class="patient-avatar-modern" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                {{ $patientInitial }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ $patientName }}</div>
+                                                <small class="text-muted">{{ $patientEmail }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ $appointment->doctor ? $appointment->doctor->first_name . ' ' . $appointment->doctor->last_name : 'N/A' }}</div>
+                                        <small class="text-muted">{{ $appointment->doctor->department->name ?? 'N/A' }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ formatDate($appointment->appointment_date) }}</div>
+                                        <small class="text-muted">{{ $appointment->appointment_time }}</small>
+                                    </td>
+                                    <td>
+                                        @php
+                                            $statusColors = [
+                                                'pending' => 'warning',
+                                                'confirmed' => 'success',
+                                                'completed' => 'info',
+                                                'cancelled' => 'danger'
+                                            ];
+                                        @endphp
+                                        <span class="badge bg-{{ $statusColors[$appointment->status] ?? 'secondary' }}" style="padding: 0.5rem 1rem; border-radius: 8px;">
+                                            {{ ucfirst($appointment->status) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('admin.appointments.show', $appointment->id) }}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="empty-state-modern">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-calendar-alt"></i>
                         </div>
-                    @else
-                        <div class="text-center py-4">
-                            <i class="fas fa-calendar-alt text-muted mb-3" style="font-size: 48px;"></i>
-                            <h6 class="text-muted">No appointments yet</h6>
-                            <p class="text-muted mb-0">New appointments will appear here.</p>
-                        </div>
-                    @endif
-                </div>
+                        <h6 class="text-muted">No appointments yet</h6>
+                        <p class="text-muted mb-0">New appointments will appear here.</p>
+                    </div>
+                @endif
             </div>
         </div>
 
-        <!-- Recent Patients -->
-        <div class="col-lg-6 mb-4">
-            <div class="admin-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title">Recent Patients</h5>
-                    <a href="{{ route('admin.patients.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        <!-- Quick Actions & Today's Summary -->
+        <div class="col-lg-4">
+            <!-- Pending Appointments -->
+            <div class="quick-action-card fade-in-up mb-4">
+                <div class="table-header-modern">
+                    <h5 class="chart-title-modern mb-0">
+                        <i class="fas fa-clock me-2 text-warning"></i>Pending
+                    </h5>
+                    <span class="badge bg-warning" style="padding: 0.5rem 0.75rem; border-radius: 8px;">{{ $stats['pending_appointments'] ?? 0 }}</span>
                 </div>
-                <div class="card-body">
-                    @if(isset($recentPatients) && $recentPatients->count() > 0)
-                        <div class="list-group list-group-flush">
-                            @foreach($recentPatients as $patient)
-                            <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar-placeholder bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                        {{ strtoupper(substr($patient->first_name, 0, 1)) }}
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-1">{{ $patient->first_name }} {{ $patient->last_name }}</h6>
-                                        <p class="mb-1 text-muted">{{ $patient->email }}</p>
-                                        <small class="text-muted">
-                                            <i class="fas fa-calendar-alt me-1"></i>
-                                            Registered {{ $patient->created_at->diffForHumans() }}
-                                        </small>
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <span class="badge bg-success mb-1">Active</span>
-                                    <br>
+                @if(isset($pendingAppointments) && $pendingAppointments->count() > 0)
+                    <div class="list-group list-group-flush">
+                        @foreach($pendingAppointments->take(5) as $appointment)
+                        <div class="quick-action-item">
+                            <div class="quick-action-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ $appointment->patient ? ($appointment->patient->first_name . ' ' . $appointment->patient->last_name) : 'N/A' }}</div>
+                                <small class="text-muted">{{ $appointment->doctor ? ($appointment->doctor->first_name . ' ' . $appointment->doctor->last_name) : 'N/A' }} - {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('M d') }}</small>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="empty-state-modern" style="padding: 2rem 1rem;">
+                        <i class="fas fa-check-circle text-success" style="font-size: 2rem;"></i>
+                        <p class="text-muted mb-0 mt-2">No pending appointments</p>
+                    </div>
+                @endif
+            </div>
+
+            <!-- Today's Appointments -->
+            <div class="quick-action-card fade-in-up">
+                <div class="table-header-modern">
+                    <h5 class="chart-title-modern mb-0">
+                        <i class="fas fa-calendar-day me-2 text-info"></i>Today
+                    </h5>
+                    <span class="badge bg-info" style="padding: 0.5rem 0.75rem; border-radius: 8px;">{{ $stats['today_appointments'] ?? 0 }}</span>
+                </div>
+                @if(isset($todaysAppointments) && $todaysAppointments->count() > 0)
+                    <div class="list-group list-group-flush">
+                        @foreach($todaysAppointments->take(5) as $appointment)
+                        <div class="quick-action-item">
+                            <div class="quick-action-icon" style="background: linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%);">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ $appointment->patient ? ($appointment->patient->first_name . ' ' . $appointment->patient->last_name) : 'N/A' }}</div>
+                                <small class="text-muted">{{ $appointment->appointment_time }} - {{ $appointment->doctor ? ($appointment->doctor->first_name . ' ' . $appointment->doctor->last_name) : 'N/A' }}</small>
+                            </div>
+                            <span class="badge bg-{{ $appointment->status === 'confirmed' ? 'success' : 'warning' }}" style="border-radius: 8px;">
+                                {{ ucfirst($appointment->status) }}
+                            </span>
+                        </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="empty-state-modern" style="padding: 2rem 1rem;">
+                        <i class="fas fa-calendar-day text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mb-0 mt-2">No appointments today</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="row g-4">
+        <!-- Recent Patients -->
+        <div class="col-lg-6">
+            <div class="modern-table-card fade-in-up">
+                <div class="table-header-modern">
+                    <h5 class="chart-title-modern mb-0">
+                        <i class="fas fa-users me-2 text-success"></i>Recent Patients
+                    </h5>
+                    <a href="{{ route('admin.patients.index') }}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">
+                        View All <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                @if(isset($recentPatients) && $recentPatients->count() > 0)
+                    <div class="list-group list-group-flush">
+                        @foreach($recentPatients->take(8) as $patient)
+                        <div class="quick-action-item">
+                            <div class="patient-avatar-modern" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                {{ strtoupper(substr($patient->first_name ?? 'N', 0, 1)) }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ $patient->first_name }} {{ $patient->last_name }}</div>
+                                <small class="text-muted">{{ $patient->email ?? 'N/A' }}</small>
+                                <div class="mt-1">
                                     <small class="text-muted">
-                                        <i class="fas fa-phone me-1"></i>{{ $patient->phone }}
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        Registered {{ $patient->created_at->diffForHumans() }}
                                     </small>
                                 </div>
                             </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-center py-4">
-                            <i class="fas fa-users text-muted mb-3" style="font-size: 48px;"></i>
-                            <h6 class="text-muted">No patients yet</h6>
-                            <p class="text-muted mb-0">New patient registrations will appear here.</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions Row -->
-    <div class="row">
-        <!-- Pending Appointments -->
-        <div class="col-lg-4 mb-4">
-            <div class="admin-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title">Pending Appointments</h5>
-                    <span class="badge bg-warning">{{ $stats['pending_appointments'] ?? 0 }}</span>
-                </div>
-                <div class="card-body">
-                    @if(isset($pendingAppointments) && $pendingAppointments->count() > 0)
-                        @foreach($pendingAppointments as $appointment)
-                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <div>
-                                <h6 class="mb-1">{{ $appointment->patient_name }}</h6>
-                                <p class="mb-0 text-muted">{{ $appointment->doctor ? $appointment->doctor->first_name . ' ' . $appointment->doctor->last_name : 'N/A' }} - {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('M d') }}</p>
-                            </div>
                             <div class="text-end">
-                                <button class="btn btn-sm btn-success me-1" onclick="confirmAppointment({{ $appointment->id }})">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="cancelAppointment({{ $appointment->id }})">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                                <span class="badge bg-success mb-2" style="border-radius: 8px;">Active</span>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-phone me-1"></i>{{ $patient->phone ?? 'N/A' }}
+                                </small>
                             </div>
                         </div>
                         @endforeach
-                    @else
-                        <div class="text-center py-4">
-                            <i class="fas fa-calendar-check text-muted mb-3" style="font-size: 48px;"></i>
-                            <h6 class="text-muted">No pending appointments</h6>
+                    </div>
+                @else
+                    <div class="empty-state-modern">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-users"></i>
                         </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Today's Appointments -->
-        <div class="col-lg-4 mb-4">
-            <div class="admin-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title">Today's Appointments</h5>
-                    <span class="badge bg-info">{{ $stats['today_appointments'] ?? 0 }}</span>
-                </div>
-                <div class="card-body">
-                    @if(isset($todaysAppointments) && $todaysAppointments->count() > 0)
-                        @foreach($todaysAppointments as $appointment)
-                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <div>
-                                <h6 class="mb-1">{{ $appointment->patient_name }}</h6>
-                                <p class="mb-0 text-muted">{{ $appointment->appointment_time }} - {{ $appointment->doctor ? $appointment->doctor->first_name . ' ' . $appointment->doctor->last_name : 'N/A' }}</p>
-                            </div>
-                            <div class="text-end">
-                                <span class="badge bg-{{ $appointment->status === 'confirmed' ? 'success' : 'warning' }}">
-                                    {{ ucfirst($appointment->status) }}
-                                </span>
-                            </div>
-                        </div>
-                        @endforeach
-                    @else
-                        <div class="text-center py-4">
-                            <i class="fas fa-calendar-day text-muted mb-3" style="font-size: 48px;"></i>
-                            <h6 class="text-muted">No appointments today</h6>
-                        </div>
-                    @endif
-                </div>
+                        <h6 class="text-muted">No patients yet</h6>
+                        <p class="text-muted mb-0">New patient registrations will appear here.</p>
+                    </div>
+                @endif
             </div>
         </div>
 
         <!-- Department Overview -->
-        <div class="col-lg-4 mb-4">
-            <div class="admin-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title">Department Overview</h5>
-                    <a href="{{ route('admin.departments.index') }}" class="btn btn-sm btn-outline-primary">Manage</a>
+        <div class="col-lg-6">
+            <div class="modern-table-card fade-in-up">
+                <div class="table-header-modern">
+                    <h5 class="chart-title-modern mb-0">
+                        <i class="fas fa-building me-2 text-warning"></i>Department Overview
+                    </h5>
+                    <a href="{{ route('admin.departments.index') }}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">
+                        Manage <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
                 </div>
-                <div class="card-body">
-                    @if(isset($departmentStats) && $departmentStats->count() > 0)
-                        @foreach($departmentStats as $dept)
-                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <div>
-                                <h6 class="mb-1">{{ $dept['name'] ?? 'N/A' }}</h6>
-                                <p class="mb-0 text-muted">{{ $dept['doctors_count'] ?? 0 }} doctors</p>
+                @if(isset($departmentStats) && $departmentStats->count() > 0)
+                    <div class="list-group list-group-flush">
+                        @foreach($departmentStats->take(8) as $dept)
+                        <div class="quick-action-item">
+                            <div class="quick-action-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <i class="fas fa-hospital-alt"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ $dept['name'] ?? 'N/A' }}</div>
+                                <small class="text-muted">{{ $dept['doctors'] ?? 0 }} doctors</small>
                             </div>
                             <div class="text-end">
-                                <span class="badge bg-primary">{{ $dept['appointments_count'] ?? 0 }}</span>
+                                <span class="badge bg-primary mb-2" style="border-radius: 8px; padding: 0.5rem 0.75rem;">{{ $dept['appointments'] ?? 0 }}</span>
                                 <br>
                                 <small class="text-muted">appointments</small>
                             </div>
                         </div>
                         @endforeach
-                    @else
-                        <div class="text-center py-4">
-                            <i class="fas fa-building text-muted mb-3" style="font-size: 48px;"></i>
-                            <h6 class="text-muted">No departments yet</h6>
+                    </div>
+                @else
+                    <div class="empty-state-modern">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-building"></i>
                         </div>
-                    @endif
-                </div>
+                        <h6 class="text-muted">No departments yet</h6>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
-    
-    <!-- Application Footer -->
-    @if(shouldShowPoweredBy())
-    <div class="text-center mt-5 py-4" style="border-top: 1px solid #e9ecef; color: #6c757d; font-size: 14px;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <i class="fas fa-hospital" style="color: #e94560;"></i>
-            <span>{!! getPoweredByText() !!}</span>
-        </div>
-        <div class="mt-2" style="font-size: 12px; opacity: 0.8;">
-            {{ getCopyrightText() }}
-        </div>
-    </div>
-    @endif
 </div>
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-    // Sample data - replace with actual data from controller
+    // Update time every minute
+    function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        document.getElementById('currentTime').textContent = timeString;
+    }
+    setInterval(updateTime, 60000);
+
+    // Chart data
     const appointmentData = @json($appointmentChartData ?? []);
     const patientData = @json($patientRegistrationData ?? []);
     
     // Appointment Chart
-    const appointmentCtx = document.getElementById('appointmentChart').getContext('2d');
-    const appointmentChart = new Chart(appointmentCtx, {
-        type: 'line',
-        data: {
-            labels: appointmentData.map(d => d.date) || [],
-            datasets: [{
-                label: 'Appointments',
-                data: appointmentData.map(d => d.count) || [],
-                borderColor: '#e94560',
-                backgroundColor: 'rgba(233, 69, 96, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                }
+    const appointmentCtx = document.getElementById('appointmentChart');
+    if (appointmentCtx) {
+        new Chart(appointmentCtx, {
+            type: 'line',
+            data: {
+                labels: appointmentData.map(d => {
+                    const date = new Date(d.date);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }) || [],
+                datasets: [{
+                    label: 'Appointments',
+                    data: appointmentData.map(d => d.count) || [],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Number of Appointments'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 },
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 
     // Patient Registration Chart
-    const patientCtx = document.getElementById('patientChart').getContext('2d');
-    const patientChart = new Chart(patientCtx, {
-        type: 'bar',
-        data: {
-            labels: patientData.map(d => d.month) || [],
-            datasets: [{
-                label: 'New Patients',
-                data: patientData.map(d => d.patients) || [],
-                backgroundColor: '#667eea',
-                borderColor: '#667eea',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                }
+    const patientCtx = document.getElementById('patientChart');
+    if (patientCtx) {
+        new Chart(patientCtx, {
+            type: 'bar',
+            data: {
+                labels: patientData.map(d => d.month) || [],
+                datasets: [{
+                    label: 'New Patients',
+                    data: patientData.map(d => d.patients) || [],
+                    backgroundColor: 'rgba(52, 148, 230, 0.8)',
+                    borderColor: '#3494E6',
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Number of Patients'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 },
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 
     // Quick actions
     function confirmAppointment(appointmentId) {
