@@ -61,46 +61,42 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0"><i class="fas fa-file-medical me-2"></i>Medical Records</h5>
-            <small class="text-muted">Manage patient medical records, diagnoses, and treatment history</small>
-        </div>
-        <div>
-            <a href="{{ contextRoute('medical-records.create') }}" class="btn btn-doctor-primary">
-                <i class="fas fa-plus me-2"></i>New Medical Record
-            </a>
-        </div>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number" style="font-size: 1.75rem; font-weight: 600; color: white;">{{ $stats['total'] }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem; opacity: 0.9;">Total Records</div>
-                    </div>
-                    <div class="stat-icon" style="width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2);">
-                        <i class="fas fa-file-medical text-white"></i>
-                    </div>
+<div class="fade-in">
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">Medical Records</h1>
+                    <p class="modern-page-subtitle">Manage patient medical records, diagnoses, and treatment history</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a href="{{ contextRoute('medical-records.create') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-plus me-2"></i>New Medical Record
+                    </a>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Modern Statistics Cards -->
+    <div class="row g-4 mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem; background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%); color: white; border-radius: 15px;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number" style="font-size: 1.75rem; font-weight: 600; color: white;">{{ $stats['this_month'] }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem; opacity: 0.9;">This Month</div>
-                    </div>
-                    <div class="stat-icon" style="width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2);">
-                        <i class="fas fa-calendar-check text-white"></i>
-                    </div>
+            <div class="stat-card-modern fade-in-up stagger-1">
+                <div class="stat-card-icon" style="background: var(--gradient-primary);">
+                    <i class="fas fa-file-medical"></i>
                 </div>
+                <div class="stat-card-number">{{ number_format($stats['total'] ?? 0) }}</div>
+                <div class="stat-card-label">Total Records</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-modern fade-in-up stagger-2">
+                <div class="stat-card-icon" style="background: var(--gradient-success);">
+                    <i class="fas fa-calendar"></i>
+                </div>
+                <div class="stat-card-number">{{ number_format($stats['this_month'] ?? 0) }}</div>
+                <div class="stat-card-label">This Month</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
