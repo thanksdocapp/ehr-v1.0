@@ -8,6 +8,28 @@
 @endsection
 
 @push('styles')
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
+<style>
+    #dashboard-calendar {
+        font-size: 0.9rem;
+    }
+    
+    #dashboard-calendar .fc-header-toolbar {
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+    }
+    
+    #dashboard-calendar .fc-button {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    #dashboard-calendar .fc-event {
+        font-size: 0.75rem;
+        padding: 1px 3px;
+    }
+</style>
 <style>
     .dashboard-hero {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -488,6 +510,27 @@
         </div>
     </div>
 
+    <!-- Calendar Widget Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="modern-card fade-in-up">
+                <div class="modern-card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="modern-card-title mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i>Appointments Calendar
+                        </h5>
+                        <a href="{{ route('admin.appointments.calendar') }}" class="btn btn-sm btn-modern-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>View Full Calendar
+                        </a>
+                    </div>
+                </div>
+                <div class="modern-card-body">
+                    <div id="dashboard-calendar" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content Row -->
     <div class="row g-4 mb-4">
         <!-- Recent Appointments -->
@@ -739,6 +782,8 @@
 @endsection
 
 @push('scripts')
+<!-- FullCalendar JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
     // Update time every minute
@@ -863,6 +908,57 @@
         });
     }
 
+    // Dashboard Calendar Widget
+    const dashboardCalendarEl = document.getElementById('dashboard-calendar');
+    if (dashboardCalendarEl) {
+        const dashboardCalendar = new FullCalendar.Calendar(dashboardCalendarEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            events: function(fetchInfo, successCallback, failureCallback) {
+                const params = new URLSearchParams({
+                    start: fetchInfo.start.toISOString().split('T')[0],
+                    end: fetchInfo.end.toISOString().split('T')[0]
+                });
+                
+                fetch(`{{ route('admin.api.appointments.calendar-data') }}?${params}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const events = data.map(appointment => ({
+                        id: appointment.id,
+                        title: appointment.title,
+                        start: appointment.start,
+                        end: appointment.end,
+                        backgroundColor: appointment.backgroundColor,
+                        borderColor: appointment.borderColor,
+                        textColor: appointment.textColor || '#fff',
+                        url: `{{ route('admin.appointments.show', '') }}/${appointment.id}`
+                    }));
+                    successCallback(events);
+                })
+                .catch(error => {
+                    console.error('Error loading calendar data:', error);
+                    if (failureCallback) failureCallback(error);
+                });
+            },
+            eventClick: function(arg) {
+                arg.jsEvent.preventDefault();
+                window.location.href = arg.event.url;
+            }
+        });
+        dashboardCalendar.render();
+    }
+
     // Quick actions
     function confirmAppointment(appointmentId) {
         if (confirm('Are you sure you want to confirm this appointment?')) {
@@ -907,3 +1003,4 @@
     }
 </script>
 @endpush
+

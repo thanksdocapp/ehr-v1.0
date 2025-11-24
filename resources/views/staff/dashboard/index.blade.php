@@ -167,6 +167,28 @@
         </div>
     </div>
 
+    <!-- Calendar Widget -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-calendar-alt text-primary me-2"></i>
+                            Appointments Calendar
+                        </h5>
+                        <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>View Full Calendar
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="dashboard-calendar" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Content Grid -->
     <div class="row g-4">
         <!-- Recent Appointments -->
@@ -403,9 +425,87 @@
 </style>
 @endpush
 
+@push('styles')
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
+<style>
+    #dashboard-calendar {
+        font-size: 0.9rem;
+    }
+    
+    #dashboard-calendar .fc-header-toolbar {
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+    }
+    
+    #dashboard-calendar .fc-button {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    #dashboard-calendar .fc-event {
+        font-size: 0.75rem;
+        padding: 1px 3px;
+    }
+</style>
+@endpush
+
 @push('scripts')
+<!-- FullCalendar JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Dashboard Calendar Widget
+    const dashboardCalendarEl = document.getElementById('dashboard-calendar');
+    if (dashboardCalendarEl) {
+        const dashboardCalendar = new FullCalendar.Calendar(dashboardCalendarEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            events: function(fetchInfo, successCallback, failureCallback) {
+                const params = new URLSearchParams({
+                    start: fetchInfo.start.toISOString().split('T')[0],
+                    end: fetchInfo.end.toISOString().split('T')[0]
+                });
+                
+                fetch(`{{ route('staff.api.appointments.calendar-data') }}?${params}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const events = data.map(appointment => ({
+                        id: appointment.id,
+                        title: appointment.title,
+                        start: appointment.start,
+                        end: appointment.end,
+                        backgroundColor: appointment.backgroundColor,
+                        borderColor: appointment.borderColor,
+                        textColor: appointment.textColor || '#fff',
+                        url: `{{ route('staff.appointments.show', '') }}/${appointment.id}`
+                    }));
+                    successCallback(events);
+                })
+                .catch(error => {
+                    console.error('Error loading calendar data:', error);
+                    if (failureCallback) failureCallback(error);
+                });
+            },
+            eventClick: function(arg) {
+                arg.jsEvent.preventDefault();
+                window.location.href = arg.event.url;
+            }
+        });
+        dashboardCalendar.render();
+    }
+    
     // Update current time every minute
     function updateTime() {
         const now = new Date();
