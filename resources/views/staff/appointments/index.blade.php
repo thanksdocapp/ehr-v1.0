@@ -4,6 +4,19 @@
 @section('page-title', 'Appointments')
 @section('page-subtitle', auth()->user()->role === 'doctor' ? 'Manage your appointments and patient consultations' : (auth()->user()->role === 'nurse' ? 'Assist with appointment coordination and patient care' : 'Schedule and manage patient appointments'))
 
+@push('header-actions')
+<div class="d-flex gap-2">
+    <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-primary">
+        <i class="fas fa-calendar-alt me-1"></i>Calendar View
+    </a>
+    @if(auth()->user()->can('appointments.create'))
+    <a href="{{ route('staff.appointments.create') }}" class="btn btn-success">
+        <i class="fas fa-plus me-1"></i>New Appointment
+    </a>
+    @endif
+</div>
+@endpush
+
 @push('styles')
 <style>
     /* Fix modal positioning */
@@ -132,7 +145,10 @@
                         @endif
                     </button>
                 </div>
-                <div>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-info">
+                        <i class="fas fa-calendar-alt me-1"></i>Calendar View
+                    </a>
                     <a href="{{ route('staff.appointments.create') }}" class="btn btn-doctor-primary">
                         <i class="fas fa-plus me-1"></i>New Appointment
                     </a>
