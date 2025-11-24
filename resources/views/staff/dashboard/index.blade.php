@@ -6,37 +6,6 @@
 
 @section('content')
 <div class="fade-in">
-    <!-- Calendar Widget - Moved to top for visibility -->
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-bottom">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h5 class="card-title mb-0 fw-bold">
-                            <i class="fas fa-calendar-alt text-primary me-2"></i>
-                            Appointments Calendar
-                        </h5>
-                        <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-external-link-alt me-1"></i>View Full Calendar
-                        </a>
-                    </div>
-                </div>
-                <div class="card-body p-3">
-                    <div id="dashboard-calendar" style="height: 400px; min-height: 400px; width: 100%; background: #f8f9fa; border-radius: 8px;">
-                        <div class="d-flex align-items-center justify-content-center h-100">
-                            <div class="text-center">
-                                <div class="spinner-border text-primary mb-3" role="status">
-                                    <span class="visually-hidden">Loading calendar...</span>
-                                </div>
-                                <p class="text-muted mb-0">Loading calendar...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Stats Grid -->
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
@@ -294,39 +263,100 @@
 
         <!-- Activity Feed & Insights -->
         <div class="col-xl-4 col-lg-5">
-            <!-- Today's Schedule -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="card-title mb-0">
-                        <i class="fas fa-clock text-info me-2"></i>
-                        Today's Schedule
-                    </h6>
+            <!-- Appointments Calendar -->
+            <div class="card mb-4 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h6 class="card-title mb-0 fw-bold">
+                            <i class="fas fa-calendar-alt text-primary me-2"></i>
+                            Appointments Calendar
+                        </h6>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="toggle-today-schedule" title="Toggle Today's Schedule">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-sm btn-primary" title="View Full Calendar">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="dashboard-calendar" style="height: 450px; min-height: 450px; width: 100%; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Loading calendar...</span>
+                                </div>
+                                <p class="text-muted mb-0">Loading calendar...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Schedule (Collapsible) -->
+            <div class="card mb-4 shadow-sm border-0" id="today-schedule-card" style="display: none;">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h6 class="card-title mb-0 fw-bold">
+                            <i class="fas fa-clock text-info me-2"></i>
+                            Today's Schedule
+                        </h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted small" id="current-time">{{ now()->format('H:i A') }}</span>
+                            <button type="button" class="btn btn-sm btn-link text-muted p-0" id="close-today-schedule" title="Close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="text-muted">Current Time</span>
-                        <span class="fw-semibold" id="current-time">{{ now()->format('H:i A') }}</span>
-                    </div>
-                    
                     @if(isset($todayAppointments) && $todayAppointments->count() > 0)
-                        @foreach($todayAppointments->take(3) as $appointment)
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-xs bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-user"></i>
+                        <div class="list-group list-group-flush">
+                            @foreach($todayAppointments->take(5) as $appointment)
+                            <div class="list-group-item border-0 px-0 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            {{ strtoupper(substr($appointment->patient->first_name ?? 'N', 0, 1)) }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <div class="fw-semibold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>{{ $appointment->appointment_time ?? 'TBD' }}
+                                            @if($appointment->doctor)
+                                                <span class="ms-2"><i class="fas fa-user-md me-1"></i>{{ $appointment->doctor->first_name }} {{ $appointment->doctor->last_name }}</span>
+                                            @endif
+                                        </small>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="badge bg-{{ $appointment->status === 'confirmed' ? 'success' : ($appointment->status === 'pending' ? 'warning' : 'secondary') }} rounded-pill">
+                                            {{ ucfirst($appointment->status) }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="fw-semibold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
-                                <small class="text-muted">{{ $appointment->appointment_time ?? 'TBD' }}</small>
-                            </div>
-                            <span class="badge bg-light text-dark">{{ $appointment->status }}</span>
+                            @endforeach
                         </div>
-                        @endforeach
+                        @if($todayAppointments->count() > 5)
+                        <div class="text-center mt-3">
+                            <a href="{{ route('staff.appointments.index') }}?date={{ now()->format('Y-m-d') }}" class="btn btn-sm btn-outline-primary">
+                                View All Today's Appointments <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                        @endif
                     @else
-                        <div class="text-center py-3">
-                            <i class="fas fa-calendar-check fa-2x text-muted mb-2"></i>
-                            <p class="text-muted mb-0">No appointments today</p>
+                        <div class="text-center py-4">
+                            <div class="mb-3">
+                                <i class="fas fa-calendar-check fa-3x text-muted"></i>
+                            </div>
+                            <h6 class="text-muted mb-2">No appointments today</h6>
+                            <p class="text-muted small mb-3">You have a free schedule today</p>
+                            <a href="{{ route('staff.appointments.create') }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus me-1"></i>Schedule Appointment
+                            </a>
                         </div>
                     @endif
                 </div>
