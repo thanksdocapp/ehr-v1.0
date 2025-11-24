@@ -456,7 +456,8 @@
         </div>
         <div class="doctor-card-body">
             @if($patients->count() > 0)
-                <div class="table-responsive">
+                <!-- Desktop Table View -->
+                <div class="table-responsive d-none d-md-block">
                     <table class="table table-hover" id="patientsTable">
                         <thead class="table-light">
                             <tr>
@@ -656,6 +657,208 @@
                     </table>
                 </div>
 
+                <!-- Mobile Card View -->
+                <div class="d-md-none">
+                    @foreach($patients as $patient)
+                        @php
+                            // Get patient departments
+                            $patientDepartments = [];
+                            if ($patient->relationLoaded('departments') || $patient->departments()->exists()) {
+                                if (!$patient->relationLoaded('departments')) {
+                                    $patient->load('departments');
+                                }
+                                foreach ($patient->departments as $dept) {
+                                    $isPrimary = $dept->pivot->is_primary ?? false;
+                                    $patientDepartments[] = [
+                                        'name' => $dept->name,
+                                        'is_primary' => $isPrimary
+                                    ];
+                                }
+                            }
+                            if (empty($patientDepartments) && $patient->department_id && $patient->department) {
+                                if (!$patient->relationLoaded('department')) {
+                                    $patient->load('department');
+                                }
+                                if ($patient->department) {
+                                    $patientDepartments[] = [
+                                        'name' => $patient->department->name,
+                                        'is_primary' => true
+                                    ];
+                                }
+                            }
+                            
+                            // Get active alerts
+                            try {
+                                if ($patient->relationLoaded('activeAlerts')) {
+                                    $activeAlertsCollection = collect($patient->activeAlerts ?? []);
+                                } else {
+                                    $activeAlertsCollection = collect($patient->activeAlerts()->get() ?? []);
+                                }
+                                $activeAlerts = $activeAlertsCollection->filter(function($alert) {
+                                    try {
+                                        return auth()->check() && auth()->user()->can('view', $alert);
+                                    } catch (\Exception $e) {
+                                        return false;
+                                    }
+                                });
+                                $alertCount = count($activeAlerts);
+                            } catch (\Exception $e) {
+                                $activeAlerts = collect([]);
+                                $alertCount = 0;
+                            }
+                            
+                            $genderColors = [
+                                'male' => 'primary',
+                                'female' => 'danger', 
+                                'other' => 'secondary'
+                            ];
+                            $color = $genderColors[$patient->gender] ?? 'secondary';
+                        @endphp
+                        <div class="card mb-3 border shadow-sm">
+                            <div class="card-body">
+                                <!-- Header with Avatar and Name -->
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="rounded-circle bg-{{ $color }} text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-size: 1.25rem; font-weight: bold;">
+                                        {{ strtoupper(substr($patient->first_name, 0, 1)) }}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1 fw-bold">{{ $patient->first_name }} {{ $patient->last_name }}</h6>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                    <span class="badge bg-primary">#{{ str_pad($patient->id, 4, '0', STR_PAD_LEFT) }}</span>
+                                                    <span class="badge bg-{{ $color }}">{{ ucfirst($patient->gender) }}</span>
+                                                    @if($patient->date_of_birth)
+                                                        <small class="text-muted">{{ \Carbon\Carbon::parse($patient->date_of_birth)->age }} years</small>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Contact Info -->
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <small class="text-muted d-block mb-1"><i class="fas fa-envelope me-1"></i>Email</small>
+                                            <div class="fw-semibold">{{ $patient->email ?? 'No email' }}</div>
+                                        </div>
+                                        <div class="col-12">
+                                            <small class="text-muted d-block mb-1"><i class="fas fa-phone me-1"></i>Phone</small>
+                                            <div class="fw-semibold">{{ $patient->phone ?? 'No phone' }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Demographics -->
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <small class="text-muted d-block mb-2"><i class="fas fa-info-circle me-1"></i>Demographics</small>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @if($patient->blood_group)
+                                            <span class="badge bg-info">Blood: {{ $patient->blood_group }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <!-- Assigned Clinic(s) -->
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <small class="text-muted d-block mb-2"><i class="fas fa-building me-1"></i>Assigned Clinic(s)</small>
+                                    @if(!empty($patientDepartments))
+                                        <div>
+                                            @foreach($patientDepartments as $index => $dept)
+                                                <div class="mb-1">
+                                                    <i class="fas fa-building me-1 text-primary"></i>
+                                                    <strong>{{ $dept['name'] }}</strong>
+                                                    @if($dept['is_primary'] && count($patientDepartments) > 1)
+                                                        <span class="badge bg-primary ms-1">Primary</span>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-muted">
+                                            <i class="fas fa-minus-circle me-1"></i>Not Assigned
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <!-- Medical Summary -->
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <small class="text-muted d-block mb-2"><i class="fas fa-notes-medical me-1"></i>Medical Summary</small>
+                                    <div class="d-flex gap-3">
+                                        <div>
+                                            <div class="fw-bold text-info">{{ $patient->appointments->count() }}</div>
+                                            <small class="text-muted">Appointments</small>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-success">{{ $patient->medical_records_count ?? 0 }}</div>
+                                            <small class="text-muted">Records</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Alerts -->
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <small class="text-muted d-block mb-2"><i class="fas fa-exclamation-triangle me-1"></i>Alerts</small>
+                                    @if($alertCount > 0)
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            @foreach($activeAlerts->take(5) as $alert)
+                                                <span class="badge bg-{{ $alert->severity_color }}" title="{{ $alert->title }}">
+                                                    <i class="fas fa-{{ $alert->type_icon }} me-1"></i>
+                                                    @if($alert->severity === 'critical' || $alert->severity === 'high')
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                                    @endif
+                                                    {{ $alert->severity === 'critical' ? 'CRIT' : strtoupper(substr($alert->severity, 0, 1)) }}
+                                                    @if($alert->restricted)
+                                                        <i class="fas fa-lock ms-1"></i>
+                                                    @endif
+                                                </span>
+                                            @endforeach
+                                            @if($alertCount > 5)
+                                                <span class="badge bg-secondary">+{{ $alertCount - 5 }}</span>
+                                            @endif
+                                        </div>
+                                        <small class="text-muted">{{ $alertCount }} active {{ Str::plural('alert', $alertCount) }}</small>
+                                    @else
+                                        <span class="text-muted">
+                                            <i class="fas fa-check-circle text-success me-1"></i>No alerts
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <!-- Registration -->
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <small class="text-muted d-block mb-1"><i class="fas fa-calendar me-1"></i>Registration</small>
+                                    <div class="fw-semibold">{{ $patient->created_at->format('M d, Y') }}</div>
+                                    <small class="text-muted">{{ $patient->created_at->format('h:i A') }}</small>
+                                </div>
+
+                                <!-- Actions -->
+                                <div>
+                                    <small class="text-muted d-block mb-2"><i class="fas fa-cog me-1"></i>Actions</small>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <a href="{{ route('staff.patients.show', $patient->id) }}" 
+                                           class="btn btn-sm btn-outline-primary flex-fill">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                        <a href="{{ route('staff.patients.edit', $patient->id) }}" 
+                                           class="btn btn-sm btn-outline-warning flex-fill">
+                                            <i class="fas fa-edit me-1"></i>Edit
+                                        </a>
+                                        @if(auth()->user()->role === 'doctor')
+                                            <a href="{{ route('staff.medical-records.create', ['patient_id' => $patient->id]) }}" 
+                                               class="btn btn-sm btn-outline-success flex-fill">
+                                                <i class="fas fa-notes-medical me-1"></i>Record
+                                            </a>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
                 <!-- Pagination -->
                 <div class="d-flex justify-content-between align-items-center mt-4">
                     <div class="text-muted">
@@ -685,6 +888,56 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    /* Mobile Card Styles */
+    @media (max-width: 767.98px) {
+        .card.mb-3 {
+            border-radius: 12px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card.mb-3:active {
+            transform: scale(0.98);
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+        
+        .card-body .btn {
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .card-body .badge {
+            font-size: 0.75rem;
+            padding: 0.35rem 0.65rem;
+        }
+        
+        .card-body small {
+            font-size: 0.75rem;
+        }
+        
+        .card-body h6 {
+            font-size: 1rem;
+        }
+    }
+    
+    /* Ensure table is scrollable on tablets */
+    @media (min-width: 768px) and (max-width: 991.98px) {
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .table {
+            min-width: 1200px;
+        }
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>
@@ -725,17 +978,18 @@ $(document).ready(function() {
         window.location.href = url.toString();
     };
 
-    // Initialize DataTable (if table exists)
-    if ($('#patientsTable').length) {
+    // Initialize DataTable (if table exists) - only on desktop
+    if ($('#patientsTable').length && window.innerWidth >= 768) {
         $('#patientsTable').DataTable({
             "paging": false,
             "info": false,
             "searching": false,
             "ordering": true,
-            "order": [[ 5, "desc" ]],
+            "order": [[ 7, "desc" ]],
             "columnDefs": [
-                { "orderable": false, "targets": [6] }
-            ]
+                { "orderable": false, "targets": [8] }
+            ],
+            "responsive": false
         });
     }
 });
