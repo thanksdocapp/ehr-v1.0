@@ -537,11 +537,38 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .doctor-sidebar-toggle:hover {
+            background: var(--doctor-primary);
+            color: white;
+        }
+
+        /* Mobile Overlay */
+        .doctor-mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .doctor-mobile-overlay.show {
+            display: block;
+            opacity: 1;
         }
 
         @media (max-width: 992px) {
             .doctor-sidebar {
                 transform: translateX(-100%);
+                z-index: 1000;
             }
 
             .doctor-sidebar.show {
@@ -554,6 +581,171 @@
 
             .doctor-sidebar-toggle {
                 display: flex;
+            }
+
+            .doctor-header {
+                padding: 0 1rem;
+            }
+
+            .doctor-header-title {
+                font-size: 1.25rem;
+            }
+
+            .doctor-header-subtitle {
+                display: none;
+            }
+
+            .doctor-content-wrapper {
+                padding: 1rem;
+            }
+
+            .doctor-user-info {
+                display: none !important;
+            }
+
+            .doctor-header-search {
+                display: none;
+            }
+
+            .doctor-header-right {
+                gap: 0.5rem;
+            }
+
+            .doctor-header-action {
+                width: 38px;
+                height: 38px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .doctor-header {
+                height: 60px;
+                padding: 0 0.75rem;
+            }
+
+            .doctor-header-title {
+                font-size: 1.1rem;
+            }
+
+            .doctor-content-wrapper {
+                padding: 0.75rem;
+            }
+
+            .doctor-stat-card {
+                padding: 1rem;
+            }
+
+            .doctor-stat-number {
+                font-size: 1.5rem;
+            }
+
+            .doctor-card-header {
+                padding: 1rem;
+            }
+
+            .doctor-card-body {
+                padding: 1rem;
+            }
+
+            .doctor-quick-action {
+                padding: 1rem;
+            }
+
+            .doctor-quick-action-icon {
+                font-size: 1.5rem;
+            }
+
+            .doctor-quick-action-title {
+                font-size: 0.8rem;
+            }
+
+            .doctor-quick-action-subtitle {
+                font-size: 0.7rem;
+            }
+
+            /* Stack stats in single column on mobile */
+            .row.g-4 > [class*="col-"] {
+                margin-bottom: 1rem;
+            }
+
+            /* Make tables scrollable on mobile */
+            .table-responsive {
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Adjust dropdown menus for mobile */
+            .dropdown-menu {
+                max-width: calc(100vw - 2rem);
+                left: auto !important;
+                right: 0 !important;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .doctor-header-title {
+                font-size: 1rem;
+            }
+
+            .doctor-content-wrapper {
+                padding: 0.5rem;
+            }
+
+            .doctor-stat-card {
+                padding: 0.75rem;
+            }
+
+            .doctor-stat-number {
+                font-size: 1.25rem;
+            }
+
+            .doctor-stat-label {
+                font-size: 0.75rem;
+            }
+
+            .doctor-card-header {
+                padding: 0.75rem;
+            }
+
+            .doctor-card-body {
+                padding: 0.75rem;
+            }
+
+            .doctor-card-title {
+                font-size: 0.95rem;
+            }
+
+            .doctor-quick-action {
+                padding: 0.75rem;
+            }
+
+            .doctor-quick-action-icon {
+                font-size: 1.25rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .doctor-quick-action-title {
+                font-size: 0.75rem;
+            }
+
+            .doctor-quick-action-subtitle {
+                font-size: 0.65rem;
+            }
+
+            /* Hide less important columns in tables on mobile */
+            .table th:nth-child(n+4),
+            .table td:nth-child(n+4) {
+                display: none;
+            }
+
+            /* Make buttons smaller on mobile */
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            .btn-group-sm .btn {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
             }
         }
 
@@ -815,6 +1007,9 @@
         @endif
     </aside>
 
+    <!-- Mobile Overlay -->
+    <div class="doctor-mobile-overlay" id="doctorMobileOverlay"></div>
+
     <!-- Main Content -->
     <div class="doctor-main-content">
         <!-- Header -->
@@ -1022,18 +1217,49 @@
         document.addEventListener('DOMContentLoaded', function() {
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.getElementById('doctorSidebar');
+            const overlay = document.getElementById('doctorMobileOverlay');
+            
+            function toggleSidebar() {
+                const isOpen = sidebar.classList.contains('show');
+                sidebar.classList.toggle('show');
+                if (overlay) {
+                    overlay.classList.toggle('show', !isOpen);
+                }
+                // Prevent body scroll when sidebar is open
+                document.body.style.overflow = !isOpen ? 'hidden' : '';
+            }
+            
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                if (overlay) {
+                    overlay.classList.remove('show');
+                }
+                document.body.style.overflow = '';
+            }
             
             if (sidebarToggle && sidebar) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('show');
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleSidebar();
                 });
+                
+                if (overlay) {
+                    overlay.addEventListener('click', closeSidebar);
+                }
                 
                 // Close sidebar when clicking outside on mobile
                 document.addEventListener('click', function(event) {
                     if (window.innerWidth <= 992) {
                         if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
-                            sidebar.classList.remove('show');
+                            closeSidebar();
                         }
+                    }
+                });
+
+                // Close sidebar on window resize if it becomes desktop
+                window.addEventListener('resize', function() {
+                    if (window.innerWidth > 992) {
+                        closeSidebar();
                     }
                 });
             }
