@@ -112,6 +112,7 @@
 @push('styles')
 <!-- DayPilot Lite CSS -->
 <link rel="stylesheet" href="https://cdn.daypilot.org/daypilot-lite.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/daypilot/2024.1.0/daypilot-lite.min.css" />
 <style>
     #calendar {
         width: 100%;
@@ -211,9 +212,33 @@
 @endpush
 
 @push('scripts')
-<!-- DayPilot Lite JavaScript -->
-<script src="https://cdn.daypilot.org/daypilot-lite.min.js"></script>
+<!-- DayPilot Lite JavaScript with fallback -->
+<script src="https://cdn.daypilot.org/daypilot-lite.min.js" 
+        onerror="this.onerror=null; this.src='https://cdnjs.cloudflare.com/ajax/libs/daypilot/2024.1.0/daypilot-lite.min.js';"></script>
 <script>
+// Wait for DayPilot to load
+function waitForDayPilot(callback, maxAttempts = 50) {
+    let attempts = 0;
+    const checkDayPilot = setInterval(function() {
+        attempts++;
+        if (typeof DayPilot !== 'undefined') {
+            clearInterval(checkDayPilot);
+            callback();
+        } else if (attempts >= maxAttempts) {
+            clearInterval(checkDayPilot);
+            console.error('DayPilot library failed to load after multiple attempts');
+            // Try alternative CDN
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/daypilot/2024.1.0/daypilot-lite.min.js';
+            script.onload = callback;
+            script.onerror = function() {
+                alert('Calendar library failed to load. Please check your internet connection or contact support.');
+            };
+            document.head.appendChild(script);
+        }
+    }, 100);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Check if calendar element exists
     const calendarElement = document.getElementById('calendar');
@@ -223,12 +248,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Check if DayPilot is loaded
-    if (typeof DayPilot === 'undefined') {
-        console.error('DayPilot library not loaded!');
-        alert('Calendar library failed to load. Please refresh the page.');
-        return;
-    }
+    // Wait for DayPilot to load
+    waitForDayPilot(function() {
+        // Check if DayPilot is loaded
+        if (typeof DayPilot === 'undefined') {
+            console.error('DayPilot library not loaded!');
+            alert('Calendar library failed to load. Please refresh the page.');
+            return;
+        }
+        
+        initializeCalendar();
+    });
+});
+
+function initializeCalendar() {
 
     console.log('Initializing calendar...');
 
