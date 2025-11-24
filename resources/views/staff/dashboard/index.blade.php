@@ -455,10 +455,23 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Dashboard Calendar Widget
-    const dashboardCalendarEl = document.getElementById('dashboard-calendar');
-    if (dashboardCalendarEl) {
-        const dashboardCalendar = new FullCalendar.Calendar(dashboardCalendarEl, {
+    // Dashboard Calendar Widget - Initialize with delay to ensure DOM is ready
+    setTimeout(function() {
+        const dashboardCalendarEl = document.getElementById('dashboard-calendar');
+        if (dashboardCalendarEl) {
+            console.log('Initializing dashboard calendar...');
+            console.log('Calendar element found:', dashboardCalendarEl);
+            
+            // Check if FullCalendar is loaded
+            if (typeof FullCalendar === 'undefined') {
+                console.error('FullCalendar library not loaded!');
+                dashboardCalendarEl.innerHTML = '<div class="alert alert-warning p-3"><i class="fas fa-exclamation-triangle me-2"></i>Calendar library failed to load. Please refresh the page.</div>';
+                return;
+            }
+            
+            console.log('FullCalendar library loaded, creating calendar instance...');
+            
+            const dashboardCalendar = new FullCalendar.Calendar(dashboardCalendarEl, {
             initialView: 'dayGridMonth',
             height: 'auto',
             headerToolbar: {
