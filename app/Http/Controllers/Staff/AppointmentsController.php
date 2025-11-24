@@ -668,7 +668,7 @@ class AppointmentsController extends Controller
         }
 
         $appointments = $query->get()
-            ->map(function ($appointment) {
+            ->map(function ($appointment) use ($user) {
                 $startDateTime = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
                 $endDateTime = $startDateTime->copy()->addHour(); // Default 1 hour duration
                 

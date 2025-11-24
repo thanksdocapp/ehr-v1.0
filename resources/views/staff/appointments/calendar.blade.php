@@ -267,8 +267,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Calendar data loaded:', data); // Debug log
+            
             // Convert data to DayPilot format
             const events = data.map(appointment => {
                 const start = new DayPilot.Date(appointment.start);
@@ -288,6 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             });
 
+            console.log('Events to display:', events); // Debug log
             calendar.events.list = events;
             calendar.update();
 
@@ -296,14 +304,15 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error loading calendar data:', error);
+            console.error('Error details:', error.message, error.stack);
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'Failed to load calendar data. Please refresh the page.'
+                    text: 'Failed to load calendar data: ' + error.message + '. Please check the console for details.'
                 });
             } else {
-                alert('Failed to load calendar data. Please refresh the page.');
+                alert('Failed to load calendar data: ' + error.message);
             }
         });
     }
