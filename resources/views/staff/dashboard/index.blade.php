@@ -621,6 +621,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 500); // Wait 500ms to ensure DOM is ready
     
+    // Toggle Today's Schedule
+    const toggleTodaySchedule = document.getElementById('toggle-today-schedule');
+    const todayScheduleCard = document.getElementById('today-schedule-card');
+    const closeTodaySchedule = document.getElementById('close-today-schedule');
+    
+    if (toggleTodaySchedule && todayScheduleCard) {
+        toggleTodaySchedule.addEventListener('click', function() {
+            if (todayScheduleCard.style.display === 'none' || todayScheduleCard.style.display === '') {
+                todayScheduleCard.style.display = 'block';
+                toggleTodaySchedule.innerHTML = '<i class="fas fa-calendar-alt"></i>';
+                toggleTodaySchedule.title = 'Show Calendar';
+                toggleTodaySchedule.classList.remove('btn-outline-secondary');
+                toggleTodaySchedule.classList.add('btn-outline-primary');
+                // Smooth scroll to schedule
+                setTimeout(function() {
+                    todayScheduleCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            } else {
+                todayScheduleCard.style.display = 'none';
+                toggleTodaySchedule.innerHTML = '<i class="fas fa-list"></i>';
+                toggleTodaySchedule.title = 'Toggle Today\'s Schedule';
+                toggleTodaySchedule.classList.remove('btn-outline-primary');
+                toggleTodaySchedule.classList.add('btn-outline-secondary');
+            }
+        });
+    }
+    
+    if (closeTodaySchedule && todayScheduleCard) {
+        closeTodaySchedule.addEventListener('click', function() {
+            todayScheduleCard.style.display = 'none';
+            if (toggleTodaySchedule) {
+                toggleTodaySchedule.innerHTML = '<i class="fas fa-list"></i>';
+                toggleTodaySchedule.title = 'Toggle Today\'s Schedule';
+                toggleTodaySchedule.classList.remove('btn-outline-primary');
+                toggleTodaySchedule.classList.add('btn-outline-secondary');
+            }
+        });
+    }
+    
     // Update current time every minute
     function updateTime() {
         const now = new Date();
