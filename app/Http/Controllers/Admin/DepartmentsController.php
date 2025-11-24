@@ -85,7 +85,20 @@ class DepartmentsController extends Controller
             ->sort()
             ->values();
 
-        return view('admin.departments.index', compact('departments', 'locations'));
+        // Calculate total unique doctors across ALL departments (not filtered)
+        // Count unique doctors from the many-to-many relationship
+        $totalDoctors = \App\Models\Doctor::whereHas('departments')->distinct()->count();
+        // Also include doctors with legacy department_id who don't have pivot relationships
+        $totalDoctorsLegacy = \App\Models\Doctor::whereNotNull('department_id')
+            ->whereDoesntHave('departments')
+            ->distinct()
+            ->count();
+        $totalDoctors = $totalDoctors + $totalDoctorsLegacy;
+
+        // Calculate total appointments across ALL departments (not filtered)
+        $totalAppointments = \App\Models\Appointment::count();
+
+        return view('admin.departments.index', compact('departments', 'locations', 'totalDoctors', 'totalAppointments'));
     }
 
     public function create()

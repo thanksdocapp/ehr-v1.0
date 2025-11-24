@@ -398,7 +398,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="mb-1 opacity-75" style="font-size: 0.875rem;">Total Doctors</div>
-                        <div class="h3 mb-0 fw-bold">{{ $departments->sum('doctors_count') ?? 0 }}</div>
+                        <div class="h3 mb-0 fw-bold">{{ $totalDoctors ?? 0 }}</div>
                     </div>
                     <div class="stat-icon-modern">
                         <i class="fas fa-user-md"></i>
@@ -411,7 +411,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="mb-1 opacity-75" style="font-size: 0.875rem;">Total Appointments</div>
-                        <div class="h3 mb-0 fw-bold">{{ $departments->sum('appointments_count') ?? 0 }}</div>
+                        <div class="h3 mb-0 fw-bold">{{ $totalAppointments ?? $departments->sum('appointments_count') ?? 0 }}</div>
                     </div>
                     <div class="stat-icon-modern">
                         <i class="fas fa-calendar-check"></i>
