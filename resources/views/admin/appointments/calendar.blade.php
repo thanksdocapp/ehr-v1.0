@@ -372,11 +372,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
                         new_date: newStart.toString('yyyy-MM-dd'),
-                        new_time: newStart.toString('HH:mm')
+                        new_time: newStart.toString('HH:mm'),
+                        reason: 'Rescheduled via calendar'
                     })
                 })
                 .then(response => response.json())

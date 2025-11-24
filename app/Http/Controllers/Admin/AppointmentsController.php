@@ -183,7 +183,34 @@ class AppointmentsController extends Controller
 
     public function show($id)
     {
-        $appointment = Appointment::with(['patient', 'doctor.department'])->findOrFail($id);
+        $appointment = Appointment::with(['patient', 'doctor', 'department'])->findOrFail($id);
+        
+        // If AJAX request, return JSON
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'id' => $appointment->id,
+                'patient' => [
+                    'id' => $appointment->patient_id,
+                    'full_name' => $appointment->patient->full_name ?? 'N/A'
+                ],
+                'doctor' => [
+                    'id' => $appointment->doctor_id,
+                    'full_name' => $appointment->doctor->full_name ?? 'N/A'
+                ],
+                'department' => [
+                    'id' => $appointment->department_id,
+                    'name' => $appointment->department->name ?? 'N/A'
+                ],
+                'appointment_date' => $appointment->appointment_date->format('M d, Y'),
+                'appointment_time' => $appointment->appointment_time->format('h:i A'),
+                'status' => $appointment->status,
+                'type' => $appointment->type ?? 'consultation',
+                'reason' => $appointment->reason ?? '',
+                'appointment_number' => $appointment->appointment_number ?? '',
+                'is_online' => $appointment->is_online ?? false,
+                'notes' => $appointment->notes ?? ''
+            ]);
+        }
         
         return view('admin.appointments.show', compact('appointment'));
     }
