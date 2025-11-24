@@ -22,7 +22,16 @@
                     </div>
                 </div>
                 <div class="card-body p-3">
-                    <div id="dashboard-calendar" style="height: 400px; min-height: 400px; width: 100%;"></div>
+                    <div id="dashboard-calendar" style="height: 400px; min-height: 400px; width: 100%; background: #f8f9fa; border-radius: 8px;">
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Loading calendar...</span>
+                                </div>
+                                <p class="text-muted mb-0">Loading calendar...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -470,6 +479,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             console.log('FullCalendar library loaded, creating calendar instance...');
+            
+            // Clear loading message
+            dashboardCalendarEl.innerHTML = '';
             
             const dashboardCalendar = new FullCalendar.Calendar(dashboardCalendarEl, {
             initialView: 'dayGridMonth',
