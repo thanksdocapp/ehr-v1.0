@@ -713,145 +713,178 @@
                                 'other' => 'secondary'
                             ];
                             $color = $genderColors[$patient->gender] ?? 'secondary';
+                            $accordionId = 'patientAccordion' . $patient->id;
                         @endphp
                         <div class="card mb-3 border shadow-sm">
-                            <div class="card-body">
-                                <!-- Header with Avatar and Name -->
-                                <div class="d-flex align-items-start mb-3">
-                                    <div class="rounded-circle bg-{{ $color }} text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-size: 1.25rem; font-weight: bold;">
+                            <div class="card-body p-3">
+                                <!-- Always Visible: Name, Number, Gender, Alerts -->
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-{{ $color }} text-white d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 45px; height: 45px; font-size: 1.1rem; font-weight: bold;">
                                         {{ strtoupper(substr($patient->first_name, 0, 1)) }}
                                     </div>
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <h6 class="mb-1 fw-bold">{{ $patient->first_name }} {{ $patient->last_name }}</h6>
-                                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                    <span class="badge bg-primary">#{{ str_pad($patient->id, 4, '0', STR_PAD_LEFT) }}</span>
-                                                    <span class="badge bg-{{ $color }}">{{ ucfirst($patient->gender) }}</span>
-                                                    @if($patient->date_of_birth)
-                                                        <small class="text-muted">{{ \Carbon\Carbon::parse($patient->date_of_birth)->age }} years</small>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <a href="{{ route('staff.patients.show', $patient->id) }}" class="text-decoration-none text-dark">
+                                            <h6 class="mb-1 fw-bold text-primary">{{ $patient->first_name }} {{ $patient->last_name }}</h6>
+                                        </a>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="badge bg-primary">#{{ str_pad($patient->id, 4, '0', STR_PAD_LEFT) }}</span>
+                                            <span class="badge bg-{{ $color }}">{{ ucfirst($patient->gender) }}</span>
+                                            @if($alertCount > 0)
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    @foreach($activeAlerts->take(3) as $alert)
+                                                        <span class="badge bg-{{ $alert->severity_color }}" title="{{ $alert->title }}" style="font-size: 0.7rem;">
+                                                            <i class="fas fa-{{ $alert->type_icon }}"></i>
+                                                            @if($alert->severity === 'critical' || $alert->severity === 'high')
+                                                                <i class="fas fa-exclamation-triangle"></i>
+                                                            @endif
+                                                            {{ $alert->severity === 'critical' ? 'CRIT' : strtoupper(substr($alert->severity, 0, 1)) }}
+                                                        </span>
+                                                    @endforeach
+                                                    @if($alertCount > 3)
+                                                        <span class="badge bg-secondary" style="font-size: 0.7rem;">+{{ $alertCount - 3 }}</span>
                                                     @endif
+                                                </div>
+                                            @else
+                                                <span class="badge bg-success" style="font-size: 0.7rem;">
+                                                    <i class="fas fa-check-circle"></i> No alerts
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm btn-link text-muted p-0 flex-shrink-0" type="button" data-bs-toggle="collapse" data-bs-target="#{{ $accordionId }}" aria-expanded="false" aria-controls="{{ $accordionId }}" style="width: 30px; height: 30px;">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Accordion: Extra Details and Actions -->
+                                <div class="collapse mt-3" id="{{ $accordionId }}">
+                                    <div class="border-top pt-3">
+                                        <!-- Contact Info -->
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block mb-2 fw-semibold"><i class="fas fa-envelope me-1"></i>Contact Information</small>
+                                            <div class="ps-3">
+                                                <div class="mb-2">
+                                                    <small class="text-muted d-block">Email</small>
+                                                    <div class="fw-semibold small">{{ $patient->email ?? 'No email' }}</div>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Phone</small>
+                                                    <div class="fw-semibold small">{{ $patient->phone ?? 'No phone' }}</div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                <!-- Contact Info -->
-                                <div class="mb-3 pb-3 border-bottom">
-                                    <div class="row g-2">
-                                        <div class="col-12">
-                                            <small class="text-muted d-block mb-1"><i class="fas fa-envelope me-1"></i>Email</small>
-                                            <div class="fw-semibold">{{ $patient->email ?? 'No email' }}</div>
+                                        <!-- Demographics -->
+                                        @if($patient->date_of_birth || $patient->blood_group)
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block mb-2 fw-semibold"><i class="fas fa-info-circle me-1"></i>Demographics</small>
+                                            <div class="ps-3">
+                                                @if($patient->date_of_birth)
+                                                    <div class="mb-1">
+                                                        <small class="text-muted d-block">Age</small>
+                                                        <div class="fw-semibold small">{{ \Carbon\Carbon::parse($patient->date_of_birth)->age }} years</div>
+                                                    </div>
+                                                @endif
+                                                @if($patient->blood_group)
+                                                    <div>
+                                                        <small class="text-muted d-block">Blood Group</small>
+                                                        <span class="badge bg-info">{{ $patient->blood_group }}</span>
+                                                    </div>
+                                                @endif
+                                            </div>
                                         </div>
-                                        <div class="col-12">
-                                            <small class="text-muted d-block mb-1"><i class="fas fa-phone me-1"></i>Phone</small>
-                                            <div class="fw-semibold">{{ $patient->phone ?? 'No phone' }}</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Demographics -->
-                                <div class="mb-3 pb-3 border-bottom">
-                                    <small class="text-muted d-block mb-2"><i class="fas fa-info-circle me-1"></i>Demographics</small>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        @if($patient->blood_group)
-                                            <span class="badge bg-info">Blood: {{ $patient->blood_group }}</span>
                                         @endif
-                                    </div>
-                                </div>
 
-                                <!-- Assigned Clinic(s) -->
-                                <div class="mb-3 pb-3 border-bottom">
-                                    <small class="text-muted d-block mb-2"><i class="fas fa-building me-1"></i>Assigned Clinic(s)</small>
-                                    @if(!empty($patientDepartments))
-                                        <div>
-                                            @foreach($patientDepartments as $index => $dept)
-                                                <div class="mb-1">
-                                                    <i class="fas fa-building me-1 text-primary"></i>
-                                                    <strong>{{ $dept['name'] }}</strong>
-                                                    @if($dept['is_primary'] && count($patientDepartments) > 1)
-                                                        <span class="badge bg-primary ms-1">Primary</span>
-                                                    @endif
+                                        <!-- Assigned Clinic(s) -->
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block mb-2 fw-semibold"><i class="fas fa-building me-1"></i>Assigned Clinic(s)</small>
+                                            <div class="ps-3">
+                                                @if(!empty($patientDepartments))
+                                                    @foreach($patientDepartments as $index => $dept)
+                                                        <div class="mb-1">
+                                                            <i class="fas fa-building me-1 text-primary"></i>
+                                                            <strong class="small">{{ $dept['name'] }}</strong>
+                                                            @if($dept['is_primary'] && count($patientDepartments) > 1)
+                                                                <span class="badge bg-primary ms-1" style="font-size: 0.65rem;">Primary</span>
+                                                            @endif
+                                                        </div>
+                                                    @endforeach
+                                                @else
+                                                    <span class="text-muted small">
+                                                        <i class="fas fa-minus-circle me-1"></i>Not Assigned
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        <!-- Medical Summary -->
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block mb-2 fw-semibold"><i class="fas fa-notes-medical me-1"></i>Medical Summary</small>
+                                            <div class="ps-3 d-flex gap-3">
+                                                <div>
+                                                    <div class="fw-bold text-info">{{ $patient->appointments->count() }}</div>
+                                                    <small class="text-muted">Appointments</small>
                                                 </div>
-                                            @endforeach
+                                                <div>
+                                                    <div class="fw-bold text-success">{{ $patient->medical_records_count ?? 0 }}</div>
+                                                    <small class="text-muted">Records</small>
+                                                </div>
+                                            </div>
                                         </div>
-                                    @else
-                                        <span class="text-muted">
-                                            <i class="fas fa-minus-circle me-1"></i>Not Assigned
-                                        </span>
-                                    @endif
-                                </div>
 
-                                <!-- Medical Summary -->
-                                <div class="mb-3 pb-3 border-bottom">
-                                    <small class="text-muted d-block mb-2"><i class="fas fa-notes-medical me-1"></i>Medical Summary</small>
-                                    <div class="d-flex gap-3">
-                                        <div>
-                                            <div class="fw-bold text-info">{{ $patient->appointments->count() }}</div>
-                                            <small class="text-muted">Appointments</small>
+                                        <!-- Registration -->
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block mb-2 fw-semibold"><i class="fas fa-calendar me-1"></i>Registration</small>
+                                            <div class="ps-3">
+                                                <div class="fw-semibold small">{{ $patient->created_at->format('M d, Y') }}</div>
+                                                <small class="text-muted">{{ $patient->created_at->format('h:i A') }}</small>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div class="fw-bold text-success">{{ $patient->medical_records_count ?? 0 }}</div>
-                                            <small class="text-muted">Records</small>
+
+                                        <!-- All Alerts (if any) -->
+                                        @if($alertCount > 0)
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block mb-2 fw-semibold"><i class="fas fa-exclamation-triangle me-1"></i>All Alerts ({{ $alertCount }})</small>
+                                            <div class="ps-3">
+                                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                                    @foreach($activeAlerts as $alert)
+                                                        <span class="badge bg-{{ $alert->severity_color }}" title="{{ $alert->title }}" style="font-size: 0.7rem;">
+                                                            <i class="fas fa-{{ $alert->type_icon }} me-1"></i>
+                                                            @if($alert->severity === 'critical' || $alert->severity === 'high')
+                                                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                                            @endif
+                                                            {{ $alert->severity === 'critical' ? 'CRIT' : strtoupper(substr($alert->severity, 0, 1)) }}
+                                                            @if($alert->restricted)
+                                                                <i class="fas fa-lock ms-1"></i>
+                                                            @endif
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                                <small class="text-muted">{{ $alertCount }} active {{ Str::plural('alert', $alertCount) }}</small>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-
-                                <!-- Alerts -->
-                                <div class="mb-3 pb-3 border-bottom">
-                                    <small class="text-muted d-block mb-2"><i class="fas fa-exclamation-triangle me-1"></i>Alerts</small>
-                                    @if($alertCount > 0)
-                                        <div class="d-flex flex-wrap gap-1 mb-2">
-                                            @foreach($activeAlerts->take(5) as $alert)
-                                                <span class="badge bg-{{ $alert->severity_color }}" title="{{ $alert->title }}">
-                                                    <i class="fas fa-{{ $alert->type_icon }} me-1"></i>
-                                                    @if($alert->severity === 'critical' || $alert->severity === 'high')
-                                                        <i class="fas fa-exclamation-triangle me-1"></i>
-                                                    @endif
-                                                    {{ $alert->severity === 'critical' ? 'CRIT' : strtoupper(substr($alert->severity, 0, 1)) }}
-                                                    @if($alert->restricted)
-                                                        <i class="fas fa-lock ms-1"></i>
-                                                    @endif
-                                                </span>
-                                            @endforeach
-                                            @if($alertCount > 5)
-                                                <span class="badge bg-secondary">+{{ $alertCount - 5 }}</span>
-                                            @endif
-                                        </div>
-                                        <small class="text-muted">{{ $alertCount }} active {{ Str::plural('alert', $alertCount) }}</small>
-                                    @else
-                                        <span class="text-muted">
-                                            <i class="fas fa-check-circle text-success me-1"></i>No alerts
-                                        </span>
-                                    @endif
-                                </div>
-
-                                <!-- Registration -->
-                                <div class="mb-3 pb-3 border-bottom">
-                                    <small class="text-muted d-block mb-1"><i class="fas fa-calendar me-1"></i>Registration</small>
-                                    <div class="fw-semibold">{{ $patient->created_at->format('M d, Y') }}</div>
-                                    <small class="text-muted">{{ $patient->created_at->format('h:i A') }}</small>
-                                </div>
-
-                                <!-- Actions -->
-                                <div>
-                                    <small class="text-muted d-block mb-2"><i class="fas fa-cog me-1"></i>Actions</small>
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <a href="{{ route('staff.patients.show', $patient->id) }}" 
-                                           class="btn btn-sm btn-outline-primary flex-fill">
-                                            <i class="fas fa-eye me-1"></i>View
-                                        </a>
-                                        <a href="{{ route('staff.patients.edit', $patient->id) }}" 
-                                           class="btn btn-sm btn-outline-warning flex-fill">
-                                            <i class="fas fa-edit me-1"></i>Edit
-                                        </a>
-                                        @if(auth()->user()->role === 'doctor')
-                                            <a href="{{ route('staff.medical-records.create', ['patient_id' => $patient->id]) }}" 
-                                               class="btn btn-sm btn-outline-success flex-fill">
-                                                <i class="fas fa-notes-medical me-1"></i>Record
-                                            </a>
                                         @endif
+
+                                        <!-- Actions -->
+                                        <div class="pt-2 border-top">
+                                            <small class="text-muted d-block mb-2 fw-semibold"><i class="fas fa-cog me-1"></i>Actions</small>
+                                            <div class="d-flex gap-2">
+                                                <a href="{{ route('staff.patients.show', $patient->id) }}" 
+                                                   class="btn btn-sm btn-outline-primary flex-fill">
+                                                    <i class="fas fa-eye me-1"></i>View
+                                                </a>
+                                                <a href="{{ route('staff.patients.edit', $patient->id) }}" 
+                                                   class="btn btn-sm btn-outline-warning flex-fill">
+                                                    <i class="fas fa-edit me-1"></i>Edit
+                                                </a>
+                                                @if(auth()->user()->role === 'doctor')
+                                                    <a href="{{ route('staff.medical-records.create', ['patient_id' => $patient->id]) }}" 
+                                                       class="btn btn-sm btn-outline-success flex-fill">
+                                                        <i class="fas fa-notes-medical me-1"></i>Record
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -923,6 +956,20 @@
         .card-body h6 {
             font-size: 1rem;
         }
+
+        /* Accordion button rotation */
+        .card-body [data-bs-toggle="collapse"] {
+            transition: transform 0.3s ease;
+        }
+        
+        .card-body [data-bs-toggle="collapse"][aria-expanded="true"] i {
+            transform: rotate(180deg);
+        }
+
+        /* Clickable patient name */
+        .card-body a.text-primary:hover {
+            text-decoration: underline !important;
+        }
     }
     
     /* Ensure table is scrollable on tablets */
@@ -992,6 +1039,30 @@ $(document).ready(function() {
             "responsive": false
         });
     }
+
+    // Handle accordion icon rotation
+    $('[data-bs-toggle="collapse"]').on('click', function() {
+        const icon = $(this).find('i');
+        const isExpanded = $(this).attr('aria-expanded') === 'true';
+        if (isExpanded) {
+            icon.css('transform', 'rotate(0deg)');
+        } else {
+            icon.css('transform', 'rotate(180deg)');
+        }
+    });
+
+    // Update icon on collapse/expand
+    $('.collapse').on('show.bs.collapse', function() {
+        const button = $('[data-bs-target="#' + $(this).attr('id') + '"]');
+        button.attr('aria-expanded', 'true');
+        button.find('i').css('transform', 'rotate(180deg)');
+    });
+
+    $('.collapse').on('hide.bs.collapse', function() {
+        const button = $('[data-bs-target="#' + $(this).attr('id') + '"]');
+        button.attr('aria-expanded', 'false');
+        button.find('i').css('transform', 'rotate(0deg)');
+    });
 });
 </script>
 @endpush
