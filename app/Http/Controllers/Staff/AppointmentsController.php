@@ -683,13 +683,17 @@ class AppointmentsController extends Controller
                             $title .= ' - ' . ($appointment->doctor->full_name ?? 'Unknown Doctor');
                         }
                         
+                        $statusColor = $this->getStatusColor($appointment->status);
+                        $textColor = in_array($appointment->status, ['pending']) ? '#000' : '#fff';
+                        
                         return [
                             'id' => $appointment->id,
                             'title' => $title,
                             'start' => $startDateTime->format('Y-m-d\TH:i:s'),
                             'end' => $endDateTime->format('Y-m-d\TH:i:s'),
-                            'backgroundColor' => $this->getStatusColor($appointment->status),
-                            'borderColor' => $this->getStatusColor($appointment->status),
+                            'backgroundColor' => $statusColor,
+                            'borderColor' => $statusColor,
+                            'textColor' => $textColor,
                             'extendedProps' => [
                                 'patient' => $appointment->patient->full_name ?? 'Unknown',
                                 'patient_id' => $appointment->patient_id,

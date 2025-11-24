@@ -390,13 +390,17 @@ class AppointmentsController extends Controller
                 $startDateTime = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
                 $endDateTime = $startDateTime->copy()->addHour(); // Default 1 hour duration
                 
+                $statusColor = $this->getStatusColor($appointment->status);
+                $textColor = in_array($appointment->status, ['pending']) ? '#000' : '#fff';
+                
                 return [
                     'id' => $appointment->id,
                     'title' => $appointment->patient->full_name . ' - ' . $appointment->doctor->full_name,
                     'start' => $startDateTime->format('Y-m-d\TH:i:s'),
                     'end' => $endDateTime->format('Y-m-d\TH:i:s'),
-                    'backgroundColor' => $this->getStatusColor($appointment->status),
-                    'borderColor' => $this->getStatusColor($appointment->status),
+                    'backgroundColor' => $statusColor,
+                    'borderColor' => $statusColor,
+                    'textColor' => $textColor,
                     'extendedProps' => [
                         'patient' => $appointment->patient->full_name,
                         'patient_id' => $appointment->patient_id,

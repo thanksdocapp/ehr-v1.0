@@ -18,16 +18,21 @@
                 <h5 class="modern-card-title mb-0">
                     <i class="fas fa-calendar me-2"></i>Calendar View
                 </h5>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-modern-outline" onclick="changeViewType('Day');">
-                        <i class="fas fa-calendar-day"></i> Day
+                <div id="calendar-toolbar" class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-modern-outline" id="prev-btn">
+                        <i class="fas fa-chevron-left"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-modern-outline" onclick="changeViewType('Week');">
-                        <i class="fas fa-calendar-week"></i> Week
+                    <button type="button" class="btn btn-sm btn-modern-outline" id="today-btn">
+                        Today
                     </button>
-                    <button type="button" class="btn btn-sm btn-modern-outline active" onclick="changeViewType('Month');">
-                        <i class="fas fa-calendar-alt"></i> Month
+                    <button type="button" class="btn btn-sm btn-modern-outline" id="next-btn">
+                        <i class="fas fa-chevron-right"></i>
                     </button>
+                    <div class="btn-group ms-2">
+                        <button type="button" class="btn btn-sm btn-modern-outline" id="day-btn">Day</button>
+                        <button type="button" class="btn btn-sm btn-modern-outline active" id="week-btn">Week</button>
+                        <button type="button" class="btn btn-sm btn-modern-outline" id="month-btn">Month</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -100,163 +105,238 @@
 @endsection
 
 @push('styles')
-<!-- DayPilot Lite CSS -->
-<link rel="stylesheet" href="https://cdn.daypilot.org/daypilot-lite.min.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/daypilot/2024.1.0/daypilot-lite.min.css" />
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
 <style>
     #calendar {
         width: 100%;
         height: 600px;
+        padding: 1rem;
     }
 
-    /* DayPilot Calendar Customization */
-    .calendar_default_main {
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        overflow: hidden;
+    /* FullCalendar Modern Styling */
+    .fc {
+        font-family: inherit;
     }
 
-    .calendar_default_header {
+    .fc-header-toolbar {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
         background: #f8f9fa;
-        border-bottom: 2px solid #dee2e6;
+        border-radius: 8px;
     }
 
-    .calendar_default_cell {
-        border-color: #e9ecef;
-    }
-
-    .calendar_default_event {
-        border-radius: 4px;
-        padding: 2px 4px;
-        font-size: 0.85rem;
-        cursor: pointer;
+    .fc-button {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
         transition: all 0.2s ease;
     }
 
-    .calendar_default_event:hover {
+    .fc-button:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+    }
+
+    .fc-button-active {
+        background: var(--primary-color, #1a1a2e);
+        border-color: var(--primary-color, #1a1a2e);
+        color: #fff;
+    }
+
+    .fc-button-primary:not(:disabled):active,
+    .fc-button-primary:not(:disabled).fc-button-active {
+        background: var(--primary-color, #1a1a2e);
+        border-color: var(--primary-color, #1a1a2e);
+    }
+
+    .fc-event {
+        border-radius: 4px;
+        padding: 2px 4px;
+        cursor: pointer;
+        border: none;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+    }
+
+    .fc-event:hover {
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
     /* Status Colors */
-    .event-pending {
+    .fc-event-pending {
         background-color: #ffc107;
         color: #000;
         border-left: 3px solid #ff9800;
     }
 
-    .event-confirmed {
+    .fc-event-confirmed {
         background-color: #17a2b8;
         color: #fff;
         border-left: 3px solid #138496;
     }
 
-    .event-completed {
+    .fc-event-completed {
         background-color: #28a745;
         color: #fff;
         border-left: 3px solid #218838;
     }
 
-    .event-cancelled {
+    .fc-event-cancelled {
         background-color: #dc3545;
         color: #fff;
         border-left: 3px solid #c82333;
     }
 
-    .event-rescheduled {
+    .fc-event-rescheduled {
         background-color: #6c757d;
         color: #fff;
         border-left: 3px solid #5a6268;
     }
 
+    .fc-daygrid-day {
+        border-color: #e9ecef;
+    }
+
+    .fc-col-header-cell {
+        background: #f8f9fa;
+        border-color: #dee2e6;
+        padding: 0.75rem;
+        font-weight: 600;
+    }
+
+    .fc-timegrid-slot {
+        border-color: #e9ecef;
+    }
+
     @media (max-width: 768px) {
         #calendar {
             height: 500px;
+            padding: 0.5rem;
+        }
+
+        .fc-header-toolbar {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .fc-toolbar-chunk {
+            display: flex;
+            justify-content: center;
         }
     }
 </style>
 @endpush
 
 @push('scripts')
-<!-- DayPilot Lite JavaScript with fallback -->
-<script src="https://cdn.daypilot.org/daypilot-lite.min.js" 
-        onerror="this.onerror=null; this.src='https://cdnjs.cloudflare.com/ajax/libs/daypilot/2024.1.0/daypilot-lite.min.js';"></script>
+<!-- FullCalendar JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script>
-// Wait for DayPilot to load
-function waitForDayPilot(callback, maxAttempts = 50) {
-    let attempts = 0;
-    const checkDayPilot = setInterval(function() {
-        attempts++;
-        if (typeof DayPilot !== 'undefined') {
-            clearInterval(checkDayPilot);
-            callback();
-        } else if (attempts >= maxAttempts) {
-            clearInterval(checkDayPilot);
-            console.error('DayPilot library failed to load after multiple attempts');
-            // Try alternative CDN
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/daypilot/2024.1.0/daypilot-lite.min.js';
-            script.onload = callback;
-            script.onerror = function() {
-                alert('Calendar library failed to load. Please check your internet connection or contact support.');
-            };
-            document.head.appendChild(script);
-        }
-    }, 100);
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-    waitForDayPilot(function() {
-        initializeCalendar();
-    });
-});
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) {
+        console.error('Calendar element not found');
+        return;
+    }
 
-function initializeCalendar() {
-    // Initialize DayPilot Calendar
-    const calendar = new DayPilot.Calendar("calendar", {
-        viewType: "Month",
-        startDate: DayPilot.Date.today().firstDayOfMonth(),
-        timeRangeSelectedHandling: "Enabled",
-        eventMoveHandling: "Update",
-        eventResizeHandling: "Update",
-        eventDeleteHandling: "Disabled",
-        eventClickHandling: "Enabled",
-        onTimeRangeSelected: function(args) {
-            // Create new appointment on time range selection
-            const start = args.start;
-            const end = args.end;
-            window.location.href = `{{ route('admin.appointments.create') }}?date=${start.toString('yyyy-MM-dd')}&time=${start.toString('HH:mm')}`;
-        },
-        onEventClick: function(args) {
-            // Show appointment details
-            loadAppointmentDetails(args.e.id());
-        },
-        onEventMoved: function(args) {
-            // Handle appointment rescheduling
-            rescheduleAppointment(args.e.id(), args.newStart, args.newEnd);
-        },
-        onEventResized: function(args) {
-            // Handle appointment duration change
-            updateAppointmentDuration(args.e.id(), args.newStart, args.newEnd);
-        },
-        onVisibleRangeChanged: function(args) {
-            // Reload data when calendar view changes
-            loadCalendarData();
-        }
-    });
-    
-    // Load calendar data after calendar is initialized
-    setTimeout(function() {
-        loadCalendarData();
-    }, 200);
+    let calendar;
+    try {
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: false, // We'll use custom toolbar
+            height: 'auto',
+            editable: true,
+            selectable: true,
+            selectMirror: true,
+            dayMaxEvents: true,
+            weekends: true,
+            select: function(arg) {
+                // Create new appointment on date selection
+                const date = arg.startStr.split('T')[0];
+                const time = arg.startStr.split('T')[1] ? arg.startStr.split('T')[1].substring(0, 5) : '09:00';
+                window.location.href = `{{ route('admin.appointments.create') }}?date=${date}&time=${time}`;
+            },
+            eventClick: function(arg) {
+                // Show appointment details
+                loadAppointmentDetails(arg.event.id);
+            },
+            eventDrop: function(arg) {
+                // Handle appointment rescheduling
+                rescheduleAppointment(arg.event.id, arg.event.start, arg.event.end);
+            },
+            eventResize: function(arg) {
+                // Handle appointment duration change
+                rescheduleAppointment(arg.event.id, arg.event.start, arg.event.end);
+            },
+            events: function(fetchInfo, successCallback, failureCallback) {
+                // Load events from API
+                loadCalendarData(fetchInfo.start, fetchInfo.end, successCallback, failureCallback);
+            }
+        });
 
-    function loadCalendarData() {
-        const start = calendar.visibleStart();
-        const end = calendar.visibleEnd();
-        
+        calendar.render();
+        console.log('Calendar initialized successfully');
+
+        // Custom toolbar buttons
+        document.getElementById('prev-btn').addEventListener('click', function() {
+            calendar.prev();
+        });
+
+        document.getElementById('next-btn').addEventListener('click', function() {
+            calendar.next();
+        });
+
+        document.getElementById('today-btn').addEventListener('click', function() {
+            calendar.today();
+        });
+
+        document.getElementById('day-btn').addEventListener('click', function() {
+            calendar.changeView('timeGridDay');
+            updateViewButtons('day');
+        });
+
+        document.getElementById('week-btn').addEventListener('click', function() {
+            calendar.changeView('timeGridWeek');
+            updateViewButtons('week');
+        });
+
+        document.getElementById('month-btn').addEventListener('click', function() {
+            calendar.changeView('dayGridMonth');
+            updateViewButtons('month');
+        });
+
+        // Update view buttons based on current view
+        calendar.on('viewDidMount', function() {
+            const view = calendar.view.type;
+            if (view.includes('Day')) {
+                updateViewButtons('day');
+            } else if (view.includes('Week')) {
+                updateViewButtons('week');
+            } else if (view.includes('Month')) {
+                updateViewButtons('month');
+            }
+        });
+
+    } catch (error) {
+        console.error('Error initializing calendar:', error);
+        alert('Failed to initialize calendar: ' + error.message);
+    }
+
+    function updateViewButtons(activeView) {
+        document.querySelectorAll('#calendar-toolbar .btn-group .btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.getElementById(activeView + '-btn').classList.add('active');
+    }
+
+    function loadCalendarData(start, end, successCallback, failureCallback) {
         const params = new URLSearchParams({
-            start: start.toString('yyyy-MM-dd'),
-            end: end.toString('yyyy-MM-dd')
+            start: start.toISOString().split('T')[0],
+            end: end.toISOString().split('T')[0]
         });
         
         fetch(`{{ route('admin.api.appointments.calendar-data') }}?${params}`, {
@@ -266,47 +346,50 @@ function initializeCalendar() {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            // Convert data to DayPilot format
-            const events = data.map(appointment => {
-                const start = new DayPilot.Date(appointment.start);
-                const end = new DayPilot.Date(appointment.end);
-                
-                return {
-                    id: appointment.id,
-                    text: appointment.title,
-                    start: start,
-                    end: end,
-                    backColor: appointment.backgroundColor,
-                    borderColor: appointment.borderColor,
-                    barColor: appointment.borderColor,
-                    cssClass: `event-${appointment.extendedProps.status}`,
-                    toolTip: `${appointment.extendedProps.patient} with ${appointment.extendedProps.doctor}\nStatus: ${appointment.extendedProps.status}\nType: ${appointment.extendedProps.type || 'Consultation'}`,
-                    resource: appointment.extendedProps.doctor_id || null
-                };
-            });
+            console.log('Calendar data loaded:', data);
+            
+            // Convert to FullCalendar format
+            const events = data.map(appointment => ({
+                id: appointment.id,
+                title: appointment.title,
+                start: appointment.start,
+                end: appointment.end,
+                backgroundColor: appointment.backgroundColor,
+                borderColor: appointment.borderColor,
+                textColor: appointment.textColor || '#fff',
+                className: `fc-event-${appointment.extendedProps.status}`,
+                extendedProps: appointment.extendedProps
+            }));
 
-            calendar.events.list = events;
-            calendar.update();
-
+            console.log('Events to display:', events);
+            
             // Update stats
             updateStats(data);
+            
+            // Call success callback with events
+            successCallback(events);
         })
         .catch(error => {
             console.error('Error loading calendar data:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Failed to load calendar data. Please refresh the page.'
-            });
+            if (failureCallback) {
+                failureCallback(error);
+            }
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load calendar data: ' + error.message
+                });
+            }
         });
     }
-    
-    // Reload calendar when view changes
-    calendar.onTimeRangeSelected = function(args) {
-        loadCalendarData();
-    };
 
     function updateStats(appointments) {
         const stats = {
@@ -330,18 +413,23 @@ function initializeCalendar() {
     }
 
     function loadAppointmentDetails(appointmentId) {
-        fetch(`{{ url('admin/appointments') }}/${appointmentId}`, {
+        fetch(`{{ route('admin.appointments.show', '') }}/${appointmentId}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             const modalBody = document.getElementById('appointmentModalBody');
             const viewBtn = document.getElementById('viewAppointmentBtn');
             
-            viewBtn.href = `{{ url('admin/appointments') }}/${appointmentId}`;
+            viewBtn.href = `{{ route('admin.appointments.show', '') }}/${appointmentId}`;
             
             modalBody.innerHTML = `
                 <div class="row">
@@ -364,7 +452,7 @@ function initializeCalendar() {
                     <div class="col-md-6 mb-3">
                         <strong><i class="fas fa-tag me-2"></i>Status:</strong>
                         <div class="mt-1">
-                            <span class="badge bg-${getStatusBadgeColor(data.status)}">${data.status || 'N/A'}</span>
+                            <span class="badge bg-${getStatusBadgeColor(data.status)}">${(data.status || 'N/A').charAt(0).toUpperCase() + (data.status || 'N/A').slice(1)}</span>
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
@@ -377,6 +465,18 @@ function initializeCalendar() {
                         <div class="mt-1">${data.reason}</div>
                     </div>
                     ` : ''}
+                    ${data.appointment_number ? `
+                    <div class="col-md-6 mb-3">
+                        <strong><i class="fas fa-hashtag me-2"></i>Appointment #:</strong>
+                        <div class="mt-1">${data.appointment_number}</div>
+                    </div>
+                    ` : ''}
+                    ${data.is_online ? `
+                    <div class="col-md-6 mb-3">
+                        <strong><i class="fas fa-video me-2"></i>Type:</strong>
+                        <div class="mt-1"><span class="badge bg-info">Online Appointment</span></div>
+                    </div>
+                    ` : ''}
                 </div>
             `;
             
@@ -385,59 +485,81 @@ function initializeCalendar() {
         })
         .catch(error => {
             console.error('Error loading appointment details:', error);
-            // Fallback: redirect to appointment page
-            window.location.href = `{{ url('admin/appointments') }}/${appointmentId}`;
+            window.location.href = `{{ route('admin.appointments.show', '') }}/${appointmentId}`;
         });
     }
 
     function rescheduleAppointment(appointmentId, newStart, newEnd) {
-        Swal.fire({
-            title: 'Reschedule Appointment?',
-            text: 'Do you want to reschedule this appointment?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Reschedule',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch(`{{ route('admin.appointments.show', '') }}/${appointmentId}/reschedule`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        new_date: newStart.toString('yyyy-MM-dd'),
-                        new_time: newStart.toString('HH:mm'),
-                        reason: 'Rescheduled via calendar'
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire('Success!', 'Appointment rescheduled successfully.', 'success');
-                        loadCalendarData();
-                    } else {
-                        Swal.fire('Error!', data.message || 'Failed to reschedule appointment.', 'error');
-                        loadCalendarData(); // Reload to revert changes
-                    }
-                })
-                .catch(error => {
-                    console.error('Error rescheduling appointment:', error);
-                    Swal.fire('Error!', 'Failed to reschedule appointment.', 'error');
-                    loadCalendarData(); // Reload to revert changes
-                });
-            } else {
-                loadCalendarData(); // Reload to revert changes
+        if (typeof Swal === 'undefined') {
+            if (!confirm('Do you want to reschedule this appointment?')) {
+                calendar.refetchEvents();
+                return;
             }
-        });
+        } else {
+            Swal.fire({
+                title: 'Reschedule Appointment?',
+                text: 'Do you want to reschedule this appointment?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Reschedule',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    calendar.refetchEvents();
+                    return;
+                }
+                performReschedule(appointmentId, newStart, newEnd);
+            });
+            return;
+        }
+        performReschedule(appointmentId, newStart, newEnd);
     }
 
-    function updateAppointmentDuration(appointmentId, newStart, newEnd) {
-        // Similar to reschedule but for duration changes
-        rescheduleAppointment(appointmentId, newStart, newEnd);
+    function performReschedule(appointmentId, newStart, newEnd) {
+        const date = newStart.toISOString().split('T')[0];
+        const time = newStart.toTimeString().split(' ')[0].substring(0, 5);
+        
+        fetch(`{{ route('admin.appointments.show', '') }}/${appointmentId}/reschedule`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                new_date: date,
+                new_time: time,
+                reason: 'Rescheduled via calendar'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Success!', 'Appointment rescheduled successfully.', 'success');
+                } else {
+                    alert('Appointment rescheduled successfully.');
+                }
+                calendar.refetchEvents();
+            } else {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Error!', data.message || 'Failed to reschedule appointment.', 'error');
+                } else {
+                    alert(data.message || 'Failed to reschedule appointment.');
+                }
+                calendar.refetchEvents();
+            }
+        })
+        .catch(error => {
+            console.error('Error rescheduling appointment:', error);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Error!', 'Failed to reschedule appointment.', 'error');
+            } else {
+                alert('Failed to reschedule appointment.');
+            }
+            calendar.refetchEvents();
+        });
     }
 
     function getStatusBadgeColor(status) {
@@ -450,23 +572,6 @@ function initializeCalendar() {
         };
         return colors[status] || 'secondary';
     }
-
-    function changeViewType(viewType) {
-        calendar.viewType = viewType;
-        calendar.update();
-        loadCalendarData();
-        
-        // Update active button
-        document.querySelectorAll('.btn-group .btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        event.target.closest('.btn').classList.add('active');
-    }
-
-    // Make calendar available globally for view type buttons
-    window.calendar = calendar;
-    window.changeViewType = changeViewType;
 });
 </script>
 @endpush
-
