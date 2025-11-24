@@ -355,7 +355,7 @@ Route::group(['middleware' => 'installed'], function () {
 
         Route::get('password/reset/{token}', [\App\Http\Controllers\Patient\NewPasswordController::class, 'create'])
             ->middleware('guest:patient')
-            ->name('password.reset');
+            ->name('password.reset'); // Will become 'patient.password.reset' due to prefix group
 
         Route::post('password/store', [\App\Http\Controllers\Patient\NewPasswordController::class, 'store'])
             ->middleware('guest:patient')
