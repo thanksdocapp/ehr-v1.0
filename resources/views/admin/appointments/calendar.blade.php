@@ -244,9 +244,11 @@ function initializeCalendar() {
             loadCalendarData();
         }
     });
-
-    // Load calendar data
-    loadCalendarData();
+    
+    // Load calendar data after calendar is initialized
+    setTimeout(function() {
+        loadCalendarData();
+    }, 200);
 
     function loadCalendarData() {
         const start = calendar.visibleStart();
