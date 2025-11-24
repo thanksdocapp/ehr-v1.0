@@ -215,45 +215,91 @@
 <script src="https://cdn.daypilot.org/daypilot-lite.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize DayPilot Calendar
-    const calendar = new DayPilot.Calendar("calendar", {
-        viewType: "Month",
-        startDate: DayPilot.Date.today().firstDayOfMonth(),
-        timeRangeSelectedHandling: "Enabled",
-        eventMoveHandling: "Update",
-        eventResizeHandling: "Update",
-        eventDeleteHandling: "Disabled",
-        eventClickHandling: "Enabled",
-        onTimeRangeSelected: function(args) {
-            // Create new appointment on time range selection
-            const start = args.start;
-            const end = args.end;
-            window.location.href = `{{ route('staff.appointments.create') }}?date=${start.toString('yyyy-MM-dd')}&time=${start.toString('HH:mm')}`;
-        },
-        onEventClick: function(args) {
-            // Show appointment details
-            loadAppointmentDetails(args.e.id());
-        },
-        onEventMoved: function(args) {
-            // Handle appointment rescheduling
-            rescheduleAppointment(args.e.id(), args.newStart, args.newEnd);
-        },
-        onEventResized: function(args) {
-            // Handle appointment duration change
-            updateAppointmentDuration(args.e.id(), args.newStart, args.newEnd);
-        },
-        onVisibleRangeChanged: function(args) {
-            // Reload data when calendar view changes
-            loadCalendarData();
-        }
-    });
+    // Check if calendar element exists
+    const calendarElement = document.getElementById('calendar');
+    if (!calendarElement) {
+        console.error('Calendar element not found!');
+        alert('Calendar container not found. Please refresh the page.');
+        return;
+    }
 
-    // Load calendar data
-    loadCalendarData();
+    // Check if DayPilot is loaded
+    if (typeof DayPilot === 'undefined') {
+        console.error('DayPilot library not loaded!');
+        alert('Calendar library failed to load. Please refresh the page.');
+        return;
+    }
+
+    console.log('Initializing calendar...');
+
+    // Initialize DayPilot Calendar
+    let calendar;
+    try {
+        calendar = new DayPilot.Calendar("calendar", {
+            viewType: "Month",
+            startDate: DayPilot.Date.today().firstDayOfMonth(),
+            timeRangeSelectedHandling: "Enabled",
+            eventMoveHandling: "Update",
+            eventResizeHandling: "Update",
+            eventDeleteHandling: "Disabled",
+            eventClickHandling: "Enabled",
+            onTimeRangeSelected: function(args) {
+                // Create new appointment on time range selection
+                const start = args.start;
+                const end = args.end;
+                window.location.href = `{{ route('staff.appointments.create') }}?date=${start.toString('yyyy-MM-dd')}&time=${start.toString('HH:mm')}`;
+            },
+            onEventClick: function(args) {
+                // Show appointment details
+                loadAppointmentDetails(args.e.id());
+            },
+            onEventMoved: function(args) {
+                // Handle appointment rescheduling
+                rescheduleAppointment(args.e.id(), args.newStart, args.newEnd);
+            },
+            onEventResized: function(args) {
+                // Handle appointment duration change
+                updateAppointmentDuration(args.e.id(), args.newStart, args.newEnd);
+            },
+            onVisibleRangeChanged: function(args) {
+                // Reload data when calendar view changes
+                loadCalendarData();
+            }
+        });
+        
+        console.log('Calendar initialized successfully');
+        
+        // Initial render
+        calendar.init();
+        
+        // Load calendar data after calendar is initialized
+        setTimeout(function() {
+            loadCalendarData();
+        }, 200);
+    } catch (error) {
+        console.error('Error initializing calendar:', error);
+        console.error('Error stack:', error.stack);
+        alert('Failed to initialize calendar: ' + error.message);
+        return;
+    }
 
     function loadCalendarData() {
-        const start = calendar.visibleStart();
-        const end = calendar.visibleEnd();
+        if (!calendar) {
+            console.error('Calendar not initialized');
+            return;
+        }
+        
+        let start, end;
+        try {
+            start = calendar.visibleStart();
+            end = calendar.visibleEnd();
+        } catch (error) {
+            console.error('Error getting visible range:', error);
+            // Fallback to current month
+            const today = DayPilot.Date.today();
+            start = today.firstDayOfMonth();
+            end = today.lastDayOfMonth();
+        }
         
         const params = new URLSearchParams({
             start: start.toString('yyyy-MM-dd'),
@@ -505,15 +551,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function changeViewType(viewType) {
+        if (!calendar) {
+            console.error('Calendar not initialized');
+            return;
+        }
+        
         calendar.viewType = viewType;
         calendar.update();
-        loadCalendarData();
+        
+        // Reload data after view change
+        setTimeout(function() {
+            loadCalendarData();
+        }, 100);
         
         // Update active button
         document.querySelectorAll('.btn-group .btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        event.target.closest('.btn').classList.add('active');
+        if (event && event.target) {
+            event.target.closest('.btn').classList.add('active');
+        }
     }
 
     // Make calendar available globally for view type buttons
