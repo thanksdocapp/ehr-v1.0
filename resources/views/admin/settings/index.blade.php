@@ -105,133 +105,143 @@
                         </div>
                         <div>
                             <h5 class="mb-1 fw-bold">SMS</h5>
-                    <div class="stat-label">SMS gateway and notification settings</div>
-                    <div class="stat-note">Redirects to Communication section</div>
+                            <p class="text-muted mb-0 small">SMS gateway and notification settings</p>
+                        </div>
+                    </div>
                 </div>
             </a>
         </div>
 
         <!-- Security Settings -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ route('admin.settings.security') }}" class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon danger">
-                        <i class="fas fa-shield-alt"></i>
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.settings.security') }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-4" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: var(--gradient-danger); width: 60px; height: 60px;">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">Security</h5>
+                            <p class="text-muted mb-0 small">Authentication and security policies</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">Security</div>
-                    <div class="stat-label">Authentication and security policies</div>
                 </div>
             </a>
         </div>
 
         <!-- Alert Settings -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ route('admin.settings.alerts') }}" class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon warning">
-                        <i class="fas fa-exclamation-triangle"></i>
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.settings.alerts') }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-5" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: var(--gradient-warning); width: 60px; height: 60px;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">Patient Alerts</h5>
+                            <p class="text-muted mb-0 small">Configure alert logging and notifications</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">Patient Alerts</div>
-                    <div class="stat-label">Configure alert logging and notifications</div>
                 </div>
             </a>
         </div>
 
         <!-- Maintenance Settings -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ route('admin.settings.maintenance') }}" class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon warning">
-                        <i class="fas fa-tools"></i>
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.settings.maintenance') }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-6" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: var(--gradient-warning); width: 60px; height: 60px;">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">Maintenance</h5>
+                            <p class="text-muted mb-0 small">Maintenance mode and updates</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">Maintenance</div>
-                    <div class="stat-label">Maintenance mode and updates</div>
                 </div>
             </a>
         </div>
 
         <!-- Backup Settings -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ route('admin.settings.backup') }}" class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon success">
-                        <i class="fas fa-database"></i>
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.settings.backup') }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-7" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: var(--gradient-success); width: 60px; height: 60px;">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">Backup</h5>
+                            <p class="text-muted mb-0 small">Database backup and restore</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">Backup</div>
-                    <div class="stat-label">Database backup and restore</div>
                 </div>
             </a>
         </div>
 
-
         <!-- Role-Based Menu Visibility -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ route('admin.role-menu-visibility.index') }}" class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon success">
-                        <i class="fas fa-user-shield"></i>
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.role-menu-visibility.index') }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-8" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: var(--gradient-success); width: 60px; height: 60px;">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">Role Menu Visibility</h5>
+                            <p class="text-muted mb-0 small">Configure menu visibility by user role</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">Role Menu Visibility</div>
-                    <div class="stat-label">Configure menu visibility by user role</div>
                 </div>
             </a>
         </div>
 
         <!-- Custom Menu Items -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ route('admin.custom-menu-items.index', ['type' => 'staff']) }}" class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon info">
-                        <i class="fas fa-link"></i>
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.custom-menu-items.index', ['type' => 'staff']) }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-9" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: var(--gradient-info); width: 60px; height: 60px;">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">Custom Menu Items</h5>
+                            <p class="text-muted mb-0 small">Add custom links to staff sidebar</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">Custom Menu Items</div>
-                    <div class="stat-label">Add custom links to staff sidebar</div>
                 </div>
             </a>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="admin-card">
-        <div class="card-header">
-            <h5 class="card-title">Quick Actions</h5>
+    <!-- Modern Quick Actions -->
+    <div class="modern-card mt-4">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-bolt"></i>Quick Actions
+            </h5>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <button class="btn btn-outline-primary btn-lg w-100" onclick="clearCache()">
-                        <i class="fas fa-broom me-2"></i>
-                        Clear Application Cache
+        <div class="modern-card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <button class="btn-modern btn-modern-outline w-100" onclick="clearCache()">
+                        <i class="fas fa-broom"></i>Clear Application Cache
                     </button>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <button class="btn btn-outline-warning btn-lg w-100" onclick="optimizeApp()">
-                        <i class="fas fa-rocket me-2"></i>
-                        Optimize Application
+                <div class="col-md-6">
+                    <button class="btn-modern btn-modern-outline w-100" onclick="optimizeApp()">
+                        <i class="fas fa-rocket"></i>Optimize Application
                     </button>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <a href="{{ route('admin.settings.system-info') }}" class="btn btn-outline-info btn-lg w-100">
-                        <i class="fas fa-info-circle me-2"></i>
-                        System Information
+                <div class="col-md-6">
+                    <a href="{{ route('admin.settings.system-info') }}" class="btn-modern btn-modern-outline w-100 text-decoration-none">
+                        <i class="fas fa-info-circle"></i>System Information
                     </a>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <button class="btn btn-outline-secondary btn-lg w-100" onclick="downloadLogs()">
-                        <i class="fas fa-download me-2"></i>
-                        Download Logs
+                <div class="col-md-6">
+                    <button class="btn-modern btn-modern-outline w-100" onclick="downloadLogs()">
+                        <i class="fas fa-download"></i>Download Logs
                     </button>
                 </div>
             </div>
@@ -250,7 +260,6 @@
         </div>
     </div>
     @endif
-    </div>
 </div>
 @endsection
 
