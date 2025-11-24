@@ -430,7 +430,52 @@
 @endsection
 
 @push('styles')
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
 <style>
+    #dashboard-calendar {
+        font-size: 0.9rem;
+    }
+    
+    #dashboard-calendar .fc-header-toolbar {
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+    }
+    
+    #dashboard-calendar .fc-button {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    #dashboard-calendar .fc-event {
+        font-size: 0.75rem;
+        padding: 1px 3px;
+    }
+    
+    /* Today's Schedule Toggle Button */
+    #toggle-today-schedule {
+        transition: all 0.3s ease;
+    }
+    
+    #toggle-today-schedule:hover {
+        transform: scale(1.1);
+    }
+    
+    #today-schedule-card {
+        animation: slideDown 0.3s ease-out;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
     .avatar-xs {
         width: 24px;
         height: 24px;
@@ -438,9 +483,18 @@
     }
     
     .avatar-sm {
-        width: 32px;
-        height: 32px;
-        font-size: 0.875rem;
+        width: 40px;
+        height: 40px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .list-group-item {
+        transition: background-color 0.2s ease;
+    }
+    
+    .list-group-item:hover {
+        background-color: #f8f9fa;
     }
     
     .progress-bar.bg-gradient {
