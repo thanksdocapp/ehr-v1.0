@@ -141,14 +141,6 @@
 </style>
 @endpush
 
-@section('content')
-<div class="container-fluid">
-    <div class="page-title mb-4">
-        <h5 class="mb-0"><i class="fas fa-user-md me-2"></i>Add New Doctor</h5>
-        <small class="text-muted">Create a new doctor profile</small>
-        <p class="page-subtitle text-muted">Create a new doctor profile with personal and professional information</p>
-    </div>
-
     <div class="row">
         <div class="col-lg-8">
             <form id="createDoctorForm" action="{{ contextRoute('doctors.store') }}" method="POST" enctype="multipart/form-data">
