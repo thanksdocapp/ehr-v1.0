@@ -190,6 +190,93 @@
         border: 1px solid #e9ecef;
     }
 
+    .search-input-wrapper {
+        position: relative;
+    }
+
+    .search-input-wrapper .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        z-index: 1;
+    }
+
+    .search-input-wrapper input {
+        padding-left: 45px;
+        padding-right: 45px;
+    }
+
+    .search-clear-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        padding: 5px 10px;
+        z-index: 1;
+        display: none;
+    }
+
+    .search-input-wrapper.has-value .search-clear-btn {
+        display: block;
+    }
+
+    .search-clear-btn:hover {
+        color: #dc3545;
+    }
+
+    .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        margin: 0.25rem;
+    }
+
+    .filter-chip .remove {
+        cursor: pointer;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+
+    .filter-chip .remove:hover {
+        opacity: 1;
+    }
+
+    .advanced-search-toggle {
+        cursor: pointer;
+        color: #667eea;
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: color 0.2s;
+    }
+
+    .advanced-search-toggle:hover {
+        color: #764ba2;
+    }
+
+    .advanced-search-panel {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+    }
+
+    .advanced-search-panel.show {
+        max-height: 500px;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e9ecef;
+    }
+
     .page-header-modern {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 16px;
@@ -336,44 +423,157 @@
 
     <!-- Modern Filters Card -->
     <div class="filter-card-modern mb-4 fade-in-up">
-        <div class="d-flex align-items-center mb-3">
-            <i class="fas fa-filter me-2 text-primary"></i>
-            <h5 class="mb-0 fw-bold">Search & Filter</h5>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-filter me-2 text-primary"></i>
+                <h5 class="mb-0 fw-bold">Search & Filter</h5>
+            </div>
+            <a href="#" class="advanced-search-toggle" id="toggleAdvancedSearch">
+                <i class="fas fa-sliders-h me-1"></i>Advanced Search
+            </a>
         </div>
-        <form method="GET" action="{{ contextRoute('departments.index') }}" class="row g-3">
-            <div class="col-md-5">
-                <label class="form-label fw-semibold">Search Clinics</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0">
-                        <i class="fas fa-search text-muted"></i>
+
+        <!-- Active Filters -->
+        @if(request()->hasAny(['search', 'status', 'emergency', 'location', 'sort']))
+        <div class="mb-3">
+            <small class="text-muted d-block mb-2">Active Filters:</small>
+            <div class="d-flex flex-wrap align-items-center">
+                @if(request('search'))
+                    <span class="filter-chip">
+                        Search: "{{ request('search') }}"
+                        <a href="{{ request()->fullUrlWithQuery(['search' => null]) }}" class="remove text-white">
+                            <i class="fas fa-times"></i>
+                        </a>
                     </span>
-                    <input type="text" name="search" class="form-control border-start-0" 
-                           placeholder="Search by name, description..." 
-                           value="{{ request('search') }}">
+                @endif
+                @if(request('status'))
+                    <span class="filter-chip">
+                        Status: {{ ucfirst(request('status')) }}
+                        <a href="{{ request()->fullUrlWithQuery(['status' => null]) }}" class="remove text-white">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </span>
+                @endif
+                @if(request('emergency'))
+                    <span class="filter-chip">
+                        Emergency: {{ request('emergency') == 'yes' ? 'Yes' : 'No' }}
+                        <a href="{{ request()->fullUrlWithQuery(['emergency' => null]) }}" class="remove text-white">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </span>
+                @endif
+                @if(request('location'))
+                    <span class="filter-chip">
+                        Location: {{ request('location') }}
+                        <a href="{{ request()->fullUrlWithQuery(['location' => null]) }}" class="remove text-white">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </span>
+                @endif
+                @if(request('sort') && request('sort') != 'name')
+                    <span class="filter-chip">
+                        Sort: {{ ucfirst(request('sort')) }}
+                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'name']) }}" class="remove text-white">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </span>
+                @endif
+                <a href="{{ contextRoute('departments.index') }}" class="btn btn-sm btn-outline-danger ms-2">
+                    <i class="fas fa-times me-1"></i>Clear All
+                </a>
+            </div>
+        </div>
+        @endif
+
+        <form method="GET" action="{{ contextRoute('departments.index') }}" id="searchForm">
+            <div class="row g-3">
+                <!-- Main Search -->
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Search Clinics</label>
+                    <div class="search-input-wrapper {{ request('search') ? 'has-value' : '' }}">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" 
+                               name="search" 
+                               id="searchInput"
+                               class="form-control" 
+                               placeholder="Search by name, description, location, head, phone, email..." 
+                               value="{{ request('search') }}"
+                               autocomplete="off">
+                        @if(request('search'))
+                            <button type="button" class="search-clear-btn" onclick="clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                    </select>
+                </div>
+
+                <!-- Sort -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Sort By</label>
+                    <select name="sort" class="form-select">
+                        <option value="name" {{ request('sort') == 'name' ? 'selected' : '' }}>Name (A-Z)</option>
+                        <option value="doctors" {{ request('sort') == 'doctors' ? 'selected' : '' }}>Most Doctors</option>
+                        <option value="appointments" {{ request('sort') == 'appointments' ? 'selected' : '' }}>Most Appointments</option>
+                        <option value="recent" {{ request('sort') == 'recent' ? 'selected' : '' }}>Recently Added</option>
+                    </select>
                 </div>
             </div>
-            <div class="col-md-3">
-                <label class="form-label fw-semibold">Status</label>
-                <select name="status" class="form-select">
-                    <option value="">All Status</option>
-                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                </select>
+
+            <!-- Advanced Search Panel -->
+            <div class="advanced-search-panel" id="advancedSearchPanel">
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Emergency Department</label>
+                        <select name="emergency" class="form-select">
+                            <option value="">All Types</option>
+                            <option value="yes" {{ request('emergency') == 'yes' ? 'selected' : '' }}>Emergency Only</option>
+                            <option value="no" {{ request('emergency') == 'no' ? 'selected' : '' }}>Regular Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Location</label>
+                        <select name="location" class="form-select">
+                            <option value="">All Locations</option>
+                            @foreach($locations ?? [] as $location)
+                                <option value="{{ $location }}" {{ request('location') == $location ? 'selected' : '' }}>
+                                    {{ $location }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-3">
-                <label class="form-label fw-semibold">Sort By</label>
-                <select name="sort" class="form-select">
-                    <option value="name" {{ request('sort') == 'name' ? 'selected' : '' }}>Name</option>
-                    <option value="doctors" {{ request('sort') == 'doctors' ? 'selected' : '' }}>Doctors Count</option>
-                    <option value="appointments" {{ request('sort') == 'appointments' ? 'selected' : '' }}>Appointments</option>
-                    <option value="recent" {{ request('sort') == 'recent' ? 'selected' : '' }}>Recently Added</option>
-                </select>
-            </div>
-            <div class="col-md-1">
-                <label class="form-label fw-semibold">&nbsp;</label>
-                <button type="submit" class="btn btn-primary w-100" style="border-radius: 10px;">
-                    <i class="fas fa-search"></i>
-                </button>
+
+            <!-- Action Buttons -->
+            <div class="row g-3 mt-2">
+                <div class="col-md-12">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" style="border-radius: 10px;">
+                            <i class="fas fa-search me-1"></i>Search
+                        </button>
+                        <a href="{{ contextRoute('departments.index') }}" class="btn btn-outline-secondary" style="border-radius: 10px;">
+                            <i class="fas fa-redo me-1"></i>Reset
+                        </a>
+                        @if(request()->hasAny(['search', 'status', 'emergency', 'location', 'sort']))
+                            <div class="ms-auto d-flex align-items-center">
+                                <small class="text-muted me-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    {{ $departments->total() }} result(s) found
+                                </small>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
         </form>
     </div>
@@ -579,6 +779,80 @@
 
 @push('scripts')
 <script>
+    $(document).ready(function() {
+        // Advanced Search Toggle
+        $('#toggleAdvancedSearch').on('click', function(e) {
+            e.preventDefault();
+            const panel = $('#advancedSearchPanel');
+            const icon = $(this).find('i');
+            
+            panel.toggleClass('show');
+            
+            if (panel.hasClass('show')) {
+                icon.removeClass('fa-sliders-h').addClass('fa-chevron-up');
+            } else {
+                icon.removeClass('fa-chevron-up').addClass('fa-sliders-h');
+            }
+        });
+
+        // Show advanced panel if any advanced filter is active
+        @if(request()->hasAny(['emergency', 'location']))
+            $('#advancedSearchPanel').addClass('show');
+            $('#toggleAdvancedSearch i').removeClass('fa-sliders-h').addClass('fa-chevron-up');
+        @endif
+
+        // Search input clear button visibility
+        const searchInput = $('#searchInput');
+        const searchWrapper = $('.search-input-wrapper');
+        
+        function toggleClearButton() {
+            if (searchInput.val().length > 0) {
+                searchWrapper.addClass('has-value');
+            } else {
+                searchWrapper.removeClass('has-value');
+            }
+        }
+
+        searchInput.on('input', toggleClearButton);
+        toggleClearButton();
+
+        // Clear search function
+        window.clearSearch = function() {
+            searchInput.val('');
+            searchWrapper.removeClass('has-value');
+            $('#searchForm').submit();
+        };
+
+        // Auto-submit on Enter key
+        searchInput.on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $('#searchForm').submit();
+            }
+        });
+
+        // Debounced search (optional - for real-time search)
+        let searchTimeout;
+        searchInput.on('input', function() {
+            clearTimeout(searchTimeout);
+            // Uncomment below for auto-search on typing (with 500ms delay)
+            // searchTimeout = setTimeout(function() {
+            //     if (searchInput.val().length >= 3 || searchInput.val().length === 0) {
+            //         $('#searchForm').submit();
+            //     }
+            // }, 500);
+        });
+
+        // Filter chip removal
+        $('.filter-chip .remove').on('click', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
+
     // Clinic actions
     function viewDoctors(departmentId) {
         window.location.href = `/admin/doctors?department_id=${departmentId}`;
@@ -732,3 +1006,4 @@
     }, 30000);
 </script>
 @endpush
+

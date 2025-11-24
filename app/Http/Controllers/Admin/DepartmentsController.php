@@ -10,11 +10,61 @@ use Illuminate\Support\Str;
 
 class DepartmentsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $departments = Department::withCount(['doctors', 'appointments'])
-            ->ordered()
-            ->paginate(15);
+        $query = Department::withCount(['doctors', 'appointments']);
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('head_of_department', 'like', "%{$search}%")
+                  ->orWhere('location', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Status filter
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+
+        // Emergency filter
+        if ($request->filled('emergency')) {
+            $query->where('is_emergency', $request->emergency === 'yes');
+        }
+
+        // Location filter
+        if ($request->filled('location')) {
+            $query->where('location', 'like', "%{$request->location}%");
+        }
+
+        // Sort functionality
+        $sortBy = $request->get('sort', 'name');
+        switch ($sortBy) {
+            case 'doctors':
+                $query->orderBy('doctors_count', 'desc');
+                break;
+            case 'appointments':
+                $query->orderBy('appointments_count', 'desc');
+                break;
+            case 'recent':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'name':
+            default:
+                $query->ordered();
+                break;
+        }
+
+        $departments = $query->paginate(15)->withQueryString();
 
         // Manually calculate patient counts for each department
         foreach ($departments as $department) {
@@ -27,7 +77,15 @@ class DepartmentsController extends Controller
             $department->patients_count = $patientCount;
         }
 
-        return view('admin.departments.index', compact('departments'));
+        // Get unique locations for filter dropdown
+        $locations = Department::whereNotNull('location')
+            ->distinct()
+            ->pluck('location')
+            ->filter()
+            ->sort()
+            ->values();
+
+        return view('admin.departments.index', compact('departments', 'locations'));
     }
 
     public function create()
