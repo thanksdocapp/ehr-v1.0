@@ -68,33 +68,33 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0"><i class="fas fa-prescription-bottle-alt me-2"></i>Prescriptions</h5>
-            <small class="text-muted">Manage patient prescriptions and medication orders</small>
-        </div>
-        <div>
-            <a href="{{ contextRoute('prescriptions.create') }}" class="btn btn-doctor-primary">
-                <i class="fas fa-plus me-2"></i>New Prescription
-            </a>
+<div class="fade-in">
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">Prescriptions</h1>
+                    <p class="modern-page-subtitle">Manage patient prescriptions and medication orders</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a href="{{ contextRoute('prescriptions.create') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-plus me-2"></i>New Prescription
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="row g-3 mb-4">
+    <!-- Modern Statistics Cards -->
+    <div class="row g-4 mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number" style="font-size: 1.75rem; font-weight: 600; color: white;">{{ $stats['total'] ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem; opacity: 0.9;">Total Prescriptions</div>
-                    </div>
-                    <div class="stat-icon" style="width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2);">
-                        <i class="fas fa-prescription-bottle-alt text-white"></i>
-                    </div>
+            <div class="stat-card-modern fade-in-up stagger-1">
+                <div class="stat-card-icon" style="background: var(--gradient-primary);">
+                    <i class="fas fa-prescription-bottle-alt"></i>
                 </div>
+                <div class="stat-card-number">{{ number_format($stats['total'] ?? 0) }}</div>
+                <div class="stat-card-label">Total Prescriptions</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">

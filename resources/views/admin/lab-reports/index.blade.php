@@ -3,16 +3,21 @@
 @section('title', 'Lab Reports Management')
 
 @section('content')
-<div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0"><i class="fas fa-flask me-2"></i>Lab Reports Management</h5>
-            <small class="text-muted">Manage laboratory test reports and results</small>
-        </div>
-        <div>
-            <a href="{{ contextRoute('lab-reports.create') }}" class="btn btn-doctor-primary">
-                <i class="fas fa-plus me-2"></i>Add Lab Report
-            </a>
+<div class="fade-in">
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">Lab Reports Management</h1>
+                    <p class="modern-page-subtitle">Manage laboratory test reports and results</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a href="{{ contextRoute('lab-reports.create') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-plus me-2"></i>Add Lab Report
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -30,61 +35,42 @@
         </div>
     @endif
 
-    <!-- Statistics Cards -->
-    <div class="row g-3 mb-4">
+    <!-- Modern Statistics Cards -->
+    <div class="row g-4 mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-primary" style="font-size: 1.75rem; font-weight: 600;">{{ $stats['total'] }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Total Lab Reports</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-flask text-white"></i>
-                    </div>
+            <div class="stat-card-modern fade-in-up stagger-1">
+                <div class="stat-card-icon" style="background: var(--gradient-primary);">
+                    <i class="fas fa-flask"></i>
                 </div>
+                <div class="stat-card-number">{{ number_format($stats['total'] ?? 0) }}</div>
+                <div class="stat-card-label">Total Lab Reports</div>
             </div>
         </div>
-
         <div class="col-xl-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-warning" style="font-size: 1.75rem; font-weight: 600;">{{ $stats['pending'] }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Pending Reports</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning), #d97706); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-clock text-white"></i>
-                    </div>
+            <div class="stat-card-modern fade-in-up stagger-2">
+                <div class="stat-card-icon" style="background: var(--gradient-warning);">
+                    <i class="fas fa-clock"></i>
                 </div>
+                <div class="stat-card-number">{{ number_format($stats['pending'] ?? 0) }}</div>
+                <div class="stat-card-label">Pending Reports</div>
             </div>
         </div>
-
         <div class="col-xl-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-success" style="font-size: 1.75rem; font-weight: 600;">{{ $stats['completed'] }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Completed Reports</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--success), #16a34a); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-check-circle text-white"></i>
-                    </div>
+            <div class="stat-card-modern fade-in-up stagger-3">
+                <div class="stat-card-icon" style="background: var(--gradient-success);">
+                    <i class="fas fa-check-circle"></i>
                 </div>
+                <div class="stat-card-number">{{ number_format($stats['completed'] ?? 0) }}</div>
+                <div class="stat-card-label">Completed Reports</div>
             </div>
         </div>
-
         <div class="col-xl-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-info" style="font-size: 1.75rem; font-weight: 600;">{{ $stats['this_month'] }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">This Month</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--info), #0891b2); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-calendar text-white"></i>
-                    </div>
+            <div class="stat-card-modern fade-in-up stagger-4">
+                <div class="stat-card-icon" style="background: var(--gradient-info);">
+                    <i class="fas fa-calendar"></i>
                 </div>
+                <div class="stat-card-number">{{ number_format($stats['this_month'] ?? 0) }}</div>
+                <div class="stat-card-label">This Month</div>
             </div>
         </div>
     </div>

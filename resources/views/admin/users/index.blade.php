@@ -3,17 +3,21 @@
 @section('title', 'User Management')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0"><i class="fas fa-users me-2"></i>User Management</h5>
-            <small class="text-muted">Manage system users and their access</small>
-        </div>
-        <div>
-            <a href="{{ contextRoute('users.create') }}" class="btn btn-doctor-primary">
-                <i class="fas fa-plus me-2"></i>Add New User
-            </a>
+<div class="fade-in">
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">User Management</h1>
+                    <p class="modern-page-subtitle">Manage system users and their access</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a href="{{ contextRoute('users.create') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-plus me-2"></i>Add New User
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -36,23 +40,25 @@
         </div>
     @endif
 
-    <!-- Filters Card -->
-    <div class="doctor-card mb-4">
-        <div class="doctor-card-header">
-            <h5 class="doctor-card-title mb-0"><i class="fas fa-filter me-2"></i>Search & Filters</h5>
+    <!-- Modern Filters Card -->
+    <div class="modern-card mb-4">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-filter"></i>Search & Filters
+            </h5>
         </div>
-        <div class="doctor-card-body">
+        <div class="modern-card-body">
             <form method="GET" action="{{ contextRoute('users.index') }}">
                 <div class="row g-3">
                     <div class="col-md-3">
-                        <label class="form-label">Search Users</label>
-                        <input type="text" class="form-control" id="search" name="search" 
+                        <label class="modern-form-label">Search Users</label>
+                        <input type="text" class="modern-form-control" id="search" name="search" 
                                value="{{ request('search') }}" 
                                placeholder="Name, email, phone, employee ID...">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Role</label>
-                        <select class="form-control" id="role" name="role">
+                        <label class="modern-form-label">Role</label>
+                        <select class="modern-form-select" id="role" name="role">
                             <option value="">All Roles</option>
                             @foreach($roles as $key => $role)
                                 <option value="{{ $key }}" {{ request('role') == $key ? 'selected' : '' }}>
@@ -62,8 +68,8 @@
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Clinic</label>
-                        <select class="form-control" id="department" name="department">
+                        <label class="modern-form-label">Clinic</label>
+                        <select class="modern-form-select" id="department" name="department">
                             <option value="">All Clinics</option>
                             @foreach($departments as $department)
                                 <option value="{{ $department->id }}" 
@@ -74,21 +80,21 @@
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Status</label>
-                        <select class="form-control" id="status" name="status">
+                        <label class="modern-form-label">Status</label>
+                        <select class="modern-form-select" id="status" name="status">
                             <option value="">All Status</option>
                             <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                             <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">&nbsp;</label>
+                        <label class="modern-form-label">&nbsp;</label>
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-doctor-primary">
-                                <i class="fas fa-search me-1"></i>Filter
+                            <button type="submit" class="btn-modern btn-modern-primary">
+                                <i class="fas fa-search"></i>Filter
                             </button>
-                            <a href="{{ contextRoute('users.index') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-1"></i>Clear
+                            <a href="{{ contextRoute('users.index') }}" class="btn-modern btn-modern-outline">
+                                <i class="fas fa-times"></i>Clear
                             </a>
                         </div>
                     </div>
