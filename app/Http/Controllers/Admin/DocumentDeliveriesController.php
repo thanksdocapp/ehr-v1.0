@@ -131,8 +131,29 @@ class DocumentDeliveriesController extends Controller
             'clinicName' => $clinicName,
         ])->render();
 
-        // Send email with attachment
-        \Mail::send([], [], function ($message) use ($recipientEmail, $recipientName, $subject, $emailBody, $pdfPath, $document) {
+        // Configure SMTP settings from database before sending
+        $settings = \App\Models\SiteSetting::getSettings();
+        if (isset($settings['smtp_host']) && $settings['smtp_host']) {
+            \Illuminate\Support\Facades\Config::set('mail.default', 'smtp');
+            \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.host', $settings['smtp_host']);
+            \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.port', $settings['smtp_port'] ?? 587);
+            \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.username', $settings['smtp_username'] ?? '');
+            \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.password', $settings['smtp_password'] ?? '');
+            $encryption = $settings['smtp_encryption'] ?? 'tls';
+            \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.encryption', $encryption === 'none' ? null : $encryption);
+            if (isset($settings['from_email']) && $settings['from_email']) {
+                \Illuminate\Support\Facades\Config::set('mail.from.address', $settings['from_email']);
+                \Illuminate\Support\Facades\Config::set('mail.from.name', $settings['from_name'] ?? $settings['hospital_name'] ?? config('app.name'));
+            }
+        }
+        
+        // Force synchronous sending
+        $originalQueueConnection = config('queue.default');
+        \Illuminate\Support\Facades\Config::set('queue.default', 'sync');
+        
+        try {
+            // Send email with attachment
+            \Mail::send([], [], function ($message) use ($recipientEmail, $recipientName, $subject, $emailBody, $pdfPath, $document) {
             $message->to($recipientEmail, $recipientName)
                 ->subject($subject)
                 ->html($emailBody)
@@ -140,6 +161,15 @@ class DocumentDeliveriesController extends Controller
                     'as' => Str::slug($document->title) . '.pdf',
                     'mime' => 'application/pdf',
                 ]);
-        });
+            });
+        } catch (\Symfony\Component\Mailer\Exception\TransportExceptionInterface $e) {
+            \Log::error('SMTP connection error when sending document delivery email: ' . $e->getMessage());
+            throw new \Exception('SMTP connection failed. Please check SMTP settings in Admin > Settings > Email Configuration.');
+        } catch (\Exception $e) {
+            \Log::error('Failed to send document delivery email: ' . $e->getMessage());
+            throw $e;
+        } finally {
+            \Illuminate\Support\Facades\Config::set('queue.default', $originalQueueConnection);
+        }
     }
 }

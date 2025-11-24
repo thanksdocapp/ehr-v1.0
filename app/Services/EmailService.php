@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Models\EmailTemplate;
 use App\Models\SiteSetting;
+use App\Traits\ConfiguresSmtp;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Config;
 
 class EmailService
 {
+    use ConfiguresSmtp;
     /**
      * Send email using template
      */
@@ -43,24 +46,50 @@ class EmailService
                 'template_name' => $templateName
             ];
 
-            // Send email
-            Mail::send([], [], function ($message) use ($emailData, $recipient) {
+            // Configure SMTP settings from database before sending
+            $this->configureMailFromDatabase();
+            
+            // Force synchronous sending
+            $originalQueueConnection = config('queue.default');
+            Config::set('queue.default', 'sync');
+
+            try {
+                // Send email
+                Mail::send([], [], function ($message) use ($emailData, $recipient) {
                 $message->to($recipient['email'], $recipient['name'] ?? '')
                     ->subject($emailData['subject'])
                     ->from($emailData['sender_email'], $emailData['sender_name'])
                     ->html($this->formatEmailBody($emailData['body']));
-            });
+                });
 
-            // Mark template as used
-            $template->markAsUsed();
+                // Mark template as used
+                $template->markAsUsed();
 
-            Log::info("Email sent successfully using template: {$templateName}", [
-                'recipient' => $recipient['email'],
-                'subject' => $subject
-            ]);
+                Log::info("Email sent successfully using template: {$templateName}", [
+                    'recipient' => $recipient['email'],
+                    'subject' => $subject
+                ]);
 
-            return true;
-
+                return true;
+            } catch (\Symfony\Component\Mailer\Exception\TransportExceptionInterface $e) {
+                // SMTP connection error
+                Log::error("SMTP connection error when sending email: {$templateName}", [
+                    'recipient' => $recipient['email'] ?? 'unknown',
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw new \Exception('SMTP connection failed: ' . $e->getMessage() . '. Please check SMTP settings in Admin > Settings > Email Configuration.');
+            } catch (\Exception $e) {
+                Log::error("Failed to send email using template: {$templateName}", [
+                    'recipient' => $recipient['email'] ?? 'unknown',
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            } finally {
+                // Restore original queue connection
+                Config::set('queue.default', $originalQueueConnection);
+            }
         } catch (\Exception $e) {
             Log::error("Failed to send email using template: {$templateName}", [
                 'recipient' => $recipient['email'] ?? 'unknown',

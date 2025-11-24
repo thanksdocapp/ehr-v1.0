@@ -1220,8 +1220,29 @@ class DoctorsController extends Controller
             // Send credentials notification via email
             if (in_array($validated['notify_via'], ['email', 'both'])) {
                 try {
-                    // Send email using Mail facade directly
-                    \Illuminate\Support\Facades\Mail::send([], [], function ($message) use ($user, $doctor, $resetLink, $portalLink) {
+                    // Configure SMTP settings from database
+                    $settings = \App\Models\SiteSetting::getSettings();
+                    if (isset($settings['smtp_host']) && $settings['smtp_host']) {
+                        \Illuminate\Support\Facades\Config::set('mail.default', 'smtp');
+                        \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.host', $settings['smtp_host']);
+                        \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.port', $settings['smtp_port'] ?? 587);
+                        \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.username', $settings['smtp_username'] ?? '');
+                        \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.password', $settings['smtp_password'] ?? '');
+                        $encryption = $settings['smtp_encryption'] ?? 'tls';
+                        \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.encryption', $encryption === 'none' ? null : $encryption);
+                        if (isset($settings['from_email']) && $settings['from_email']) {
+                            \Illuminate\Support\Facades\Config::set('mail.from.address', $settings['from_email']);
+                            \Illuminate\Support\Facades\Config::set('mail.from.name', $settings['from_name'] ?? $settings['hospital_name'] ?? config('app.name'));
+                        }
+                    }
+                    
+                    // Force synchronous sending
+                    $originalQueueConnection = config('queue.default');
+                    \Illuminate\Support\Facades\Config::set('queue.default', 'sync');
+                    
+                    try {
+                        // Send email using Mail facade directly
+                        \Illuminate\Support\Facades\Mail::send([], [], function ($message) use ($user, $doctor, $resetLink, $portalLink) {
                         $emailBody = "
                             <p>Hello {$user->name},</p>
                             <p>Your login credentials for {$doctor->full_name} have been reset.</p>
@@ -1237,7 +1258,16 @@ class DoctorsController extends Controller
                         $message->to($user->email, $user->name)
                                 ->subject('Your Login Credentials - ' . config('app.name'))
                                 ->html($emailBody);
-                    });
+                        });
+                    } catch (\Symfony\Component\Mailer\Exception\TransportExceptionInterface $e) {
+                        \Log::error('SMTP connection error when sending credentials email: ' . $e->getMessage());
+                        throw new \Exception('SMTP connection failed. Please check SMTP settings in Admin > Settings > Email Configuration.');
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to send credentials email: ' . $e->getMessage());
+                        throw $e;
+                    } finally {
+                        \Illuminate\Support\Facades\Config::set('queue.default', $originalQueueConnection);
+                    }
                 } catch (\Exception $e) {
                     \Log::error('Failed to send credentials email: ' . $e->getMessage());
                 }
