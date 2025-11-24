@@ -345,31 +345,48 @@ class AppointmentsController extends Controller
 
     public function calendar()
     {
-        $appointments = Appointment::with(['patient', 'doctor'])
-            ->whereBetween('appointment_date', [
-                now()->startOfMonth()->subDays(7),
-                now()->endOfMonth()->addDays(7)
-            ])
+        return view('admin.appointments.calendar');
+    }
+
+    /**
+     * Get calendar data for DayPilot Lite (AJAX endpoint)
+     */
+    public function getCalendarData(Request $request)
+    {
+        $start = $request->get('start', now()->startOfMonth()->format('Y-m-d'));
+        $end = $request->get('end', now()->endOfMonth()->format('Y-m-d'));
+
+        $appointments = Appointment::with(['patient', 'doctor', 'department'])
+            ->whereBetween('appointment_date', [$start, $end])
             ->get()
             ->map(function ($appointment) {
+                $startDateTime = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
+                $endDateTime = $startDateTime->copy()->addHour(); // Default 1 hour duration
+                
                 return [
                     'id' => $appointment->id,
                     'title' => $appointment->patient->full_name . ' - ' . $appointment->doctor->full_name,
-                    'start' => $appointment->appointment_date->format('Y-m-d') . 'T' . $appointment->appointment_time->format('H:i:s'),
+                    'start' => $startDateTime->format('Y-m-d\TH:i:s'),
+                    'end' => $endDateTime->format('Y-m-d\TH:i:s'),
                     'backgroundColor' => $this->getStatusColor($appointment->status),
                     'borderColor' => $this->getStatusColor($appointment->status),
                     'extendedProps' => [
                         'patient' => $appointment->patient->full_name,
+                        'patient_id' => $appointment->patient_id,
                         'doctor' => $appointment->doctor->full_name,
-                        'department' => $appointment->department->name,
+                        'doctor_id' => $appointment->doctor_id,
+                        'department' => $appointment->department->name ?? 'N/A',
+                        'department_id' => $appointment->department_id,
                         'status' => $appointment->status,
-                        'type' => $appointment->type,
-                        'reason' => $appointment->reason
+                        'type' => $appointment->type ?? 'consultation',
+                        'reason' => $appointment->reason ?? '',
+                        'appointment_number' => $appointment->appointment_number ?? '',
+                        'is_online' => $appointment->is_online ?? false
                     ]
                 ];
             });
 
-        return view('admin.appointments.calendar', compact('appointments'));
+        return response()->json($appointments);
     }
 
     public function todayAppointments()
@@ -390,12 +407,19 @@ class AppointmentsController extends Controller
             'reason' => 'nullable|string'
         ]);
 
+        $oldDate = $appointment->appointment_date;
+        $oldTime = $appointment->appointment_time;
+
         $appointment->update([
             'appointment_date' => $request->new_date,
             'appointment_time' => $request->new_time,
             'status' => 'rescheduled',
             'notes' => ($appointment->notes ?? '') . "\n\nRescheduled: " . ($request->reason ?? 'No reason provided')
         ]);
+
+        // Send reschedule notification
+        $emailService = app(HospitalEmailNotificationService::class);
+        $this->handleRescheduleNotifications($appointment, $oldDate, $oldTime, $emailService);
 
         return response()->json([
             'success' => true,
