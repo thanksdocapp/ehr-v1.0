@@ -213,6 +213,7 @@ Route::group(['middleware' => 'installed'], function () {
         
         // Appointments Management (limited functionality)
         Route::get('/appointments', [\App\Http\Controllers\Staff\AppointmentsController::class, 'index'])->name('appointments.index');
+        Route::get('/appointments/calendar', [\App\Http\Controllers\Staff\AppointmentsController::class, 'calendar'])->name('appointments.calendar');
         Route::get('/appointments/create', [\App\Http\Controllers\Staff\AppointmentsController::class, 'create'])->name('appointments.create');
         Route::post('/appointments', [\App\Http\Controllers\Staff\AppointmentsController::class, 'store'])->name('appointments.store');
         Route::get('/appointments/{id}', [\App\Http\Controllers\Staff\AppointmentsController::class, 'show'])->name('appointments.show');
@@ -220,7 +221,11 @@ Route::group(['middleware' => 'installed'], function () {
         Route::put('/appointments/{id}', [\App\Http\Controllers\Staff\AppointmentsController::class, 'update'])->name('appointments.update');
         Route::post('/appointments/{id}/confirm', [\App\Http\Controllers\Staff\AppointmentsController::class, 'confirm'])->name('appointments.confirm');
         Route::post('/appointments/{id}/cancel', [\App\Http\Controllers\Staff\AppointmentsController::class, 'cancel'])->name('appointments.cancel');
+        Route::post('/appointments/{id}/reschedule', [\App\Http\Controllers\Staff\AppointmentsController::class, 'reschedule'])->name('appointments.reschedule');
         Route::patch('/appointments/{id}/status', [\App\Http\Controllers\Staff\AppointmentsController::class, 'updateStatus'])->name('appointments.update-status');
+        
+        // AJAX Routes for Calendar
+        Route::get('/api/appointments/calendar-data', [\App\Http\Controllers\Staff\AppointmentsController::class, 'getCalendarData'])->name('api.appointments.calendar-data');
         // Note: Staff cannot delete appointments or access advanced features
         
         // Doctors - Read Only Access

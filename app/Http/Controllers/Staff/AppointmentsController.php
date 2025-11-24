@@ -607,4 +607,115 @@ class AppointmentsController extends Controller
     }
 
     // Note: Staff cannot delete appointments - only admins can
+
+    /**
+     * Display calendar view for appointments
+     */
+    public function calendar()
+    {
+        return view('staff.appointments.calendar');
+    }
+
+    /**
+     * Get calendar data for DayPilot Lite (AJAX endpoint)
+     * Filters appointments by doctor if user is a doctor
+     */
+    public function getCalendarData(Request $request)
+    {
+        $start = $request->get('start', now()->startOfMonth()->format('Y-m-d'));
+        $end = $request->get('end', now()->endOfMonth()->format('Y-m-d'));
+
+        $query = Appointment::with(['patient', 'doctor', 'department'])
+            ->whereBetween('appointment_date', [$start, $end]);
+
+        // Filter for doctor's own appointments if user is a doctor
+        $user = Auth::user();
+        if ($user->role === 'doctor' && $user->doctor) {
+            $query->where('doctor_id', $user->doctor->id);
+        }
+
+        $appointments = $query->get()
+            ->map(function ($appointment) {
+                $startDateTime = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
+                $endDateTime = $startDateTime->copy()->addHour(); // Default 1 hour duration
+                
+                return [
+                    'id' => $appointment->id,
+                    'title' => $appointment->patient->full_name . ($user->role !== 'doctor' ? ' - ' . $appointment->doctor->full_name : ''),
+                    'start' => $startDateTime->format('Y-m-d\TH:i:s'),
+                    'end' => $endDateTime->format('Y-m-d\TH:i:s'),
+                    'backgroundColor' => $this->getStatusColor($appointment->status),
+                    'borderColor' => $this->getStatusColor($appointment->status),
+                    'extendedProps' => [
+                        'patient' => $appointment->patient->full_name,
+                        'patient_id' => $appointment->patient_id,
+                        'doctor' => $appointment->doctor->full_name,
+                        'doctor_id' => $appointment->doctor_id,
+                        'department' => $appointment->department->name ?? 'N/A',
+                        'department_id' => $appointment->department_id,
+                        'status' => $appointment->status,
+                        'type' => $appointment->type ?? 'consultation',
+                        'reason' => $appointment->reason ?? '',
+                        'appointment_number' => $appointment->appointment_number ?? '',
+                        'is_online' => $appointment->is_online ?? false
+                    ]
+                ];
+            });
+
+        return response()->json($appointments);
+    }
+
+    /**
+     * Get status color for calendar events
+     */
+    private function getStatusColor($status)
+    {
+        $colors = [
+            'pending' => '#ffc107',
+            'confirmed' => '#17a2b8',
+            'completed' => '#28a745',
+            'cancelled' => '#dc3545',
+            'rescheduled' => '#6c757d'
+        ];
+
+        return $colors[$status] ?? '#6c757d';
+    }
+
+    /**
+     * Reschedule appointment (for calendar drag-and-drop)
+     */
+    public function reschedule(Request $request, $id)
+    {
+        $appointment = Appointment::findOrFail($id);
+        
+        // Check authorization - doctors can only reschedule their own appointments
+        $user = Auth::user();
+        if ($user->role === 'doctor' && $user->doctor && $appointment->doctor_id !== $user->doctor->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You can only reschedule your own appointments.'
+            ], 403);
+        }
+
+        $request->validate([
+            'new_date' => 'required|date|after_or_equal:today',
+            'new_time' => 'required|date_format:H:i',
+            'reason' => 'nullable|string'
+        ]);
+
+        $oldDate = $appointment->appointment_date;
+        $oldTime = $appointment->appointment_time;
+
+        $appointment->update([
+            'appointment_date' => $request->new_date,
+            'appointment_time' => $request->new_time,
+            'status' => 'rescheduled',
+            'notes' => ($appointment->notes ?? '') . "\n\nRescheduled: " . ($request->reason ?? 'No reason provided')
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Appointment rescheduled successfully!'
+        ]);
+    }
 }
