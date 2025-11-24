@@ -7,26 +7,40 @@
 @endphp
 
 @section('content')
-<div class="container-fluid">
+<div class="fade-in">
     <!-- Patient Alert Bar -->
     @include('components.patient-alert-bar', ['patient' => $patient])
     
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">{{ $patient->full_name }}</h1>
+                    <p class="modern-page-subtitle">Patient ID: {{ $patient->patient_id }}</p>
+                </div>
+                <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
+                    <span class="badge-modern {{ $patient->is_active ? 'badge-modern-success' : 'badge-modern-danger' }}">
+                        {{ $patient->is_active ? 'Active' : 'Inactive' }}
+                    </span>
+                    <a href="{{ route('admin.patients.edit', $patient) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="row">
         <div class="col-12">
-            <div class="doctor-card">
-                <div class="doctor-card-header d-flex justify-content-between align-items-center">
-                    <h5 class="doctor-card-title mb-0">Patient Details</h5>
-                    <div class="d-flex gap-2">
-                        <span class="badge {{ $patient->is_active ? 'bg-success' : 'bg-danger' }}">
-                            {{ $patient->is_active ? 'Active' : 'Inactive' }}
-                        </span>
-                        <a href="{{ route('admin.patients.edit', $patient) }}" class="btn btn-warning btn-sm">
-                            <i class="fas fa-edit"></i> Edit
-                        </a>
-                    </div>
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="modern-card-title mb-0">
+                        <i class="fas fa-user"></i>Patient Details
+                    </h5>
                 </div>
                 
-                <div class="doctor-card-body">
+                <div class="modern-card-body">
                     <div class="row">
                         <div class="col-md-8">
                             <!-- Patient Photo -->
@@ -35,8 +49,8 @@
                                 <div class="col-12 text-center">
                                     <div class="mb-3">
                                         <img src="{{ $patient->photo_url }}" alt="Patient Photo" 
-                                             class="img-thumbnail rounded-circle" 
-                                             style="width: 150px; height: 150px; object-fit: cover;">
+                                             class="img-thumbnail rounded-circle shadow-modern-md" 
+                                             style="width: 150px; height: 150px; object-fit: cover; border: 4px solid white;">
                                         <div class="mt-2">
                                             <small class="text-muted">Patient Photo</small>
                                         </div>
@@ -47,10 +61,10 @@
 
                             <div class="row mb-4">
                                 <div class="col-12">
-                                    <h4 class="text-primary border-bottom pb-2">Personal Information</h4>
+                                    <h4 class="text-gradient-primary border-bottom pb-2" style="border-bottom: 2px solid #e2e8f0 !important; padding-bottom: 0.75rem;">Personal Information</h4>
                                 </div>
                                 <div class="col-md-6">
-                                    <table class="table table-borderless">
+                                    <table class="modern-table">
                                         <tr>
                                             <td class="fw-bold">Patient ID:</td>
                                             <td>{{ $patient->patient_id }}</td>
