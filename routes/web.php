@@ -495,6 +495,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/appointments/{appointment}/confirm', [\App\Http\Controllers\Admin\AppointmentsController::class, 'confirm'])->name('appointments.confirm');
         Route::post('/appointments/{appointment}/cancel', [\App\Http\Controllers\Admin\AppointmentsController::class, 'cancel'])->name('appointments.cancel');
         Route::post('/appointments/{appointment}/complete', [\App\Http\Controllers\Admin\AppointmentsController::class, 'complete'])->name('appointments.complete');
+        Route::post('/appointments/{appointment}/reschedule', [\App\Http\Controllers\Admin\AppointmentsController::class, 'reschedule'])->name('appointments.reschedule');
         
         // AJAX Routes for Calendar
         Route::get('/api/appointments/calendar-data', [\App\Http\Controllers\Admin\AppointmentsController::class, 'getCalendarData'])->name('api.appointments.calendar-data');

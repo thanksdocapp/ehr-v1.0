@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch(`{{ url('admin/appointments') }}/${appointmentId}/reschedule`, {
+                fetch(`{{ route('admin.appointments.show', '') }}/${appointmentId}/reschedule`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
