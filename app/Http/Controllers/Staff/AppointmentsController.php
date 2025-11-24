@@ -655,47 +655,78 @@ class AppointmentsController extends Controller
      */
     public function getCalendarData(Request $request)
     {
-        $start = $request->get('start', now()->startOfMonth()->format('Y-m-d'));
-        $end = $request->get('end', now()->endOfMonth()->format('Y-m-d'));
+        try {
+            $start = $request->get('start', now()->startOfMonth()->format('Y-m-d'));
+            $end = $request->get('end', now()->endOfMonth()->format('Y-m-d'));
 
-        $query = Appointment::with(['patient', 'doctor', 'department'])
-            ->whereBetween('appointment_date', [$start, $end]);
+            $query = Appointment::with(['patient', 'doctor', 'department'])
+                ->whereBetween('appointment_date', [$start, $end]);
 
-        // Filter for doctor's own appointments if user is a doctor
-        $user = Auth::user();
-        if ($user->role === 'doctor' && $user->doctor) {
-            $query->where('doctor_id', $user->doctor->id);
+            // Filter for doctor's own appointments if user is a doctor
+            $user = Auth::user();
+            if ($user->role === 'doctor' && $user->doctor) {
+                $query->where('doctor_id', $user->doctor->id);
+            }
+
+            $appointments = $query->get()
+                ->filter(function ($appointment) {
+                    // Filter out appointments with missing required relationships
+                    return $appointment->patient && $appointment->doctor;
+                })
+                ->map(function ($appointment) use ($user) {
+                    try {
+                        $startDateTime = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
+                        $endDateTime = $startDateTime->copy()->addHour(); // Default 1 hour duration
+                        
+                        $title = $appointment->patient->full_name ?? 'Unknown Patient';
+                        if ($user->role !== 'doctor' && $appointment->doctor) {
+                            $title .= ' - ' . ($appointment->doctor->full_name ?? 'Unknown Doctor');
+                        }
+                        
+                        return [
+                            'id' => $appointment->id,
+                            'title' => $title,
+                            'start' => $startDateTime->format('Y-m-d\TH:i:s'),
+                            'end' => $endDateTime->format('Y-m-d\TH:i:s'),
+                            'backgroundColor' => $this->getStatusColor($appointment->status),
+                            'borderColor' => $this->getStatusColor($appointment->status),
+                            'extendedProps' => [
+                                'patient' => $appointment->patient->full_name ?? 'Unknown',
+                                'patient_id' => $appointment->patient_id,
+                                'doctor' => $appointment->doctor->full_name ?? 'Unknown',
+                                'doctor_id' => $appointment->doctor_id,
+                                'department' => $appointment->department->name ?? 'N/A',
+                                'department_id' => $appointment->department_id,
+                                'status' => $appointment->status,
+                                'type' => $appointment->type ?? 'consultation',
+                                'reason' => $appointment->reason ?? '',
+                                'appointment_number' => $appointment->appointment_number ?? '',
+                                'is_online' => $appointment->is_online ?? false
+                            ]
+                        ];
+                    } catch (\Exception $e) {
+                        \Log::error('Error processing appointment for calendar', [
+                            'appointment_id' => $appointment->id,
+                            'error' => $e->getMessage()
+                        ]);
+                        return null;
+                    }
+                })
+                ->filter() // Remove null entries
+                ->values(); // Re-index array
+
+            return response()->json($appointments);
+        } catch (\Exception $e) {
+            \Log::error('Error loading calendar data', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to load calendar data',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        $appointments = $query->get()
-            ->map(function ($appointment) use ($user) {
-                $startDateTime = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
-                $endDateTime = $startDateTime->copy()->addHour(); // Default 1 hour duration
-                
-                return [
-                    'id' => $appointment->id,
-                    'title' => $appointment->patient->full_name . ($user->role !== 'doctor' ? ' - ' . $appointment->doctor->full_name : ''),
-                    'start' => $startDateTime->format('Y-m-d\TH:i:s'),
-                    'end' => $endDateTime->format('Y-m-d\TH:i:s'),
-                    'backgroundColor' => $this->getStatusColor($appointment->status),
-                    'borderColor' => $this->getStatusColor($appointment->status),
-                    'extendedProps' => [
-                        'patient' => $appointment->patient->full_name,
-                        'patient_id' => $appointment->patient_id,
-                        'doctor' => $appointment->doctor->full_name,
-                        'doctor_id' => $appointment->doctor_id,
-                        'department' => $appointment->department->name ?? 'N/A',
-                        'department_id' => $appointment->department_id,
-                        'status' => $appointment->status,
-                        'type' => $appointment->type ?? 'consultation',
-                        'reason' => $appointment->reason ?? '',
-                        'appointment_number' => $appointment->appointment_number ?? '',
-                        'is_online' => $appointment->is_online ?? false
-                    ]
-                ];
-            });
-
-        return response()->json($appointments);
     }
 
     /**
