@@ -266,68 +266,182 @@
 @push('scripts')
 <script>
     async function clearCache() {
-        const confirmed = await confirmAction('Are you sure you want to clear the application cache?', {
-            title: 'Clear Cache',
-            confirmText: 'Clear Cache',
-            icon: 'fas fa-broom',
-            confirmClass: 'btn-warning'
-        });
-        
-        if (confirmed) {
-            ajaxWithModal({
-                url: '{{ route('admin.settings.clear-cache') }}',
-                method: 'POST',
-                loadingMessage: 'Clearing cache...',
-                successMessage: 'Cache cleared successfully!',
-                errorMessage: 'Failed to clear cache. Please try again.',
-                onSuccess: function(response) {
-                    // Optionally reload the page after cache clear
-                    setTimeout(() => {
+        try {
+            const result = await Swal.fire({
+                title: 'Clear Application Cache?',
+                text: 'This will clear all cached data including config, routes, and views. The application may be slower on the next request while caches rebuild.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: '<i class="fas fa-broom me-2"></i>Clear Cache',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
+            
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Clearing Cache...',
+                    text: 'Please wait while we clear the application cache.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Make the request
+                const response = await fetch('{{ route('admin.settings.clear-cache') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: data.message || 'Cache cleared successfully!',
+                        icon: 'success',
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        // Reload page after cache clear
                         location.reload();
-                    }, 1500);
+                    });
+                } else {
+                    throw new Error(data.message || 'Failed to clear cache');
                 }
+            }
+        } catch (error) {
+            console.error('Cache clear error:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to clear cache. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'OK'
             });
         }
     }
 
     async function optimizeApp() {
-        const confirmed = await confirmAction('Are you sure you want to optimize the application?', {
-            title: 'Optimize Application',
-            confirmText: 'Optimize',
-            icon: 'fas fa-rocket',
-            confirmClass: 'btn-success'
-        });
-        
-        if (confirmed) {
-            ajaxWithModal({
-                url: '{{ route('admin.settings.optimize') }}',
-                method: 'POST',
-                loadingMessage: 'Optimizing application...',
-                successMessage: 'Application optimized successfully!',
-                errorMessage: 'Failed to optimize application. Please try again.'
+        try {
+            const result = await Swal.fire({
+                title: 'Optimize Application?',
+                text: 'This will optimize the application by caching configuration, routes, and views for better performance.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: '<i class="fas fa-rocket me-2"></i>Optimize',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
+            
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Optimizing Application...',
+                    text: 'This may take a few moments. Please wait...',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Make the request
+                const response = await fetch('{{ route('admin.settings.optimize') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: data.message || 'Application optimized successfully!',
+                        icon: 'success',
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    throw new Error(data.message || 'Failed to optimize application');
+                }
+            }
+        } catch (error) {
+            console.error('Optimize error:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to optimize application. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'OK'
             });
         }
     }
 
     async function downloadLogs() {
-        const confirmed = await confirmAction('Do you want to download the system logs?', {
-            title: 'Download Logs',
-            confirmText: 'Download',
-            icon: 'fas fa-download',
-            confirmClass: 'btn-info'
-        });
-        
-        if (confirmed) {
-            showLoading('Preparing logs for download...');
-            window.open('{{ route('admin.settings.download-logs') }}', '_blank');
+        try {
+            const result = await Swal.fire({
+                title: 'Download System Logs?',
+                text: 'This will download the Laravel log file containing system errors and activity logs.',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: '<i class="fas fa-download me-2"></i>Download',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
             
-            // Hide loading after a short delay
-            setTimeout(() => {
-                document.querySelectorAll('#loadingModal .modal').forEach(modal => {
-                    const instance = bootstrap.Modal.getInstance(modal);
-                    if (instance) instance.hide();
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Preparing Logs...',
+                    text: 'Please wait while we prepare the log file for download.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
                 });
-            }, 2000);
+                
+                // Open download in new window
+                const downloadUrl = '{{ route('admin.settings.download-logs') }}';
+                window.open(downloadUrl, '_blank');
+                
+                // Hide loading after a short delay
+                setTimeout(() => {
+                    Swal.close();
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('Download logs error:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to download logs. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'OK'
+            });
         }
     }
 </script>
