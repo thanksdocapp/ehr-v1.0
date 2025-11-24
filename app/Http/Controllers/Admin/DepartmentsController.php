@@ -16,6 +16,17 @@ class DepartmentsController extends Controller
             ->ordered()
             ->paginate(15);
 
+        // Manually calculate patient counts for each department
+        foreach ($departments as $department) {
+            $patientCount = \App\Models\Patient::where(function($q) use ($department) {
+                $q->whereHas('departments', function($q2) use ($department) {
+                    $q2->where('departments.id', $department->id);
+                })->orWhere('department_id', $department->id);
+            })->count();
+            
+            $department->patients_count = $patientCount;
+        }
+
         return view('admin.departments.index', compact('departments'));
     }
 
