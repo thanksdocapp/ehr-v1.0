@@ -8,6 +8,26 @@
     <li class="breadcrumb-item active">Add New Doctor</li>
 @endsection
 
+@section('content')
+<div class="fade-in">
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div>
+                <h1 class="modern-page-title">Add New Doctor</h1>
+                <p class="modern-page-subtitle">Register a new doctor in the system</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-user-md"></i>Doctor Information
+            </h5>
+        </div>
+        <div class="modern-card-body">
+
 @push('styles')
 <style>
 .form-section {
