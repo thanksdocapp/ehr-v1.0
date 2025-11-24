@@ -9,83 +9,71 @@
 
 @section('content')
 <div class="fade-in">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-1">Patients Management</h1>
-            <p class="text-muted mb-0">Manage and track all patient records</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('admin.patients.export.csv', request()->all()) }}" class="btn btn-success">
-                <i class="fas fa-file-export me-2"></i>Export CSV
-            </a>
-            <a href="{{ route('admin.patients.import') }}" class="btn btn-info">
-                <i class="fas fa-file-import me-2"></i>Import CSV
-            </a>
-            <a href="{{ contextRoute('patients.create') }}" class="btn btn-primary">
-                <i class="fas fa-user-plus me-2"></i>New Patient
-            </a>
-        </div>
-    </div>
-
-    <!-- Quick Stats -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-primary" style="font-size: 1.75rem; font-weight: 600;">{{ $patients->total() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Total Patients</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-users text-white"></i>
-                    </div>
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">Patients Management</h1>
+                    <p class="modern-page-subtitle">Manage and track all patient records</p>
                 </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-success" style="font-size: 1.75rem; font-weight: 600;">{{ $patients->where('created_at', '>=', today())->count() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">New Today</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--success), #16a34a); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-user-check text-white"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-info" style="font-size: 1.75rem; font-weight: 600;">{{ $patients->where('created_at', '>=', now()->startOfWeek())->count() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">This Week</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--info), #0891b2); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-calendar-check text-white"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-warning" style="font-size: 1.75rem; font-weight: 600;">{{ $patients->where('created_at', '>=', now()->startOfMonth())->count() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">This Month</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning), #d97706); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-chart-line text-white"></i>
-                    </div>
+                <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
+                    <a href="{{ route('admin.patients.export.csv', request()->all()) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-file-export me-2"></i>Export CSV
+                    </a>
+                    <a href="{{ route('admin.patients.import') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-file-import me-2"></i>Import CSV
+                    </a>
+                    <a href="{{ contextRoute('patients.create') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-user-plus me-2"></i>New Patient
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Quick Search Bar -->
-    <div class="card mb-3">
+    <!-- Modern Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-modern fade-in-up stagger-1">
+                <div class="stat-card-icon" style="background: var(--gradient-primary);">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-card-number">{{ number_format($patients->total() ?? 0) }}</div>
+                <div class="stat-card-label">Total Patients</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-modern fade-in-up stagger-2">
+                <div class="stat-card-icon" style="background: var(--gradient-success);">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-card-number">{{ number_format($patients->where('created_at', '>=', today())->count() ?? 0) }}</div>
+                <div class="stat-card-label">New Today</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-modern fade-in-up stagger-3">
+                <div class="stat-card-icon" style="background: var(--gradient-info);">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-card-number">{{ number_format($patients->where('created_at', '>=', now()->startOfWeek())->count() ?? 0) }}</div>
+                <div class="stat-card-label">This Week</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-modern fade-in-up stagger-4">
+                <div class="stat-card-icon" style="background: var(--gradient-warning);">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-card-number">{{ number_format($patients->where('created_at', '>=', now()->startOfMonth())->count() ?? 0) }}</div>
+                <div class="stat-card-label">This Month</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Search Bar -->
+    <div class="modern-card mb-3">
         <div class="card-body">
             <div class="d-flex gap-2 align-items-end">
                 <div class="flex-grow-1">
@@ -156,14 +144,14 @@
         </div>
     @endif
 
-    <!-- Filter Sidebar (Collapsible) -->
-    <div class="card mb-4" id="filterPanel" style="display: {{ request()->hasAny(['first_name', 'last_name', 'gender', 'age_min', 'age_max', 'status', 'has_alert', 'department_id', 'assigned_doctor_id']) ? 'block' : 'none' }};">
-        <div class="card-header bg-light">
-            <h6 class="mb-0">
-                <i class="fas fa-filter me-2"></i>Advanced Filters
-            </h6>
+    <!-- Modern Filter Panel -->
+    <div class="modern-card mb-4" id="filterPanel" style="display: {{ request()->hasAny(['first_name', 'last_name', 'gender', 'age_min', 'age_max', 'status', 'has_alert', 'department_id', 'assigned_doctor_id']) ? 'block' : 'none' }};">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title">
+                <i class="fas fa-filter"></i>Advanced Filters
+            </h5>
         </div>
-        <div class="card-body">
+        <div class="modern-card-body">
             <form method="GET" action="{{ contextRoute('patients.index') }}" id="filterForm">
                 @if(request('search'))
                     <input type="hidden" name="search" value="{{ request('search') }}">
@@ -436,24 +424,26 @@
         </div>
     </div>
 
-    <!-- Patients Table -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Patients List</h5>
+    <!-- Modern Patients Table -->
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-list"></i>Patients List
+            </h5>
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-secondary" onclick="exportPatients()">
-                    <i class="fas fa-download me-1"></i>Export
+                <button class="btn-modern btn-modern-outline btn-modern-sm" onclick="exportPatients()">
+                    <i class="fas fa-download"></i>Export
                 </button>
-                <button class="btn btn-sm btn-outline-primary" onclick="refreshTable()">
-                    <i class="fas fa-sync me-1"></i>Refresh
+                <button class="btn-modern btn-modern-outline btn-modern-sm" onclick="refreshTable()">
+                    <i class="fas fa-sync"></i>Refresh
                 </button>
             </div>
         </div>
-        <div class="card-body p-0">
+        <div class="modern-card-body">
             @if($patients->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <div class="modern-table-wrapper">
+                    <table class="modern-table">
+                        <thead>
                             <tr>
                                 <th>
                                     <input type="checkbox" id="selectAll" class="form-check-input">
@@ -476,9 +466,8 @@
                                            value="{{ $patient->id }}">
                                 </td>
                                 <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar-placeholder bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center" 
-                                             style="width: 40px; height: 40px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="patient-avatar-modern" style="background: var(--gradient-primary); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1.1rem;">
                                             {{ strtoupper(substr($patient->first_name, 0, 1)) }}
                                         </div>
                                         <div>

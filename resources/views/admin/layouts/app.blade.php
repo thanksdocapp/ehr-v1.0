@@ -2076,6 +2076,9 @@ use Illuminate\Support\Facades\Storage;
     </style>
     
     @stack('styles')
+    
+    <!-- Modern UI System -->
+    @include('admin.shared.modern-ui')
 </head>
 <body>
     <!-- Sidebar -->
