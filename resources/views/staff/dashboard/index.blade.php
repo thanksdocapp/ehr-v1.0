@@ -6,6 +6,28 @@
 
 @section('content')
 <div class="fade-in">
+    <!-- Calendar Widget - Moved to top for visibility -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="fas fa-calendar-alt text-primary me-2"></i>
+                            Appointments Calendar
+                        </h5>
+                        <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>View Full Calendar
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <div id="dashboard-calendar" style="height: 400px; min-height: 400px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Stats Grid -->
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
@@ -162,28 +184,6 @@
                             </a>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Calendar Widget -->
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white border-bottom">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h5 class="card-title mb-0 fw-bold">
-                            <i class="fas fa-calendar-alt text-primary me-2"></i>
-                            Appointments Calendar
-                        </h5>
-                        <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-external-link-alt me-1"></i>View Full Calendar
-                        </a>
-                    </div>
-                </div>
-                <div class="card-body p-3">
-                    <div id="dashboard-calendar" style="height: 400px; min-height: 400px;"></div>
                 </div>
             </div>
         </div>
@@ -502,13 +502,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 arg.jsEvent.preventDefault();
                 window.location.href = arg.event.url;
             }
-        });
-        
-        dashboardCalendar.render();
-        console.log('Dashboard calendar rendered successfully');
-    } else {
-        console.error('Dashboard calendar element not found!');
-    }
+            });
+            
+            dashboardCalendar.render();
+            console.log('Dashboard calendar rendered successfully');
+        } else {
+            console.error('Dashboard calendar element not found!');
+            console.error('Available elements:', document.querySelectorAll('[id*="calendar"]'));
+        }
+    }, 500); // Wait 500ms to ensure DOM is ready
     
     // Update current time every minute
     function updateTime() {
