@@ -6,6 +6,113 @@
 
 @section('content')
 <div class="fade-in">
+    <!-- Calendar Widget - Moved to top for visibility -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="fas fa-calendar-alt text-primary me-2"></i>
+                            Appointments Calendar
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="toggle-today-schedule" title="Toggle Today's Schedule">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-sm btn-primary" title="View Full Calendar">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="dashboard-calendar" style="height: 450px; min-height: 450px; width: 100%; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Loading calendar...</span>
+                                </div>
+                                <p class="text-muted mb-0">Loading calendar...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Schedule (Collapsible) -->
+    <div class="row g-4 mb-4" id="today-schedule-card" style="display: none;">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h6 class="card-title mb-0 fw-bold">
+                            <i class="fas fa-clock text-info me-2"></i>
+                            Today's Schedule
+                        </h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted small" id="current-time">{{ now()->format('H:i A') }}</span>
+                            <button type="button" class="btn btn-sm btn-link text-muted p-0" id="close-today-schedule" title="Close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if(isset($todayAppointments) && $todayAppointments->count() > 0)
+                        <div class="list-group list-group-flush">
+                            @foreach($todayAppointments->take(5) as $appointment)
+                            <div class="list-group-item border-0 px-0 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            {{ strtoupper(substr($appointment->patient->first_name ?? 'N', 0, 1)) }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <div class="fw-semibold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>{{ $appointment->appointment_time ?? 'TBD' }}
+                                            @if($appointment->doctor)
+                                                <span class="ms-2"><i class="fas fa-user-md me-1"></i>{{ $appointment->doctor->first_name }} {{ $appointment->doctor->last_name }}</span>
+                                            @endif
+                                        </small>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="badge bg-{{ $appointment->status === 'confirmed' ? 'success' : ($appointment->status === 'pending' ? 'warning' : 'secondary') }} rounded-pill">
+                                            {{ ucfirst($appointment->status) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                        @if($todayAppointments->count() > 5)
+                        <div class="text-center mt-3">
+                            <a href="{{ route('staff.appointments.index') }}?date={{ now()->format('Y-m-d') }}" class="btn btn-sm btn-outline-primary">
+                                View All Today's Appointments <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                        @endif
+                    @else
+                        <div class="text-center py-4">
+                            <div class="mb-3">
+                                <i class="fas fa-calendar-check fa-3x text-muted"></i>
+                            </div>
+                            <h6 class="text-muted mb-2">No appointments today</h6>
+                            <p class="text-muted small mb-3">You have a free schedule today</p>
+                            <a href="{{ route('staff.appointments.create') }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus me-1"></i>Schedule Appointment
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Stats Grid -->
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
@@ -263,105 +370,6 @@
 
         <!-- Activity Feed & Insights -->
         <div class="col-xl-4 col-lg-5">
-            <!-- Appointments Calendar -->
-            <div class="card mb-4 shadow-sm border-0">
-                <div class="card-header bg-white border-bottom">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h6 class="card-title mb-0 fw-bold">
-                            <i class="fas fa-calendar-alt text-primary me-2"></i>
-                            Appointments Calendar
-                        </h6>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="toggle-today-schedule" title="Toggle Today's Schedule">
-                                <i class="fas fa-list"></i>
-                            </button>
-                            <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-sm btn-primary" title="View Full Calendar">
-                                <i class="fas fa-external-link-alt"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div id="dashboard-calendar" style="height: 450px; min-height: 450px; width: 100%; background: #f8f9fa; border-radius: 0 0 8px 8px;">
-                        <div class="d-flex align-items-center justify-content-center h-100">
-                            <div class="text-center">
-                                <div class="spinner-border text-primary mb-3" role="status">
-                                    <span class="visually-hidden">Loading calendar...</span>
-                                </div>
-                                <p class="text-muted mb-0">Loading calendar...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Today's Schedule (Collapsible) -->
-            <div class="card mb-4 shadow-sm border-0" id="today-schedule-card" style="display: none;">
-                <div class="card-header bg-white border-bottom">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h6 class="card-title mb-0 fw-bold">
-                            <i class="fas fa-clock text-info me-2"></i>
-                            Today's Schedule
-                        </h6>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="text-muted small" id="current-time">{{ now()->format('H:i A') }}</span>
-                            <button type="button" class="btn btn-sm btn-link text-muted p-0" id="close-today-schedule" title="Close">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    @if(isset($todayAppointments) && $todayAppointments->count() > 0)
-                        <div class="list-group list-group-flush">
-                            @foreach($todayAppointments->take(5) as $appointment)
-                            <div class="list-group-item border-0 px-0 py-3">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                            {{ strtoupper(substr($appointment->patient->first_name ?? 'N', 0, 1)) }}
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <div class="fw-semibold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
-                                        <small class="text-muted">
-                                            <i class="fas fa-clock me-1"></i>{{ $appointment->appointment_time ?? 'TBD' }}
-                                            @if($appointment->doctor)
-                                                <span class="ms-2"><i class="fas fa-user-md me-1"></i>{{ $appointment->doctor->first_name }} {{ $appointment->doctor->last_name }}</span>
-                                            @endif
-                                        </small>
-                                    </div>
-                                    <div class="flex-shrink-0">
-                                        <span class="badge bg-{{ $appointment->status === 'confirmed' ? 'success' : ($appointment->status === 'pending' ? 'warning' : 'secondary') }} rounded-pill">
-                                            {{ ucfirst($appointment->status) }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            @endforeach
-                        </div>
-                        @if($todayAppointments->count() > 5)
-                        <div class="text-center mt-3">
-                            <a href="{{ route('staff.appointments.index') }}?date={{ now()->format('Y-m-d') }}" class="btn btn-sm btn-outline-primary">
-                                View All Today's Appointments <i class="fas fa-arrow-right ms-1"></i>
-                            </a>
-                        </div>
-                        @endif
-                    @else
-                        <div class="text-center py-4">
-                            <div class="mb-3">
-                                <i class="fas fa-calendar-check fa-3x text-muted"></i>
-                            </div>
-                            <h6 class="text-muted mb-2">No appointments today</h6>
-                            <p class="text-muted small mb-3">You have a free schedule today</p>
-                            <a href="{{ route('staff.appointments.create') }}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-plus me-1"></i>Schedule Appointment
-                            </a>
-                        </div>
-                    @endif
-                </div>
-            </div>
-
             <!-- Quick Stats -->
             <div class="card">
                 <div class="card-header">
@@ -433,49 +441,6 @@
 <!-- FullCalendar CSS -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
 <style>
-    #dashboard-calendar {
-        font-size: 0.9rem;
-    }
-    
-    #dashboard-calendar .fc-header-toolbar {
-        margin-bottom: 1rem;
-        padding: 0.5rem;
-    }
-    
-    #dashboard-calendar .fc-button {
-        padding: 0.35rem 0.75rem;
-        font-size: 0.85rem;
-    }
-    
-    #dashboard-calendar .fc-event {
-        font-size: 0.75rem;
-        padding: 1px 3px;
-    }
-    
-    /* Today's Schedule Toggle Button */
-    #toggle-today-schedule {
-        transition: all 0.3s ease;
-    }
-    
-    #toggle-today-schedule:hover {
-        transform: scale(1.1);
-    }
-    
-    #today-schedule-card {
-        animation: slideDown 0.3s ease-out;
-    }
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
     .avatar-xs {
         width: 24px;
         height: 24px;
@@ -515,13 +480,8 @@
             transform: translateY(0);
         }
     }
-</style>
-@endpush
 
-@push('styles')
-<!-- FullCalendar CSS -->
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
-<style>
+    /* FullCalendar specific styles for dashboard widget */
     #dashboard-calendar {
         font-size: 0.9rem;
     }
@@ -539,6 +499,32 @@
     #dashboard-calendar .fc-event {
         font-size: 0.75rem;
         padding: 1px 3px;
+    }
+    
+    /* Today's Schedule Toggle Button */
+    #toggle-today-schedule {
+        transition: all 0.3s ease;
+    }
+    
+    #toggle-today-schedule:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Today's Schedule Card Animations */
+    .slide-down-enter-active, .slide-down-leave-active {
+        transition: all 0.3s ease-in-out;
+        overflow: hidden;
+    }
+    .slide-down-enter-from, .slide-down-leave-to {
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    .slide-down-enter-to, .slide-down-leave-from {
+        max-height: 500px; /* Adjust as needed */
+        opacity: 1;
+        transform: translateY(0);
     }
 </style>
 @endpush
@@ -622,41 +608,43 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 500); // Wait 500ms to ensure DOM is ready
     
     // Toggle Today's Schedule
-    const toggleTodaySchedule = document.getElementById('toggle-today-schedule');
+    const toggleButton = document.getElementById('toggle-today-schedule');
     const todayScheduleCard = document.getElementById('today-schedule-card');
-    const closeTodaySchedule = document.getElementById('close-today-schedule');
-    
-    if (toggleTodaySchedule && todayScheduleCard) {
-        toggleTodaySchedule.addEventListener('click', function() {
-            if (todayScheduleCard.style.display === 'none' || todayScheduleCard.style.display === '') {
+    const closeScheduleButton = document.getElementById('close-today-schedule');
+
+    if (toggleButton && todayScheduleCard && closeScheduleButton) {
+        toggleButton.addEventListener('click', function() {
+            if (todayScheduleCard.style.display === 'none') {
                 todayScheduleCard.style.display = 'block';
-                toggleTodaySchedule.innerHTML = '<i class="fas fa-calendar-alt"></i>';
-                toggleTodaySchedule.title = 'Show Calendar';
-                toggleTodaySchedule.classList.remove('btn-outline-secondary');
-                toggleTodaySchedule.classList.add('btn-outline-primary');
-                // Smooth scroll to schedule
-                setTimeout(function() {
-                    todayScheduleCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 100);
+                todayScheduleCard.classList.remove('slide-down-leave-active', 'slide-down-leave-to');
+                todayScheduleCard.classList.add('slide-down-enter-active', 'slide-down-enter-to');
+                toggleButton.innerHTML = '<i class="fas fa-calendar-alt"></i>'; // Change icon to calendar
+                toggleButton.title = "View Calendar";
             } else {
-                todayScheduleCard.style.display = 'none';
-                toggleTodaySchedule.innerHTML = '<i class="fas fa-list"></i>';
-                toggleTodaySchedule.title = 'Toggle Today\'s Schedule';
-                toggleTodaySchedule.classList.remove('btn-outline-primary');
-                toggleTodaySchedule.classList.add('btn-outline-secondary');
+                todayScheduleCard.classList.remove('slide-down-enter-active', 'slide-down-enter-to');
+                todayScheduleCard.classList.add('slide-down-leave-active', 'slide-down-leave-to');
+                todayScheduleCard.addEventListener('transitionend', function handler() {
+                    if (todayScheduleCard.classList.contains('slide-down-leave-to')) {
+                        todayScheduleCard.style.display = 'none';
+                    }
+                    todayScheduleCard.removeEventListener('transitionend', handler);
+                });
+                toggleButton.innerHTML = '<i class="fas fa-list"></i>'; // Change icon to list
+                toggleButton.title = "View Today's Schedule";
             }
         });
-    }
-    
-    if (closeTodaySchedule && todayScheduleCard) {
-        closeTodaySchedule.addEventListener('click', function() {
-            todayScheduleCard.style.display = 'none';
-            if (toggleTodaySchedule) {
-                toggleTodaySchedule.innerHTML = '<i class="fas fa-list"></i>';
-                toggleTodaySchedule.title = 'Toggle Today\'s Schedule';
-                toggleTodaySchedule.classList.remove('btn-outline-primary');
-                toggleTodaySchedule.classList.add('btn-outline-secondary');
-            }
+
+        closeScheduleButton.addEventListener('click', function() {
+            todayScheduleCard.classList.remove('slide-down-enter-active', 'slide-down-enter-to');
+            todayScheduleCard.classList.add('slide-down-leave-active', 'slide-down-leave-to');
+            todayScheduleCard.addEventListener('transitionend', function handler() {
+                if (todayScheduleCard.classList.contains('slide-down-leave-to')) {
+                    todayScheduleCard.style.display = 'none';
+                }
+                todayScheduleCard.removeEventListener('transitionend', handler);
+            });
+            toggleButton.innerHTML = '<i class="fas fa-list"></i>'; // Change icon to list
+            toggleButton.title = "View Today's Schedule";
         });
     }
     

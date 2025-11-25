@@ -29,6 +29,32 @@
         font-size: 0.75rem;
         padding: 1px 3px;
     }
+    
+    /* Today's Schedule Toggle Button */
+    #toggle-today-schedule {
+        transition: all 0.3s ease;
+    }
+    
+    #toggle-today-schedule:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Today's Schedule Card Animations */
+    .slide-down-enter-active, .slide-down-leave-active {
+        transition: all 0.3s ease-in-out;
+        overflow: hidden;
+    }
+    .slide-down-enter-from, .slide-down-leave-to {
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    .slide-down-enter-to, .slide-down-leave-from {
+        max-height: 500px;
+        opacity: 1;
+        transform: translateY(0);
+    }
 </style>
 <style>
     .dashboard-hero {
@@ -479,6 +505,156 @@
         </div>
     </div>
 
+    <!-- Calendar Widget - Moved to top for visibility -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="modern-card fade-in-up">
+                <div class="modern-card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="modern-card-title mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i>Appointments Calendar
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="toggle-today-schedule" title="Toggle Today's Schedule">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <a href="{{ route('admin.appointments.calendar') }}" class="btn btn-sm btn-modern-primary">
+                                <i class="fas fa-external-link-alt me-1"></i>View Full Calendar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="modern-card-body p-0">
+                    <div id="dashboard-calendar" style="height: 450px; min-height: 450px; width: 100%; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Loading calendar...</span>
+                                </div>
+                                <p class="text-muted mb-0">Loading calendar...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Schedule (Collapsible) -->
+    <div class="row g-4 mb-4" id="today-schedule-card" style="display: none;">
+        <div class="col-12">
+            <div class="modern-card fade-in-up">
+                <div class="modern-card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="modern-card-title mb-0">
+                            <i class="fas fa-clock me-2 text-info"></i>Today's Schedule
+                        </h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted small" id="current-time-schedule">{{ now()->format('H:i A') }}</span>
+                            <button type="button" class="btn btn-sm btn-link text-muted p-0" id="close-today-schedule" title="Close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modern-card-body">
+                    @if(isset($todaysAppointments) && $todaysAppointments->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-modern">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Patient</th>
+                                        <th>Doctor</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($todaysAppointments->take(10) as $appointment)
+                                    <tr>
+                                        <td>
+                                            <strong>{{ $appointment->appointment_time ? \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') : 'TBD' }}</strong>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                @php
+                                                    $patientName = $appointment->patient ? ($appointment->patient->first_name . ' ' . $appointment->patient->last_name) : 'N/A';
+                                                    $patientInitial = $appointment->patient ? strtoupper(substr($appointment->patient->first_name ?? 'N', 0, 1)) : 'N';
+                                                @endphp
+                                                <div class="patient-avatar-modern" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 32px; height: 32px; font-size: 0.75rem;">
+                                                    {{ $patientInitial }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold">{{ $patientName }}</div>
+                                                    <small class="text-muted">#{{ $appointment->appointment_number }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="fw-medium">{{ $appointment->doctor ? $appointment->doctor->first_name . ' ' . $appointment->doctor->last_name : 'Not assigned' }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">
+                                                {{ ucfirst(str_replace('_', ' ', $appointment->type ?? 'consultation')) }}
+                                            </span>
+                                            @if($appointment->is_online)
+                                                <span class="badge bg-info ms-1">
+                                                    <i class="fas fa-video"></i> Online
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @php
+                                                $statusColors = [
+                                                    'pending' => 'warning',
+                                                    'confirmed' => 'success',
+                                                    'completed' => 'info',
+                                                    'cancelled' => 'danger'
+                                                ];
+                                            @endphp
+                                            <span class="badge bg-{{ $statusColors[$appointment->status] ?? 'secondary' }}" style="padding: 0.5rem 1rem; border-radius: 8px;">
+                                                {{ ucfirst($appointment->status) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ route('admin.appointments.show', $appointment->id) }}" class="btn btn-outline-primary btn-sm" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ route('admin.appointments.edit', $appointment->id) }}" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        @if($todaysAppointments->count() > 10)
+                        <div class="text-center mt-3">
+                            <a href="{{ route('admin.appointments.index') }}?date={{ now()->format('Y-m-d') }}" class="btn btn-sm btn-outline-primary">
+                                View All Today's Appointments <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                        @endif
+                    @else
+                        <div class="text-center py-5">
+                            <i class="fas fa-calendar-times fa-4x text-muted mb-3" style="opacity: 0.3;"></i>
+                            <h6 class="text-muted mb-2">No appointments scheduled for today</h6>
+                            <p class="text-muted mb-4">Take some time to catch up on other tasks</p>
+                            <a href="{{ route('admin.appointments.create') }}" class="btn btn-modern-primary">
+                                <i class="fas fa-plus me-2"></i>Schedule New Appointment
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Charts Row -->
     <div class="row g-4 mb-4">
         <!-- Appointment Chart -->
@@ -505,27 +681,6 @@
                 </div>
                 <div class="chart-body" style="height: 350px; position: relative;">
                     <canvas id="patientChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Calendar Widget Row -->
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <div class="modern-card fade-in-up">
-                <div class="modern-card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="modern-card-title mb-0">
-                            <i class="fas fa-calendar-alt me-2"></i>Appointments Calendar
-                        </h5>
-                        <a href="{{ route('admin.appointments.calendar') }}" class="btn btn-sm btn-modern-primary">
-                            <i class="fas fa-external-link-alt me-1"></i>View Full Calendar
-                        </a>
-                    </div>
-                </div>
-                <div class="modern-card-body">
-                    <div id="dashboard-calendar" style="height: 400px;"></div>
                 </div>
             </div>
         </div>
@@ -908,56 +1063,135 @@
         });
     }
 
-    // Dashboard Calendar Widget
-    const dashboardCalendarEl = document.getElementById('dashboard-calendar');
-    if (dashboardCalendarEl) {
-        const dashboardCalendar = new FullCalendar.Calendar(dashboardCalendarEl, {
-            initialView: 'dayGridMonth',
-            height: 'auto',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            events: function(fetchInfo, successCallback, failureCallback) {
-                const params = new URLSearchParams({
-                    start: fetchInfo.start.toISOString().split('T')[0],
-                    end: fetchInfo.end.toISOString().split('T')[0]
-                });
-                
-                fetch(`{{ route('admin.api.appointments.calendar-data') }}?${params}`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    // Dashboard Calendar Widget - Initialize with delay to ensure DOM is ready
+    setTimeout(function() {
+        const dashboardCalendarEl = document.getElementById('dashboard-calendar');
+        if (dashboardCalendarEl) {
+            console.log('Initializing dashboard calendar...');
+            console.log('Calendar element found:', dashboardCalendarEl);
+            
+            // Check if FullCalendar is loaded
+            if (typeof FullCalendar === 'undefined') {
+                console.error('FullCalendar library not loaded!');
+                dashboardCalendarEl.innerHTML = '<div class="alert alert-warning p-3"><i class="fas fa-exclamation-triangle me-2"></i>Calendar library failed to load. Please refresh the page.</div>';
+                return;
+            }
+            
+            console.log('FullCalendar library loaded, creating calendar instance...');
+            
+            // Clear loading message
+            dashboardCalendarEl.innerHTML = '';
+
+            const dashboardCalendar = new FullCalendar.Calendar(dashboardCalendarEl, {
+                initialView: 'dayGridMonth',
+                height: 'auto',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                events: function(fetchInfo, successCallback, failureCallback) {
+                    const params = new URLSearchParams({
+                        start: fetchInfo.start.toISOString().split('T')[0],
+                        end: fetchInfo.end.toISOString().split('T')[0]
+                    });
+                    
+                    fetch(`{{ route('admin.api.appointments.calendar-data') }}?${params}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const events = data.map(appointment => ({
+                            id: appointment.id,
+                            title: appointment.title,
+                            start: appointment.start,
+                            end: appointment.end,
+                            backgroundColor: appointment.backgroundColor,
+                            borderColor: appointment.borderColor,
+                            textColor: appointment.textColor || '#fff',
+                            url: `{{ route('admin.appointments.show', '') }}/${appointment.id}`
+                        }));
+                        successCallback(events);
+                    })
+                    .catch(error => {
+                        console.error('Error loading calendar data:', error);
+                        if (failureCallback) failureCallback(error);
+                    });
+                },
+                eventClick: function(arg) {
+                    arg.jsEvent.preventDefault();
+                    window.location.href = arg.event.url;
+                }
+            });
+            
+            dashboardCalendar.render();
+            console.log('Dashboard calendar rendered successfully');
+        } else {
+            console.error('Dashboard calendar element not found!');
+        }
+    }, 500); // Wait 500ms to ensure DOM is ready
+    
+    // Toggle Today's Schedule
+    const toggleButton = document.getElementById('toggle-today-schedule');
+    const todayScheduleCard = document.getElementById('today-schedule-card');
+    const closeScheduleButton = document.getElementById('close-today-schedule');
+
+    if (toggleButton && todayScheduleCard && closeScheduleButton) {
+        toggleButton.addEventListener('click', function() {
+            if (todayScheduleCard.style.display === 'none') {
+                todayScheduleCard.style.display = 'block';
+                todayScheduleCard.classList.remove('slide-down-leave-active', 'slide-down-leave-to');
+                todayScheduleCard.classList.add('slide-down-enter-active', 'slide-down-enter-to');
+                toggleButton.innerHTML = '<i class="fas fa-calendar-alt"></i>';
+                toggleButton.title = "View Calendar";
+            } else {
+                todayScheduleCard.classList.remove('slide-down-enter-active', 'slide-down-enter-to');
+                todayScheduleCard.classList.add('slide-down-leave-active', 'slide-down-leave-to');
+                todayScheduleCard.addEventListener('transitionend', function handler() {
+                    if (todayScheduleCard.classList.contains('slide-down-leave-to')) {
+                        todayScheduleCard.style.display = 'none';
                     }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    const events = data.map(appointment => ({
-                        id: appointment.id,
-                        title: appointment.title,
-                        start: appointment.start,
-                        end: appointment.end,
-                        backgroundColor: appointment.backgroundColor,
-                        borderColor: appointment.borderColor,
-                        textColor: appointment.textColor || '#fff',
-                        url: `{{ route('admin.appointments.show', '') }}/${appointment.id}`
-                    }));
-                    successCallback(events);
-                })
-                .catch(error => {
-                    console.error('Error loading calendar data:', error);
-                    if (failureCallback) failureCallback(error);
+                    todayScheduleCard.removeEventListener('transitionend', handler);
                 });
-            },
-            eventClick: function(arg) {
-                arg.jsEvent.preventDefault();
-                window.location.href = arg.event.url;
+                toggleButton.innerHTML = '<i class="fas fa-list"></i>';
+                toggleButton.title = "View Today's Schedule";
             }
         });
-        dashboardCalendar.render();
+
+        closeScheduleButton.addEventListener('click', function() {
+            todayScheduleCard.classList.remove('slide-down-enter-active', 'slide-down-enter-to');
+            todayScheduleCard.classList.add('slide-down-leave-active', 'slide-down-leave-to');
+            todayScheduleCard.addEventListener('transitionend', function handler() {
+                if (todayScheduleCard.classList.contains('slide-down-leave-to')) {
+                    todayScheduleCard.style.display = 'none';
+                }
+                todayScheduleCard.removeEventListener('transitionend', handler);
+            });
+            toggleButton.innerHTML = '<i class="fas fa-list"></i>';
+            toggleButton.title = "View Today's Schedule";
+        });
     }
+    
+    // Update current time every minute
+    function updateScheduleTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+        });
+        const timeElement = document.getElementById('current-time-schedule');
+        if (timeElement) {
+            timeElement.textContent = timeString;
+        }
+    }
+    
+    updateScheduleTime();
+    setInterval(updateScheduleTime, 60000);
 
     // Quick actions
     function confirmAppointment(appointmentId) {
