@@ -149,32 +149,14 @@
         opacity: 0.3;
     }
 
-    .stat-card-icon-wrapper.primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        --icon-gradient-start: #667eea;
-        --icon-gradient-end: #764ba2;
-    }
-
-    .stat-card-icon-wrapper.success {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        color: white;
-        --icon-gradient-start: #11998e;
-        --icon-gradient-end: #38ef7d;
-    }
-
-    .stat-card-icon-wrapper.info {
-        background: linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%);
-        color: white;
-        --icon-gradient-start: #3494E6;
-        --icon-gradient-end: #EC6EAD;
-    }
-
+    .stat-card-icon-wrapper.primary,
+    .stat-card-icon-wrapper.success,
+    .stat-card-icon-wrapper.info,
     .stat-card-icon-wrapper.warning {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: #000000 !important;
         color: white;
-        --icon-gradient-start: #f093fb;
-        --icon-gradient-end: #f5576c;
+        --icon-gradient-start: #000000;
+        --icon-gradient-end: #000000;
     }
 
     .stat-number-modern {

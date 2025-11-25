@@ -19,46 +19,46 @@
     <!-- Stats Cards -->
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-primary" style="font-size: 1.75rem; font-weight: 600;">{{ $labReports->total() }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Total Reports</div>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-vial"></i>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-vial text-white"></i>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $labReports->total() }}</div>
+                        <div class="stat-label">Total Reports</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-warning" style="font-size: 1.75rem; font-weight: 600;">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $labReports->filter(function($report) { return $report->status === 'pending'; })->count() }}
                         </div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Pending</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning), #d97706); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-hourglass-half text-white"></i>
+                        <div class="stat-label">Pending</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-success" style="font-size: 1.75rem; font-weight: 600;">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $labReports->filter(function($report) { return $report->status === 'completed'; })->count() }}
                         </div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Completed</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--success), #16a34a); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-check-circle text-white"></i>
+                        <div class="stat-label">Completed</div>
                     </div>
                 </div>
             </div>
@@ -66,20 +66,20 @@
 
         @if(auth()->user()->role === 'doctor')
         <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-info" style="font-size: 1.75rem; font-weight: 600;">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             @php
                                 $userDoctor = \App\Models\Doctor::where('user_id', auth()->id())->first();
                                 $doctorId = $userDoctor ? $userDoctor->id : null;
                             @endphp
                             {{ $labReports->filter(function($report) use ($doctorId) { return $report->doctor_id == $doctorId; })->count() }}
                         </div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">My Orders</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--info), #0891b2); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-user-md text-white"></i>
+                        <div class="stat-label">My Orders</div>
                     </div>
                 </div>
             </div>

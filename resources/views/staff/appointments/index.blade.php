@@ -52,66 +52,64 @@
 @section('content')
 <div class="fade-in-up">
     <!-- Stats Cards -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="doctor-stat-card primary">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(13, 110, 253, 0.1); color: var(--doctor-primary);">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-primary);">
-                            {{ $appointments->total() }}
-                        </div>
-                        <div class="doctor-stat-label">Total Appointments</div>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $appointments->total() }}</div>
+                        <div class="stat-label">Total Appointments</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="doctor-stat-card warning">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(255, 193, 7, 0.1); color: var(--doctor-warning);">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-warning);">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $appointments->filter(function($appointment) { return $appointment->status === 'pending'; })->count() }}
                         </div>
-                        <div class="doctor-stat-label">Pending</div>
+                        <div class="stat-label">Pending</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="doctor-stat-card success">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(25, 135, 84, 0.1); color: var(--doctor-success);">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-success);">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $appointments->filter(function($appointment) { return $appointment->status === 'confirmed'; })->count() }}
                         </div>
-                        <div class="doctor-stat-label">Confirmed</div>
+                        <div class="stat-label">Confirmed</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="doctor-stat-card info">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(13, 202, 240, 0.1); color: var(--doctor-info);">
-                            <i class="fas fa-calendar-day"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-info);">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $appointments->filter(function($appointment) { return $appointment->appointment_date->isToday(); })->count() }}
                         </div>
-                        <div class="doctor-stat-label">Today's Appointments</div>
+                        <div class="stat-label">Today's Appointments</div>
                     </div>
                 </div>
             </div>

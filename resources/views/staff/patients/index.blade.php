@@ -31,64 +31,64 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="doctor-stat-card primary h-100">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(13, 110, 253, 0.1); color: var(--doctor-primary);">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-primary);">{{ $patients->total() }}</div>
-                        <div class="doctor-stat-label">Total Patients</div>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $patients->total() }}</div>
+                        <div class="stat-label">Total Patients</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="doctor-stat-card success h-100">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(25, 135, 84, 0.1); color: var(--doctor-success);">
-                            <i class="fas fa-male"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-success);">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-male"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $patients->filter(function($patient) { return $patient->gender === 'male'; })->count() }}
                         </div>
-                        <div class="doctor-stat-label">Male Patients</div>
+                        <div class="stat-label">Male Patients</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="doctor-stat-card danger h-100">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(220, 53, 69, 0.1); color: var(--doctor-danger);">
-                            <i class="fas fa-female"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-danger);">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-female"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $patients->filter(function($patient) { return $patient->gender === 'female'; })->count() }}
                         </div>
-                        <div class="doctor-stat-label">Female Patients</div>
+                        <div class="stat-label">Female Patients</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="doctor-stat-card info h-100">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(13, 202, 240, 0.1); color: var(--doctor-info);">
-                            <i class="fas fa-user-plus"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-info);">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $patients->filter(function($patient) { return $patient->created_at->isCurrentMonth(); })->count() }}
                         </div>
-                        <div class="doctor-stat-label">New This Month</div>
+                        <div class="stat-label">New This Month</div>
                     </div>
                 </div>
             </div>

@@ -37,46 +37,46 @@
     <!-- Stats Cards -->
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-primary" style="font-size: 1.75rem; font-weight: 600;">{{ $prescriptions->total() }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Total Prescriptions</div>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-prescription-bottle-alt"></i>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-prescription-bottle-alt text-white"></i>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $prescriptions->total() }}</div>
+                        <div class="stat-label">Total Prescriptions</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-warning" style="font-size: 1.75rem; font-weight: 600;">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $prescriptions->filter(function($prescription) { return $prescription->status === 'pending'; })->count() }}
                         </div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Pending</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning), #d97706); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-clock text-white"></i>
+                        <div class="stat-label">Pending</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-success" style="font-size: 1.75rem; font-weight: 600;">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $prescriptions->filter(function($prescription) { return $prescription->status === 'dispensed'; })->count() }}
                         </div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Dispensed</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--success), #16a34a); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-check-circle text-white"></i>
+                        <div class="stat-label">Dispensed</div>
                     </div>
                 </div>
             </div>
@@ -84,16 +84,16 @@
 
         @if(auth()->user()->role === 'doctor')
         <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-info" style="font-size: 1.75rem; font-weight: 600;">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $prescriptions->filter(function($prescription) { return $prescription->doctor_id == auth()->id(); })->count() }}
                         </div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">My Prescriptions</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--info), #0891b2); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-user-md text-white"></i>
+                        <div class="stat-label">My Prescriptions</div>
                     </div>
                 </div>
             </div>

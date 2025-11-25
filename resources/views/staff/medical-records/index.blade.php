@@ -7,34 +7,32 @@
 @section('content')
 <div class="fade-in-up">
     <!-- Stats Cards -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="doctor-stat-card primary">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(13, 110, 253, 0.1); color: var(--doctor-primary);">
-                            <i class="fas fa-file-medical"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-primary);">
-                            {{ $medicalRecords->total() }}
-                        </div>
-                        <div class="doctor-stat-label">Total Records</div>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-file-medical"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $medicalRecords->total() }}</div>
+                        <div class="stat-label">Total Records</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="doctor-stat-card success">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(25, 135, 84, 0.1); color: var(--doctor-success);">
-                            <i class="fas fa-calendar-check"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-success);">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $medicalRecords->filter(function($record) { return $record->created_at >= now()->startOfMonth(); })->count() }}
                         </div>
-                        <div class="doctor-stat-label">This Month</div>
+                        <div class="stat-label">This Month</div>
                     </div>
                 </div>
             </div>
@@ -42,16 +40,16 @@
 
         @if(auth()->user()->role === 'doctor')
         <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="doctor-stat-card info">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(13, 202, 240, 0.1); color: var(--doctor-info);">
-                            <i class="fas fa-user-md"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-info);">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $medicalRecords->filter(function($record) { return $record->doctor_id == auth()->id(); })->count() }}
                         </div>
-                        <div class="doctor-stat-label">My Records</div>
+                        <div class="stat-label">My Records</div>
                     </div>
                 </div>
             </div>
@@ -59,16 +57,16 @@
         @endif
 
         <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="doctor-stat-card warning">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="doctor-stat-icon" style="background: rgba(255, 193, 7, 0.1); color: var(--doctor-warning);">
-                            <i class="fas fa-prescription-bottle-alt"></i>
-                        </div>
-                        <div class="doctor-stat-number" style="color: var(--doctor-warning);">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-prescription-bottle-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">
                             {{ $medicalRecords->filter(function($record) { return $record->prescriptions && $record->prescriptions->count() > 0; })->count() }}
                         </div>
-                        <div class="doctor-stat-label">With Prescriptions</div>
+                        <div class="stat-label">With Prescriptions</div>
                     </div>
                 </div>
             </div>

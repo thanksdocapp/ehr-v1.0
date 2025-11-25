@@ -33,41 +33,57 @@
     </div>
 
     <!-- Modern Stats Cards -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-1">
-                <div class="stat-card-icon" style="background: var(--gradient-primary);">
-                    <i class="fas fa-users"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-1">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($patients->total() ?? 0) }}</div>
+                        <div class="stat-label">Total Patients</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($patients->total() ?? 0) }}</div>
-                <div class="stat-card-label">Total Patients</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-2">
-                <div class="stat-card-icon" style="background: var(--gradient-success);">
-                    <i class="fas fa-user-check"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-2">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($patients->where('created_at', '>=', today())->count() ?? 0) }}</div>
+                        <div class="stat-label">New Today</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($patients->where('created_at', '>=', today())->count() ?? 0) }}</div>
-                <div class="stat-card-label">New Today</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-3">
-                <div class="stat-card-icon" style="background: var(--gradient-info);">
-                    <i class="fas fa-calendar-check"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-3">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($patients->where('created_at', '>=', now()->startOfWeek())->count() ?? 0) }}</div>
+                        <div class="stat-label">This Week</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($patients->where('created_at', '>=', now()->startOfWeek())->count() ?? 0) }}</div>
-                <div class="stat-card-label">This Week</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-4">
-                <div class="stat-card-icon" style="background: var(--gradient-warning);">
-                    <i class="fas fa-chart-line"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-4">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($patients->where('created_at', '>=', now()->startOfMonth())->count() ?? 0) }}</div>
+                        <div class="stat-label">This Month</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($patients->where('created_at', '>=', now()->startOfMonth())->count() ?? 0) }}</div>
-                <div class="stat-card-label">This Month</div>
             </div>
         </div>
     </div>

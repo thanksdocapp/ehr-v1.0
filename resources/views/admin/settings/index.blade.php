@@ -20,41 +20,57 @@
     </div>
 
     <!-- Modern Statistics Cards -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <div class="stat-card-modern fade-in-up stagger-1">
-                <div class="stat-card-icon" style="background: var(--gradient-primary);">
-                    <i class="fas fa-cogs"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-1">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['total_settings'] ?? 0) }}</div>
+                        <div class="stat-label">Total Settings</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($stats['total_settings'] ?? 0) }}</div>
-                <div class="stat-card-label">Total Settings</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card-modern fade-in-up stagger-2">
-                <div class="stat-card-icon" style="background: var(--gradient-success);">
-                    <i class="fas fa-check-circle"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-2">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['active_features'] ?? 0) }}</div>
+                        <div class="stat-label">Active Features</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($stats['active_features'] ?? 0) }}</div>
-                <div class="stat-card-label">Active Features</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card-modern fade-in-up stagger-3">
-                <div class="stat-card-icon" style="background: var(--gradient-warning);">
-                    <i class="fas fa-exclamation-triangle"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-3">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['pending_updates'] ?? 0) }}</div>
+                        <div class="stat-label">Pending Updates</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($stats['pending_updates'] ?? 0) }}</div>
-                <div class="stat-card-label">Pending Updates</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card-modern fade-in-up stagger-4">
-                <div class="stat-card-icon" style="background: var(--gradient-info);">
-                    <i class="fas fa-heartbeat"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-4">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $stats['system_health'] ?? 0 }}%</div>
+                        <div class="stat-label">System Health</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ $stats['system_health'] ?? 0 }}%</div>
-                <div class="stat-card-label">System Health</div>
             </div>
         </div>
     </div>

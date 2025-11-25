@@ -87,14 +87,18 @@
     </div>
 
     <!-- Modern Statistics Cards -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-1">
-                <div class="stat-card-icon" style="background: var(--gradient-primary);">
-                    <i class="fas fa-prescription-bottle-alt"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-1">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-prescription-bottle-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['total'] ?? 0) }}</div>
+                        <div class="stat-label">Total Prescriptions</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($stats['total'] ?? 0) }}</div>
-                <div class="stat-card-label">Total Prescriptions</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">

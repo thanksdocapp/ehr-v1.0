@@ -32,53 +32,53 @@
     <!-- Quick Stats -->
     <div class="row g-3 mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-primary" style="font-size: 1.75rem; font-weight: 600;">{{ $bills->total() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Total Bills</div>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-file-invoice-dollar"></i>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-file-invoice-dollar text-white"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-success" style="font-size: 1.75rem; font-weight: 600;">{{ $bills->where('status', 'paid')->count() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Paid Bills</div>
-                    </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--success), #16a34a); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-check-circle text-white"></i>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $bills->total() ?? 0 }}</div>
+                        <div class="stat-label">Total Bills</div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-warning" style="font-size: 1.75rem; font-weight: 600;">{{ $bills->where('status', 'pending')->count() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Pending Bills</div>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-check-circle"></i>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning), #d97706); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-clock text-white"></i>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $bills->where('status', 'paid')->count() ?? 0 }}</div>
+                        <div class="stat-label">Paid Bills</div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number text-danger" style="font-size: 1.75rem; font-weight: 600;">{{ $bills->where('status', 'overdue')->count() ?? 0 }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Overdue Bills</div>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-clock"></i>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--danger), #dc2626); width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-exclamation-triangle text-white"></i>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $bills->where('status', 'pending')->count() ?? 0 }}</div>
+                        <div class="stat-label">Pending Bills</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $bills->where('status', 'overdue')->count() ?? 0 }}</div>
+                        <div class="stat-label">Overdue Bills</div>
                     </div>
                 </div>
             </div>

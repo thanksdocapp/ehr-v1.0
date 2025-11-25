@@ -36,41 +36,57 @@
     @endif
 
     <!-- Modern Statistics Cards -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-1">
-                <div class="stat-card-icon" style="background: var(--gradient-primary);">
-                    <i class="fas fa-flask"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-1">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['total'] ?? 0) }}</div>
+                        <div class="stat-label">Total Lab Reports</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($stats['total'] ?? 0) }}</div>
-                <div class="stat-card-label">Total Lab Reports</div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-2">
-                <div class="stat-card-icon" style="background: var(--gradient-warning);">
-                    <i class="fas fa-clock"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-2">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['pending'] ?? 0) }}</div>
+                        <div class="stat-label">Pending Reports</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($stats['pending'] ?? 0) }}</div>
-                <div class="stat-card-label">Pending Reports</div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-3">
-                <div class="stat-card-icon" style="background: var(--gradient-success);">
-                    <i class="fas fa-check-circle"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-3">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['completed'] ?? 0) }}</div>
+                        <div class="stat-label">Completed Reports</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($stats['completed'] ?? 0) }}</div>
-                <div class="stat-card-label">Completed Reports</div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-4">
-                <div class="stat-card-icon" style="background: var(--gradient-info);">
-                    <i class="fas fa-calendar"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-4">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-calendar"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['this_month'] ?? 0) }}</div>
+                        <div class="stat-label">This Month</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($stats['this_month'] ?? 0) }}</div>
-                <div class="stat-card-label">This Month</div>
             </div>
         </div>
     </div>

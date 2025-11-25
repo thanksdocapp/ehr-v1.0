@@ -470,64 +470,142 @@
     }
 
     /* ============================================
-       MODERN STATS CARDS
+       MODERN STATS CARDS - ENHANCED
        ============================================ */
-    .stat-card-modern {
-        background: white;
-        border-radius: var(--radius-lg);
-        padding: 1.75rem;
-        box-shadow: var(--shadow-sm);
-        border: none;
+    .stat-card-modern,
+    .stat-card-enhanced {
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 16px;
+        padding: 1.25rem;
+        cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         position: relative;
         overflow: hidden;
         height: 100%;
     }
 
-    .stat-card-modern::before {
+    .stat-card-modern::before,
+    .stat-card-enhanced::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
-        height: 4px;
-        background: var(--gradient-primary);
-        transform: scaleX(0);
-        transition: transform 0.3s ease;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+        opacity: 0;
+        transition: opacity 0.3s ease;
     }
 
-    .stat-card-modern:hover {
+    .stat-card-modern:hover,
+    .stat-card-enhanced:hover {
         transform: translateY(-4px);
-        box-shadow: var(--shadow-md);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        border-color: rgba(102, 126, 234, 0.2);
     }
 
-    .stat-card-modern:hover::before {
-        transform: scaleX(1);
+    .stat-card-modern:hover::before,
+    .stat-card-enhanced:hover::before {
+        opacity: 1;
     }
 
-    .stat-card-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: var(--radius-md);
+    .stat-card-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .stat-card-icon,
+    .stat-icon-wrapper {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s ease;
+        background: #000000 !important;
+    }
+
+    .stat-card-icon i,
+    .stat-icon-wrapper i {
+        color: #ffffff;
+        font-size: 1.5rem;
+    }
+
+    .stat-card-modern:hover .stat-card-icon,
+    .stat-card-enhanced:hover .stat-icon-wrapper {
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .stat-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .stat-card-number,
+    .stat-number {
         font-size: 1.75rem;
-        color: white;
+        font-weight: 700;
+        color: #212529;
+        line-height: 1.2;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.5px;
+    }
+
+    .stat-card-label,
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    /* Legacy support for vertical stat cards */
+    .stat-card-modern:not(:has(.stat-card-content)) .stat-card-icon {
         margin-bottom: 1rem;
     }
 
-    .stat-card-number {
+    .stat-card-modern:not(:has(.stat-card-content)) .stat-card-number {
         font-size: 2rem;
-        font-weight: 700;
-        color: #2d3748;
         margin-bottom: 0.5rem;
     }
 
-    .stat-card-label {
+    .stat-card-modern:not(:has(.stat-card-content)) .stat-card-label {
         font-size: 0.95rem;
-        color: #718096;
-        font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+        .stat-card-modern,
+        .stat-card-enhanced {
+            padding: 1rem;
+        }
+
+        .stat-card-icon,
+        .stat-icon-wrapper {
+            width: 48px;
+            height: 48px;
+        }
+
+        .stat-card-icon i,
+        .stat-icon-wrapper i {
+            font-size: 1.25rem;
+        }
+
+        .stat-card-number,
+        .stat-number {
+            font-size: 1.5rem;
+        }
+
+        .stat-card-label,
+        .stat-label {
+            font-size: 0.8rem;
+        }
     }
 
     /* ============================================

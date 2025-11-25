@@ -33,41 +33,57 @@
     </div>
 
     <!-- Modern Stats Cards -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-1">
-                <div class="stat-card-icon" style="background: var(--gradient-primary);">
-                    <i class="fas fa-user-md"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-1">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($doctors->total() ?? 0) }}</div>
+                        <div class="stat-label">Total Doctors</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($doctors->total() ?? 0) }}</div>
-                <div class="stat-card-label">Total Doctors</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-2">
-                <div class="stat-card-icon" style="background: var(--gradient-success);">
-                    <i class="fas fa-check-circle"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-2">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($doctors->where('is_active', true)->count() ?? 0) }}</div>
+                        <div class="stat-label">Active Doctors</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($doctors->where('is_active', true)->count() ?? 0) }}</div>
-                <div class="stat-card-label">Active Doctors</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-3">
-                <div class="stat-card-icon" style="background: var(--gradient-info);">
-                    <i class="fas fa-building"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-3">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($departments->count() ?? 0) }}</div>
+                        <div class="stat-label">Clinics</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">{{ number_format($departments->count() ?? 0) }}</div>
-                <div class="stat-card-label">Clinics</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card-modern fade-in-up stagger-4">
-                <div class="stat-card-icon" style="background: var(--gradient-warning);">
-                    <i class="fas fa-calendar-check"></i>
+            <div class="stat-card-enhanced fade-in-up stagger-4">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Today's Appointments</div>
+                    </div>
                 </div>
-                <div class="stat-card-number">0</div>
-                <div class="stat-card-label">Today's Appointments</div>
             </div>
         </div>
     </div>

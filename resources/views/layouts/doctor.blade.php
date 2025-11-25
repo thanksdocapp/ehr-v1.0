@@ -458,6 +458,115 @@
             letter-spacing: 0.5px;
         }
 
+        /* Enhanced Stat Cards - Same as Admin */
+        .stat-card-enhanced {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .stat-card-enhanced::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-card-enhanced:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-color: rgba(102, 126, 234, 0.2);
+        }
+
+        .stat-card-enhanced:hover::before {
+            opacity: 1;
+        }
+
+        .stat-card-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon-wrapper {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            background: #000000 !important;
+        }
+
+        .stat-icon-wrapper i {
+            color: #ffffff;
+            font-size: 1.5rem;
+        }
+
+        .stat-card-enhanced:hover .stat-icon-wrapper {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .stat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stat-number {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #212529;
+            line-height: 1.2;
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.5px;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .stat-card-enhanced {
+                padding: 1rem;
+            }
+
+            .stat-icon-wrapper {
+                width: 48px;
+                height: 48px;
+            }
+
+            .stat-icon-wrapper i {
+                font-size: 1.25rem;
+            }
+
+            .stat-number {
+                font-size: 1.5rem;
+            }
+
+            .stat-label {
+                font-size: 0.8rem;
+            }
+        }
+
         .doctor-stat-icon {
             width: 48px;
             height: 48px;
