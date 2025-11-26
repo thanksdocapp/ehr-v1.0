@@ -366,6 +366,9 @@ class Patient extends Authenticatable
         }
         
         // For doctors, filter by department intersection and created_by
+        // Doctors should see:
+        // 1. Patients they added themselves (regardless of department)
+        // 2. Patients in their department (including those added by other doctors in the same department)
         if ($user->role === 'doctor') {
             $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
             
@@ -382,20 +385,19 @@ class Patient extends Authenticatable
             }
             
             return $query->where(function($q) use ($doctor, $doctorDepartmentIds) {
-                // Patients whose departments intersect with the doctor's departments
+                // Patients that were created by this doctor (regardless of department)
+                $q->where('created_by_doctor_id', $doctor->id);
+                
+                // OR patients whose departments intersect with the doctor's departments
+                // This includes patients added by other doctors IF they share the same department
                 if (!empty($doctorDepartmentIds)) {
                     // Check if patient has any departments in common with doctor's departments
                     // Using many-to-many relationship (current implementation)
-                    $q->whereHas('departments', function($deptQuery) use ($doctorDepartmentIds) {
+                    $q->orWhereHas('departments', function($deptQuery) use ($doctorDepartmentIds) {
                         $deptQuery->whereIn('departments.id', $doctorDepartmentIds);
                     })
                     // OR fallback to legacy department_id field (for backward compatibility)
-                    ->orWhereIn('department_id', $doctorDepartmentIds)
-                    // OR patients that were created by this doctor
-                    ->orWhere('created_by_doctor_id', $doctor->id);
-                } else {
-                    // If no departments, only show patients created by this doctor
-                    $q->where('created_by_doctor_id', $doctor->id);
+                    ->orWhereIn('department_id', $doctorDepartmentIds);
                 }
             });
         }
@@ -456,7 +458,10 @@ class Patient extends Authenticatable
             return true;
         }
         
-        // For doctors, check department intersection, created_by, assigned_doctor, appointments, and medical records
+        // For doctors, check department intersection and created_by
+        // Doctors should see:
+        // 1. Patients they added themselves (regardless of department)
+        // 2. Patients in their department (including those added by other doctors in the same department)
         if ($user->role === 'doctor') {
             $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
             
@@ -464,23 +469,8 @@ class Patient extends Authenticatable
                 return false;
             }
             
-            // Check if patient was created by this doctor
+            // Check if patient was created by this doctor (regardless of department)
             if ($this->created_by_doctor_id === $doctor->id) {
-                return true;
-            }
-            
-            // Check if patient is assigned to this doctor
-            if ($this->assigned_doctor_id === $doctor->id) {
-                return true;
-            }
-            
-            // Check if doctor has appointments with this patient
-            if ($this->appointments()->where('doctor_id', $doctor->id)->exists()) {
-                return true;
-            }
-            
-            // Check if doctor has medical records for this patient
-            if ($this->medicalRecords()->where('doctor_id', $doctor->id)->exists()) {
                 return true;
             }
             
@@ -493,26 +483,24 @@ class Patient extends Authenticatable
             }
             
             if (empty($doctorDepartmentIds)) {
+                // If doctor has no departments, only show patients they created
                 return false;
             }
             
             // Check if patient's departments intersect with doctor's departments
-            // Use database query like the scope does, not loaded relationships
-            if (!empty($doctorDepartmentIds)) {
-                // Check if patient has any departments in common with doctor's departments
-                // Using many-to-many relationship (current implementation)
-                $hasMatchingDepartment = $this->departments()
-                    ->whereIn('departments.id', $doctorDepartmentIds)
-                    ->exists();
-                
-                if ($hasMatchingDepartment) {
-                    return true;
-                }
-                
-                // OR fallback to legacy department_id field (for backward compatibility)
-                if ($this->department_id && in_array($this->department_id, $doctorDepartmentIds)) {
-                    return true;
-                }
+            // This includes patients added by other doctors IF they share the same department
+            // Using many-to-many relationship (current implementation)
+            $hasMatchingDepartment = $this->departments()
+                ->whereIn('departments.id', $doctorDepartmentIds)
+                ->exists();
+            
+            if ($hasMatchingDepartment) {
+                return true;
+            }
+            
+            // OR fallback to legacy department_id field (for backward compatibility)
+            if ($this->department_id && in_array($this->department_id, $doctorDepartmentIds)) {
+                return true;
             }
             
             return false;
