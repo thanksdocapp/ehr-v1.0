@@ -821,6 +821,10 @@ class PatientsController extends Controller
                 // If empty array or null, detach all departments
                 $patient->departments()->detach();
             }
+            // Refresh the model to ensure relationships are up to date
+            $patient->refresh();
+            // Clear any cached relationships
+            $patient->unsetRelation('departments');
         }
 
         return redirect()->route('staff.patients.index')

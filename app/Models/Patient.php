@@ -391,19 +391,21 @@ class Patient extends Authenticatable
                 // OR patients whose departments intersect with the doctor's departments
                 // This includes patients added by other doctors IF they share at least one department
                 if (!empty($doctorDepartmentIds)) {
-                    // Check if patient has ANY department in common with doctor's departments
-                    // Using many-to-many relationship (current implementation)
+                    // Priority: Check many-to-many relationship first (current implementation)
+                    // This ensures we use the most up-to-date department assignments
                     $q->orWhere(function($subQuery) use ($doctorDepartmentIds) {
                         // Check via pivot table - patient must have at least one department matching doctor's departments
                         $subQuery->whereHas('departments', function($deptQuery) use ($doctorDepartmentIds) {
                             $deptQuery->whereIn('departments.id', $doctorDepartmentIds);
                         });
                     })
-                    // OR fallback to legacy department_id field (for backward compatibility)
-                    // Only if patient's department_id matches one of doctor's departments
+                    // Fallback to legacy department_id field ONLY if no pivot records exist
+                    // This ensures backward compatibility for old records without pivot entries
                     ->orWhere(function($subQuery) use ($doctorDepartmentIds) {
                         $subQuery->whereNotNull('department_id')
-                                ->whereIn('department_id', $doctorDepartmentIds);
+                                ->whereIn('department_id', $doctorDepartmentIds)
+                                // Only use department_id if patient has no departments in pivot table
+                                ->whereDoesntHave('departments');
                     });
                 }
             });
@@ -420,13 +422,18 @@ class Patient extends Authenticatable
         
         if (!empty($userDepartmentIds)) {
             return $query->where(function($q) use ($userDepartmentIds) {
-                // Check if patient has any departments in common with user's departments
-                // Using many-to-many relationship (current implementation)
+                // Priority: Check many-to-many relationship first (current implementation)
+                // This ensures we use the most up-to-date department assignments
                 $q->whereHas('departments', function($deptQuery) use ($userDepartmentIds) {
                     $deptQuery->whereIn('departments.id', $userDepartmentIds);
                 })
-                // OR fallback to legacy department_id field (for backward compatibility)
-                ->orWhereIn('department_id', $userDepartmentIds);
+                // Fallback to legacy department_id field ONLY if no pivot records exist
+                // This ensures backward compatibility for old records without pivot entries
+                ->orWhere(function($subQuery) use ($userDepartmentIds) {
+                    $subQuery->whereIn('department_id', $userDepartmentIds)
+                            // Only use department_id if patient has no departments in pivot table
+                            ->whereDoesntHave('departments');
+                });
             });
         }
         
