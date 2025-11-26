@@ -727,35 +727,40 @@ class PatientsController extends Controller
         
         // Handle department assignment (support both single and multiple departments)
         $departmentIds = [];
-        if ($request->has('department_id') && $request->department_id) {
+        $hasDepartmentIds = $request->has('department_ids') && is_array($request->department_ids);
+        $hasDepartmentId = $request->has('department_id') && $request->department_id;
+        
+        // Priority: department_ids (multiple) takes precedence over department_id (single)
+        if ($hasDepartmentIds) {
+            // Multiple departments (new implementation)
+            $departmentIds = array_unique(array_filter(array_map('intval', $request->department_ids)));
+            // Set first as primary for backward compatibility
+            if (!empty($departmentIds)) {
+                $patientData['department_id'] = $departmentIds[0];
+            } else {
+                $patientData['department_id'] = null;
+            }
+        } elseif ($hasDepartmentId) {
             // Single department (backward compatibility)
             $patientData['department_id'] = (int)$request->department_id;
             $departmentIds[] = (int)$request->department_id;
         }
-        
-        // Support multiple departments (new implementation)
-        if ($request->has('department_ids') && is_array($request->department_ids)) {
-            $departmentIds = array_unique(array_filter(array_map('intval', $request->department_ids)));
-            // If multiple departments provided, set first as primary for backward compatibility
-            if (!empty($departmentIds) && !isset($patientData['department_id'])) {
-                $patientData['department_id'] = $departmentIds[0];
-            } elseif (empty($departmentIds)) {
-                $patientData['department_id'] = null;
-            }
-        }
 
         $patient->update($patientData);
         
-        // Sync departments to many-to-many relationship
-        if (!empty($departmentIds)) {
-            $syncData = [];
-            foreach ($departmentIds as $index => $deptId) {
-                $syncData[$deptId] = ['is_primary' => $index === 0]; // First department is primary
+        // Always sync departments relationship when department fields are present in request
+        // This ensures changes are properly applied
+        if ($hasDepartmentIds || $hasDepartmentId) {
+            if (!empty($departmentIds)) {
+                $syncData = [];
+                foreach ($departmentIds as $index => $deptId) {
+                    $syncData[$deptId] = ['is_primary' => $index === 0]; // First department is primary
+                }
+                $patient->departments()->sync($syncData);
+            } else {
+                // If empty array or null, detach all departments
+                $patient->departments()->detach();
             }
-            $patient->departments()->sync($syncData);
-        } elseif ($request->has('department_id') && !$request->department_id) {
-            // If department_id is explicitly set to empty/null, remove all departments
-            $patient->departments()->detach();
         }
 
         return redirect()->route('admin.patients.index')

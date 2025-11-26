@@ -389,15 +389,22 @@ class Patient extends Authenticatable
                 $q->where('created_by_doctor_id', $doctor->id);
                 
                 // OR patients whose departments intersect with the doctor's departments
-                // This includes patients added by other doctors IF they share the same department
+                // This includes patients added by other doctors IF they share at least one department
                 if (!empty($doctorDepartmentIds)) {
-                    // Check if patient has any departments in common with doctor's departments
+                    // Check if patient has ANY department in common with doctor's departments
                     // Using many-to-many relationship (current implementation)
-                    $q->orWhereHas('departments', function($deptQuery) use ($doctorDepartmentIds) {
-                        $deptQuery->whereIn('departments.id', $doctorDepartmentIds);
+                    $q->orWhere(function($subQuery) use ($doctorDepartmentIds) {
+                        // Check via pivot table - patient must have at least one department matching doctor's departments
+                        $subQuery->whereHas('departments', function($deptQuery) use ($doctorDepartmentIds) {
+                            $deptQuery->whereIn('departments.id', $doctorDepartmentIds);
+                        });
                     })
                     // OR fallback to legacy department_id field (for backward compatibility)
-                    ->orWhereIn('department_id', $doctorDepartmentIds);
+                    // Only if patient's department_id matches one of doctor's departments
+                    ->orWhere(function($subQuery) use ($doctorDepartmentIds) {
+                        $subQuery->whereNotNull('department_id')
+                                ->whereIn('department_id', $doctorDepartmentIds);
+                    });
                 }
             });
         }
@@ -488,7 +495,7 @@ class Patient extends Authenticatable
             }
             
             // Check if patient's departments intersect with doctor's departments
-            // This includes patients added by other doctors IF they share the same department
+            // Patient must have AT LEAST ONE department in common with doctor's departments
             // Using many-to-many relationship (current implementation)
             $hasMatchingDepartment = $this->departments()
                 ->whereIn('departments.id', $doctorDepartmentIds)
@@ -499,6 +506,7 @@ class Patient extends Authenticatable
             }
             
             // OR fallback to legacy department_id field (for backward compatibility)
+            // Only check if patient's department_id matches one of doctor's departments
             if ($this->department_id && in_array($this->department_id, $doctorDepartmentIds)) {
                 return true;
             }
