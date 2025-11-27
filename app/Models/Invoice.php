@@ -16,6 +16,8 @@ class Invoice extends Model
         'patient_id',
         'appointment_id',
         'invoice_number',
+        'payment_token',
+        'payment_token_expires_at',
         'invoice_date',
         'due_date',
         'subtotal',
@@ -35,6 +37,7 @@ class Invoice extends Model
         'invoice_date' => 'date',
         'due_date' => 'date',
         'paid_date' => 'datetime',
+        'payment_token_expires_at' => 'datetime',
         'subtotal' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
@@ -124,5 +127,53 @@ class Invoice extends Model
         } while (static::where('invoice_number', $number)->exists());
 
         return $number;
+    }
+
+    /**
+     * Generate a secure payment token for public payment access
+     */
+    public function generatePaymentToken(): string
+    {
+        if ($this->payment_token && $this->payment_token_expires_at && $this->payment_token_expires_at->isFuture()) {
+            return $this->payment_token; // Return existing valid token
+        }
+
+        $token = bin2hex(random_bytes(32)); // 64 character token
+        
+        $this->update([
+            'payment_token' => $token,
+            'payment_token_expires_at' => now()->addDays(90), // Token valid for 90 days
+        ]);
+
+        return $token;
+    }
+
+    /**
+     * Get public payment URL
+     */
+    public function getPublicPaymentUrl(): string
+    {
+        $token = $this->generatePaymentToken();
+        return route('public.billing.pay', ['token' => $token]);
+    }
+
+    /**
+     * Check if payment token is valid
+     */
+    public function isPaymentTokenValid(?string $token): bool
+    {
+        if (!$token || !$this->payment_token) {
+            return false;
+        }
+
+        if ($this->payment_token !== $token) {
+            return false;
+        }
+
+        if ($this->payment_token_expires_at && $this->payment_token_expires_at->isPast()) {
+            return false;
+        }
+
+        return true;
     }
 }

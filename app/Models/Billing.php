@@ -233,6 +233,11 @@ class Billing extends Model
         
         $invoice->save();
         
+        // Generate payment token for public payment access if not already set
+        if (!$invoice->payment_token) {
+            $invoice->generatePaymentToken();
+        }
+        
         // If payment was made, create/update payment record
         if ($this->paid_amount > 0 && $this->payment_method) {
             $this->syncPaymentRecord($invoice);

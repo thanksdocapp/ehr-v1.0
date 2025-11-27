@@ -32,9 +32,9 @@
 
                     <!-- Billing Information -->
                     <div class="card mb-4">
-                        <div class="doctor-card-header bg-primary text-white">
+                        <div class="doctor-card-header">
                             <h5 class="mb-0">
-                                <i class="fas fa-info-circle me-2"></i>Billing Information
+                                <i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Billing Information
                             </h5>
                         </div>
                         <div class="doctor-card-body">
@@ -183,6 +183,20 @@
                                 </label>
                                 <textarea name="notes" id="notes" class="form-control" rows="3">{{ old('notes') }}</textarea>
                                 <div class="form-text">Additional details about the billing transaction</div>
+                            </div>
+
+                            <!-- Send to Patient Option -->
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="send_to_patient" id="send_to_patient" value="1" {{ old('send_to_patient') ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="send_to_patient">
+                                        <i class="fas fa-envelope me-1"></i>
+                                        <strong>Send billing notification to patient</strong>
+                                    </label>
+                                    <div class="form-text">
+                                        Patient will receive an email with a secure payment link to pay online without logging in.
+                                    </div>
+                                </div>
                             </div>
 
                         </div>

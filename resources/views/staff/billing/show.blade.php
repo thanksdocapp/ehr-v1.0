@@ -186,6 +186,12 @@
                             <i class="fas fa-arrow-left me-1"></i>Back to Billing
                         </a>
 
+                        @if($billing->patient && $billing->patient->email)
+                        <button type="button" class="btn btn-success" onclick="sendToPatient({{ $billing->id }})" id="sendToPatientBtn">
+                            <i class="fas fa-envelope me-1"></i>Send to Patient
+                        </button>
+                        @endif
+
                         @if($billing->status === 'pending')
                             <a href="{{ route('staff.billing.edit', $billing->id) }}" class="btn btn-outline-warning">
                                 <i class="fas fa-edit me-1"></i>Edit Bill
@@ -303,6 +309,41 @@
 
 @push('scripts')
 <script>
+function sendToPatient(billId) {
+    if (!confirm('Send billing notification email to patient with payment link?')) {
+        return;
+    }
+    
+    const btn = document.getElementById('sendToPatientBtn');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Sending...';
+    
+    fetch(`{{ url('/staff/billing') }}/${billId}/send-to-patient`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✓ Billing notification sent to patient successfully!');
+        } else {
+            alert('✗ Failed to send notification: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('✗ An error occurred while sending the notification.');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    });
+}
+
 let currentBillId = null;
 
 function updateStatus(billId, status = null) {

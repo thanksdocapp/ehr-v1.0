@@ -48,7 +48,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f7fa;
             color: #334155;
             font-size: 14px;
             line-height: 1.6;
@@ -62,10 +62,9 @@
             left: 0;
             width: var(--sidebar-width);
             height: 100vh;
-            background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 4px 0 30px rgba(0, 0, 0, 0.2);
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
             z-index: 3000; /* ensure above everything */
             overflow-y: auto;
             transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -78,23 +77,23 @@
         }
 
         .sidebar::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
+            background: #f8f9fc;
             border-radius: 10px;
             margin: 10px 0;
         }
 
         .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
+            background: #cbd5e1;
             border-radius: 10px;
             transition: all 0.3s ease;
         }
 
         .sidebar::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
+            background: #94a3b8;
         }
 
         .sidebar::-webkit-scrollbar-thumb:active {
-            background: rgba(255, 255, 255, 0.7);
+            background: #64748b;
         }
 
         /* Notification Bell Styles */
@@ -145,25 +144,26 @@
         /* Firefox Scrollbar */
         .sidebar {
             scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+            scrollbar-color: #cbd5e1 #f8f9fc;
         }
 
         .sidebar-header {
             padding: 2rem 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 2px solid #e2e8f0;
             text-align: center;
+            background: #f8f9fc;
         }
 
         .logo {
             width: 50px;
             height: 50px;
-            background: linear-gradient(135deg, var(--primary), var(--info));
+            background: #1a202c;
             border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 1rem;
-            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .logo i {
@@ -172,14 +172,14 @@
         }
 
         .brand-text {
-            color: white;
+            color: #1a202c;
             font-size: 1.5rem;
             font-weight: 700;
             margin-bottom: 0.25rem;
         }
 
         .brand-subtitle {
-            color: rgba(255, 255, 255, 0.7);
+            color: #4a5568;
             font-size: 0.875rem;
             font-weight: 500;
         }
@@ -191,7 +191,7 @@
         }
 
         .nav-title {
-            color: rgba(255, 255, 255, 0.5);
+            color: #6c757d;
             font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -208,7 +208,7 @@
             display: flex;
             align-items: center;
             padding: 1rem 1.25rem;
-            color: rgba(255, 255, 255, 0.8);
+            color: #2d3748;
             text-decoration: none;
             border-radius: 16px;
             transition: all 0.3s ease;
@@ -218,10 +218,10 @@
 
         .nav-link:hover,
         .nav-link.active {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+            background: #f8f9fc;
+            color: #1a202c;
             transform: translateX(8px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
         .nav-link.active::before {
@@ -232,8 +232,12 @@
             transform: translateY(-50%);
             width: 4px;
             height: 60%;
-            background: linear-gradient(135deg, var(--primary), var(--info));
+            background: #1a202c;
             border-radius: 0 4px 4px 0;
+        }
+        
+        .nav-link i {
+            color: #1a202c;
         }
 
         .nav-icon {
@@ -249,8 +253,8 @@
         }
 
         .nav-badge {
-            background: var(--primary);
-            color: white;
+            background: #e2e8f0;
+            color: #1a202c;
             font-size: 0.65rem;
             padding: 0.15rem 0.45rem;
             border-radius: 12px;
@@ -1048,7 +1052,7 @@
                 @elseif(isset($site_settings) && ($site_settings['site_logo'] ?? false))
                     <img src="{{ asset($site_settings['site_logo']) }}" alt="{{ getAppName() }}" style="max-width: 100%; max-height: 50px; object-fit: contain;">
                 @else
-                    <div style="color: white; font-weight: 600; font-size: 1.1rem;">{{ getAppName() }}</div>
+                    <div style="color: #1a202c; font-weight: 600; font-size: 1.1rem;">{{ getAppName() }}</div>
                 @endif
             </div>
             <div class="brand-subtitle">Staff Portal</div>

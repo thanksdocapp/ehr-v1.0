@@ -290,6 +290,32 @@ class BillingsController extends Controller
     }
 
     /**
+     * Send billing notification to patient via email
+     */
+    public function sendToPatient(Billing $billing)
+    {
+        try {
+            $emailService = app(\App\Services\HospitalEmailNotificationService::class);
+            $emailService->sendBillingNotification($billing);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Billing notification sent to patient successfully!'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send billing notification', [
+                'billing_id' => $billing->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send notification: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Store a newly created billing.
      */
     public function store(Request $request): RedirectResponse
@@ -324,7 +350,7 @@ class BillingsController extends Controller
         $tax = $request->tax ?? 0;
         $totalAmount = $subtotal - $discount + $tax;
 
-        Billing::create([
+        $billing = Billing::create([
             'bill_number' => Billing::generateBillNumber(),
             'patient_id' => $request->patient_id,
             'doctor_id' => $doctorId,
@@ -342,8 +368,21 @@ class BillingsController extends Controller
             'created_by' => auth()->id(),
         ]);
 
+        // Send billing notification to patient if requested
+        if ($request->has('send_to_patient') && $request->send_to_patient) {
+            try {
+                $emailService = app(\App\Services\HospitalEmailNotificationService::class);
+                $emailService->sendBillingNotification($billing);
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send billing notification email', [
+                    'billing_id' => $billing->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         return redirect()->route('staff.billing.index')
-            ->with('success', 'Billing record created successfully!');
+            ->with('success', 'Billing record created successfully!' . ($request->has('send_to_patient') && $request->send_to_patient ? ' Invoice sent to patient.' : ''));
     }
 
 }

@@ -23,10 +23,21 @@
 }
 
 .doctor-card-header {
-    background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
-    color: white;
+    background: #f8f9fc;
+    color: #2d3748;
     padding: 1.5rem 2rem;
     border-radius: 12px 12px 0 0;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.doctor-card-header h5,
+.doctor-card-header h4 {
+    color: #1a202c;
+    font-weight: 700;
+}
+
+.doctor-card-header i {
+    color: #1a202c;
 }
 
 .doctor-card-body {

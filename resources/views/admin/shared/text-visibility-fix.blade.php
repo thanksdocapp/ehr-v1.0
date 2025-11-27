@@ -83,9 +83,11 @@ textarea {
     color: rgba(255, 255, 255, 0.8) !important;
 }
 
-/* Form sections with gradient headers */
+/* Form sections with clean headers */
 .form-section-header {
-    color: white !important;
+    background: #f8f9fc !important;
+    color: #2d3748 !important;
+    border-bottom: 2px solid #e2e8f0 !important;
 }
 
 .form-section-header h1, 
@@ -94,11 +96,16 @@ textarea {
 .form-section-header h4, 
 .form-section-header h5, 
 .form-section-header h6 {
-    color: white !important;
+    color: #1a202c !important;
+    font-weight: 700 !important;
+}
+
+.form-section-header i {
+    color: #1a202c !important;
 }
 
 .form-section-header small {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: #4a5568 !important;
 }
 
 .form-section-body {

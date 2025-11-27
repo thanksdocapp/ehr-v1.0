@@ -252,13 +252,67 @@ class HospitalEmailNotificationService
             'amount_due' => $billingInfo['amount_due'] ?? '0.00',
             'due_date' => $billingInfo['due_date'] ?? date('F d, Y', strtotime('+30 days')),
             'service_description' => $billingInfo['service_description'] ?? 'Medical Services',
-            'payment_url' => url('/patient/billing'),
+            'payment_url' => $billingInfo['payment_url'] ?? url('/patient/billing'),
             'hospital_name' => config('app.name', 'Hospital'),
             'billing_phone' => config('hospital.billing_phone', ''),
         ];
 
         return $this->emailService->sendTemplateEmail(
             'payment_reminder',
+            [$patient->email => $patient->full_name],
+            $variables
+        );
+    }
+
+    /**
+     * Send billing/invoice notification to patient with payment link.
+     *
+     * @param \App\Models\Billing $billing
+     * @param string|null $paymentUrl Public payment URL (if null, will use patient portal)
+     * @return EmailLog|null
+     */
+    public function sendBillingNotification(\App\Models\Billing $billing, ?string $paymentUrl = null)
+    {
+        $patient = $billing->patient;
+        $invoice = $billing->invoice;
+
+        if (!$patient || !$patient->email) {
+            \Log::warning('Cannot send billing notification: Patient email not found', [
+                'billing_id' => $billing->id
+            ]);
+            return null;
+        }
+
+        // Generate payment URL - use public payment link if invoice exists, otherwise patient portal
+        if (!$paymentUrl) {
+            if ($invoice) {
+                $paymentUrl = $invoice->getPublicPaymentUrl();
+            } else {
+                $paymentUrl = url('/patient/billing');
+            }
+        }
+
+        $variables = [
+            'patient_name' => $patient->full_name,
+            'bill_number' => $billing->bill_number,
+            'invoice_number' => $invoice ? $invoice->invoice_number : $billing->bill_number,
+            'billing_date' => $billing->billing_date->format('F d, Y'),
+            'due_date' => $billing->due_date ? $billing->due_date->format('F d, Y') : 'N/A',
+            'total_amount' => number_format($billing->total_amount, 2),
+            'balance' => number_format($billing->balance, 2),
+            'description' => $billing->description,
+            'type' => $billing->type_display,
+            'doctor_name' => $billing->doctor ? $billing->doctor->name : 'N/A',
+            'payment_url' => $paymentUrl,
+            'hospital_name' => config('app.name', 'Hospital'),
+            'hospital_address' => config('hospital.address', ''),
+            'hospital_phone' => config('hospital.phone', ''),
+            'billing_phone' => config('hospital.billing_phone', config('hospital.phone', '')),
+            'notes' => $billing->notes ?? '',
+        ];
+
+        return $this->emailService->sendTemplateEmail(
+            'billing_notification',
             [$patient->email => $patient->full_name],
             $variables
         );

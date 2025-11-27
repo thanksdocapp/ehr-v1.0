@@ -48,8 +48,8 @@
             <div class="col-lg-8">
                 <!-- Prescription Information -->
                 <div class="doctor-card mb-4">
-                    <div class="doctor-card-header bg-primary text-white py-3">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-file-medical me-2"></i>Prescription Information</h5>
+                    <div class="doctor-card-header py-3">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-file-medical me-2" style="color: #1a202c;"></i>Prescription Information</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="row">
@@ -90,8 +90,8 @@
 
                 <!-- Medication Information -->
                 <div class="doctor-card mb-4">
-                    <div class="doctor-card-header bg-success text-white py-3">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-pills me-2"></i>Medications</h5>
+                    <div class="doctor-card-header py-3">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-pills me-2" style="color: #1a202c;"></i>Medications</h5>
                     </div>
                     <div class="doctor-card-body">
                         @php
@@ -170,7 +170,7 @@
 
                 <!-- Current Information -->
                 <div class="card shadow-sm">
-                    <div class="doctor-card-header bg-warning text-white py-3">
+                    <div class="doctor-card-header py-3">
                         <h6 class="doctor-card-title mb-0">Current Information</h6>
                     </div>
                     <div class="doctor-card-body">

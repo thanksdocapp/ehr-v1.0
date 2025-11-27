@@ -48,10 +48,10 @@
             /* UI Colors */
             --bg-primary: #ffffff;
             --bg-secondary: #f8f9fa;
-            --bg-sidebar: linear-gradient(180deg, #1a237e 0%, #283593 100%);
+            --bg-sidebar: #ffffff;
             --text-primary: #212529;
             --text-secondary: #6c757d;
-            --border-color: #dee2e6;
+            --border-color: #e2e8f0;
             
             /* Layout */
             --sidebar-width: 280px;
@@ -82,7 +82,8 @@
             bottom: 0;
             width: var(--sidebar-width);
             background: var(--bg-sidebar);
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid var(--border-color);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
             z-index: 1000;
             overflow-y: auto;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -93,43 +94,43 @@
         }
 
         .doctor-sidebar::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+            background: #f8f9fc;
         }
 
         .doctor-sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
+            background: #cbd5e1;
             border-radius: 3px;
         }
 
         .doctor-sidebar::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: #94a3b8;
         }
 
         /* Sidebar Header */
         .doctor-sidebar-header {
             padding: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0, 0, 0, 0.1);
+            border-bottom: 2px solid var(--border-color);
+            background: #f8f9fc;
         }
 
         .doctor-logo {
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            color: white;
+            color: var(--text-primary);
             text-decoration: none;
         }
 
         .doctor-logo-icon {
             width: 45px;
             height: 45px;
-            background: rgba(255, 255, 255, 0.15);
+            background: #1a202c;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-            backdrop-filter: blur(10px);
+            color: white;
         }
 
         .doctor-logo-text {
@@ -139,14 +140,14 @@
         .doctor-logo-title {
             font-size: 1.1rem;
             font-weight: 700;
-            color: white;
+            color: #1a202c;
             margin: 0;
             line-height: 1.2;
         }
 
         .doctor-logo-subtitle {
             font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.7);
+            color: #4a5568;
             margin: 0;
         }
 
@@ -160,7 +161,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: rgba(255, 255, 255, 0.5);
+            color: #6c757d;
             padding: 0 1.5rem;
             margin-bottom: 0.75rem;
         }
@@ -175,7 +176,7 @@
             align-items: center;
             gap: 0.75rem;
             padding: 0.75rem 1rem;
-            color: rgba(255, 255, 255, 0.85);
+            color: #2d3748;
             text-decoration: none;
             border-radius: 12px;
             transition: all 0.3s ease;
@@ -184,15 +185,15 @@
         }
 
         .doctor-nav-link:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+            background: #f8f9fc;
+            color: #1a202c;
             transform: translateX(4px);
         }
 
         .doctor-nav-link.active {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background: #f8f9fc;
+            color: #1a202c;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
         .doctor-nav-link.active::before {
@@ -203,8 +204,12 @@
             transform: translateY(-50%);
             width: 4px;
             height: 60%;
-            background: white;
+            background: #1a202c;
             border-radius: 0 4px 4px 0;
+        }
+        
+        .doctor-nav-link i {
+            color: #1a202c;
         }
 
         .doctor-nav-icon {
@@ -219,8 +224,8 @@
         }
 
         .doctor-nav-badge {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
+            background: #e2e8f0;
+            color: #1a202c;
             font-size: 0.7rem;
             padding: 0.2rem 0.5rem;
             border-radius: 10px;

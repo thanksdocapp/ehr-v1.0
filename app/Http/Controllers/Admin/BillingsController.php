@@ -195,6 +195,18 @@ class BillingsController extends Controller
             'created_by' => auth()->id(),
         ]);
 
+        // Send billing notification to patient if requested
+        if ($request->has('send_to_patient') && $request->send_to_patient) {
+            try {
+                $this->emailService->sendBillingNotification($billing);
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send billing notification email', [
+                    'billing_id' => $billing->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         // Send in-portal notification to patient about new invoice
         try {
             $this->notificationService->sendBillingNotification($billing, 'invoice_created');
@@ -403,6 +415,31 @@ class BillingsController extends Controller
         $billing->load(['patient', 'doctor', 'appointment', 'createdBy']);
         
         return view('admin.billing.invoice', compact('billing'));
+    }
+
+    /**
+     * Send billing notification to patient via email
+     */
+    public function sendToPatient(Billing $billing)
+    {
+        try {
+            $this->emailService->sendBillingNotification($billing);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Billing notification sent to patient successfully!'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send billing notification', [
+                'billing_id' => $billing->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send notification: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

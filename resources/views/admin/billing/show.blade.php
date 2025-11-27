@@ -23,9 +23,24 @@
 }
 
 .record-section-header {
-    background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
-    color: white;
+    background: #f8f9fc;
+    color: #2d3748;
     padding: 1.5rem 2rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.record-section-header h4,
+.record-section-header h5 {
+    color: #1a202c;
+    font-weight: 700;
+}
+
+.record-section-header i {
+    color: #1a202c;
+}
+
+.record-section-header small {
+    color: #4a5568;
 }
 
 .record-section-body {
@@ -293,6 +308,11 @@
                     <a href="{{ contextRoute('billing.edit', $billing) }}" class="btn btn-doctor-primary">
                         <i class="fas fa-edit"></i> Edit Bill
                     </a>
+                    @if($billing->patient && $billing->patient->email)
+                    <button type="button" class="btn btn-success" onclick="sendToPatient({{ $billing->id }})" id="sendToPatientBtn">
+                        <i class="fas fa-envelope"></i> Send to Patient
+                    </button>
+                    @endif
                     <button type="button" class="btn btn-secondary" onclick="printBill()">
                         <i class="fas fa-print"></i> Print Bill
                     </button>
@@ -354,6 +374,41 @@
 
 @push('scripts')
 <script>
+function sendToPatient(billId) {
+    if (!confirm('Send billing notification email to patient with payment link?')) {
+        return;
+    }
+    
+    const btn = document.getElementById('sendToPatientBtn');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    
+    fetch(`{{ url('/admin/billing') }}/${billId}/send-to-patient`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✓ Billing notification sent to patient successfully!');
+        } else {
+            alert('✗ Failed to send notification: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('✗ An error occurred while sending the notification.');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    });
+}
+
 function printBill() {
     window.print();
 }

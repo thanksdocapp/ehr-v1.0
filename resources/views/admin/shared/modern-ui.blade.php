@@ -24,25 +24,14 @@
        MODERN PAGE HEADER
        ============================================ */
     .modern-page-header {
-        background: var(--gradient-primary);
+        background: white;
         border-radius: var(--radius-xl);
         padding: 2rem 2.5rem;
-        color: white;
+        color: #2d3748;
         margin-bottom: 2rem;
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid #e2e8f0;
         position: relative;
-        overflow: hidden;
-    }
-
-    .modern-page-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -20%;
-        width: 400px;
-        height: 400px;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        border-radius: 50%;
     }
 
     .modern-page-header-content {
@@ -54,11 +43,19 @@
         font-size: 2rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
+        color: #1a202c;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .modern-page-title i {
+        color: #1a202c;
     }
 
     .modern-page-subtitle {
         font-size: 1.1rem;
-        opacity: 0.9;
+        color: #4a5568;
         margin: 0;
     }
 
@@ -100,7 +97,7 @@
     }
 
     .modern-card-title i {
-        color: #667eea;
+        color: #1a202c;
     }
 
     .modern-card-body {

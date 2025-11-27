@@ -47,9 +47,9 @@
         <div class="col-lg-8">
             <!-- Prescription Status -->
             <div class="doctor-card mb-4">
-                <div class="doctor-card-header bg-primary text-white py-3">
+                <div class="doctor-card-header py-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-info-circle me-2"></i>Prescription Status</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Prescription Status</h5>
                         <span class="badge bg-{{ $prescription->status === 'dispensed' ? 'success' : ($prescription->status === 'approved' ? 'warning' : 'secondary') }} fs-6">
                             {{ ucfirst($prescription->status) }}
                         </span>
@@ -86,8 +86,8 @@
 
             <!-- Patient Information -->
             <div class="doctor-card mb-4">
-                <div class="doctor-card-header bg-info text-white py-3">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Patient Information</h5>
+                <div class="doctor-card-header py-3">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2" style="color: #1a202c;"></i>Patient Information</h5>
                 </div>
                 <div class="doctor-card-body">
                     @if($prescription->patient)
@@ -132,8 +132,8 @@
 
             <!-- Doctor Information -->
             <div class="doctor-card mb-4">
-                <div class="doctor-card-header bg-success text-white py-3">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2"></i>Prescribing Doctor</h5>
+                <div class="doctor-card-header py-3">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2" style="color: #1a202c;"></i>Prescribing Doctor</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="d-flex align-items-center">
@@ -153,8 +153,8 @@
 
             <!-- Medications -->
             <div class="doctor-card mb-4">
-                <div class="doctor-card-header bg-warning text-dark py-3">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-pills me-2"></i>Prescribed Medications</h5>
+                <div class="doctor-card-header py-3">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-pills me-2" style="color: #1a202c;"></i>Prescribed Medications</h5>
                 </div>
                 <div class="doctor-card-body">
                     @php
@@ -217,8 +217,8 @@
             <!-- Additional Information -->
             @if($prescription->diagnosis || $prescription->notes)
             <div class="doctor-card mb-4">
-                <div class="doctor-card-header bg-secondary text-white py-3">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-clipboard-list me-2"></i>Additional Information</h5>
+                <div class="doctor-card-header py-3">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-clipboard-list me-2" style="color: #1a202c;"></i>Additional Information</h5>
                 </div>
                 <div class="doctor-card-body">
                     @if($prescription->diagnosis)
@@ -240,8 +240,8 @@
             <!-- Medical Record Link -->
             @if($prescription->medicalRecord)
             <div class="doctor-card mb-4">
-                <div class="doctor-card-header bg-dark text-white py-3">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-file-medical me-2"></i>Related Medical Record</h5>
+                <div class="doctor-card-header py-3">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-file-medical me-2" style="color: #1a202c;"></i>Related Medical Record</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -264,8 +264,8 @@
         <div class="col-lg-4">
             <!-- Actions -->
             <div class="doctor-card mb-4">
-                <div class="doctor-card-header bg-primary text-white py-3">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-cogs me-2"></i>Actions</h5>
+                <div class="doctor-card-header py-3">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-cogs me-2" style="color: #1a202c;"></i>Actions</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="d-grid gap-2">
@@ -300,8 +300,8 @@
 
             <!-- Prescription Timeline -->
             <div class="doctor-card mb-4">
-                <div class="doctor-card-header bg-info text-white py-3">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-history me-2"></i>Timeline</h5>
+                <div class="doctor-card-header py-3">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-history me-2" style="color: #1a202c;"></i>Timeline</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="timeline">

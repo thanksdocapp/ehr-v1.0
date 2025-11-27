@@ -26,10 +26,25 @@
         }
 
         .form-section-header {
-            background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
-            color: white;
+            background: #f8f9fc;
+            color: #2d3748;
             padding: 1.5rem 2rem;
             border-radius: 12px 12px 0 0;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .form-section-header h4,
+        .form-section-header h5 {
+            color: #1a202c;
+            font-weight: 700;
+        }
+        
+        .form-section-header i {
+            color: #1a202c;
+        }
+        
+        .form-section-header small {
+            color: #4a5568;
         }
 
         .form-section-body {
@@ -281,6 +296,20 @@
                                 </label>
                                 <textarea name="notes" id="notes" class="form-control" rows="3">{{ old('notes') }}</textarea>
                                 <div class="form-help">Additional details about the billing transaction</div>
+                            </div>
+
+                            <!-- Send to Patient Option -->
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="send_to_patient" id="send_to_patient" value="1" {{ old('send_to_patient') ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="send_to_patient">
+                                        <i class="fas fa-envelope me-1"></i>
+                                        <strong>Send billing notification to patient</strong>
+                                    </label>
+                                    <div class="form-help">
+                                        Patient will receive an email with a secure payment link to pay online without logging in.
+                                    </div>
+                                </div>
                             </div>
 
                         </div>

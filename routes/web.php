@@ -158,6 +158,15 @@ Route::group(['middleware' => 'installed'], function () {
     // Flutterwave callback route (public, no auth required)
     Route::get('/payment/flutterwave/callback', [PaymentController::class, 'flutterwaveCallback'])->name('payment.flutterwave.callback');
     
+    // Public Billing Routes (no authentication required - uses secure token)
+    Route::prefix('pay')->name('public.billing.')->group(function () {
+        Route::get('/{token}', [\App\Http\Controllers\PublicBillingController::class, 'showInvoice'])->name('pay');
+        Route::post('/{token}/select-gateway', [\App\Http\Controllers\PublicBillingController::class, 'showPaymentForm'])->name('select-gateway');
+        Route::post('/{token}/process-payment', [\App\Http\Controllers\PublicBillingController::class, 'processPayment'])->name('process-payment');
+        Route::get('/{token}/success', [\App\Http\Controllers\PublicBillingController::class, 'paymentSuccess'])->name('success');
+        Route::get('/invalid', [\App\Http\Controllers\PublicBillingController::class, 'invalid'])->name('invalid');
+    });
+    
     // CoinGate callback route (public, no auth required)
     Route::get('/payment/coingate/callback', [PaymentController::class, 'coinGateCallback'])->name('payment.coingate.callback');
     
@@ -279,6 +288,7 @@ Route::group(['middleware' => 'installed'], function () {
             Route::get('create', [\App\Http\Controllers\Staff\BillingsController::class, 'create'])->name('create');
             Route::post('/', [\App\Http\Controllers\Staff\BillingsController::class, 'store'])->name('store');
             Route::get('{billing}', [\App\Http\Controllers\Staff\BillingsController::class, 'show'])->name('show');
+            Route::post('{billing}/send-to-patient', [\App\Http\Controllers\Staff\BillingsController::class, 'sendToPatient'])->name('send-to-patient');
             // Note: Staff cannot edit, delete, or manage payment status for bills
         });
         
@@ -600,6 +610,7 @@ Route::group(['middleware' => 'installed'], function () {
             Route::post('{billing}/process-payment', [\App\Http\Controllers\Admin\BillingsController::class, 'processPayment'])->name('process-payment');
             Route::post('{billing}/update-status', [\App\Http\Controllers\Admin\BillingsController::class, 'updateStatus'])->name('update-status');
             Route::get('{billing}/invoice', [\App\Http\Controllers\Admin\BillingsController::class, 'generateInvoice'])->name('invoice');
+            Route::post('{billing}/send-to-patient', [\App\Http\Controllers\Admin\BillingsController::class, 'sendToPatient'])->name('send-to-patient');
         });
         
         // Payment Gateway Management
