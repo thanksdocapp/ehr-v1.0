@@ -1817,15 +1817,6 @@ class HospitalEmailNotificationService
                             
                             <p style="margin: 20px 0; color: #4a5568; font-size: 14px; line-height: 1.6; text-align: center;">You can pay this invoice securely online using the button above. No login required.</p>
                             
-                            <!-- Contact Information -->
-                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-                                <p style="margin: 0 0 10px 0; color: #4a5568; font-size: 14px;">If you have any questions about this invoice, please contact our billing department:</p>
-                                <ul style="margin: 0; padding-left: 20px; color: #4a5568; font-size: 14px; line-height: 1.8;">
-                                    <li>Phone: ' . htmlspecialchars($variables['billing_phone'] ?? $variables['hospital_phone'] ?? 'N/A') . '</li>
-                                    <li>Address: ' . htmlspecialchars($variables['hospital_address'] ?? 'N/A') . '</li>
-                                </ul>
-                            </div>
-                            
                             <p style="margin: 30px 0 0 0; color: #4a5568; font-size: 16px;">Thank you for choosing ' . htmlspecialchars($hospitalName) . '.</p>
                         </td>
                     </tr>
