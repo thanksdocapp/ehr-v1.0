@@ -459,8 +459,9 @@
                             <div class="form-check mb-3">
                                 <input class="form-check-input" type="checkbox" 
                                        id="consent_share_with_gp" name="consent_share_with_gp" value="1" 
-                                       {{ old('consent_share_with_gp', $patient->consent_share_with_gp) ? 'checked' : '' }}>
-                                <label class="form-check-label" for="consent_share_with_gp">
+                                       {{ old('consent_share_with_gp', $patient->consent_share_with_gp) ? 'checked' : '' }}
+                                       onchange="handleGpConsentChange(this)">
+                                <label class="form-check-label" for="consent_share_with_gp" onclick="setTimeout(function(){handleGpConsentChange(document.getElementById('consent_share_with_gp'));}, 10);">
                                     <i class="fas fa-check-circle me-1"></i>
                                     <strong>I consent for you to share information with my GP.</strong>
                                 </label>
@@ -469,6 +470,73 @@
                                 By checking this box, you authorize the hospital to share your medical information with your GP.
                             </small>
                         </div>
+
+                        <script>
+                        // Inline function to handle GP consent - runs immediately
+                        function handleGpConsentChange(checkbox) {
+                            var gpGroup = document.getElementById('gp_details_group');
+                            var gpFields = ['gp_name', 'gp_email', 'gp_phone', 'gp_address'];
+                            
+                            if (!gpGroup) return;
+                            
+                            var isChecked = checkbox && (checkbox.checked || checkbox.getAttribute('checked') !== null);
+                            
+                            if (isChecked) {
+                                // Force show - use multiple methods
+                                gpGroup.style.display = 'block';
+                                gpGroup.style.visibility = 'visible';
+                                gpGroup.style.opacity = '1';
+                                gpGroup.removeAttribute('style');
+                                gpGroup.setAttribute('style', 'display: block !important; visibility: visible !important; opacity: 1 !important;');
+                                
+                                // Set required fields
+                                gpFields.forEach(function(fieldId) {
+                                    var field = document.getElementById(fieldId);
+                                    if (field) {
+                                        field.required = true;
+                                        field.setAttribute('required', 'required');
+                                    }
+                                });
+                            } else {
+                                // Force hide
+                                gpGroup.style.display = 'none';
+                                gpGroup.style.visibility = 'hidden';
+                                gpGroup.removeAttribute('style');
+                                gpGroup.setAttribute('style', 'display: none !important;');
+                                
+                                // Remove required and clear fields
+                                gpFields.forEach(function(fieldId) {
+                                    var field = document.getElementById(fieldId);
+                                    if (field) {
+                                        field.required = false;
+                                        field.removeAttribute('required');
+                                        field.value = '';
+                                    }
+                                });
+                            }
+                        }
+                        
+                        // Initialize on page load
+                        (function() {
+                            var checkbox = document.getElementById('consent_share_with_gp');
+                            if (checkbox) {
+                                // Check initial state
+                                setTimeout(function() {
+                                    handleGpConsentChange(checkbox);
+                                }, 100);
+                                
+                                // Also add event listeners
+                                checkbox.addEventListener('change', function() {
+                                    handleGpConsentChange(this);
+                                });
+                                checkbox.addEventListener('click', function() {
+                                    setTimeout(function() {
+                                        handleGpConsentChange(checkbox);
+                                    }, 10);
+                                });
+                            }
+                        })();
+                        </script>
 
                         <div id="gp_details_group" style="display: {{ old('consent_share_with_gp', $patient->consent_share_with_gp) ? 'block' : 'none' }};">
                             <div class="row">
@@ -744,31 +812,42 @@ $(document).ready(function() {
         calculateAgeAndToggleGuardian();
     }
     
-    // GP Consent checkbox toggle
+    // GP Consent checkbox toggle - backup handler (primary is inline)
     $('#consent_share_with_gp').on('change', function() {
-        const gpDetailsGroup = $('#gp_details_group');
-        const gpFields = ['gp_name', 'gp_email', 'gp_phone', 'gp_address'];
-        
-        if ($(this).is(':checked')) {
-            gpDetailsGroup.slideDown();
-            gpFields.forEach(function(field) {
-                $('#' + field).prop('required', true);
-            });
+        if (typeof handleGpConsentChange === 'function') {
+            handleGpConsentChange(this);
         } else {
-            gpDetailsGroup.slideUp();
-            gpFields.forEach(function(field) {
-                $('#' + field).prop('required', false);
-            });
+            const gpDetailsGroup = $('#gp_details_group');
+            const gpFields = ['gp_name', 'gp_email', 'gp_phone', 'gp_address'];
+            
+            if ($(this).is(':checked')) {
+                gpDetailsGroup.slideDown();
+                gpFields.forEach(function(field) {
+                    $('#' + field).prop('required', true);
+                });
+            } else {
+                gpDetailsGroup.slideUp();
+                gpFields.forEach(function(field) {
+                    $('#' + field).prop('required', false);
+                    $('#' + field).val('');
+                });
+            }
         }
     });
     
     // Initialize GP details visibility based on consent checkbox state
-    if ($('#consent_share_with_gp').is(':checked')) {
-        $('#gp_details_group').show();
-        ['gp_name', 'gp_email', 'gp_phone', 'gp_address'].forEach(function(field) {
-            $('#' + field).prop('required', true);
-        });
-    }
+    setTimeout(function() {
+        if ($('#consent_share_with_gp').is(':checked')) {
+            if (typeof handleGpConsentChange === 'function') {
+                handleGpConsentChange(document.getElementById('consent_share_with_gp'));
+            } else {
+                $('#gp_details_group').show();
+                ['gp_name', 'gp_email', 'gp_phone', 'gp_address'].forEach(function(field) {
+                    $('#' + field).prop('required', true);
+                });
+            }
+        }
+    }, 200);
     
     // Sync department_ids to department_id hidden field (for backward compatibility)
     // First selected department becomes the primary department_id

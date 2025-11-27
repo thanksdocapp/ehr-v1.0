@@ -530,31 +530,41 @@ $(document).ready(function() {
         calculateAgeAndToggleGuardian();
     }
     
-    // GP Consent checkbox toggle
+    // GP Consent checkbox toggle - backup handler (primary should be inline)
     $('#consent_share_with_gp').on('change', function() {
-        const gpDetailsGroup = $('#gp_details_group');
-        const gpFields = ['gp_name', 'gp_email', 'gp_phone', 'gp_address'];
-        
-        if ($(this).is(':checked')) {
-            gpDetailsGroup.slideDown();
-            gpFields.forEach(function(field) {
-                $('#' + field).prop('required', true);
-            });
+        if (typeof handleGpConsentChange === 'function') {
+            handleGpConsentChange(this);
         } else {
-            gpDetailsGroup.slideUp();
-            gpFields.forEach(function(field) {
-                $('#' + field).prop('required', false);
-            });
+            const gpDetailsGroup = $('#gp_details_group');
+            const gpFields = ['gp_name', 'gp_email', 'gp_phone', 'gp_address'];
+            
+            if ($(this).is(':checked')) {
+                gpDetailsGroup.slideDown();
+                gpFields.forEach(function(field) {
+                    $('#' + field).prop('required', true);
+                });
+            } else {
+                gpDetailsGroup.slideUp();
+                gpFields.forEach(function(field) {
+                    $('#' + field).prop('required', false);
+                });
+            }
         }
     });
     
     // Initialize GP details visibility based on consent checkbox state
-    if ($('#consent_share_with_gp').is(':checked')) {
-        $('#gp_details_group').show();
-        ['gp_name', 'gp_email', 'gp_phone', 'gp_address'].forEach(function(field) {
-            $('#' + field).prop('required', true);
-        });
-    }
+    setTimeout(function() {
+        if ($('#consent_share_with_gp').is(':checked')) {
+            if (typeof handleGpConsentChange === 'function') {
+                handleGpConsentChange(document.getElementById('consent_share_with_gp'));
+            } else {
+                $('#gp_details_group').show();
+                ['gp_name', 'gp_email', 'gp_phone', 'gp_address'].forEach(function(field) {
+                    $('#' + field).prop('required', true);
+                });
+            }
+        }
+    }, 200);
     
     // Add allergy functionality
     $('#add-allergy').click(function() {
