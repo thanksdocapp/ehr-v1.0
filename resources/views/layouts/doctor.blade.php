@@ -412,70 +412,81 @@
             padding: 1.5rem;
         }
 
-        /* Modern Checkboxes */
+        /* Modern Checkboxes - High Specificity for Production */
         .form-check {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 0.75rem !important;
+            margin-bottom: 1rem !important;
         }
 
-        .form-check-input {
-            width: 20px;
-            height: 20px;
-            margin-top: 0.25rem;
-            margin-left: 0;
-            border: 2px solid #cbd5e1;
-            border-radius: 6px;
-            background-color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            position: relative;
+        input[type="checkbox"].form-check-input,
+        .form-check-input[type="checkbox"] {
+            width: 20px !important;
+            height: 20px !important;
+            margin-top: 0.25rem !important;
+            margin-left: 0 !important;
+            border: 2px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            background-color: white !important;
+            background-image: none !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            flex-shrink: 0 !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            position: relative !important;
+            float: none !important;
         }
 
-        .form-check-input:hover {
-            border-color: #94a3b8;
-            background-color: #f8f9fc;
+        input[type="checkbox"].form-check-input:hover,
+        .form-check-input[type="checkbox"]:hover {
+            border-color: #94a3b8 !important;
+            background-color: #f8f9fc !important;
+            background-image: none !important;
         }
 
-        .form-check-input:focus {
-            outline: none;
-            border-color: #1a202c;
-            box-shadow: 0 0 0 4px rgba(26, 32, 44, 0.1);
+        input[type="checkbox"].form-check-input:focus,
+        .form-check-input[type="checkbox"]:focus {
+            outline: none !important;
+            border-color: #1a202c !important;
+            box-shadow: 0 0 0 4px rgba(26, 32, 44, 0.1) !important;
+            background-image: none !important;
         }
 
-        .form-check-input:checked {
-            background-color: #1a202c;
-            border-color: #1a202c;
+        input[type="checkbox"].form-check-input:checked,
+        .form-check-input[type="checkbox"]:checked {
+            background-color: #1a202c !important;
+            border-color: #1a202c !important;
+            background-image: none !important;
         }
 
-        .form-check-input:checked::after {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%) rotate(45deg);
-            width: 5px;
-            height: 10px;
-            border: solid white;
-            border-width: 0 2px 2px 0;
+        input[type="checkbox"].form-check-input:checked::after,
+        .form-check-input[type="checkbox"]:checked::after {
+            content: '' !important;
+            position: absolute !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) rotate(45deg) !important;
+            width: 5px !important;
+            height: 10px !important;
+            border: solid white !important;
+            border-width: 0 2px 2px 0 !important;
+            display: block !important;
         }
 
         .form-check-label {
-            color: #2d3748;
-            font-weight: 500;
-            cursor: pointer;
-            line-height: 1.5;
-            flex: 1;
-            margin: 0;
+            color: #2d3748 !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            line-height: 1.5 !important;
+            flex: 1 !important;
+            margin: 0 !important;
         }
 
         .form-check-label i {
-            color: #1a202c;
+            color: #1a202c !important;
         }
 
         /* Stats Cards */
