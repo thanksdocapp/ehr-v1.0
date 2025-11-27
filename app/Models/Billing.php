@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Schema;
 
 class Billing extends Model
 {
@@ -244,7 +245,7 @@ class Billing extends Model
         
         // Generate payment token for public payment access if not already set
         // Only if the column exists in the database
-        if (\Schema::hasColumn('invoices', 'payment_token')) {
+        if (Schema::hasColumn('invoices', 'payment_token')) {
             if (!$invoice->payment_token) {
                 $invoice->generatePaymentToken();
             }
