@@ -276,25 +276,75 @@ class EmailNotificationService
      */
     protected function parseContent(string $content, array $variables)
     {
-        // Replace variables in content
-        foreach ($variables as $key => $value) {
-            $content = str_replace(['{{'.$key.'}}', '{{ '.$key.' }}'], $value, $content);
+        try {
+            // Ensure content is a string
+            if (!is_string($content)) {
+                $content = (string) $content;
+            }
+
+            // Convert all variable values to strings safely
+            $safeVariables = [];
+            foreach ($variables as $key => $value) {
+                if (is_array($value)) {
+                    $safeVariables[$key] = json_encode($value);
+                } elseif (is_object($value)) {
+                    $safeVariables[$key] = method_exists($value, '__toString') ? (string) $value : json_encode($value);
+                } elseif (is_null($value)) {
+                    $safeVariables[$key] = '';
+                } else {
+                    $safeVariables[$key] = (string) $value;
+                }
+            }
+
+            // Replace variables in content (handle both {{var}} and {{ var }} formats)
+            foreach ($safeVariables as $key => $value) {
+                // Escape special regex characters in the key
+                $escapedKey = preg_quote($key, '/');
+                
+                // Replace both formats: {{key}} and {{ key }}
+                $patterns = [
+                    '/\{\{\s*' . $escapedKey . '\s*\}\}/',
+                    '/\{\{' . $escapedKey . '\}\}/',
+                ];
+                
+                foreach ($patterns as $pattern) {
+                    $content = preg_replace($pattern, $value, $content);
+                }
+            }
+
+            // Add any global variables
+            $globalVars = [
+                'app_name' => config('app.name', 'Hospital'),
+                'hospital_name' => config('app.name', 'Hospital'), // Same as app_name for compatibility
+                'app_url' => config('app.url', url('/')),
+                'current_year' => date('Y'),
+                'current_date' => date('F d, Y'),
+                'current_time' => date('H:i:s'),
+                'site_name' => config('app.name', 'Hospital'), // Alternative variable name
+            ];
+
+            foreach ($globalVars as $key => $value) {
+                $escapedKey = preg_quote($key, '/');
+                $patterns = [
+                    '/\{\{\s*' . $escapedKey . '\s*\}\}/',
+                    '/\{\{' . $escapedKey . '\}\}/',
+                ];
+                
+                foreach ($patterns as $pattern) {
+                    $content = preg_replace($pattern, (string) $value, $content);
+                }
+            }
+
+            return $content;
+        } catch (\Exception $e) {
+            Log::error('Failed to parse email template content', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return original content if parsing fails
+            return $content;
         }
-
-        // Add any global variables
-        $globalVars = [
-            'app_name' => config('app.name'),
-            'hospital_name' => config('app.name'), // Same as app_name for compatibility
-            'app_url' => config('app.url'),
-            'current_year' => date('Y'),
-            'site_name' => config('app.name'), // Alternative variable name
-        ];
-
-        foreach ($globalVars as $key => $value) {
-            $content = str_replace(['{{'.$key.'}}', '{{ '.$key.' }}'], $value, $content);
-        }
-
-        return $content;
     }
     
 
