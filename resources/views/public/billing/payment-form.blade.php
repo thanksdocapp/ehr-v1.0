@@ -1,5 +1,21 @@
 @extends('layouts.guest')
 
+@push('styles')
+<style>
+    #proceed-payment-btn {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: relative !important;
+        z-index: 999 !important;
+    }
+    
+    #proceed-payment-form {
+        display: block !important;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container py-5">
     <div class="row justify-content-center">
