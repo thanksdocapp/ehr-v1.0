@@ -231,6 +231,26 @@
                             }
                         }
                         
+                        // Update meeting link placeholder based on selected platform
+                        function updateMeetingLinkPlaceholder() {
+                            var platformSelect = document.getElementById('meeting_platform');
+                            var meetingLinkInput = document.getElementById('meeting_link');
+                            
+                            if (!platformSelect || !meetingLinkInput) return;
+                            
+                            var platform = platformSelect.value;
+                            var placeholders = {
+                                'zoom': 'https://zoom.us/j/xxxxxxxxxx',
+                                'google_meet': 'https://meet.google.com/xxx-xxxx-xxx',
+                                'teams': 'https://teams.microsoft.com/l/meetup-join/xxx',
+                                'whereby': 'https://subdomain.whereby.com/room-name',
+                                'custom': 'https://your-platform.com/meeting-link',
+                                '': 'Enter meeting link based on selected platform'
+                            };
+                            
+                            meetingLinkInput.setAttribute('placeholder', placeholders[platform] || placeholders['']);
+                        }
+                        
                         // Initialize on page load
                         (function() {
                             var checkbox = document.getElementById('is_online');
@@ -249,6 +269,17 @@
                                         handleOnlineConsultationChange(checkbox);
                                     }, 10);
                                 });
+                            }
+                            
+                            // Setup placeholder update for meeting platform
+                            var platformSelect = document.getElementById('meeting_platform');
+                            if (platformSelect) {
+                                platformSelect.addEventListener('change', updateMeetingLinkPlaceholder);
+                                
+                                // Update placeholder on page load if platform is already selected
+                                setTimeout(function() {
+                                    updateMeetingLinkPlaceholder();
+                                }, 100);
                             }
                         })();
                         </script>
