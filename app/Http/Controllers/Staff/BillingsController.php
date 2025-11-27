@@ -295,17 +295,36 @@ class BillingsController extends Controller
     public function sendToPatient(Billing $billing)
     {
         try {
-            $emailService = app(\App\Services\HospitalEmailNotificationService::class);
-            $emailService->sendBillingNotification($billing);
+            // Ensure billing has all relationships loaded
+            $billing->load(['patient', 'doctor', 'invoice']);
             
-            return response()->json([
-                'success' => true,
-                'message' => 'Billing notification sent to patient successfully!'
-            ]);
+            // Check if patient has email
+            if (!$billing->patient || !$billing->patient->email) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Patient email not found. Please ensure the patient has a valid email address.'
+                ], 400);
+            }
+            
+            $emailService = app(\App\Services\HospitalEmailNotificationService::class);
+            $result = $emailService->sendBillingNotification($billing);
+            
+            if ($result) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Billing notification sent to patient successfully!'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send email. Please check email configuration and template.'
+                ], 500);
+            }
         } catch (\Exception $e) {
             \Log::error('Failed to send billing notification', [
                 'billing_id' => $billing->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             
             return response()->json([
