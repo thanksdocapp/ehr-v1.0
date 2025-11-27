@@ -59,19 +59,22 @@
     }
     
     .btn-pay {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        padding: 1rem 2rem;
-        font-size: 1.1rem;
-        font-weight: 600;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: 2px solid #667eea !important;
+        padding: 1rem 2rem !important;
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+        transition: all 0.3s ease !important;
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
         position: relative !important;
         z-index: 999 !important;
+        color: #ffffff !important;
+        text-decoration: none !important;
+        cursor: pointer !important;
     }
     
     .btn-pay:hover {
@@ -85,6 +88,27 @@
         opacity: 1 !important;
         position: relative !important;
         z-index: 999 !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: #ffffff !important;
+        border: 2px solid #667eea !important;
+        padding: 1rem 2rem !important;
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+        cursor: pointer !important;
+    }
+    
+    #pay-invoice-btn:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #653a8f 100%) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+        color: #ffffff !important;
+    }
+    
+    #pay-invoice-btn i,
+    #pay-invoice-btn span {
+        color: #ffffff !important;
     }
 </style>
 @endpush
@@ -249,7 +273,7 @@
                                 @endforeach
                             </div>
                             <div class="mt-4">
-                                <button type="submit" id="pay-invoice-btn" class="btn btn-pay w-100 text-white" style="display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 999 !important;">
+                                <button type="submit" id="pay-invoice-btn" class="btn btn-pay w-100" style="display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 999 !important; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: #ffffff !important; border: 2px solid #667eea !important; padding: 1rem 2rem !important; font-size: 1.1rem !important; font-weight: 600 !important; border-radius: 12px !important; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important; cursor: pointer !important;">
                                     <i class="fas fa-credit-card me-2"></i>
                                     Continue to Payment
                                 </button>
