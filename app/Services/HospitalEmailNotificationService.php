@@ -417,7 +417,10 @@ class HospitalEmailNotificationService
             $doctorName = 'N/A';
             $departmentName = 'N/A';
             if ($billing->doctor) {
-                $doctorName = $billing->doctor->name ?? $billing->doctor->full_name ?? 'N/A';
+                // Get doctor name without duplicate "Dr." prefix
+                $rawName = $billing->doctor->name ?? $billing->doctor->full_name ?? 'N/A';
+                // Remove "Dr." prefix if it exists (to avoid duplicate in email template)
+                $doctorName = preg_replace('/^Dr\.\s*/i', '', $rawName);
                 // Load department relationship if not already loaded
                 if (!$billing->doctor->relationLoaded('department')) {
                     $billing->doctor->load('department');
@@ -1769,7 +1772,7 @@ class HospitalEmailNotificationService
                                             </tr>
                                             ' . ($variables['doctor_name'] !== 'N/A' ? '<tr>
                                                 <td style="padding: 8px 0; color: #4a5568; font-size: 14px;">Doctor:</td>
-                                                <td style="padding: 8px 0; color: #1a202c; font-size: 14px;">Dr. ' . htmlspecialchars($variables['doctor_name']) . '</td>
+                                                <td style="padding: 8px 0; color: #1a202c; font-size: 14px;">' . htmlspecialchars($variables['doctor_name']) . '</td>
                                             </tr>' : '') . '
                                             ' . ($variables['department_name'] !== 'N/A' ? '<tr>
                                                 <td style="padding: 8px 0; color: #4a5568; font-size: 14px;">Department/Clinic:</td>
