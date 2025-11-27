@@ -376,7 +376,7 @@
                         </script>
                         
                         <div class="row" id="meeting_link_row" style="{{ old('is_online', $appointment->is_online) ? '' : 'display: none;' }}">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="meeting_platform" class="form-label">Meeting Platform</label>
                                 <select class="form-control @error('meeting_platform') is-invalid @enderror" 
                                         id="meeting_platform" name="meeting_platform"
@@ -392,7 +392,7 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
-                            <div class="col-md-8 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="meeting_link" class="form-label">Meeting Link <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <input type="url" class="form-control @error('meeting_link') is-invalid @enderror" 
