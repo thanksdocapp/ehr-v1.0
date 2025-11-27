@@ -192,21 +192,11 @@
                         </button>
                         @endif
 
-                        {{-- Staff cannot edit or update billing status - these actions are restricted to admin --}}
-                        {{-- @if($billing->status === 'pending')
+                        @if(in_array($billing->status, ['pending', 'partially_paid', 'overdue']))
                             <a href="{{ route('staff.billing.edit', $billing->id) }}" class="btn btn-outline-warning">
                                 <i class="fas fa-edit me-1"></i>Edit Bill
                             </a>
-                            <button class="btn btn-success" onclick="updateStatus({{ $billing->id }}, 'paid')">
-                                <i class="fas fa-check me-1"></i>Mark as Paid
-                            </button>
                         @endif
-
-                        @if(in_array($billing->status, ['pending', 'overdue']))
-                            <button class="btn btn-outline-danger" onclick="updateStatus({{ $billing->id }}, 'cancelled')">
-                                <i class="fas fa-times me-1"></i>Cancel Bill
-                            </button>
-                        @endif --}}
 
                         <div class="dropdown-divider"></div>
                         <button class="btn btn-outline-info" onclick="window.print()">

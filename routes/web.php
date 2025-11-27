@@ -290,8 +290,9 @@ Route::group(['middleware' => 'installed'], function () {
             Route::get('create', [\App\Http\Controllers\Staff\BillingsController::class, 'create'])->name('create');
             Route::post('/', [\App\Http\Controllers\Staff\BillingsController::class, 'store'])->name('store');
             Route::get('{billing}', [\App\Http\Controllers\Staff\BillingsController::class, 'show'])->name('show');
+            Route::get('{billing}/edit', [\App\Http\Controllers\Staff\BillingsController::class, 'edit'])->name('edit');
+            Route::put('{billing}', [\App\Http\Controllers\Staff\BillingsController::class, 'update'])->name('update');
             Route::post('{billing}/send-to-patient', [\App\Http\Controllers\Staff\BillingsController::class, 'sendToPatient'])->name('send-to-patient');
-            // Note: Staff cannot edit, delete, or manage payment status for bills
         });
         
         // Staff Notifications

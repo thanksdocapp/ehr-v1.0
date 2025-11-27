@@ -385,5 +385,91 @@ class BillingsController extends Controller
             ->with('success', 'Billing record created successfully!' . ($request->has('send_to_patient') && $request->send_to_patient ? ' Invoice sent to patient.' : ''));
     }
 
+    /**
+     * Show the form for editing the billing.
+     */
+    public function edit(Billing $billing): View
+    {
+        $user = Auth::user();
+        
+        // Filter patients by department for all roles
+        $query = Patient::query()->visibleTo(Auth::user());
+        $departmentId = null;
+        $currentDoctor = null;
+        
+        if ($user->role === 'doctor') {
+            $currentDoctor = Doctor::where('user_id', $user->id)->first();
+            $departmentId = $currentDoctor ? $currentDoctor->department_id : null;
+        } else {
+            $departmentId = $user->department_id;
+        }
+        if ($departmentId) {
+            $query->byDepartment($departmentId);
+        }
+        $patients = $query->orderBy('first_name')->get();
+        
+        // For doctors, don't show other doctors in dropdown
+        // For other staff, show all doctors
+        $doctors = ($user->role === 'doctor') ? collect([]) : Doctor::orderBy('first_name')->get();
+        
+        return view('staff.billing.edit', compact('billing', 'patients', 'doctors', 'currentDoctor'));
+    }
+
+    /**
+     * Update the specified billing.
+     */
+    public function update(Request $request, Billing $billing): RedirectResponse
+    {
+        $user = Auth::user();
+        $doctorId = $request->doctor_id;
+        
+        // If user is a doctor, automatically assign their doctor ID
+        if ($user->role === 'doctor') {
+            $currentDoctor = Doctor::where('user_id', $user->id)->first();
+            if ($currentDoctor) {
+                $doctorId = $currentDoctor->id;
+            }
+        }
+        
+        $request->validate([
+            'patient_id' => 'required|exists:patients,id',
+            'doctor_id' => 'nullable|exists:doctors,id',
+            'appointment_id' => 'nullable|exists:appointments,id',
+            'billing_date' => 'required|date',
+            'due_date' => 'nullable|date|after_or_equal:billing_date',
+            'type' => 'required|string|in:consultation,procedure,medication,lab_test,other',
+            'description' => 'required|string|max:500',
+            'subtotal' => 'required|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
+            'tax' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $subtotal = $request->subtotal;
+        $discount = $request->discount ?? 0;
+        $tax = $request->tax ?? 0;
+        $totalAmount = $subtotal - $discount + $tax;
+
+        $billing->update([
+            'patient_id' => $request->patient_id,
+            'doctor_id' => $doctorId,
+            'appointment_id' => $request->appointment_id,
+            'billing_date' => $request->billing_date,
+            'due_date' => $request->due_date,
+            'type' => $request->type,
+            'description' => $request->description,
+            'subtotal' => $subtotal,
+            'discount' => $discount,
+            'tax' => $tax,
+            'total_amount' => $totalAmount,
+            'balance' => $totalAmount - $billing->paid_amount, // Recalculate balance
+            'notes' => $request->notes,
+            'updated_by' => auth()->id(),
+        ]);
+
+        return redirect()->route('staff.billing.show', $billing)
+            ->with('success', 'Billing record updated successfully!');
+    }
+
 }
 
