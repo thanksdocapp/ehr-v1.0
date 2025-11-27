@@ -405,138 +405,171 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    const providers = @json($availableProviders);
-    const allWebhookUrls = @json($allWebhookUrls ?? []);
-
-    // Provider change handler - show/hide credentials and webhook sections
-    $('#provider').change(function() {
-        const selectedProvider = $(this).val();
-        const credentialsContainer = $('#credentials-container');
-        const credentialsSection = $('#credentials-section');
-        const webhookSection = $('#webhook-section');
+(function() {
+    // Wait for jQuery to be available
+    function initPaymentGatewayForm() {
+        if (typeof jQuery === 'undefined') {
+            console.error('jQuery is not loaded');
+            setTimeout(initPaymentGatewayForm, 100);
+            return;
+        }
         
-        credentialsContainer.html('');
+        const $ = jQuery;
         
-        if (selectedProvider && providers[selectedProvider]) {
-            const credentials = providers[selectedProvider].credentials;
+        $(document).ready(function() {
+            const providers = @json($availableProviders);
+            const allWebhookUrls = @json($allWebhookUrls ?? []);
             
-            if (credentials && credentials.length > 0) {
-                credentialsSection.show();
-                $('#credentials-info').hide();
+            console.log('Payment Gateway Form Initialized', { providers, allWebhookUrls });
+
+            // Provider change handler - show/hide credentials and webhook sections
+            function handleProviderChange() {
+                const selectedProvider = $('#provider').val();
+                const credentialsContainer = $('#credentials-container');
+                const credentialsSection = $('#credentials-section');
+                const webhookSection = $('#webhook-section');
                 
-                credentials.forEach(credential => {
-                    const fieldHtml = createCredentialField(credential);
-                    credentialsContainer.append(fieldHtml);
-                });
-            } else {
-                credentialsSection.hide();
+                console.log('Provider changed:', selectedProvider);
+                
+                credentialsContainer.html('');
+                
+                if (selectedProvider && providers[selectedProvider]) {
+                    const providerData = providers[selectedProvider];
+                    const credentials = providerData.credentials;
+                    
+                    console.log('Provider data:', providerData);
+                    console.log('Credentials:', credentials);
+                    
+                    if (credentials && Array.isArray(credentials) && credentials.length > 0) {
+                        console.log('Showing credentials section with', credentials.length, 'fields');
+                        credentialsSection.css('display', 'block');
+                        $('#credentials-info').hide();
+                        
+                        credentials.forEach(credential => {
+                            const fieldHtml = createCredentialField(credential);
+                            credentialsContainer.append(fieldHtml);
+                        });
+                    } else {
+                        console.log('No credentials found for provider');
+                        credentialsSection.hide();
+                    }
+                    
+                    // Show webhook section for supported providers
+                    if (['stripe', 'paypal', 'paystack', 'flutterwave', 'coingate', 'btcpay'].includes(selectedProvider)) {
+                        webhookSection.show();
+                        showWebhookUrls(selectedProvider);
+                        showWebhookInstructions(selectedProvider);
+                    } else {
+                        webhookSection.hide();
+                    }
+                } else {
+                    console.log('No provider selected or provider not found');
+                    credentialsSection.hide();
+                    webhookSection.hide();
+                    $('#credentials-info').show();
+                }
             }
             
-            // Show webhook section for supported providers
-            if (['stripe', 'paypal', 'paystack', 'flutterwave', 'coingate', 'btcpay'].includes(selectedProvider)) {
-                webhookSection.show();
-                showWebhookUrls(selectedProvider);
-                showWebhookInstructions(selectedProvider);
-            } else {
-                webhookSection.hide();
+            // Bind change event
+            $('#provider').on('change', handleProviderChange);
+            
+            // Also trigger on input for better compatibility
+            $('#provider').on('input', handleProviderChange);
+            
+            // Trigger immediately if provider is already selected
+            if ($('#provider').val()) {
+                handleProviderChange();
             }
-        } else {
-            credentialsSection.hide();
-            webhookSection.hide();
-            $('#credentials-info').show();
-        }
-    });
 
-    // Create credential field HTML
-    function createCredentialField(credential) {
-        const selectedProvider = $('#provider').val(); // Get current provider value
-        const displayName = credential.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        const fieldType = (credential.includes('secret') || credential.includes('key')) ? 'password' : 'text';
-        const isOptional = (credential === 'webhook_secret' || credential === 'webhook_id' || (selectedProvider === 'coingate' && (credential === 'app_id' || credential === 'webhook_secret')));
-        
-        let helpText = '';
-        let placeholder = '';
-        
-        if (credential === 'publishable_key') {
-            helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Stripe Dashboard → Developers → API Keys → Publishable key (Test mode)</div>';
-            placeholder = 'pk_test_...';
-        } else if (credential === 'secret_key') {
-            helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Stripe Dashboard → Developers → API Keys → Secret key (Test mode)</div>';
-            placeholder = 'sk_test_...';
-        } else if (credential === 'webhook_secret') {
-            helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: Get from Stripe Dashboard → Developers → Webhooks → Signing secret<br><small class="text-success">You can leave this empty for basic testing!</small></div>';
-            placeholder = 'whsec_... (optional)';
-        } else if (credential === 'client_id') {
-            helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from PayPal Developer Dashboard → My Apps & Credentials → Sandbox → Client ID</div>';
-            placeholder = 'AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMv...';
-        } else if (credential === 'client_secret') {
-            helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from PayPal Developer Dashboard → My Apps & Credentials → Sandbox → Secret</div>';
-            placeholder = 'EGnHDxD_qRPdaLdZz8iCr8N7_MzF-YHPTkjs...';
-        } else if (credential === 'webhook_id') {
-            helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: PayPal Webhook ID for payment notifications<br><small class="text-success">Leave empty for sandbox testing - webhooks are not required!</small></div>';
-            placeholder = '4JH86294D65818923 (optional)';
-        } else if (credential === 'public_key') {
-            helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Paystack Dashboard → Settings → API Keys → Public Key (Test mode)</div>';
-            placeholder = 'pk_test_0123456789abcdef0123456789abcdef01234567';
-        } else if (credential === 'encryption_key') {
-            helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Required for Flutterwave: Get from Flutterwave Dashboard → Settings → API Keys → Encryption Key<br><small class="text-danger">This is essential for Flutterwave transactions!</small></div>';
-            placeholder = 'FLWSECK_TEST-0123456789abcdef01234567-X';
-        } else {
-            // Handle other provider-specific credentials
-            if (credential === 'secret_key' && selectedProvider === 'paystack') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Paystack Dashboard → Settings → API Keys → Secret Key (Test mode)</div>';
-                placeholder = 'sk_test_0123456789abcdef0123456789abcdef01234567';
-            } else if (credential === 'public_key' && selectedProvider === 'flutterwave') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Flutterwave Dashboard → Settings → API Keys → Public Key (Test mode)</div>';
-                placeholder = 'FLWPUBK_TEST-0123456789abcdef01234567-X';
-            } else if (credential === 'secret_key' && selectedProvider === 'flutterwave') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Flutterwave Dashboard → Settings → API Keys → Secret Key (Test mode)</div>';
-                placeholder = 'FLWSECK_TEST-0123456789abcdef01234567-X';
-            } else if (credential === 'webhook_secret' && selectedProvider === 'flutterwave') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: Flutterwave webhook secret for security<br><small class="text-success">You can leave this empty for basic testing!</small></div>';
-                placeholder = 'flw-webhook-secret-hash (optional)';
-            } else if (credential === 'api_key' && selectedProvider === 'coingate') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from CoinGate Dashboard → Merchant → API → API Key (Sandbox mode)<br><small class="text-info">Use sandbox for testing with fake crypto!</small></div>';
-                placeholder = 'VvQjcRHdR24CaTA91kBcwutjTtJaJEcp';
-            } else if (credential === 'app_id' && selectedProvider === 'coingate') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: Get from CoinGate Dashboard → Merchant → Apps → App ID<br><small class="text-success">Leave empty for basic testing!</small></div>';
-                placeholder = '12345 (optional)';
-            } else if (credential === 'webhook_secret' && selectedProvider === 'coingate') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: CoinGate webhook secret for payment notifications<br><small class="text-success">You can leave this empty for basic testing!</small></div>';
-                placeholder = 'webhook-secret-key (optional)';
-            } else if (credential === 'server_url' && selectedProvider === 'btcpay') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Your BTCPay Server URL (e.g., https://btcpay.yourdomain.com)</div>';
-                placeholder = 'https://btcpay.yourdomain.com';
-            } else if (credential === 'store_id' && selectedProvider === 'btcpay') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from BTCPay Server → Stores → Store Settings → General → Store ID</div>';
-                placeholder = 'Your BTCPay Store ID';
-            } else if (credential === 'api_key' && selectedProvider === 'btcpay') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from BTCPay Server → Account → Manage Account → API Keys</div>';
-                placeholder = 'BTCPay API Key';
-            } else if (credential === 'webhook_secret' && selectedProvider === 'btcpay') {
-                helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: BTCPay Server webhook secret for security<br><small class="text-success">You can leave this empty for basic testing!</small></div>';
-                placeholder = 'btcpay-webhook-secret (optional)';
-            } else {
-                placeholder = `Enter your ${credential.replace(/_/g, ' ')}`;
+            // Create credential field HTML
+            function createCredentialField(credential) {
+                const selectedProvider = $('#provider').val(); // Get current provider value
+                const displayName = credential.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const fieldType = (credential.includes('secret') || credential.includes('key')) ? 'password' : 'text';
+                const isOptional = (credential === 'webhook_secret' || credential === 'webhook_id' || (selectedProvider === 'coingate' && (credential === 'app_id' || credential === 'webhook_secret')));
+                
+                let helpText = '';
+                let placeholder = '';
+                
+                if (credential === 'publishable_key') {
+                    helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Stripe Dashboard → Developers → API Keys → Publishable key (Test mode)</div>';
+                    placeholder = 'pk_test_...';
+                } else if (credential === 'secret_key') {
+                    helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Stripe Dashboard → Developers → API Keys → Secret key (Test mode)</div>';
+                    placeholder = 'sk_test_...';
+                } else if (credential === 'webhook_secret') {
+                    helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: Get from Stripe Dashboard → Developers → Webhooks → Signing secret<br><small class="text-success">You can leave this empty for basic testing!</small></div>';
+                    placeholder = 'whsec_... (optional)';
+                } else if (credential === 'client_id') {
+                    helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from PayPal Developer Dashboard → My Apps & Credentials → Sandbox → Client ID</div>';
+                    placeholder = 'AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMv...';
+                } else if (credential === 'client_secret') {
+                    helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from PayPal Developer Dashboard → My Apps & Credentials → Sandbox → Secret</div>';
+                    placeholder = 'EGnHDxD_qRPdaLdZz8iCr8N7_MzF-YHPTkjs...';
+                } else if (credential === 'webhook_id') {
+                    helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: PayPal Webhook ID for payment notifications<br><small class="text-success">Leave empty for sandbox testing - webhooks are not required!</small></div>';
+                    placeholder = '4JH86294D65818923 (optional)';
+                } else if (credential === 'public_key') {
+                    helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Paystack Dashboard → Settings → API Keys → Public Key (Test mode)</div>';
+                    placeholder = 'pk_test_0123456789abcdef0123456789abcdef01234567';
+                } else if (credential === 'encryption_key') {
+                    helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Required for Flutterwave: Get from Flutterwave Dashboard → Settings → API Keys → Encryption Key<br><small class="text-danger">This is essential for Flutterwave transactions!</small></div>';
+                    placeholder = 'FLWSECK_TEST-0123456789abcdef01234567-X';
+                } else {
+                    // Handle other provider-specific credentials
+                    if (credential === 'secret_key' && selectedProvider === 'paystack') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Paystack Dashboard → Settings → API Keys → Secret Key (Test mode)</div>';
+                        placeholder = 'sk_test_0123456789abcdef0123456789abcdef01234567';
+                    } else if (credential === 'public_key' && selectedProvider === 'flutterwave') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Flutterwave Dashboard → Settings → API Keys → Public Key (Test mode)</div>';
+                        placeholder = 'FLWPUBK_TEST-0123456789abcdef01234567-X';
+                    } else if (credential === 'secret_key' && selectedProvider === 'flutterwave') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from Flutterwave Dashboard → Settings → API Keys → Secret Key (Test mode)</div>';
+                        placeholder = 'FLWSECK_TEST-0123456789abcdef01234567-X';
+                    } else if (credential === 'webhook_secret' && selectedProvider === 'flutterwave') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: Flutterwave webhook secret for security<br><small class="text-success">You can leave this empty for basic testing!</small></div>';
+                        placeholder = 'flw-webhook-secret-hash (optional)';
+                    } else if (credential === 'api_key' && selectedProvider === 'coingate') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from CoinGate Dashboard → Merchant → API → API Key (Sandbox mode)<br><small class="text-info">Use sandbox for testing with fake crypto!</small></div>';
+                        placeholder = 'VvQjcRHdR24CaTA91kBcwutjTtJaJEcp';
+                    } else if (credential === 'app_id' && selectedProvider === 'coingate') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: Get from CoinGate Dashboard → Merchant → Apps → App ID<br><small class="text-success">Leave empty for basic testing!</small></div>';
+                        placeholder = '12345 (optional)';
+                    } else if (credential === 'webhook_secret' && selectedProvider === 'coingate') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: CoinGate webhook secret for payment notifications<br><small class="text-success">You can leave this empty for basic testing!</small></div>';
+                        placeholder = 'webhook-secret-key (optional)';
+                    } else if (credential === 'server_url' && selectedProvider === 'btcpay') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Your BTCPay Server URL (e.g., https://btcpay.yourdomain.com)</div>';
+                        placeholder = 'https://btcpay.yourdomain.com';
+                    } else if (credential === 'store_id' && selectedProvider === 'btcpay') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from BTCPay Server → Stores → Store Settings → General → Store ID</div>';
+                        placeholder = 'Your BTCPay Store ID';
+                    } else if (credential === 'api_key' && selectedProvider === 'btcpay') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Get from BTCPay Server → Account → Manage Account → API Keys</div>';
+                        placeholder = 'BTCPay API Key';
+                    } else if (credential === 'webhook_secret' && selectedProvider === 'btcpay') {
+                        helpText = '<div class="form-help"><i class="fas fa-info-circle me-1"></i>Optional: BTCPay Server webhook secret for security<br><small class="text-success">You can leave this empty for basic testing!</small></div>';
+                        placeholder = 'btcpay-webhook-secret (optional)';
+                    } else {
+                        placeholder = `Enter your ${credential.replace(/_/g, ' ')}`;
+                    }
+                }
+                
+                return `
+                    <div class="form-group">
+                        <label for="${credential}" class="form-label">
+                            <i class="fas fa-key me-1"></i>${displayName} ${isOptional ? '<span class="text-muted">(Optional)</span>' : '*'}
+                        </label>
+                        <input type="${fieldType}" class="form-control" id="${credential}" 
+                               name="credentials[${credential}]" ${isOptional ? '' : 'required'}
+                               placeholder="${placeholder}">
+                        ${helpText}
+                    </div>
+                `;
             }
-        }
-        
-        return `
-            <div class="form-group">
-                <label for="${credential}" class="form-label">
-                    <i class="fas fa-key me-1"></i>${displayName} ${isOptional ? '<span class="text-muted">(Optional)</span>' : '*'}
-                </label>
-                <input type="${fieldType}" class="form-control" id="${credential}" 
-                       name="credentials[${credential}]" ${isOptional ? '' : 'required'}
-                       placeholder="${placeholder}">
-                ${helpText}
-            </div>
-        `;
-    }
 
-    // Reset form functionality
-    $('#reset-form').click(function() {
+            // Reset form functionality
+            $('#reset-form').click(function() {
         if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
             $('#createGatewayForm')[0].reset();
             $('#credentials-container').html('');
@@ -545,8 +578,8 @@ $(document).ready(function() {
         }
     });
 
-    // Form validation functionality
-    $('#validate-form').click(function() {
+            // Form validation functionality
+            $('#validate-form').click(function() {
         let errors = [];
         
         if (!$('#provider').val()) errors.push('Gateway provider is required');
@@ -580,8 +613,8 @@ $(document).ready(function() {
         }
     });
 
-    // Auto-format fee inputs
-    $('#transaction_fee_percentage, #transaction_fee_fixed').on('blur', function() {
+            // Auto-format fee inputs
+            $('#transaction_fee_percentage, #transaction_fee_fixed').on('blur', function() {
         const value = $(this).val();
         if (value) {
             const numericValue = parseFloat(value);
@@ -591,8 +624,8 @@ $(document).ready(function() {
         }
     });
 
-    // Form submission validation
-    $('#createGatewayForm').on('submit', function(e) {
+            // Form submission validation
+            $('#createGatewayForm').on('submit', function(e) {
         let isValid = true;
         
         // Check required fields
@@ -624,8 +657,8 @@ $(document).ready(function() {
         $(this).find('button[type="submit"]').html('<i class="fas fa-spinner fa-spin me-2"></i>Saving...').prop('disabled', true);
     });
 
-    // Show webhook URLs for selected provider
-    function showWebhookUrls(provider) {
+            // Show webhook URLs for selected provider
+            function showWebhookUrls(provider) {
         const container = $('#webhook-urls-container');
         const providerUrls = allWebhookUrls[provider] || {};
         
@@ -696,8 +729,8 @@ $(document).ready(function() {
         });
     }
     
-    // Show webhook setup instructions for selected provider
-    function showWebhookInstructions(provider) {
+            // Show webhook setup instructions for selected provider
+            function showWebhookInstructions(provider) {
         const container = $('#webhook-setup-instructions');
         let instructions = '';
         
@@ -811,8 +844,8 @@ $(document).ready(function() {
         container.html(instructions);
     }
     
-    // Copy to clipboard function
-    window.copyToClipboard = function(button, text) {
+            // Copy to clipboard function
+            window.copyToClipboard = function(button, text) {
         // Use text parameter if provided, otherwise get from input
         const textToCopy = text || button.previousElementSibling.value;
         
@@ -834,7 +867,7 @@ $(document).ready(function() {
         }
     };
     
-    function fallbackCopy(text, button) {
+            function fallbackCopy(text, button) {
         const textArea = document.createElement('textarea');
         textArea.value = text;
         textArea.style.position = 'fixed';
@@ -855,17 +888,15 @@ $(document).ready(function() {
         document.body.removeChild(textArea);
     }
 
-    // Trigger provider change on page load if provider is already selected (from old form data)
-    if ($('#provider').val()) {
-        $('#provider').trigger('change');
+        });
     }
     
-    // Also trigger on initial page load to ensure sections are properly initialized
-    $(window).on('load', function() {
-        if ($('#provider').val()) {
-            $('#provider').trigger('change');
-        }
-    });
-});
+    // Start initialization
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPaymentGatewayForm);
+    } else {
+        initPaymentGatewayForm();
+    }
+})();
 </script>
 @endpush
