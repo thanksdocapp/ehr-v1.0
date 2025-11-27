@@ -662,6 +662,72 @@
             color: white;
         }
 
+        /* Modern Checkboxes */
+        .form-check {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-check-input {
+            width: 20px;
+            height: 20px;
+            margin-top: 0.25rem;
+            margin-left: 0;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            position: relative;
+        }
+
+        .form-check-input:hover {
+            border-color: #94a3b8;
+            background-color: #f8f9fc;
+        }
+
+        .form-check-input:focus {
+            outline: none;
+            border-color: #1a202c;
+            box-shadow: 0 0 0 4px rgba(26, 32, 44, 0.1);
+        }
+
+        .form-check-input:checked {
+            background-color: #1a202c;
+            border-color: #1a202c;
+        }
+
+        .form-check-input:checked::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+        }
+
+        .form-check-label {
+            color: #2d3748;
+            font-weight: 500;
+            cursor: pointer;
+            line-height: 1.5;
+            flex: 1;
+            margin: 0;
+        }
+
+        .form-check-label i {
+            color: #1a202c;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             html, body { overflow-x: hidden !important; }
