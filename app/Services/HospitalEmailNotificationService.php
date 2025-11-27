@@ -299,7 +299,7 @@ class HospitalEmailNotificationService
                 $invoice = $billing->invoice;
             }
 
-            // Generate payment URL - use public payment link if invoice exists, otherwise patient portal
+            // Generate payment URL - ALWAYS use public payment link (never patient portal)
             if (!$paymentUrl) {
                 if ($invoice) {
                     try {
@@ -312,22 +312,86 @@ class HospitalEmailNotificationService
                         \Log::info('Generated public payment URL', [
                             'billing_id' => $billing->id,
                             'invoice_id' => $invoice->id,
-                            'has_token' => !empty($invoice->payment_token)
+                            'has_token' => !empty($invoice->payment_token),
+                            'payment_url' => $paymentUrl
                         ]);
                     } catch (\Exception $e) {
-                        \Log::warning('Failed to generate payment URL, using patient portal', [
+                        \Log::error('Failed to generate public payment URL - invoice exists but token generation failed', [
                             'billing_id' => $billing->id,
                             'invoice_id' => $invoice->id ?? null,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString()
                         ]);
-                        $paymentUrl = url('/patient/billing');
+                        // Try to generate token again
+                        try {
+                            $invoice->refresh();
+                            if (!$invoice->payment_token) {
+                                $token = $invoice->generatePaymentToken();
+                                if ($token) {
+                                    $invoice->refresh();
+                                    $paymentUrl = $invoice->getPublicPaymentUrl();
+                                    \Log::info('Successfully generated payment token on retry', [
+                                        'billing_id' => $billing->id,
+                                        'invoice_id' => $invoice->id,
+                                        'payment_url' => $paymentUrl
+                                    ]);
+                                }
+                            }
+                        } catch (\Exception $retryException) {
+                            \Log::error('Retry also failed for payment token generation', [
+                                'billing_id' => $billing->id,
+                                'invoice_id' => $invoice->id,
+                                'error' => $retryException->getMessage()
+                            ]);
+                            // Don't use patient portal - throw error instead
+                            throw new \Exception('Failed to generate public payment link. Please ensure invoice has payment_token column.');
+                        }
                     }
                 } else {
-                    \Log::warning('No invoice found, using patient portal URL', [
+                    // No invoice exists - create it first
+                    \Log::info('No invoice found for billing, creating invoice to generate public payment link', [
                         'billing_id' => $billing->id
                     ]);
-                    $paymentUrl = url('/patient/billing');
+                    $billing->syncWithInvoice();
+                    $billing->refresh();
+                    $invoice = $billing->invoice;
+                    
+                    if ($invoice) {
+                        try {
+                            if (!$invoice->payment_token) {
+                                $invoice->generatePaymentToken();
+                                $invoice->refresh();
+                            }
+                            $paymentUrl = $invoice->getPublicPaymentUrl();
+                            \Log::info('Generated public payment URL after creating invoice', [
+                                'billing_id' => $billing->id,
+                                'invoice_id' => $invoice->id,
+                                'payment_url' => $paymentUrl
+                            ]);
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to generate payment URL even after creating invoice', [
+                                'billing_id' => $billing->id,
+                                'invoice_id' => $invoice->id,
+                                'error' => $e->getMessage()
+                            ]);
+                            throw new \Exception('Failed to generate public payment link. Please check invoice payment_token configuration.');
+                        }
+                    } else {
+                        \Log::error('Failed to create invoice for billing', [
+                            'billing_id' => $billing->id
+                        ]);
+                        throw new \Exception('Failed to create invoice for billing. Cannot generate public payment link.');
+                    }
                 }
+            }
+            
+            // Final validation - ensure payment URL is public link, not patient portal
+            if (strpos($paymentUrl, '/patient/billing') !== false || strpos($paymentUrl, '/public/billing/pay') === false) {
+                \Log::error('Payment URL is not a public link', [
+                    'billing_id' => $billing->id,
+                    'payment_url' => $paymentUrl
+                ]);
+                throw new \Exception('Payment URL must be a public payment link, not patient portal. Current URL: ' . $paymentUrl);
             }
 
             // Get doctor and department information
