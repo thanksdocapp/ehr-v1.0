@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PaymentGateway;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
 
 class PaymentGatewayController extends Controller
@@ -69,35 +70,55 @@ class PaymentGatewayController extends Controller
 
         $request->validate($validationRules);
 
-        DB::transaction(function () use ($request, $availableProviders) {
-            // If this is set as default, remove default from others
-            if ($request->boolean('is_default')) {
-                PaymentGateway::where('is_default', true)->update(['is_default' => false]);
+        try {
+            DB::transaction(function () use ($request, $availableProviders) {
+                // If this is set as default, remove default from others
+                if ($request->boolean('is_default')) {
+                    PaymentGateway::where('is_default', true)->update(['is_default' => false]);
+                }
+
+                $providerConfig = $availableProviders[$request->provider];
+                
+                PaymentGateway::create([
+                    'name' => $request->provider,
+                    'display_name' => $request->display_name,
+                    'description' => $request->description,
+                    'provider' => $request->provider,
+                    'is_active' => $request->boolean('is_active'),
+                    'is_default' => $request->boolean('is_default'),
+                    'credentials' => $request->credentials,
+                    'settings' => $request->settings ?? [],
+                    'supported_currencies' => $providerConfig['currencies'],
+                    'supported_countries' => $providerConfig['countries'],
+                    'supported_methods' => $providerConfig['methods'],
+                    'test_mode' => $request->boolean('test_mode'),
+                    'transaction_fee_percentage' => $request->transaction_fee_percentage ?? 0,
+                    'transaction_fee_fixed' => $request->transaction_fee_fixed ?? 0,
+                    'sort_order' => $request->sort_order ?? 0,
+                ]);
+            });
+
+            return redirect()->route('admin.payment-gateways.index')
+                ->with('success', 'Payment gateway configured successfully!');
+                
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Check if it's the credentials constraint error
+            if (str_contains($e->getMessage(), 'CONSTRAINT `payment_gateways.credentials`')) {
+                \Log::error('Payment gateway credentials constraint error', [
+                    'error' => $e->getMessage(),
+                    'provider' => $request->provider
+                ]);
+                
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'credentials' => 'Database constraint error. Please run this SQL on your database: ALTER TABLE `payment_gateways` MODIFY COLUMN `credentials` TEXT NOT NULL;'
+                    ]);
             }
-
-            $providerConfig = $availableProviders[$request->provider];
             
-            PaymentGateway::create([
-                'name' => $request->provider,
-                'display_name' => $request->display_name,
-                'description' => $request->description,
-                'provider' => $request->provider,
-                'is_active' => $request->boolean('is_active'),
-                'is_default' => $request->boolean('is_default'),
-                'credentials' => $request->credentials,
-                'settings' => $request->settings ?? [],
-                'supported_currencies' => $providerConfig['currencies'],
-                'supported_countries' => $providerConfig['countries'],
-                'supported_methods' => $providerConfig['methods'],
-                'test_mode' => $request->boolean('test_mode'),
-                'transaction_fee_percentage' => $request->transaction_fee_percentage ?? 0,
-                'transaction_fee_fixed' => $request->transaction_fee_fixed ?? 0,
-                'sort_order' => $request->sort_order ?? 0,
-            ]);
-        });
-
-        return redirect()->route('admin.payment-gateways.index')
-            ->with('success', 'Payment gateway configured successfully!');
+            // Re-throw if it's a different error
+            throw $e;
+        }
     }
 
     /**
