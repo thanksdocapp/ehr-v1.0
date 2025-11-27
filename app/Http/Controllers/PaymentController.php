@@ -1190,14 +1190,19 @@ class PaymentController extends Controller
             }
 
             // Update billing record with payment information
+            // Note: We update paid_amount and let the model's saving event automatically update the status
             $billing->update([
                 'paid_amount' => $totalPaid,
-                'payment_method' => 'crypto', // CoinGate is crypto payment
-                'payment_reference' => 'PATIENT_PORTAL_PAYMENT_CRYPTO',
+                'payment_method' => $billing->payment_method ?: 'online', // Keep existing or set to 'online'
+                'payment_reference' => $billing->payment_reference ?: 'ONLINE_PAYMENT',
                 'paid_at' => $totalPaid >= $invoice->total_amount ? now() : $billing->paid_at,
-                'status' => $totalPaid >= $invoice->total_amount ? 'paid' : ($totalPaid > 0 ? 'partial' : 'pending'),
                 'updated_by' => null, // System update, not by specific user
             ]);
+            
+            // The model's saving event will automatically set status to:
+            // - 'paid' if paid_amount >= total_amount
+            // - 'partially_paid' if paid_amount > 0 but < total_amount
+            // - 'pending' or 'overdue' if paid_amount = 0
 
             Log::info('Successfully synced patient payment to admin billing', [
                 'invoice_id' => $invoice->id,
