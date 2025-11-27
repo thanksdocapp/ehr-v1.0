@@ -201,10 +201,16 @@ class PublicBillingController extends Controller
             ]);
 
             \Log::info('Redirecting to Stripe checkout', [
-                'payment_url' => $response['payment_url']
+                'payment_url' => $response['payment_url'],
+                'payment_url_length' => strlen($response['payment_url'])
             ]);
 
-            return redirect()->away($response['payment_url']);
+            // Use JavaScript redirect as primary method for external URLs
+            // This ensures the redirect works even if server-side redirect is blocked
+            return response()->view('public.billing.redirect', [
+                'redirect_url' => $response['payment_url'],
+                'payment_id' => $response['payment_id'] ?? null
+            ], 200);
         } catch (\Exception $e) {
             \Log::error('Exception in processStripePayment', [
                 'error' => $e->getMessage(),
