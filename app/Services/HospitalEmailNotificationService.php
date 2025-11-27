@@ -355,6 +355,9 @@ class HospitalEmailNotificationService
                 'payment_url' => $paymentUrl
             ]);
 
+            // Ensure email template exists, create if it doesn't
+            $this->ensureBillingNotificationTemplate();
+
             $result = $this->emailService->sendTemplateEmail(
                 'billing_notification',
                 [$patient->email => $patient->full_name],
@@ -383,6 +386,125 @@ class HospitalEmailNotificationService
             ]);
             throw $e; // Re-throw to let caller handle it
         }
+    }
+
+    /**
+     * Ensure billing_notification email template exists, create if missing
+     */
+    protected function ensureBillingNotificationTemplate()
+    {
+        $templateName = 'billing_notification';
+        $template = \App\Models\EmailTemplate::where('name', $templateName)->first();
+        
+        if (!$template) {
+            \Log::info('Creating missing billing_notification email template');
+            
+            $template = \App\Models\EmailTemplate::create([
+                'name' => $templateName,
+                'subject' => 'New Invoice from {{hospital_name}} - {{bill_number}}',
+                'body' => '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Notification</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f8f9fc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h1 style="color: #1a202c; margin: 0;">{{hospital_name}}</h1>
+    </div>
+    
+    <div style="background-color: #ffffff; padding: 30px; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #1a202c; margin-top: 0;">Invoice Notification</h2>
+        
+        <p>Dear {{patient_name}},</p>
+        
+        <p>We hope this message finds you well. This is to inform you that a new invoice has been generated for your recent visit.</p>
+        
+        <div style="background-color: #f8f9fc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1a202c; margin-top: 0;">Invoice Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;"><strong>Invoice Number:</strong></td>
+                    <td style="padding: 8px 0; color: #1a202c;"><strong>{{invoice_number}}</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Bill Number:</td>
+                    <td style="padding: 8px 0; color: #1a202c;">{{bill_number}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Billing Date:</td>
+                    <td style="padding: 8px 0; color: #1a202c;">{{billing_date}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Due Date:</td>
+                    <td style="padding: 8px 0; color: #1a202c;">{{due_date}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Service Type:</td>
+                    <td style="padding: 8px 0; color: #1a202c;">{{type}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Description:</td>
+                    <td style="padding: 8px 0; color: #1a202c;">{{description}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;"><strong>Total Amount:</strong></td>
+                    <td style="padding: 8px 0; color: #1a202c; font-size: 18px;"><strong>£{{total_amount}}</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Balance Due:</td>
+                    <td style="padding: 8px 0; color: #1a202c;"><strong>£{{balance}}</strong></td>
+                </tr>
+            </table>
+        </div>
+        
+        @if(isset($notes) && !empty($notes))
+        <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <p style="margin: 0; color: #856404;"><strong>Notes:</strong> {{notes}}</p>
+        </div>
+        @endif
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{payment_url}}" style="display: inline-block; background-color: #1cc88a; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Pay Invoice Online</a>
+        </div>
+        
+        <p style="color: #4a5568; font-size: 14px;">You can pay this invoice securely online using the button above. No login required.</p>
+        
+        <p style="color: #4a5568; font-size: 14px;">If you have any questions about this invoice, please contact our billing department:</p>
+        <ul style="color: #4a5568; font-size: 14px;">
+            <li>Phone: {{billing_phone}}</li>
+            <li>Address: {{hospital_address}}</li>
+        </ul>
+        
+        <p style="margin-top: 30px;">Thank you for choosing {{hospital_name}}.</p>
+        
+        <p style="color: #4a5568; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+            This is an automated message. Please do not reply to this email.
+        </p>
+    </div>
+</body>
+</html>',
+                'variables' => json_encode([
+                    'patient_name', 'bill_number', 'invoice_number', 'billing_date', 'due_date',
+                    'total_amount', 'balance', 'description', 'type', 'doctor_name',
+                    'payment_url', 'hospital_name', 'hospital_address', 'hospital_phone',
+                    'billing_phone', 'notes'
+                ]),
+                'status' => 'active',
+                'sender_email' => config('mail.from.address', config('mail.username')),
+                'sender_name' => config('mail.from.name', config('app.name', 'Hospital')),
+            ]);
+            
+            \Log::info('Created billing_notification email template', [
+                'template_id' => $template->id
+            ]);
+        } elseif ($template->status !== 'active') {
+            $template->update(['status' => 'active']);
+            \Log::info('Activated billing_notification email template');
+        }
+        
+        return $template;
     }
 
     /**

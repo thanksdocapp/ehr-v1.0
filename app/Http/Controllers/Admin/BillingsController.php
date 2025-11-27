@@ -442,9 +442,13 @@ class BillingsController extends Controller
                     'message' => 'Billing notification sent to patient successfully!'
                 ]);
             } else {
+                // Get the last error from logs to provide more specific message
+                $errorMessage = 'Failed to send email. ';
+                $errorMessage .= 'Please check: 1) Email template exists (billing_notification), 2) SMTP configuration in Admin > Email Settings, 3) Check logs for details.';
+                
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to send email. Please check email configuration and template.'
+                    'message' => $errorMessage
                 ], 500);
             }
         } catch (\Exception $e) {
