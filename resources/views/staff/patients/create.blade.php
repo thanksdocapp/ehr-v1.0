@@ -591,40 +591,91 @@ $(document).ready(function() {
     
     $('#date_of_birth').on('change', calculateAgeAndToggleGuardian);
     
-    // GP Consent checkbox toggle - ensure checkbox state changes and handlers work
+    // GP Consent checkbox toggle - robust implementation with multiple fallbacks
     function toggleGpDetails() {
-        const checkbox = $('#consent_share_with_gp');
-        const gpDetailsGroup = $('#gp_details_group');
-        const gpFields = ['gp_name', 'gp_email', 'gp_phone', 'gp_address'];
-        
-        // Force checkbox state update if needed
-        const isChecked = checkbox.is(':checked') || checkbox.prop('checked');
-        
-        if (isChecked) {
-            gpDetailsGroup.slideDown();
-            gpFields.forEach(function(field) {
-                $('#' + field).prop('required', true);
-            });
-        } else {
-            gpDetailsGroup.slideUp();
-            gpFields.forEach(function(field) {
-                $('#' + field).prop('required', false);
-                $('#' + field).val('');
-            });
+        try {
+            const checkbox = $('#consent_share_with_gp');
+            const gpDetailsGroup = $('#gp_details_group');
+            const gpDetailsGroupElement = document.getElementById('gp_details_group');
+            const gpFields = ['gp_name', 'gp_email', 'gp_phone', 'gp_address'];
+            
+            // Check state using multiple methods
+            const isChecked = checkbox.length > 0 && (
+                checkbox.is(':checked') || 
+                checkbox.prop('checked') || 
+                checkbox[0].checked ||
+                (gpDetailsGroupElement && gpDetailsGroupElement.previousElementSibling && 
+                 gpDetailsGroupElement.previousElementSibling.querySelector('input[type="checkbox"]')?.checked)
+            );
+            
+            if (isChecked) {
+                // Show using multiple methods for maximum compatibility
+                if (gpDetailsGroup.length > 0) {
+                    gpDetailsGroup.show();
+                    gpDetailsGroup.css('display', 'block');
+                    gpDetailsGroup.slideDown(200);
+                }
+                if (gpDetailsGroupElement) {
+                    gpDetailsGroupElement.style.display = 'block';
+                    gpDetailsGroupElement.style.visibility = 'visible';
+                    gpDetailsGroupElement.style.opacity = '1';
+                }
+                
+                // Set required fields
+                gpFields.forEach(function(field) {
+                    const fieldEl = $('#' + field);
+                    if (fieldEl.length > 0) {
+                        fieldEl.prop('required', true);
+                    }
+                    const fieldElement = document.getElementById(field);
+                    if (fieldElement) {
+                        fieldElement.required = true;
+                    }
+                });
+            } else {
+                // Hide using multiple methods
+                if (gpDetailsGroup.length > 0) {
+                    gpDetailsGroup.slideUp(200);
+                    gpDetailsGroup.hide();
+                    gpDetailsGroup.css('display', 'none');
+                }
+                if (gpDetailsGroupElement) {
+                    gpDetailsGroupElement.style.display = 'none';
+                    gpDetailsGroupElement.style.visibility = 'hidden';
+                }
+                
+                // Remove required and clear fields
+                gpFields.forEach(function(field) {
+                    const fieldEl = $('#' + field);
+                    if (fieldEl.length > 0) {
+                        fieldEl.prop('required', false);
+                        fieldEl.val('');
+                    }
+                    const fieldElement = document.getElementById(field);
+                    if (fieldElement) {
+                        fieldElement.required = false;
+                        fieldElement.value = '';
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error toggling GP details:', error);
         }
     }
     
-    // Handle checkbox change
+    // Handle checkbox change - primary handler
     $('#consent_share_with_gp').on('change', function() {
         toggleGpDetails();
     });
     
-    // Handle checkbox click directly - use setTimeout to ensure state is updated
+    // Handle checkbox click directly - immediate response
     $('#consent_share_with_gp').on('click', function(e) {
-        // Use setTimeout to check state after browser processes the click
+        // Immediate check
+        toggleGpDetails();
+        // Also check after a short delay to catch any state changes
         setTimeout(function() {
             toggleGpDetails();
-        }, 10);
+        }, 50);
     });
     
     // Handle label click - ensure it toggles the checkbox
@@ -632,16 +683,43 @@ $(document).ready(function() {
         // Don't prevent default - let label naturally toggle checkbox
         setTimeout(function() {
             toggleGpDetails();
-        }, 10);
+        }, 50);
     });
     
-    // Initialize GP details visibility based on consent checkbox state
-    if ($('#consent_share_with_gp').is(':checked')) {
-        $('#gp_details_group').show();
-        ['gp_name', 'gp_email', 'gp_phone', 'gp_address'].forEach(function(field) {
-            $('#' + field).prop('required', true);
+    // Also use vanilla JS as fallback
+    const consentCheckbox = document.getElementById('consent_share_with_gp');
+    if (consentCheckbox) {
+        consentCheckbox.addEventListener('change', toggleGpDetails);
+        consentCheckbox.addEventListener('click', function() {
+            setTimeout(toggleGpDetails, 50);
         });
     }
+    
+    // Initialize GP details visibility based on consent checkbox state
+    setTimeout(function() {
+        if ($('#consent_share_with_gp').is(':checked') || 
+            $('#consent_share_with_gp').prop('checked') ||
+            (consentCheckbox && consentCheckbox.checked)) {
+            const gpDetailsGroup = $('#gp_details_group');
+            const gpDetailsGroupElement = document.getElementById('gp_details_group');
+            
+            if (gpDetailsGroup.length > 0) {
+                gpDetailsGroup.show();
+                gpDetailsGroup.css('display', 'block');
+            }
+            if (gpDetailsGroupElement) {
+                gpDetailsGroupElement.style.display = 'block';
+            }
+            
+            ['gp_name', 'gp_email', 'gp_phone', 'gp_address'].forEach(function(field) {
+                $('#' + field).prop('required', true);
+                const fieldElement = document.getElementById(field);
+                if (fieldElement) {
+                    fieldElement.required = true;
+                }
+            });
+        }
+    }, 100);
     
     // Add allergy functionality
     $('#add-allergy').click(function() {
