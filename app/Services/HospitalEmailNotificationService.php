@@ -1817,7 +1817,8 @@ class HospitalEmailNotificationService
                             
                             <p style="margin: 20px 0; color: #4a5568; font-size: 14px; line-height: 1.6; text-align: center;">You can pay this invoice securely online using the button above. No login required.</p>
                             
-                            <p style="margin: 30px 0 0 0; color: #4a5568; font-size: 16px;">Thank you for choosing ' . htmlspecialchars($hospitalName) . '.</p>
+                            <p style="margin: 30px 0 10px 0; color: #4a5568; font-size: 16px;">Thank you for choosing ' . htmlspecialchars($variables['department_name'] ?? $hospitalName) . '.</p>
+                            <p style="margin: 0; color: #a0aec0; font-size: 12px; text-align: center;">Powered by ThanksDoc</p>
                         </td>
                     </tr>
                     
