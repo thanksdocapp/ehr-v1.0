@@ -405,85 +405,105 @@
 
 @push('scripts')
 <script>
-(function() {
-    // Wait for jQuery to be available
-    function initPaymentGatewayForm() {
-        if (typeof jQuery === 'undefined') {
-            console.error('jQuery is not loaded');
-            setTimeout(initPaymentGatewayForm, 100);
-            return;
+document.addEventListener('DOMContentLoaded', function() {
+    const providers = @json($availableProviders);
+    const allWebhookUrls = @json($allWebhookUrls ?? []);
+    
+    console.log('Payment Gateway Form Initialized', { providers, allWebhookUrls });
+    
+    const providerSelect = document.getElementById('provider');
+    const credentialsContainer = document.getElementById('credentials-container');
+    const credentialsSection = document.getElementById('credentials-section');
+    const webhookSection = document.getElementById('webhook-section');
+    const credentialsInfo = document.getElementById('credentials-info');
+    
+    if (!providerSelect) {
+        console.error('Provider select element not found');
+        return;
+    }
+    
+    // Provider change handler - show/hide credentials and webhook sections
+    function handleProviderChange() {
+        const selectedProvider = providerSelect.value;
+        
+        console.log('Provider changed:', selectedProvider);
+        console.log('Available providers:', Object.keys(providers));
+        
+        if (credentialsContainer) {
+            credentialsContainer.innerHTML = '';
         }
         
-        const $ = jQuery;
-        
-        $(document).ready(function() {
-            const providers = @json($availableProviders);
-            const allWebhookUrls = @json($allWebhookUrls ?? []);
+        if (selectedProvider && providers[selectedProvider]) {
+            const providerData = providers[selectedProvider];
+            const credentials = providerData.credentials;
             
-            console.log('Payment Gateway Form Initialized', { providers, allWebhookUrls });
-
-            // Provider change handler - show/hide credentials and webhook sections
-            function handleProviderChange() {
-                const selectedProvider = $('#provider').val();
-                const credentialsContainer = $('#credentials-container');
-                const credentialsSection = $('#credentials-section');
-                const webhookSection = $('#webhook-section');
+            console.log('Provider data:', providerData);
+            console.log('Credentials:', credentials);
+            console.log('Credentials type:', typeof credentials, Array.isArray(credentials));
+            
+            if (credentials && Array.isArray(credentials) && credentials.length > 0) {
+                console.log('Showing credentials section with', credentials.length, 'fields');
                 
-                console.log('Provider changed:', selectedProvider);
+                if (credentialsSection) {
+                    credentialsSection.style.display = 'block';
+                }
+                if (credentialsInfo) {
+                    credentialsInfo.style.display = 'none';
+                }
                 
-                credentialsContainer.html('');
-                
-                if (selectedProvider && providers[selectedProvider]) {
-                    const providerData = providers[selectedProvider];
-                    const credentials = providerData.credentials;
-                    
-                    console.log('Provider data:', providerData);
-                    console.log('Credentials:', credentials);
-                    
-                    if (credentials && Array.isArray(credentials) && credentials.length > 0) {
-                        console.log('Showing credentials section with', credentials.length, 'fields');
-                        credentialsSection.css('display', 'block');
-                        $('#credentials-info').hide();
-                        
-                        credentials.forEach(credential => {
-                            const fieldHtml = createCredentialField(credential);
-                            credentialsContainer.append(fieldHtml);
-                        });
-                    } else {
-                        console.log('No credentials found for provider');
-                        credentialsSection.hide();
+                credentials.forEach(credential => {
+                    const fieldHtml = createCredentialField(credential);
+                    if (credentialsContainer) {
+                        credentialsContainer.insertAdjacentHTML('beforeend', fieldHtml);
                     }
-                    
-                    // Show webhook section for supported providers
-                    if (['stripe', 'paypal', 'paystack', 'flutterwave', 'coingate', 'btcpay'].includes(selectedProvider)) {
-                        webhookSection.show();
-                        showWebhookUrls(selectedProvider);
-                        showWebhookInstructions(selectedProvider);
-                    } else {
-                        webhookSection.hide();
-                    }
-                } else {
-                    console.log('No provider selected or provider not found');
-                    credentialsSection.hide();
-                    webhookSection.hide();
-                    $('#credentials-info').show();
+                });
+            } else {
+                console.log('No credentials found for provider or credentials is not an array');
+                if (credentialsSection) {
+                    credentialsSection.style.display = 'none';
                 }
             }
             
-            // Bind change event
-            $('#provider').on('change', handleProviderChange);
-            
-            // Also trigger on input for better compatibility
-            $('#provider').on('input', handleProviderChange);
-            
-            // Trigger immediately if provider is already selected
-            if ($('#provider').val()) {
-                handleProviderChange();
+            // Show webhook section for supported providers
+            if (['stripe', 'paypal', 'paystack', 'flutterwave', 'coingate', 'btcpay'].includes(selectedProvider)) {
+                if (webhookSection) {
+                    webhookSection.style.display = 'block';
+                }
+                showWebhookUrls(selectedProvider);
+                showWebhookInstructions(selectedProvider);
+            } else {
+                if (webhookSection) {
+                    webhookSection.style.display = 'none';
+                }
             }
+        } else {
+            console.log('No provider selected or provider not found in providers object');
+            if (credentialsSection) {
+                credentialsSection.style.display = 'none';
+            }
+            if (webhookSection) {
+                webhookSection.style.display = 'none';
+            }
+            if (credentialsInfo) {
+                credentialsInfo.style.display = 'block';
+            }
+        }
+    }
+    
+    // Bind change event
+    providerSelect.addEventListener('change', handleProviderChange);
+    
+    // Also trigger on input for better compatibility
+    providerSelect.addEventListener('input', handleProviderChange);
+    
+    // Trigger immediately if provider is already selected
+    if (providerSelect.value) {
+        handleProviderChange();
+    }
 
-            // Create credential field HTML
-            function createCredentialField(credential) {
-                const selectedProvider = $('#provider').val(); // Get current provider value
+    // Create credential field HTML
+    function createCredentialField(credential) {
+        const selectedProvider = providerSelect.value; // Get current provider value
                 const displayName = credential.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 const fieldType = (credential.includes('secret') || credential.includes('key')) ? 'password' : 'text';
                 const isOptional = (credential === 'webhook_secret' || credential === 'webhook_id' || (selectedProvider === 'coingate' && (credential === 'app_id' || credential === 'webhook_secret')));
@@ -568,101 +588,137 @@
                 `;
             }
 
-            // Reset form functionality
-            $('#reset-form').click(function() {
-        if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
-            $('#createGatewayForm')[0].reset();
-            $('#credentials-container').html('');
-            $('#credentials-section').hide();
-            $('.is-invalid').removeClass('is-invalid');
-        }
-    });
-
-            // Form validation functionality
-            $('#validate-form').click(function() {
-        let errors = [];
-        
-        if (!$('#provider').val()) errors.push('Gateway provider is required');
-        if (!$('#display_name').val()) errors.push('Display name is required');
-        
-        // Check credentials if provider is selected
-        if ($('#provider').val() && $('#credentials-section').is(':visible')) {
-            $('#credentials-container input[required]').each(function() {
-                if (!$(this).val()) {
-                    errors.push(`${$(this).prev('label').text().replace(' *', '')} is required`);
-                }
-            });
-        }
-        
-        // Validate transaction fees are numeric
-        const percentageFee = $('#transaction_fee_percentage').val();
-        const fixedFee = $('#transaction_fee_fixed').val();
-        
-        if (percentageFee && (isNaN(percentageFee) || percentageFee < 0 || percentageFee > 100)) {
-            errors.push('Transaction fee percentage must be between 0 and 100');
-        }
-        
-        if (fixedFee && (isNaN(fixedFee) || fixedFee < 0)) {
-            errors.push('Fixed fee must be a positive number');
-        }
-        
-        if (errors.length > 0) {
-            alert('Please fix the following errors:\n' + errors.join('\n'));
-        } else {
-            alert('Form validation passed! Ready to save.');
-        }
-    });
-
-            // Auto-format fee inputs
-            $('#transaction_fee_percentage, #transaction_fee_fixed').on('blur', function() {
-        const value = $(this).val();
-        if (value) {
-            const numericValue = parseFloat(value);
-            if (!isNaN(numericValue)) {
-                $(this).val(numericValue.toFixed(2));
+    // Reset form functionality
+    const resetFormBtn = document.getElementById('reset-form');
+    if (resetFormBtn) {
+        resetFormBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+                const form = document.getElementById('createGatewayForm');
+                if (form) form.reset();
+                if (credentialsContainer) credentialsContainer.innerHTML = '';
+                if (credentialsSection) credentialsSection.style.display = 'none';
+                document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
             }
-        }
-    });
+        });
+    }
 
-            // Form submission validation
-            $('#createGatewayForm').on('submit', function(e) {
-        let isValid = true;
-        
-        // Check required fields
-        if (!$('#provider').val()) {
-            $('#provider').addClass('is-invalid');
-            isValid = false;
-        }
-        if (!$('#display_name').val()) {
-            $('#display_name').addClass('is-invalid');
-            isValid = false;
-        }
-        
-        // Check credentials if visible
-        if ($('#credentials-section').is(':visible')) {
-            $('#credentials-container input[required]').each(function() {
-                if (!$(this).val()) {
-                    $(this).addClass('is-invalid');
-                    isValid = false;
+    // Form validation functionality
+    const validateFormBtn = document.getElementById('validate-form');
+    if (validateFormBtn) {
+        validateFormBtn.addEventListener('click', function() {
+            let errors = [];
+            
+            if (!providerSelect.value) errors.push('Gateway provider is required');
+            const displayName = document.getElementById('display_name');
+            if (displayName && !displayName.value) errors.push('Display name is required');
+            
+            // Check credentials if provider is selected
+            if (providerSelect.value && credentialsSection && credentialsSection.style.display !== 'none') {
+                const requiredInputs = credentialsContainer.querySelectorAll('input[required]');
+                requiredInputs.forEach(input => {
+                    if (!input.value) {
+                        const label = input.previousElementSibling;
+                        if (label) {
+                            errors.push(label.textContent.replace(' *', '').trim() + ' is required');
+                        }
+                    }
+                });
+            }
+            
+            // Validate transaction fees are numeric
+            const percentageFee = document.getElementById('transaction_fee_percentage');
+            const fixedFee = document.getElementById('transaction_fee_fixed');
+            
+            if (percentageFee && percentageFee.value) {
+                const val = parseFloat(percentageFee.value);
+                if (isNaN(val) || val < 0 || val > 100) {
+                    errors.push('Transaction fee percentage must be between 0 and 100');
+                }
+            }
+            
+            if (fixedFee && fixedFee.value) {
+                const val = parseFloat(fixedFee.value);
+                if (isNaN(val) || val < 0) {
+                    errors.push('Fixed fee must be a positive number');
+                }
+            }
+            
+            if (errors.length > 0) {
+                alert('Please fix the following errors:\n' + errors.join('\n'));
+            } else {
+                alert('Form validation passed! Ready to save.');
+            }
+        });
+    }
+
+    // Auto-format fee inputs
+    const percentageFeeInput = document.getElementById('transaction_fee_percentage');
+    const fixedFeeInput = document.getElementById('transaction_fee_fixed');
+    
+    [percentageFeeInput, fixedFeeInput].forEach(input => {
+        if (input) {
+            input.addEventListener('blur', function() {
+                const value = this.value;
+                if (value) {
+                    const numericValue = parseFloat(value);
+                    if (!isNaN(numericValue)) {
+                        this.value = numericValue.toFixed(2);
+                    }
                 }
             });
         }
-        
-        if (!isValid) {
-            e.preventDefault();
-            return false;
-        }
-        
-        // Show loading state
-        $(this).find('button[type="submit"]').html('<i class="fas fa-spinner fa-spin me-2"></i>Saving...').prop('disabled', true);
     });
 
-            // Show webhook URLs for selected provider
-            function showWebhookUrls(provider) {
-        const container = $('#webhook-urls-container');
+    // Form submission validation
+    const createGatewayForm = document.getElementById('createGatewayForm');
+    if (createGatewayForm) {
+        createGatewayForm.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Check required fields
+            if (!providerSelect.value) {
+                providerSelect.classList.add('is-invalid');
+                isValid = false;
+            }
+            const displayName = document.getElementById('display_name');
+            if (displayName && !displayName.value) {
+                displayName.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            // Check credentials if visible
+            if (credentialsSection && credentialsSection.style.display !== 'none') {
+                const requiredInputs = credentialsContainer.querySelectorAll('input[required]');
+                requiredInputs.forEach(input => {
+                    if (!input.value) {
+                        input.classList.add('is-invalid');
+                        isValid = false;
+                    }
+                });
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+                submitBtn.disabled = true;
+            }
+        });
+    }
+
+    // Show webhook URLs for selected provider
+    function showWebhookUrls(provider) {
+        const container = document.getElementById('webhook-urls-container');
+        if (!container) return;
+        
         const providerUrls = allWebhookUrls[provider] || {};
         
-        container.html('');
+        container.innerHTML = '';
         
         let webhookUrls = [];
         
@@ -708,7 +764,7 @@
         }
         
         if (webhookUrls.length === 0) {
-            container.html('<div class="col-12"><p class="text-muted">No webhook URLs configured for this provider.</p></div>');
+            container.innerHTML = '<div class="col-12"><p class="text-muted">No webhook URLs configured for this provider.</p></div>';
             return;
         }
         
@@ -717,21 +773,23 @@
                 <div class="col-12 mb-3">
                     <label class="form-label fw-bold">${webhook.name}</label>
                     <div class="input-group">
-                        <input type="text" class="form-control" value="${webhook.url}" readonly>
-                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this, '${webhook.url.replace(/'/g, "\\'")}')">
+                        <input type="text" class="form-control" value="${webhook.url.replace(/"/g, '&quot;')}" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this, '${webhook.url.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
                     <small class="text-muted">${webhook.description}</small>
                 </div>
             `;
-            container.append(webhookHtml);
+            container.insertAdjacentHTML('beforeend', webhookHtml);
         });
     }
     
-            // Show webhook setup instructions for selected provider
-            function showWebhookInstructions(provider) {
-        const container = $('#webhook-setup-instructions');
+    // Show webhook setup instructions for selected provider
+    function showWebhookInstructions(provider) {
+        const container = document.getElementById('webhook-setup-instructions');
+        if (!container) return;
+        
         let instructions = '';
         
         if (provider === 'stripe') {
@@ -841,11 +899,11 @@
             `;
         }
         
-        container.html(instructions);
+        container.innerHTML = instructions;
     }
     
-            // Copy to clipboard function
-            window.copyToClipboard = function(button, text) {
+    // Copy to clipboard function
+    window.copyToClipboard = function(button, text) {
         // Use text parameter if provided, otherwise get from input
         const textToCopy = text || button.previousElementSibling.value;
         
@@ -867,7 +925,7 @@
         }
     };
     
-            function fallbackCopy(text, button) {
+    function fallbackCopy(text, button) {
         const textArea = document.createElement('textarea');
         textArea.value = text;
         textArea.style.position = 'fixed';
@@ -888,15 +946,6 @@
         document.body.removeChild(textArea);
     }
 
-        });
-    }
-    
-    // Start initialization
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPaymentGatewayForm);
-    } else {
-        initPaymentGatewayForm();
-    }
-})();
+});
 </script>
 @endpush
