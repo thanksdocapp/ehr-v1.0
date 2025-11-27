@@ -292,12 +292,16 @@
                             }
                         }
                         
-                        // Update meeting link placeholder based on selected platform
-                        function updateMeetingLinkPlaceholder() {
+                        // Update meeting link placeholder based on selected platform - make it globally accessible
+                        window.updateMeetingLinkPlaceholder = function() {
                             var platformSelect = document.getElementById('meeting_platform');
                             var meetingLinkInput = document.getElementById('meeting_link');
                             
-                            if (!platformSelect || !meetingLinkInput) return;
+                            if (!platformSelect || !meetingLinkInput) {
+                                // Retry if elements not ready
+                                setTimeout(window.updateMeetingLinkPlaceholder, 100);
+                                return;
+                            }
                             
                             var platform = platformSelect.value;
                             var placeholders = {
@@ -309,8 +313,15 @@
                                 '': 'Enter meeting link based on selected platform'
                             };
                             
-                            meetingLinkInput.setAttribute('placeholder', placeholders[platform] || placeholders['']);
-                        }
+                            var placeholder = placeholders[platform] || placeholders[''];
+                            meetingLinkInput.setAttribute('placeholder', placeholder);
+                            meetingLinkInput.placeholder = placeholder; // Also set property directly
+                            
+                            // Also update via jQuery if available
+                            if (typeof $ !== 'undefined' && $('#meeting_link').length) {
+                                $('#meeting_link').attr('placeholder', placeholder);
+                            }
+                        };
                         
                         // Initialize on page load
                         (function() {
@@ -335,11 +346,30 @@
                             // Setup placeholder update for meeting platform
                             var platformSelect = document.getElementById('meeting_platform');
                             if (platformSelect) {
-                                platformSelect.addEventListener('change', updateMeetingLinkPlaceholder);
+                                // Remove any existing listeners to avoid duplicates
+                                var newSelect = platformSelect.cloneNode(true);
+                                platformSelect.parentNode.replaceChild(newSelect, platformSelect);
+                                
+                                // Add fresh event listener
+                                newSelect.addEventListener('change', function() {
+                                    window.updateMeetingLinkPlaceholder();
+                                });
+                                
+                                // Also add onchange attribute as backup
+                                newSelect.setAttribute('onchange', 'window.updateMeetingLinkPlaceholder();');
                                 
                                 // Update placeholder on page load if platform is already selected
                                 setTimeout(function() {
-                                    updateMeetingLinkPlaceholder();
+                                    window.updateMeetingLinkPlaceholder();
+                                }, 200);
+                            } else {
+                                // Retry if element not ready
+                                setTimeout(function() {
+                                    var retrySelect = document.getElementById('meeting_platform');
+                                    if (retrySelect) {
+                                        retrySelect.addEventListener('change', window.updateMeetingLinkPlaceholder);
+                                        window.updateMeetingLinkPlaceholder();
+                                    }
                                 }, 100);
                             }
                         })();
