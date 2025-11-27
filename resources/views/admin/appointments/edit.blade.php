@@ -288,15 +288,112 @@ textarea.form-control {
                         <div class="form-group">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="is_online" name="is_online" value="1" 
-                                       {{ old('is_online', $appointment->is_online) ? 'checked' : '' }}>
-                                <label class="form-check-label" for="is_online">
+                                       {{ old('is_online', $appointment->is_online) ? 'checked' : '' }}
+                                       onchange="handleOnlineConsultationChange(this)">
+                                <label class="form-check-label" for="is_online" onclick="setTimeout(function(){handleOnlineConsultationChange(document.getElementById('is_online'));}, 10);">
                                     <i class="fas fa-video me-1"></i>Online Consultation
                                 </label>
                             </div>
                         </div>
                         
+                        <script>
+                        // Inline function to handle Online Consultation - runs immediately
+                        function handleOnlineConsultationChange(checkbox) {
+                            var meetingRow = document.getElementById('meeting_link_row');
+                            var meetingLink = document.getElementById('meeting_link');
+                            var meetingPlatform = document.getElementById('meeting_platform');
+                            
+                            if (!meetingRow) return;
+                            
+                            var isChecked = checkbox && (checkbox.checked || checkbox.getAttribute('checked') !== null);
+                            
+                            if (isChecked) {
+                                // Force show - use multiple methods
+                                meetingRow.style.display = 'block';
+                                meetingRow.style.visibility = 'visible';
+                                meetingRow.style.opacity = '1';
+                                meetingRow.removeAttribute('style');
+                                meetingRow.setAttribute('style', 'display: block !important; visibility: visible !important; opacity: 1 !important;');
+                                
+                                // Set required field
+                                if (meetingLink) {
+                                    meetingLink.required = true;
+                                    meetingLink.setAttribute('required', 'required');
+                                }
+                            } else {
+                                // Force hide
+                                meetingRow.style.display = 'none';
+                                meetingRow.style.visibility = 'hidden';
+                                meetingRow.removeAttribute('style');
+                                meetingRow.setAttribute('style', 'display: none !important;');
+                                
+                                // Remove required and clear fields
+                                if (meetingLink) {
+                                    meetingLink.required = false;
+                                    meetingLink.removeAttribute('required');
+                                    meetingLink.value = '';
+                                }
+                                if (meetingPlatform) {
+                                    meetingPlatform.value = '';
+                                }
+                            }
+                        }
+                        
+                        // Update meeting link placeholder based on selected platform
+                        function updateMeetingLinkPlaceholder() {
+                            var platformSelect = document.getElementById('meeting_platform');
+                            var meetingLinkInput = document.getElementById('meeting_link');
+                            
+                            if (!platformSelect || !meetingLinkInput) return;
+                            
+                            var platform = platformSelect.value;
+                            var placeholders = {
+                                'zoom': 'https://zoom.us/j/xxxxxxxxxx',
+                                'google_meet': 'https://meet.google.com/xxx-xxxx-xxx',
+                                'teams': 'https://teams.microsoft.com/l/meetup-join/xxx',
+                                'whereby': 'https://subdomain.whereby.com/room-name',
+                                'custom': 'https://your-platform.com/meeting-link',
+                                '': 'Enter meeting link based on selected platform'
+                            };
+                            
+                            meetingLinkInput.setAttribute('placeholder', placeholders[platform] || placeholders['']);
+                        }
+                        
+                        // Initialize on page load
+                        (function() {
+                            var checkbox = document.getElementById('is_online');
+                            if (checkbox) {
+                                // Check initial state
+                                setTimeout(function() {
+                                    handleOnlineConsultationChange(checkbox);
+                                }, 100);
+                                
+                                // Also add event listeners
+                                checkbox.addEventListener('change', function() {
+                                    handleOnlineConsultationChange(this);
+                                });
+                                checkbox.addEventListener('click', function() {
+                                    setTimeout(function() {
+                                        handleOnlineConsultationChange(checkbox);
+                                    }, 10);
+                                });
+                            }
+                            
+                            // Setup placeholder update for meeting platform
+                            var platformSelect = document.getElementById('meeting_platform');
+                            if (platformSelect) {
+                                platformSelect.addEventListener('change', updateMeetingLinkPlaceholder);
+                                
+                                // Update placeholder on page load if platform is already selected
+                                setTimeout(function() {
+                                    updateMeetingLinkPlaceholder();
+                                }, 100);
+                            }
+                        })();
+                        </script>
+                        
                         <div class="row" id="meeting_link_row" style="{{ old('is_online', $appointment->is_online) ? '' : 'display: none;' }}">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="meeting_platform" class="form-label">Meeting Platform</label>
                                     <select class="form-control @error('meeting_platform') is-invalid @enderror" 
@@ -323,7 +420,7 @@ textarea.form-control {
                                     @enderror
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <div class="form-group">
                                     <label for="meeting_link" class="form-label">Meeting Link <span class="text-danger">*</span></label>
                                     <div class="input-group">
@@ -685,24 +782,35 @@ $(document).ready(function() {
     });
     
     // Update meeting link placeholder based on selected platform
-    $('#meeting_platform').on('change', function() {
-        const platform = $(this).val();
-        const meetingLinkInput = $('#meeting_link');
-        const placeholders = {
-            'zoom': 'https://zoom.us/j/xxxxxxxxxx',
-            'google_meet': 'https://meet.google.com/xxx-xxxx-xxx',
-            'teams': 'https://teams.microsoft.com/l/meetup-join/xxx',
-            'whereby': 'https://subdomain.whereby.com/room-name',
-            'custom': 'https://your-platform.com/meeting-link',
-            '': 'Enter meeting link based on selected platform'
-        };
-        meetingLinkInput.attr('placeholder', placeholders[platform] || placeholders['']);
+    $('#meeting_platform').off('change.placeholder').on('change.placeholder', function() {
+        // Call the global function if available, otherwise use jQuery
+        if (typeof updateMeetingLinkPlaceholder === 'function') {
+            updateMeetingLinkPlaceholder();
+        } else {
+            const platform = $(this).val();
+            const meetingLinkInput = $('#meeting_link');
+            const placeholders = {
+                'zoom': 'https://zoom.us/j/xxxxxxxxxx',
+                'google_meet': 'https://meet.google.com/xxx-xxxx-xxx',
+                'teams': 'https://teams.microsoft.com/l/meetup-join/xxx',
+                'whereby': 'https://subdomain.whereby.com/room-name',
+                'custom': 'https://your-platform.com/meeting-link',
+                '': 'Enter meeting link based on selected platform'
+            };
+            meetingLinkInput.attr('placeholder', placeholders[platform] || placeholders['']);
+        }
     });
     
     // Trigger change on page load if platform is already selected
-    if ($('#meeting_platform').val()) {
-        $('#meeting_platform').trigger('change');
-    }
+    setTimeout(function() {
+        if ($('#meeting_platform').val()) {
+            $('#meeting_platform').trigger('change.placeholder');
+        }
+        // Also call the global function
+        if (typeof updateMeetingLinkPlaceholder === 'function') {
+            updateMeetingLinkPlaceholder();
+        }
+    }, 300);
 
     // Handle department change to filter doctors
     $('#department_id').change(function() {
