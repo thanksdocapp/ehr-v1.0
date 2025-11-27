@@ -776,6 +776,9 @@ class PatientsController extends Controller
      */
     public function destroy(Patient $patient)
     {
+        // Check authorization - only admins can delete patients
+        $this->authorize('delete', $patient);
+        
         try {
             // Check if patient has any appointments
             $appointmentCount = $patient->appointments()->count();
