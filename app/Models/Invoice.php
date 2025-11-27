@@ -170,7 +170,37 @@ class Invoice extends Model
     public function getPublicPaymentUrl(): string
     {
         $token = $this->generatePaymentToken();
-        return route('public.billing.pay', ['token' => $token]);
+        
+        if (empty($token)) {
+            \Log::error('Cannot generate public payment URL - token is empty', [
+                'invoice_id' => $this->id,
+                'has_payment_token_column' => Schema::hasColumn('invoices', 'payment_token'),
+                'current_payment_token' => $this->payment_token ?? 'null'
+            ]);
+            throw new \Exception('Cannot generate payment URL. Payment token column may not exist or token generation failed.');
+        }
+        
+        try {
+            $url = route('public.billing.pay', ['token' => $token]);
+            
+            if (empty($url)) {
+                \Log::error('Route generated empty URL', [
+                    'invoice_id' => $this->id,
+                    'token' => $token,
+                    'route_name' => 'public.billing.pay'
+                ]);
+                throw new \Exception('Failed to generate payment URL. Route may not be defined.');
+            }
+            
+            return $url;
+        } catch (\Exception $e) {
+            \Log::error('Failed to generate payment URL route', [
+                'invoice_id' => $this->id,
+                'token' => $token,
+                'error' => $e->getMessage()
+            ]);
+            throw new \Exception('Failed to generate payment URL: ' . $e->getMessage());
+        }
     }
 
     /**
