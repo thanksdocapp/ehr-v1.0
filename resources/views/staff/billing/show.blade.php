@@ -192,7 +192,8 @@
                         </button>
                         @endif
 
-                        @if($billing->status === 'pending')
+                        {{-- Staff cannot edit or update billing status - these actions are restricted to admin --}}
+                        {{-- @if($billing->status === 'pending')
                             <a href="{{ route('staff.billing.edit', $billing->id) }}" class="btn btn-outline-warning">
                                 <i class="fas fa-edit me-1"></i>Edit Bill
                             </a>
@@ -205,7 +206,7 @@
                             <button class="btn btn-outline-danger" onclick="updateStatus({{ $billing->id }}, 'cancelled')">
                                 <i class="fas fa-times me-1"></i>Cancel Bill
                             </button>
-                        @endif
+                        @endif --}}
 
                         <div class="dropdown-divider"></div>
                         <button class="btn btn-outline-info" onclick="window.print()">
@@ -272,39 +273,8 @@
     </div>
 </div>
 
-<!-- Status Update Modal -->
-<div class="modal fade" id="statusModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Update Bill Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="statusForm">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="status_select" class="form-label">New Status</label>
-                        <select id="status_select" class="form-control" required>
-                            <option value="pending">Pending</option>
-                            <option value="paid">Paid</option>
-                            <option value="overdue">Overdue</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="bill_notes" class="form-label">Notes (Optional)</label>
-                        <textarea id="bill_notes" class="form-control" rows="3" 
-                                  placeholder="Add any notes about this status change..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-doctor-primary">Update Status</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+{{-- Status Update Modal - Removed for staff as they cannot update billing status --}}
+{{-- Only admins can edit and update billing status --}}
 @endsection
 
 @push('scripts')
@@ -344,41 +314,8 @@ function sendToPatient(billId) {
     });
 }
 
-let currentBillId = null;
-
-function updateStatus(billId, status = null) {
-    currentBillId = billId;
-    
-    if (status) {
-        $('#status_select').val(status);
-    }
-    
-    $('#statusModal').modal('show');
-}
-
-$('#statusForm').on('submit', function(e) {
-    e.preventDefault();
-    
-    const status = $('#status_select').val();
-    const notes = $('#bill_notes').val();
-    
-    $.ajax({
-        url: `/staff/billing/${currentBillId}/status`,
-        method: 'PATCH',
-        data: {
-            status: status,
-            notes: notes,
-            _token: $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            $('#statusModal').modal('hide');
-            location.reload();
-        },
-        error: function(xhr) {
-            alert('Error updating status. Please try again.');
-        }
-    });
-});
+// Status update functions removed - staff cannot update billing status
+// Only admins have permission to edit and update billing status
 
 // Auto-dismiss alerts after 5 seconds
 setTimeout(function() {
