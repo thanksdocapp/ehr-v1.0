@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\Patient;
 use App\Models\Doctor;
+use App\Services\HospitalEmailNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -832,4 +833,107 @@ class PatientsController extends Controller
     }
 
     // Note: Staff cannot delete patients - only view, create, and edit
+
+    /**
+     * Show the form for sending email to patient's GP.
+     */
+    public function showGpEmailForm(Patient $patient)
+    {
+        // Check if patient has GP consent and GP email
+        if (!$patient->consent_share_with_gp) {
+            return redirect()->route('staff.patients.show', $patient)
+                             ->with('error', 'Patient has not consented to share information with their GP.');
+        }
+
+        if (!$patient->gp_email) {
+            return redirect()->route('staff.patients.show', $patient)
+                             ->with('error', 'GP email address is not available for this patient.');
+        }
+
+        return view('staff.patients.gp-email', compact('patient'));
+    }
+
+    /**
+     * Send email to patient's GP.
+     */
+    public function sendGpEmail(Request $request, Patient $patient, HospitalEmailNotificationService $emailService)
+    {
+        // Validate request
+        $request->validate([
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string|max:5000',
+            'email_type' => 'nullable|string|in:general,consultation,referral,update,other',
+        ]);
+
+        // Check if patient has GP consent and GP email
+        if (!$patient->consent_share_with_gp) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Patient has not consented to share information with their GP.'
+                ], 422);
+            }
+            return redirect()->back()
+                             ->with('error', 'Patient has not consented to share information with their GP.')
+                             ->withInput();
+        }
+
+        if (!$patient->gp_email) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'GP email address is not available for this patient.'
+                ], 422);
+            }
+            return redirect()->back()
+                             ->with('error', 'GP email address is not available for this patient.')
+                             ->withInput();
+        }
+
+        try {
+            $emailType = $request->email_type ?? 'general';
+            $sentBy = Auth::user();
+
+            $emailLog = $emailService->sendGpEmail(
+                $patient,
+                $request->subject,
+                $request->message,
+                $emailType,
+                $sentBy
+            );
+
+            if ($emailLog) {
+                $message = "Email has been successfully sent to {$patient->gp_name} at {$patient->gp_email}.";
+
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message
+                    ]);
+                }
+
+                return redirect()->route('staff.patients.show', $patient)
+                                 ->with('success', $message);
+            } else {
+                throw new \Exception('Failed to send email. Please try again.');
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to send GP email', [
+                'patient_id' => $patient->id,
+                'gp_email' => $patient->gp_email,
+                'error' => $e->getMessage()
+            ]);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                             ->with('error', 'Failed to send email: ' . $e->getMessage())
+                             ->withInput();
+        }
+    }
 }

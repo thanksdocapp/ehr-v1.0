@@ -598,6 +598,12 @@
                                             <i class="fas fa-phone"></i> Contact Patient
                                         </button>
                                         
+                                        @if($patient->consent_share_with_gp && $patient->gp_email)
+                                        <a href="{{ route('admin.patients.gp-email', $patient) }}" class="btn btn-success">
+                                            <i class="fas fa-user-md"></i> Contact GP
+                                        </a>
+                                        @endif
+                                        
                                         <hr>
                                         
                                         <button type="button" class="btn btn-outline-success" onclick="printPatientDetails()">

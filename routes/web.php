@@ -522,6 +522,8 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/patients/import/csv', [\App\Http\Controllers\Admin\PatientsController::class, 'importCsv'])->name('patients.import.csv');
         Route::resource('patients', \App\Http\Controllers\Admin\PatientsController::class);
         Route::get('/patients/{patient}/download-document/{type}', [\App\Http\Controllers\Admin\PatientsController::class, 'downloadDocument'])->name('patients.download-document');
+        Route::get('/patients/{patient}/gp-email', [\App\Http\Controllers\Admin\PatientsController::class, 'showGpEmailForm'])->name('patients.gp-email');
+        Route::post('/patients/{patient}/gp-email', [\App\Http\Controllers\Admin\PatientsController::class, 'sendGpEmail'])->name('patients.gp-email.send');
         
         // Patient Alerts - All Alerts List
         Route::get('/alerts', [\App\Http\Controllers\Admin\AlertsController::class, 'index'])->name('alerts.index');

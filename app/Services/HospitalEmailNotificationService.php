@@ -1248,4 +1248,136 @@ class HospitalEmailNotificationService
             $variables
         );
     }
+
+    /**
+     * Send email to patient's GP.
+     *
+     * @param Patient $patient
+     * @param string $subject
+     * @param string $message
+     * @param string $emailType
+     * @param User|null $sentBy
+     * @return EmailLog|null
+     */
+    public function sendGpEmail(Patient $patient, string $subject, string $message, string $emailType = 'general', User $sentBy = null)
+    {
+        // Check if patient has GP consent and GP email
+        if (!$patient->consent_share_with_gp) {
+            Log::warning('Cannot send email to GP: Patient has not consented to share information with GP', [
+                'patient_id' => $patient->id
+            ]);
+            throw new \Exception('Patient has not consented to share information with their GP.');
+        }
+
+        if (!$patient->gp_email) {
+            Log::warning('Cannot send email to GP: GP email not found', [
+                'patient_id' => $patient->id
+            ]);
+            throw new \Exception('GP email address is not available for this patient.');
+        }
+
+        $doctor = $sentBy && $sentBy->role === 'doctor' 
+            ? Doctor::where('user_id', $sentBy->id)->first() 
+            : null;
+
+        $variables = [
+            'gp_name' => $patient->gp_name ?? 'GP',
+            'gp_email' => $patient->gp_email,
+            'gp_phone' => $patient->gp_phone ?? '',
+            'gp_address' => $patient->gp_address ?? '',
+            'patient_name' => $patient->full_name,
+            'patient_id' => $patient->patient_id,
+            'patient_dob' => $patient->date_of_birth ? $patient->date_of_birth->format('F d, Y') : 'N/A',
+            'doctor_name' => $doctor ? $doctor->name : ($sentBy ? $sentBy->name : 'Hospital Staff'),
+            'doctor_specialization' => $doctor ? $doctor->specialization : 'General',
+            'hospital_name' => config('app.name', 'Hospital'),
+            'hospital_address' => config('hospital.address', ''),
+            'hospital_phone' => config('hospital.phone', ''),
+            'hospital_email' => config('hospital.email', ''),
+            'message' => $message,
+            'email_type' => $emailType,
+            'date' => now()->format('F d, Y'),
+            'time' => now()->format('H:i:s'),
+        ];
+
+        // Always send direct email with custom subject and message
+        return $this->sendDirectGpEmail($patient, $subject, $message, $variables, $sentBy);
+    }
+
+    /**
+     * Send direct email to GP without template.
+     *
+     * @param Patient $patient
+     * @param string $subject
+     * @param string $message
+     * @param array $variables
+     * @param User|null $sentBy
+     * @return EmailLog|null
+     */
+    private function sendDirectGpEmail(Patient $patient, string $subject, string $message, array $variables, User $sentBy = null)
+    {
+        try {
+            $hospitalName = $variables['hospital_name'];
+            $hospitalEmail = $variables['hospital_email'] ?? config('mail.from.address', 'noreply@hospital.com');
+            $hospitalPhone = $variables['hospital_phone'] ?? '';
+            $hospitalAddress = $variables['hospital_address'] ?? '';
+
+            // Create email log entry
+            $log = EmailLog::create([
+                'recipient_email' => $patient->gp_email,
+                'recipient_name' => $patient->gp_name ?? 'GP',
+                'subject' => $subject,
+                'body' => $this->formatGpEmailBody($message, $variables),
+                'variables' => $variables,
+                'patient_id' => $patient->id,
+                'metadata' => [
+                    'email_type' => 'gp_communication',
+                    'sent_by' => $sentBy ? $sentBy->id : null,
+                ],
+                'status' => 'pending'
+            ]);
+
+            // Send email immediately
+            $this->emailService->sendImmediateEmail($log);
+
+            return $log;
+        } catch (\Exception $e) {
+            Log::error('Failed to send direct GP email', [
+                'patient_id' => $patient->id,
+                'gp_email' => $patient->gp_email,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Format GP email body with HTML template.
+     *
+     * @param string $message
+     * @param array $variables
+     * @return string
+     */
+    private function formatGpEmailBody(string $message, array $variables): string
+    {
+        $hospitalName = $variables['hospital_name'];
+        $hospitalAddress = $variables['hospital_address'] ?? '';
+        $hospitalPhone = $variables['hospital_phone'] ?? '';
+        $hospitalEmail = $variables['hospital_email'] ?? '';
+
+        return view('emails.gp-communication', [
+            'gp_name' => $variables['gp_name'],
+            'patient_name' => $variables['patient_name'],
+            'patient_id' => $variables['patient_id'],
+            'patient_dob' => $variables['patient_dob'],
+            'doctor_name' => $variables['doctor_name'],
+            'hospital_name' => $hospitalName,
+            'hospital_address' => $hospitalAddress,
+            'hospital_phone' => $hospitalPhone,
+            'hospital_email' => $hospitalEmail,
+            'message' => nl2br(e($message)),
+            'date' => $variables['date'],
+            'time' => $variables['time'],
+        ])->render();
+    }
 }

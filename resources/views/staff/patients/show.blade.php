@@ -615,6 +615,12 @@
                                 <a href="{{ route('staff.lab-reports.create', ['patient_id' => $patient->id]) }}" class="btn btn-outline-info w-100">
                                     <i class="fas fa-vial me-2"></i>Order Lab Test
                                 </a>
+                                
+                                @if($patient->consent_share_with_gp && $patient->gp_email)
+                                <a href="{{ route('staff.patients.gp-email', $patient) }}" class="btn btn-success w-100">
+                                    <i class="fas fa-user-md me-2"></i>Contact GP
+                                </a>
+                                @endif
                             @endif
                         </div>
                         
