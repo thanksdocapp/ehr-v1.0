@@ -157,9 +157,12 @@ class PublicBillingController extends Controller
             // Build success URL - ensure it doesn't have query params already
             $successUrl = route('public.billing.success', ['token' => $token]);
             
+            // Get currency - check invoice/billing currency, then system settings, then default to GBP for UK
+            $currency = $this->getCurrencyForPayment($invoice, $gateway);
+            
             $checkoutData = [
                 'amount' => $payment->amount,
-                'currency' => 'usd',
+                'currency' => strtolower($currency),
                 'order_id' => $payment->transaction_id,
                 'customer_email' => $invoice->patient->email ?? 'customer@example.com',
                 'description' => 'Invoice #' . $invoice->invoice_number,
@@ -257,6 +260,109 @@ class PublicBillingController extends Controller
         return view('public.billing.invalid');
     }
 
+    /**
+     * Get currency for payment
+     */
+    private function getCurrencyForPayment($invoice, $gateway): string
+    {
+        // 1. Check if invoice/billing has currency field
+        if (isset($invoice->currency) && !empty($invoice->currency)) {
+            return strtoupper($invoice->currency);
+        }
+        
+        if ($invoice->billing && isset($invoice->billing->currency) && !empty($invoice->billing->currency)) {
+            return strtoupper($invoice->billing->currency);
+        }
+        
+        // 2. Check system settings
+        $systemCurrency = $this->getSystemCurrency();
+        if ($systemCurrency) {
+            // Verify gateway supports this currency
+            if ($gateway && method_exists($gateway, 'getSupportedCurrencies')) {
+                $supportedCurrencies = $gateway->getSupportedCurrencies();
+                if (in_array(strtoupper($systemCurrency), array_map('strtoupper', $supportedCurrencies))) {
+                    return strtoupper($systemCurrency);
+                }
+            } else {
+                return strtoupper($systemCurrency);
+            }
+        }
+        
+        // 3. Check app config
+        $appCurrency = config('app.currency');
+        if ($appCurrency) {
+            return strtoupper($appCurrency);
+        }
+        
+        // 4. Detect from timezone (UK = GBP, US = USD, etc.)
+        $detectedCurrency = $this->detectCurrencyFromTimezone();
+        if ($detectedCurrency) {
+            return strtoupper($detectedCurrency);
+        }
+        
+        // 5. Default based on domain (thanksdoc.co.uk = GBP)
+        if (str_contains(config('app.url', ''), '.co.uk') || str_contains(config('app.url', ''), 'thanksdoc')) {
+            return 'GBP';
+        }
+        
+        // 6. Final fallback to GBP (UK-based system)
+        return 'GBP';
+    }
+    
+    /**
+     * Get system currency from settings
+     */
+    private function getSystemCurrency(): ?string
+    {
+        try {
+            if (class_exists('\App\Models\Setting')) {
+                $setting = \App\Models\Setting::where('key', 'default_currency')->first();
+                if ($setting && !empty($setting->value)) {
+                    return $setting->value;
+                }
+            }
+            
+            if (\Schema::hasTable('site_settings')) {
+                $currency = \DB::table('site_settings')
+                    ->where('key', 'currency')
+                    ->where('is_active', true)
+                    ->value('value');
+                if ($currency) {
+                    return $currency;
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Error getting system currency', ['error' => $e->getMessage()]);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Detect currency from timezone
+     */
+    private function detectCurrencyFromTimezone(): ?string
+    {
+        $timezone = config('app.timezone', 'UTC');
+        
+        $timezoneCurrencyMap = [
+            'Europe/London' => 'GBP',
+            'America/New_York' => 'USD',
+            'America/Chicago' => 'USD',
+            'America/Denver' => 'USD',
+            'America/Los_Angeles' => 'USD',
+            'Europe/Paris' => 'EUR',
+            'Europe/Berlin' => 'EUR',
+            'Asia/Tokyo' => 'JPY',
+            'Asia/Hong_Kong' => 'HKD',
+            'Australia/Sydney' => 'AUD',
+            'Africa/Lagos' => 'NGN',
+            'Africa/Accra' => 'GHS',
+        ];
+        
+        return $timezoneCurrencyMap[$timezone] ?? null;
+    }
+    
     /**
      * Generate transaction ID
      */
