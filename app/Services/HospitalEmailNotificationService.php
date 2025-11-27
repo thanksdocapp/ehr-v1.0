@@ -1649,4 +1649,95 @@ class HospitalEmailNotificationService
             'time' => $variables['time'],
         ])->render();
     }
+
+    /**
+     * Format billing email body (fallback when template fails)
+     */
+    protected function formatBillingEmailBody(array $variables): string
+    {
+        $paymentUrl = $variables['payment_url'] ?? '#';
+        $hospitalName = $variables['hospital_name'] ?? 'Hospital';
+        
+        return '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Notification</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f8f9fc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h1 style="color: #1a202c; margin: 0;">' . htmlspecialchars($hospitalName) . '</h1>
+    </div>
+    
+    <div style="background-color: #ffffff; padding: 30px; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #1a202c; margin-top: 0;">Invoice Notification</h2>
+        
+        <p>Dear ' . htmlspecialchars($variables['patient_name'] ?? 'Patient') . ',</p>
+        
+        <p>We hope this message finds you well. This is to inform you that a new invoice has been generated for your recent visit.</p>
+        
+        <div style="background-color: #f8f9fc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1a202c; margin-top: 0;">Invoice Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;"><strong>Invoice Number:</strong></td>
+                    <td style="padding: 8px 0; color: #1a202c;"><strong>' . htmlspecialchars($variables['invoice_number'] ?? $variables['bill_number'] ?? 'N/A') . '</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Bill Number:</td>
+                    <td style="padding: 8px 0; color: #1a202c;">' . htmlspecialchars($variables['bill_number'] ?? 'N/A') . '</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Billing Date:</td>
+                    <td style="padding: 8px 0; color: #1a202c;">' . htmlspecialchars($variables['billing_date'] ?? 'N/A') . '</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Due Date:</td>
+                    <td style="padding: 8px 0; color: #1a202c;">' . htmlspecialchars($variables['due_date'] ?? 'N/A') . '</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Service Type:</td>
+                    <td style="padding: 8px 0; color: #1a202c;">' . htmlspecialchars($variables['type'] ?? 'N/A') . '</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Description:</td>
+                    <td style="padding: 8px 0; color: #1a202c;">' . htmlspecialchars($variables['description'] ?? 'N/A') . '</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;"><strong>Total Amount:</strong></td>
+                    <td style="padding: 8px 0; color: #1a202c; font-size: 18px;"><strong>£' . htmlspecialchars($variables['total_amount'] ?? '0.00') . '</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #4a5568;">Balance Due:</td>
+                    <td style="padding: 8px 0; color: #1a202c;"><strong>£' . htmlspecialchars($variables['balance'] ?? '0.00') . '</strong></td>
+                </tr>
+            </table>
+        </div>
+        
+        ' . (!empty($variables['notes']) ? '<div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <p style="margin: 0; color: #856404;"><strong>Notes:</strong> ' . htmlspecialchars($variables['notes']) . '</p>
+        </div>' : '') . '
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="' . htmlspecialchars($paymentUrl) . '" style="display: inline-block; background-color: #1cc88a; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Pay Invoice Online</a>
+        </div>
+        
+        <p style="color: #4a5568; font-size: 14px;">You can pay this invoice securely online using the button above. No login required.</p>
+        
+        <p style="color: #4a5568; font-size: 14px;">If you have any questions about this invoice, please contact our billing department:</p>
+        <ul style="color: #4a5568; font-size: 14px;">
+            <li>Phone: ' . htmlspecialchars($variables['billing_phone'] ?? $variables['hospital_phone'] ?? 'N/A') . '</li>
+            <li>Address: ' . htmlspecialchars($variables['hospital_address'] ?? 'N/A') . '</li>
+        </ul>
+        
+        <p style="margin-top: 30px;">Thank you for choosing ' . htmlspecialchars($hospitalName) . '.</p>
+        
+        <p style="color: #4a5568; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+            This is an automated message. Please do not reply to this email.
+        </p>
+    </div>
+</body>
+</html>';
+    }
 }
