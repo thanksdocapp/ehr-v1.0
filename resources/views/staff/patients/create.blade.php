@@ -591,12 +591,12 @@ $(document).ready(function() {
     
     $('#date_of_birth').on('change', calculateAgeAndToggleGuardian);
     
-    // GP Consent checkbox toggle
-    $('#consent_share_with_gp').on('change', function() {
+    // GP Consent checkbox toggle - use multiple events to ensure it works
+    function toggleGpDetails() {
         const gpDetailsGroup = $('#gp_details_group');
         const gpFields = ['gp_name', 'gp_email', 'gp_phone', 'gp_address'];
         
-        if ($(this).is(':checked')) {
+        if ($('#consent_share_with_gp').is(':checked')) {
             gpDetailsGroup.slideDown();
             gpFields.forEach(function(field) {
                 $('#' + field).prop('required', true);
@@ -608,6 +608,18 @@ $(document).ready(function() {
                 $('#' + field).val('');
             });
         }
+    }
+    
+    $('#consent_share_with_gp').on('change click', function() {
+        toggleGpDetails();
+    });
+    
+    // Also handle label click
+    $('label[for="consent_share_with_gp"]').on('click', function(e) {
+        // Allow default label behavior to toggle checkbox
+        setTimeout(function() {
+            toggleGpDetails();
+        }, 50);
     });
     
     // Initialize GP details visibility based on consent checkbox state

@@ -438,6 +438,8 @@
             -moz-appearance: none !important;
             position: relative !important;
             float: none !important;
+            pointer-events: auto !important;
+            z-index: 1 !important;
         }
 
         input[type="checkbox"].form-check-input:hover,
@@ -474,6 +476,8 @@
             border: solid white !important;
             border-width: 0 2px 2px 0 !important;
             display: block !important;
+            pointer-events: none !important;
+            z-index: 2 !important;
         }
 
         .form-check-label {
@@ -483,10 +487,17 @@
             line-height: 1.5 !important;
             flex: 1 !important;
             margin: 0 !important;
+            user-select: none !important;
+            pointer-events: auto !important;
         }
 
         .form-check-label i {
             color: #1a202c !important;
+        }
+        
+        /* Ensure form-check container doesn't block clicks */
+        .form-check {
+            pointer-events: auto !important;
         }
 
         /* Stats Cards */

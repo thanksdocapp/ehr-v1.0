@@ -556,6 +556,8 @@ input[type="checkbox"].form-check-input,
     -moz-appearance: none !important;
     position: relative !important;
     float: none !important;
+    pointer-events: auto !important;
+    z-index: 1 !important;
 }
 
 input[type="checkbox"].form-check-input:hover,
@@ -592,6 +594,8 @@ input[type="checkbox"].form-check-input:checked::after,
     border: solid white !important;
     border-width: 0 2px 2px 0 !important;
     display: block !important;
+    pointer-events: none !important;
+    z-index: 2 !important;
 }
 
 .form-check-label {
@@ -678,9 +682,9 @@ $(document).ready(function() {
         });
     });
 
-    // Handle online consultation toggle
-    $('#is_online').change(function() {
-        if (this.checked) {
+    // Handle online consultation toggle - use multiple events to ensure it works
+    function toggleMeetingLink() {
+        if ($('#is_online').is(':checked')) {
             $('#meeting_link_row').show();
             $('#meeting_link').prop('required', true);
         } else {
@@ -689,7 +693,22 @@ $(document).ready(function() {
             $('#meeting_link').val('');
             $('#meeting_platform').val('');
         }
+    }
+    
+    $('#is_online').on('change click', function() {
+        toggleMeetingLink();
     });
+    
+    // Also handle label click
+    $('label[for="is_online"]').on('click', function(e) {
+        // Allow default label behavior to toggle checkbox
+        setTimeout(function() {
+            toggleMeetingLink();
+        }, 50);
+    });
+    
+    // Initialize on page load
+    toggleMeetingLink();
     
     // Update meeting link placeholder based on selected platform
     $('#meeting_platform').on('change', function() {

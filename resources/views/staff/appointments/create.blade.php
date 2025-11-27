@@ -449,16 +449,33 @@ $(document).ready(function() {
         }
     });
 
-    // Toggle meeting link fields based on is_online checkbox
-    $('#is_online').on('change', function() {
-        if ($(this).is(':checked')) {
+    // Toggle meeting link fields based on is_online checkbox - use multiple events
+    function toggleMeetingLink() {
+        if ($('#is_online').is(':checked')) {
             $('#meeting_link_row').slideDown();
             $('#meeting_link').prop('required', true);
         } else {
             $('#meeting_link_row').slideUp();
             $('#meeting_link').prop('required', false);
+            $('#meeting_link').val('');
+            $('#meeting_platform').val('');
         }
+    }
+    
+    $('#is_online').on('change click', function() {
+        toggleMeetingLink();
     });
+    
+    // Also handle label click
+    $('label[for="is_online"]').on('click', function(e) {
+        // Allow default label behavior to toggle checkbox
+        setTimeout(function() {
+            toggleMeetingLink();
+        }, 50);
+    });
+    
+    // Initialize on page load
+    toggleMeetingLink();
 
     // Show/hide copy button based on meeting link value
     $('#meeting_link').on('input', function() {
