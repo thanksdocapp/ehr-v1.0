@@ -30,8 +30,8 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
     </head>
     <body class="bg-light">
-        <div class="min-vh-100 d-flex flex-column justify-content-center align-items-center py-4">
-            <div class="mb-4">
+        <div class="min-vh-100 d-flex flex-column py-4">
+            <div class="mb-4 text-center">
                 <a href="/" class="text-decoration-none">
                     <div class="d-flex align-items-center justify-content-center">
                         <x-application-logo style="height: 40px; width: 40px; fill: #6b7280;" />
@@ -40,7 +40,7 @@
                 </a>
             </div>
 
-            <div class="w-100" style="max-width: 900px;">
+            <div class="flex-grow-1">
                 @yield('content')
             </div>
         </div>
