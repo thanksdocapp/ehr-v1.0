@@ -90,39 +90,43 @@
                                 // Ensure form submits properly
                                 form.addEventListener('submit', function(e) {
                                     console.log('Form submit event triggered');
-                                    submitBtn.disabled = false;
-                                    submitBtn.style.display = 'block';
-                                    submitBtn.style.visibility = 'visible';
-                                    submitBtn.style.opacity = '1';
+                                    
+                                    // Show loading state
+                                    submitBtn.disabled = true;
+                                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
                                     
                                     // Validate required fields
                                     const gateway = form.querySelector('input[name="payment_gateway"]');
                                     const amount = form.querySelector('input[name="amount"]');
                                     
+                                    console.log('Gateway:', gateway ? gateway.value : 'not found');
+                                    console.log('Amount:', amount ? amount.value : 'not found');
+                                    
                                     if (!gateway || !gateway.value) {
                                         e.preventDefault();
+                                        submitBtn.disabled = false;
+                                        submitBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Proceed to {{ $selectedGateway->name }} Secure Payment';
                                         alert('Payment gateway is required');
                                         return false;
                                     }
                                     
                                     if (!amount || !amount.value || parseFloat(amount.value) <= 0) {
                                         e.preventDefault();
+                                        submitBtn.disabled = false;
+                                        submitBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Proceed to {{ $selectedGateway->name }} Secure Payment';
                                         alert('Invalid payment amount');
                                         return false;
                                     }
                                     
                                     console.log('Form validation passed, submitting...');
+                                    // Don't prevent default - let form submit naturally
                                     return true;
                                 });
                                 
                                 // Also add click handler as backup
                                 submitBtn.addEventListener('click', function(e) {
                                     console.log('Button clicked');
-                                    const form = this.closest('form');
-                                    if (form) {
-                                        console.log('Submitting form via click handler');
-                                        form.submit();
-                                    }
+                                    // Don't prevent default - let form submit naturally
                                 });
                             } else {
                                 console.error('Form or submit button not found!');

@@ -130,34 +130,85 @@ class PublicBillingController extends Controller
      */
     private function processStripePayment($payment, $request, $invoice, $gateway, $token)
     {
-        $stripeGateway = new \App\Services\PaymentGateway\StripeGateway();
-        $credentials = array_merge($gateway->credentials ?? [], [
-            'test_mode' => $gateway->test_mode
-        ]);
-        $stripeGateway->initialize($credentials);
+        try {
+            \Log::info('Processing Stripe payment for public billing', [
+                'payment_id' => $payment->id,
+                'invoice_id' => $invoice->id,
+                'amount' => $payment->amount,
+                'gateway_id' => $gateway->id,
+                'has_credentials' => !empty($gateway->credentials)
+            ]);
 
-        $response = $stripeGateway->createCheckoutSession([
-            'amount' => $payment->amount,
-            'currency' => 'usd',
-            'order_id' => $payment->transaction_id,
-            'customer_email' => $invoice->patient->email,
-            'description' => 'Invoice #' . $invoice->invoice_number,
-            'success_url' => route('public.billing.success', ['token' => $token]),
-            'cancel_url' => route('public.billing.pay', ['token' => $token]) . '?payment_cancelled=1',
-            'is_public_payment' => true,
-        ]);
+            $stripeGateway = new \App\Services\PaymentGateway\StripeGateway();
+            $credentials = array_merge($gateway->credentials ?? [], [
+                'test_mode' => $gateway->test_mode
+            ]);
+            
+            if (empty($credentials['secret_key'])) {
+                \Log::error('Stripe credentials missing secret_key', [
+                    'gateway_id' => $gateway->id,
+                    'has_credentials' => !empty($gateway->credentials)
+                ]);
+                return back()->withErrors(['error' => 'Stripe payment gateway is not properly configured. Please contact support.']);
+            }
+            
+            $stripeGateway->initialize($credentials);
 
-        if (!$response['success']) {
-            return back()->withErrors(['error' => 'Failed to create Stripe checkout session: ' . $response['error']]);
+            $checkoutData = [
+                'amount' => $payment->amount,
+                'currency' => 'usd',
+                'order_id' => $payment->transaction_id,
+                'customer_email' => $invoice->patient->email ?? 'customer@example.com',
+                'description' => 'Invoice #' . $invoice->invoice_number,
+                'success_url' => route('public.billing.success', ['token' => $token]),
+                'cancel_url' => route('public.billing.pay', ['token' => $token]) . '?payment_cancelled=1',
+                'is_public_payment' => true,
+            ];
+
+            \Log::info('Creating Stripe checkout session', $checkoutData);
+
+            $response = $stripeGateway->createCheckoutSession($checkoutData);
+
+            \Log::info('Stripe checkout session response', [
+                'success' => $response['success'] ?? false,
+                'has_payment_url' => !empty($response['payment_url'] ?? null),
+                'error' => $response['error'] ?? null
+            ]);
+
+            if (!$response['success']) {
+                $errorMessage = $response['error'] ?? 'Unknown error occurred';
+                \Log::error('Failed to create Stripe checkout session', [
+                    'error' => $errorMessage,
+                    'response' => $response
+                ]);
+                return back()->withErrors(['error' => 'Failed to create Stripe checkout session: ' . $errorMessage]);
+            }
+
+            if (empty($response['payment_url'])) {
+                \Log::error('Stripe checkout session created but no payment URL returned', [
+                    'response' => $response
+                ]);
+                return back()->withErrors(['error' => 'Payment session created but redirect URL is missing. Please try again.']);
+            }
+
+            $payment->update([
+                'gateway_transaction_id' => $response['payment_id'] ?? null,
+                'status' => 'pending',
+                'gateway_response' => $response['gateway_response'] ?? [],
+            ]);
+
+            \Log::info('Redirecting to Stripe checkout', [
+                'payment_url' => $response['payment_url']
+            ]);
+
+            return redirect()->away($response['payment_url']);
+        } catch (\Exception $e) {
+            \Log::error('Exception in processStripePayment', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->withErrors(['error' => 'An error occurred while processing your payment: ' . $e->getMessage()]);
         }
-
-        $payment->update([
-            'gateway_transaction_id' => $response['payment_id'],
-            'status' => 'pending',
-            'gateway_response' => $response['gateway_response'] ?? [],
-        ]);
-
-        return redirect()->to($response['payment_url']);
     }
 
     /**
