@@ -209,13 +209,27 @@
         }
         
         .doctor-nav-link i {
-            color: #1a202c;
+            color: #1a202c !important;
+            display: inline-block;
         }
 
         .doctor-nav-icon {
             width: 24px;
             text-align: center;
             font-size: 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Ensure Font Awesome icons are visible */
+        .doctor-nav-link i.fas,
+        .doctor-nav-link i.far,
+        .doctor-nav-link i.fab,
+        .doctor-nav-link i.fal,
+        .doctor-nav-link i.fad {
+            font-family: "Font Awesome 6 Free", "Font Awesome 6 Pro", "Font Awesome 6 Brands" !important;
+            font-weight: 900;
         }
 
         .doctor-nav-text {
@@ -1173,7 +1187,7 @@
                     <a href="{{ $route }}" 
                        class="doctor-nav-link {{ $isActive ? 'active' : '' }}"
                        title="{{ $label }}">
-                        <i class="doctor-nav-icon {{ $icon }}"></i>
+                        <i class="{{ $icon }} doctor-nav-icon"></i>
                         <span class="doctor-nav-text">{{ $label }}</span>
                         @if(isset($item['badge']) && $item['badge'])
                             <span class="doctor-nav-badge">{{ $item['badge'] }}</span>
@@ -1198,7 +1212,7 @@
                    target="{{ $customItem->target }}"
                    class="doctor-nav-link"
                    rel="noopener noreferrer">
-                    <i class="doctor-nav-icon {{ $customItem->icon ?? 'fas fa-external-link-alt' }}"></i>
+                    <i class="{{ $customItem->icon ?? 'fas fa-external-link-alt' }} doctor-nav-icon"></i>
                     <span class="doctor-nav-text">{{ $customItem->label }}</span>
                     @if($customItem->target === '_blank')
                         <i class="fas fa-external-link-alt" style="font-size: 0.7rem; opacity: 0.7;"></i>
