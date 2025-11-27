@@ -134,16 +134,31 @@ class Invoice extends Model
      */
     public function generatePaymentToken(): string
     {
+        // Check if payment_token columns exist in database
+        if (!\Schema::hasColumn('invoices', 'payment_token')) {
+            \Log::warning('payment_token column does not exist in invoices table. Please run migration: 2025_11_27_004106_add_payment_token_to_invoices_table');
+            return ''; // Return empty string if column doesn't exist
+        }
+
         if ($this->payment_token && $this->payment_token_expires_at && $this->payment_token_expires_at->isFuture()) {
             return $this->payment_token; // Return existing valid token
         }
 
         $token = bin2hex(random_bytes(32)); // 64 character token
         
-        $this->update([
-            'payment_token' => $token,
-            'payment_token_expires_at' => now()->addDays(90), // Token valid for 90 days
-        ]);
+        try {
+            $this->update([
+                'payment_token' => $token,
+                'payment_token_expires_at' => now()->addDays(90), // Token valid for 90 days
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update payment_token', [
+                'invoice_id' => $this->id,
+                'error' => $e->getMessage()
+            ]);
+            // If update fails, return empty string
+            return '';
+        }
 
         return $token;
     }

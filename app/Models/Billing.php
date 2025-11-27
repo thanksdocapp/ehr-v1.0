@@ -243,8 +243,11 @@ class Billing extends Model
         $invoice->save();
         
         // Generate payment token for public payment access if not already set
-        if (!$invoice->payment_token) {
-            $invoice->generatePaymentToken();
+        // Only if the column exists in the database
+        if (\Schema::hasColumn('invoices', 'payment_token')) {
+            if (!$invoice->payment_token) {
+                $invoice->generatePaymentToken();
+            }
         }
         
         // If payment was made, create/update payment record
