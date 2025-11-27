@@ -53,6 +53,11 @@
         font-weight: 600;
     }
     
+    .gateway-card.border-primary {
+        border-color: #667eea !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.15);
+    }
+    
     .btn-pay {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
@@ -212,12 +217,13 @@
                         <form method="POST" action="{{ route('public.billing.select-gateway', ['token' => $token]) }}">
                             @csrf
                             <div class="row g-3">
-                                @foreach($gateways as $gateway)
+                                @foreach($gateways as $index => $gateway)
                                 <div class="col-md-6 mb-3">
-                                    <div class="gateway-card h-100">
+                                    <div class="gateway-card h-100 {{ $index === 0 ? 'border-primary' : '' }}">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="payment_gateway" 
-                                                   id="gateway_{{ $gateway->id }}" value="{{ $gateway->provider}}" required>
+                                                   id="gateway_{{ $gateway->id }}" value="{{ $gateway->provider}}" 
+                                                   {{ $index === 0 ? 'checked' : '' }} required>
                                             <label class="form-check-label w-100" for="gateway_{{ $gateway->id }}">
                                                 <strong>{{ $gateway->name }}</strong>
                                                 @if($gateway->description)
@@ -230,7 +236,7 @@
                                 @endforeach
                             </div>
                             <div class="mt-4">
-                                <button type="submit" class="btn btn-pay w-100 text-white">
+                                <button type="submit" id="pay-invoice-btn" class="btn btn-pay w-100 text-white" style="display: block !important; visibility: visible !important; opacity: 1 !important;">
                                     <i class="fas fa-credit-card me-2"></i>
                                     Continue to Payment
                                 </button>

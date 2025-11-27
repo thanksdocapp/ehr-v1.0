@@ -27,14 +27,14 @@
                         <p class="mb-0 fs-4 fw-bold text-primary">${{ number_format($invoice->outstanding_amount, 2) }}</p>
                     </div>
 
-                    <form method="POST" action="{{ route('public.billing.process-payment', ['token' => $token]) }}">
+                    <form method="POST" action="{{ route('public.billing.process-payment', ['token' => $token]) }}" id="proceed-payment-form">
                         @csrf
                         <input type="hidden" name="payment_gateway" value="{{ $selectedGateway->provider }}">
                         <input type="hidden" name="payment_method" value="card">
                         <input type="hidden" name="amount" value="{{ $invoice->outstanding_amount }}">
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
+                            <button type="submit" id="proceed-payment-btn" class="btn btn-primary btn-lg" style="display: block !important; visibility: visible !important; opacity: 1 !important;">
                                 <i class="fas fa-lock me-2"></i>
                                 Proceed to {{ $selectedGateway->name }} Secure Payment
                             </button>
@@ -44,6 +44,30 @@
                             </a>
                         </div>
                     </form>
+                    
+                    @push('scripts')
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const form = document.getElementById('proceed-payment-form');
+                            const submitBtn = document.getElementById('proceed-payment-btn');
+                            
+                            if (form && submitBtn) {
+                                form.addEventListener('submit', function(e) {
+                                    // Ensure form submits
+                                    submitBtn.disabled = false;
+                                    submitBtn.style.display = 'block';
+                                    submitBtn.style.visibility = 'visible';
+                                    submitBtn.style.opacity = '1';
+                                });
+                                
+                                // Ensure button is visible on load
+                                submitBtn.style.display = 'block';
+                                submitBtn.style.visibility = 'visible';
+                                submitBtn.style.opacity = '1';
+                            }
+                        });
+                    </script>
+                    @endpush
                 </div>
             </div>
         </div>
