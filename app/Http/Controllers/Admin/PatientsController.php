@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\QueryException;
 use Carbon\Carbon;
 
 class PatientsController extends Controller
@@ -819,6 +820,52 @@ class PatientsController extends Controller
                 $relatedRecordsMessage[] = $patient->labReports()->count() . ' lab report(s)';
             }
             
+            // Check billing records
+            $billingCount = DB::table('billings')->where('patient_id', $patient->id)->count();
+            if ($billingCount > 0) {
+                $hasRelatedRecords = true;
+                $relatedRecordsMessage[] = $billingCount . ' billing record(s)';
+            }
+            
+            // Check invoice records
+            $invoiceCount = DB::table('invoices')->where('patient_id', $patient->id)->count();
+            if ($invoiceCount > 0) {
+                $hasRelatedRecords = true;
+                $relatedRecordsMessage[] = $invoiceCount . ' invoice(s)';
+            }
+            
+            // Check patient alerts
+            if ($patient->alerts()->count() > 0) {
+                $hasRelatedRecords = true;
+                $relatedRecordsMessage[] = $patient->alerts()->count() . ' alert(s)';
+            }
+            
+            // Check patient documents
+            if ($patient->documents()->count() > 0) {
+                $hasRelatedRecords = true;
+                $relatedRecordsMessage[] = $patient->documents()->count() . ' document(s)';
+            }
+            
+            // Check patient notifications
+            if ($patient->notifications()->count() > 0) {
+                $hasRelatedRecords = true;
+                $relatedRecordsMessage[] = $patient->notifications()->count() . ' notification(s)';
+            }
+            
+            // Check email logs
+            $emailLogCount = DB::table('email_logs')->where('patient_id', $patient->id)->count();
+            if ($emailLogCount > 0) {
+                $hasRelatedRecords = true;
+                $relatedRecordsMessage[] = $emailLogCount . ' email log(s)';
+            }
+            
+            // Check email bounces
+            $emailBounceCount = DB::table('email_bounces')->where('patient_id', $patient->id)->count();
+            if ($emailBounceCount > 0) {
+                $hasRelatedRecords = true;
+                $relatedRecordsMessage[] = $emailBounceCount . ' email bounce(s)';
+            }
+            
             if ($hasRelatedRecords) {
                 $recordsList = implode(', ', $relatedRecordsMessage);
                 $message = "Cannot delete patient {$patient->full_name}. They have {$recordsList}. Please remove all associated data before deleting the patient to maintain data integrity.";
@@ -857,11 +904,42 @@ class PatientsController extends Controller
             return redirect()->route('admin.patients.index')
                              ->with('success', $message);
                              
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle database constraint violations
+            $errorCode = $e->getCode();
+            $errorMessage = $e->getMessage();
+            
+            // Check if it's a foreign key constraint violation
+            if (str_contains($errorMessage, 'foreign key constraint') || str_contains($errorMessage, '1451') || str_contains($errorMessage, 'Cannot delete')) {
+                $message = "Cannot delete patient {$patient->full_name}. There are still related records in the database that prevent deletion. Please check for billing records, invoices, or other related data.";
+            } else {
+                $message = 'Failed to delete patient: ' . $errorMessage;
+            }
+            
+            \Log::error('Patient deletion failed - Database constraint', [
+                'patient_id' => $patient->id,
+                'patient_name' => $patient->full_name,
+                'error_code' => $errorCode,
+                'error' => $errorMessage,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                    'error_type' => 'database_constraint'
+                ], 422);
+            }
+            
+            return redirect()->route('admin.patients.index')
+                             ->with('error', $message);
         } catch (\Exception $e) {
             $message = 'Failed to delete patient: ' . $e->getMessage();
             
             \Log::error('Patient deletion failed', [
                 'patient_id' => $patient->id,
+                'patient_name' => $patient->full_name,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
