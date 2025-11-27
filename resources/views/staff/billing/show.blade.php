@@ -7,26 +7,21 @@
 @section('page-title', 'Bill Details')
 @section('page-subtitle', 'View complete bill information')
 
+@push('styles')
+@include('admin.shared.modern-ui')
+@endpush
+
 @section('content')
 <div class="fade-in-up">
     <!-- Page Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-1 text-gray-800 fw-bold">Bill Details</h1>
-                    <p class="text-muted mb-0">
-                        Detailed view of the bill for {{ $billing->patient->full_name }}
-                    </p>
-                </div>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('staff.dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('staff.billing.index') }}">Billing</a></li>
-                        <li class="breadcrumb-item active">Details</li>
-                    </ol>
-                </nav>
-            </div>
+    <div class="modern-page-header">
+        <div class="modern-page-header-content">
+            <h1 class="modern-page-title">
+                <i class="fas fa-file-invoice-dollar me-2"></i>Bill Details
+            </h1>
+            <p class="modern-page-subtitle">
+                Detailed view of the bill for {{ $billing->patient->full_name }}
+            </p>
         </div>
     </div>
 
@@ -50,9 +45,9 @@
         <div class="col-lg-8">
             <!-- Billing Information -->
             <div class="doctor-card mb-4">
-                <div class="doctor-doctor-card-header">
+                <div class="doctor-card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="doctor-doctor-card-title mb-0"><i class="fas fa-file-invoice-dollar me-2"></i>Billing Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-file-invoice-dollar me-2" style="color: #1a202c;"></i>Billing Information</h5>
                         <div class="d-flex gap-2">
                             @php
                                 $statusColors = [
@@ -103,8 +98,8 @@
 
             <!-- Patient Information -->
             <div class="doctor-card mb-4">
-                <div class="doctor-doctor-card-header">
-                    <h5 class="doctor-doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Patient Information</h5>
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2" style="color: #1a202c;"></i>Patient Information</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="row mb-3">
@@ -152,8 +147,8 @@
             <!-- Doctor Information -->
             @if($billing->doctor)
                 <div class="doctor-card mb-4">
-                    <div class="doctor-doctor-card-header">
-                        <h5 class="doctor-doctor-card-title mb-0"><i class="fas fa-user-md me-2"></i>Doctor Information</h5>
+                    <div class="doctor-card-header">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2" style="color: #1a202c;"></i>Doctor Information</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="row mb-3">
@@ -176,8 +171,8 @@
             <!-- Quick Actions -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-cogs me-2"></i>Quick Actions
+                    <h6 class="doctor-card-title mb-0">
+                        <i class="fas fa-cogs me-2" style="color: #1a202c;"></i>Quick Actions
                     </h6>
                 </div>
                 <div class="doctor-card-body">
@@ -209,8 +204,8 @@
             <!-- Status Information -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-info-circle me-2"></i>Status Information
+                    <h6 class="doctor-card-title mb-0">
+                        <i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Status Information
                     </h6>
                 </div>
                 <div class="doctor-card-body">
@@ -241,22 +236,19 @@
             </div>
 
             <!-- Guidelines -->
-            <div class="card border-info">
+            <div class="doctor-card mb-4">
+                <div class="doctor-card-header">
+                    <h6 class="doctor-card-title mb-0">
+                        <i class="fas fa-lightbulb me-2" style="color: #1a202c;"></i>Billing Guidelines
+                    </h6>
+                </div>
                 <div class="doctor-card-body">
-                    <div class="d-flex">
-                        <div class="me-3">
-                            <i class="fas fa-lightbulb text-info fa-2x"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-info">Billing Guidelines</h6>
-                            <ul class="mb-0 text-muted small">
-                                <li class="mb-1">Review bill details carefully before processing payment</li>
-                                <li class="mb-1">Contact patients for overdue payments</li>
-                                <li class="mb-1">Verify insurance coverage if applicable</li>
-                                <li>Keep records of all payment transactions</li>
-                            </ul>
-                        </div>
-                    </div>
+                    <ul class="mb-0" style="color: #4a5568; font-size: 0.875rem;">
+                        <li class="mb-2"><strong style="color: #1a202c;">Review:</strong> Check bill details carefully before processing payment</li>
+                        <li class="mb-2"><strong style="color: #1a202c;">Contact:</strong> Reach out to patients for overdue payments</li>
+                        <li class="mb-2"><strong style="color: #1a202c;">Verify:</strong> Confirm insurance coverage if applicable</li>
+                        <li><strong style="color: #1a202c;">Records:</strong> Keep records of all payment transactions</li>
+                    </ul>
                 </div>
             </div>
         </div>
