@@ -385,7 +385,7 @@ class HospitalEmailNotificationService
                 }
             }
             
-            // Final validation - ensure payment URL is public link, not patient portal
+            // Final validation - ensure payment URL is not empty and not patient portal
             if (empty($paymentUrl)) {
                 \Log::error('Payment URL is empty - token generation may have failed', [
                     'billing_id' => $billing->id,
@@ -396,6 +396,8 @@ class HospitalEmailNotificationService
                 throw new \Exception('Failed to generate payment URL. Payment token may not be configured. Please check invoice payment_token column exists.');
             }
             
+            // Only reject if it's explicitly a patient portal URL
+            // Accept any URL that is NOT a patient portal URL (including /pay/ URLs)
             if (strpos($paymentUrl, '/patient/billing') !== false) {
                 \Log::error('Payment URL is patient portal link, not public link', [
                     'billing_id' => $billing->id,
@@ -404,24 +406,12 @@ class HospitalEmailNotificationService
                 throw new \Exception('Payment URL must be a public payment link, not patient portal. Current URL: ' . $paymentUrl);
             }
             
-            // Check if URL contains the public payment route pattern (/pay/ or contains the route name)
-            // The route is: /pay/{token} with name 'public.billing.pay'
-            $isPublicUrl = strpos($paymentUrl, '/pay/') !== false || 
-                          strpos($paymentUrl, 'public.billing.pay') !== false ||
-                          strpos($paymentUrl, route('public.billing.pay', ['token' => 'test'])) !== false;
-            
-            if (!$isPublicUrl) {
-                \Log::error('Payment URL does not match expected public payment route pattern', [
-                    'billing_id' => $billing->id,
-                    'payment_url' => $paymentUrl,
-                    'expected_pattern' => '/pay/{token}',
-                    'route_name' => 'public.billing.pay'
-                ]);
-                // Don't throw here - just log warning, as the URL might still be valid
-                \Log::warning('Payment URL validation warning - URL may still be valid', [
-                    'payment_url' => $paymentUrl
-                ]);
-            }
+            // Log successful URL generation for debugging
+            \Log::info('Payment URL validated successfully', [
+                'billing_id' => $billing->id,
+                'payment_url' => $paymentUrl,
+                'is_public_url' => strpos($paymentUrl, '/pay/') !== false || strpos($paymentUrl, '/public/billing') !== false
+            ]);
 
             // Get doctor and department information
             $doctorName = 'N/A';
