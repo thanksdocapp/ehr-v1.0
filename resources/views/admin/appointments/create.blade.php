@@ -178,12 +178,16 @@
                             }
                         }
                         
-                        // Update meeting link placeholder based on selected platform
-                        function updateMeetingLinkPlaceholder() {
+                        // Update meeting link placeholder based on selected platform - make it globally accessible
+                        window.updateMeetingLinkPlaceholder = function() {
                             var platformSelect = document.getElementById('meeting_platform');
                             var meetingLinkInput = document.getElementById('meeting_link');
                             
-                            if (!platformSelect || !meetingLinkInput) return;
+                            if (!platformSelect || !meetingLinkInput) {
+                                // Retry if elements not ready
+                                setTimeout(window.updateMeetingLinkPlaceholder, 100);
+                                return;
+                            }
                             
                             var platform = platformSelect.value;
                             var placeholders = {
@@ -195,11 +199,18 @@
                                 '': 'Enter meeting link based on selected platform'
                             };
                             
-                            meetingLinkInput.setAttribute('placeholder', placeholders[platform] || placeholders['']);
-                        }
+                            var placeholder = placeholders[platform] || placeholders[''];
+                            meetingLinkInput.setAttribute('placeholder', placeholder);
+                            meetingLinkInput.placeholder = placeholder; // Also set property directly
+                            
+                            // Also update via jQuery if available
+                            if (typeof $ !== 'undefined' && $('#meeting_link').length) {
+                                $('#meeting_link').attr('placeholder', placeholder);
+                            }
+                        };
                         
-                        // Initialize on page load
-                        (function() {
+                        // Initialize on page load - wait for DOM
+                        function initializeMeetingFields() {
                             var checkbox = document.getElementById('is_online');
                             if (checkbox) {
                                 // Check initial state
@@ -221,14 +232,34 @@
                             // Setup placeholder update for meeting platform
                             var platformSelect = document.getElementById('meeting_platform');
                             if (platformSelect) {
-                                platformSelect.addEventListener('change', updateMeetingLinkPlaceholder);
+                                // Remove any existing listeners to avoid duplicates
+                                var newSelect = platformSelect.cloneNode(true);
+                                platformSelect.parentNode.replaceChild(newSelect, platformSelect);
+                                
+                                // Add fresh event listener
+                                newSelect.addEventListener('change', function() {
+                                    window.updateMeetingLinkPlaceholder();
+                                });
+                                
+                                // Also add onchange attribute as backup
+                                newSelect.setAttribute('onchange', 'window.updateMeetingLinkPlaceholder();');
                                 
                                 // Update placeholder on page load if platform is already selected
                                 setTimeout(function() {
-                                    updateMeetingLinkPlaceholder();
-                                }, 100);
+                                    window.updateMeetingLinkPlaceholder();
+                                }, 200);
+                            } else {
+                                // Retry if element not ready
+                                setTimeout(initializeMeetingFields, 100);
                             }
-                        })();
+                        }
+                        
+                        // Wait for DOM to be ready
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', initializeMeetingFields);
+                        } else {
+                            initializeMeetingFields();
+                        }
                         </script>
                         
                         <div class="row" id="meeting_link_row" style="{{ old('is_online') ? '' : 'display: none;' }}">
@@ -820,24 +851,35 @@ $(document).ready(function() {
     toggleMeetingLink();
     
     // Update meeting link placeholder based on selected platform
-    $('#meeting_platform').on('change', function() {
-        const platform = $(this).val();
-        const meetingLinkInput = $('#meeting_link');
-        const placeholders = {
-            'zoom': 'https://zoom.us/j/xxxxxxxxxx',
-            'google_meet': 'https://meet.google.com/xxx-xxxx-xxx',
-            'teams': 'https://teams.microsoft.com/l/meetup-join/xxx',
-            'whereby': 'https://subdomain.whereby.com/room-name',
-            'custom': 'https://your-platform.com/meeting-link',
-            '': 'Enter meeting link based on selected platform'
-        };
-        meetingLinkInput.attr('placeholder', placeholders[platform] || placeholders['']);
+    $('#meeting_platform').off('change.placeholder').on('change.placeholder', function() {
+        // Call the global function if available, otherwise use jQuery
+        if (typeof window.updateMeetingLinkPlaceholder === 'function') {
+            window.updateMeetingLinkPlaceholder();
+        } else {
+            const platform = $(this).val();
+            const meetingLinkInput = $('#meeting_link');
+            const placeholders = {
+                'zoom': 'https://zoom.us/j/xxxxxxxxxx',
+                'google_meet': 'https://meet.google.com/xxx-xxxx-xxx',
+                'teams': 'https://teams.microsoft.com/l/meetup-join/xxx',
+                'whereby': 'https://subdomain.whereby.com/room-name',
+                'custom': 'https://your-platform.com/meeting-link',
+                '': 'Enter meeting link based on selected platform'
+            };
+            meetingLinkInput.attr('placeholder', placeholders[platform] || placeholders['']);
+        }
     });
     
     // Trigger change on page load if platform is already selected
-    if ($('#meeting_platform').val()) {
-        $('#meeting_platform').trigger('change');
-    }
+    setTimeout(function() {
+        if ($('#meeting_platform').val()) {
+            $('#meeting_platform').trigger('change.placeholder');
+        }
+        // Also call the global function
+        if (typeof window.updateMeetingLinkPlaceholder === 'function') {
+            window.updateMeetingLinkPlaceholder();
+        }
+    }, 300);
 
     // Copy meeting link to clipboard
     $('#copy_meeting_link').click(function() {
