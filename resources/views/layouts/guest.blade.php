@@ -40,10 +40,8 @@
                 </a>
             </div>
 
-            <div class="card shadow" style="width: 100%; max-width: 400px;">
-                <div class="card-body p-4">
-                    {{ $slot }}
-                </div>
+            <div class="w-100" style="max-width: 900px;">
+                @yield('content')
             </div>
         </div>
     </body>
