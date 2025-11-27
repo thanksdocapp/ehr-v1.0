@@ -53,13 +53,51 @@ class EmailNotificationService
                 throw new Exception("Email template '{$templateName}' not found. Please create it in Admin > Email Templates.");
             }
             
+            // Validate template has required fields
+            if (empty($template->subject)) {
+                throw new Exception("Email template '{$templateName}' has an empty subject. Please update the template.");
+            }
+            
+            if (empty($template->body)) {
+                throw new Exception("Email template '{$templateName}' has an empty body. Please update the template.");
+            }
+
+            // Parse subject and body with error handling
+            try {
+                $parsedSubject = $this->parseContent($template->subject, $variables);
+                $parsedBody = $this->parseContent($template->body, $variables);
+                
+                // Validate parsed content is not empty
+                if (empty(trim($parsedSubject))) {
+                    Log::warning('Parsed email subject is empty', [
+                        'template_id' => $template->id,
+                        'template_name' => $templateName,
+                        'original_subject' => $template->subject
+                    ]);
+                }
+                
+                if (empty(trim(strip_tags($parsedBody)))) {
+                    Log::warning('Parsed email body is empty', [
+                        'template_id' => $template->id,
+                        'template_name' => $templateName
+                    ]);
+                }
+            } catch (\Exception $parseException) {
+                Log::error('Failed to parse email template', [
+                    'template_id' => $template->id,
+                    'template_name' => $templateName,
+                    'error' => $parseException->getMessage()
+                ]);
+                throw new Exception("Failed to parse email template '{$templateName}': " . $parseException->getMessage());
+            }
+
             // Create email log entry
             $log = EmailLog::create([
                 'email_template_id' => $template->id,
                 'recipient_email' => array_key_first($to),
                 'recipient_name' => array_values($to)[0] ?? null,
-                'subject' => $this->parseContent($template->subject, $variables),
-                'body' => $this->parseContent($template->body, $variables),
+                'subject' => $parsedSubject,
+                'body' => $parsedBody,
                 'variables' => $variables,
                 'cc_emails' => $options['cc'] ?? null,
                 'bcc_emails' => $options['bcc'] ?? null,
