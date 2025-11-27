@@ -437,10 +437,26 @@ class BillingsController extends Controller
             $result = $this->emailService->sendBillingNotification($billing);
             
             if ($result) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Billing notification sent to patient successfully!'
-                ]);
+                // Check actual email status
+                $result->refresh();
+                $emailStatus = $result->status ?? 'unknown';
+                
+                if ($emailStatus === 'sent') {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Billing notification sent to patient successfully! Please check spam folder if email is not received.',
+                        'email_log_id' => $result->id,
+                        'status' => $emailStatus
+                    ]);
+                } else {
+                    $errorMsg = $result->error_message ?? 'Email sending failed. Status: ' . $emailStatus;
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Email sending failed: ' . $errorMsg . '. Please check SMTP configuration in Admin > Email Settings.',
+                        'email_log_id' => $result->id,
+                        'status' => $emailStatus
+                    ], 500);
+                }
             } else {
                 // Get the last error from logs to provide more specific message
                 $errorMessage = 'Failed to send email. ';

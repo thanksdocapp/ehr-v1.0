@@ -365,15 +365,36 @@ class HospitalEmailNotificationService
             );
 
             if ($result) {
-                \Log::info('Billing notification email sent successfully', [
+                // Check if email was actually sent or failed
+                $result->refresh();
+                $emailStatus = $result->status;
+                
+                if ($emailStatus === 'sent') {
+                    \Log::info('Billing notification email sent successfully', [
+                        'billing_id' => $billing->id,
+                        'patient_email' => $patient->email,
+                        'email_log_id' => $result->id,
+                        'status' => $emailStatus,
+                        'sent_at' => $result->sent_at
+                    ]);
+                } else {
+                    \Log::warning('Billing notification email status is not "sent"', [
+                        'billing_id' => $billing->id,
+                        'patient_email' => $patient->email,
+                        'email_log_id' => $result->id,
+                        'status' => $emailStatus,
+                        'error_message' => $result->error_message
+                    ]);
+                }
+            } else {
+                \Log::error('Billing notification email failed to send - sendTemplateEmail returned null', [
                     'billing_id' => $billing->id,
                     'patient_email' => $patient->email,
-                    'email_log_id' => $result->id ?? null
-                ]);
-            } else {
-                \Log::error('Billing notification email failed to send', [
-                    'billing_id' => $billing->id,
-                    'patient_email' => $patient->email
+                    'possible_causes' => [
+                        'Email template not found',
+                        'SMTP configuration error',
+                        'Exception during email sending'
+                    ]
                 ]);
             }
 

@@ -119,6 +119,16 @@ class EmailNotificationService
             Config::set('queue.default', 'sync');
             
             try {
+                // Log email attempt
+                Log::info('Attempting to send email', [
+                    'log_id' => $log->id,
+                    'recipient' => $to,
+                    'subject' => $subject,
+                    'from_email' => $fromEmail ?? config('mail.from.address'),
+                    'smtp_host' => config('mail.mailers.smtp.host'),
+                    'smtp_port' => config('mail.mailers.smtp.port')
+                ]);
+                
                 // Use Mail::send() but ensure it's not queued
                 // Extract all variables to avoid closure serialization issues
                 Mail::send([], [], function ($message) use ($to, $toName, $subject, $body, $ccEmails, $bccEmails, $attachments, $fromEmail, $fromName) {
@@ -172,10 +182,11 @@ class EmailNotificationService
                     'sent_at' => now()
                 ]);
                 
-                Log::info('Email sent successfully', [
+                Log::info('Email sent successfully (Mail::send completed)', [
                     'log_id' => $log->id,
                     'recipient' => $log->recipient_email,
-                    'template' => $log->template?->name
+                    'template' => $log->template?->name,
+                    'note' => 'Email marked as sent. Check spam folder if not received. Verify SMTP settings if emails consistently not received.'
                 ]);
 
                 // Update template last used timestamp
