@@ -12,6 +12,8 @@
     <li class="breadcrumb-item active">Edit {{ $paymentGateway->display_name }}</li>
 @endsection
 
+@include('admin.shared.modern-ui')
+
 @push('styles')
     <style>
         .form-section {
@@ -30,10 +32,16 @@
         }
 
         .form-section-header {
-            background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
-            color: white;
+            background: #f8f9fc;
+            color: #1a202c;
             padding: 1.5rem 2rem;
             border-radius: 12px 12px 0 0;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .form-section-header h4,
+        .form-section-header i {
+            color: #1a202c !important;
         }
 
         .form-section-body {
@@ -72,9 +80,10 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
+            background: #1a202c;
             border: none;
-            box-shadow: 0 4px 15px rgba(28, 200, 138, 0.3);
+            color: white;
+            box-shadow: 0 2px 8px rgba(26, 32, 44, 0.15);
         }
 
         .btn-primary:hover {
@@ -126,13 +135,14 @@
 
 @section('content')
     <div class="container-fluid">
-        <div class="page-title mb-4">
-            <h1>
-                <i class="fas fa-edit me-2 text-primary"></i>Edit Gateway: {{ $paymentGateway->display_name }}
-            </h1>
-            <p class="page-subtitle text-muted">
-                Update payment gateway configuration and settings
-            </p>
+        <div class="modern-page-header">
+            <div class="modern-page-header-content">
+                <h1 class="modern-page-title">
+                    <i class="fas fa-edit" style="color: #1a202c;"></i>
+                    Edit Gateway: {{ $paymentGateway->display_name }}
+                </h1>
+                <p class="modern-page-subtitle">Update payment gateway configuration and settings</p>
+            </div>
         </div>
 
         <div class="row">
@@ -145,9 +155,9 @@
                     <div class="form-section">
                         <div class="form-section-header">
                             <h4 class="mb-0">
-                                <i class="fas fa-info-circle me-2"></i>Gateway Information
+                                <i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Gateway Information
                             </h4>
-                            <small class="opacity-75">Basic details of the payment gateway</small>
+                            <small style="color: #4a5568;">Basic details of the payment gateway</small>
                         </div>
                         <div class="form-section-body">
                             <div class="row">
@@ -272,9 +282,9 @@
                     <div class="form-section">
                         <div class="form-section-header">
                             <h4 class="mb-0">
-                                <i class="fas fa-key me-2"></i>API Credentials
+                                <i class="fas fa-key me-2" style="color: #1a202c;"></i>API Credentials
                             </h4>
-                            <small class="opacity-75">Secure credentials for gateway integration</small>
+                            <small style="color: #4a5568;">Secure credentials for gateway integration</small>
                         </div>
                         <div class="form-section-body">
                             <div id="credentials-container">
@@ -410,9 +420,9 @@
                     <div class="form-section">
                         <div class="form-section-header">
                             <h4 class="mb-0">
-                                <i class="fas fa-link me-2"></i>Webhook Configuration
+                                <i class="fas fa-link me-2" style="color: #1a202c;"></i>Webhook Configuration
                             </h4>
-                            <small class="opacity-75">Setup webhook URLs in your {{ ucfirst($paymentGateway->provider) }} dashboard</small>
+                            <small style="color: #4a5568;">Setup webhook URLs in your {{ ucfirst($paymentGateway->provider) }} dashboard</small>
                         </div>
                         <div class="form-section-body">
                             <div class="info-card bg-light">

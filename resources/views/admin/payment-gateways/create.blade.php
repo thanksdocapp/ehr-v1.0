@@ -12,6 +12,8 @@
     <li class="breadcrumb-item active">Create New Gateway</li>
 @endsection
 
+@include('admin.shared.modern-ui')
+
 @push('styles')
     <style>
         .form-section {
@@ -23,10 +25,16 @@
         }
 
         .form-section-header {
-            background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
-            color: white;
+            background: #f8f9fc;
+            color: #1a202c;
             padding: 1.5rem 2rem;
             border-radius: 12px 12px 0 0;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .form-section-header h4,
+        .form-section-header i {
+            color: #1a202c !important;
         }
 
         .form-section-body {
@@ -65,9 +73,10 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
+            background: #1a202c;
             border: none;
-            box-shadow: 0 4px 15px rgba(28, 200, 138, 0.3);
+            color: white;
+            box-shadow: 0 2px 8px rgba(26, 32, 44, 0.15);
         }
 
         .btn-primary:hover {
@@ -119,13 +128,14 @@
 
 @section('content')
     <div class="container-fluid">
-        <div class="page-title mb-4">
-            <h1>
-                <i class="fas fa-credit-card me-2 text-primary"></i>Create New Payment Gateway
-            </h1>
-            <p class="page-subtitle text-muted">
-                Configure a new payment gateway for processing transactions
-            </p>
+        <div class="modern-page-header">
+            <div class="modern-page-header-content">
+                <h1 class="modern-page-title">
+                    <i class="fas fa-credit-card" style="color: #1a202c;"></i>
+                    Create New Payment Gateway
+                </h1>
+                <p class="modern-page-subtitle">Configure a new payment gateway for processing transactions</p>
+            </div>
         </div>
 
         <div class="row">
@@ -137,9 +147,9 @@
                     <div class="form-section">
                         <div class="form-section-header">
                             <h4 class="mb-0">
-                                <i class="fas fa-info-circle me-2"></i>Gateway Information
+                                <i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Gateway Information
                             </h4>
-                            <small class="opacity-75">Basic details of the payment gateway</small>
+                            <small style="color: #4a5568;">Basic details of the payment gateway</small>
                         </div>
                         <div class="form-section-body">
                             <div class="row">
@@ -268,9 +278,9 @@
                     <div class="form-section" id="credentials-section" style="display: none;">
                         <div class="form-section-header">
                             <h4 class="mb-0">
-                                <i class="fas fa-key me-2"></i>API Credentials
+                                <i class="fas fa-key me-2" style="color: #1a202c;"></i>API Credentials
                             </h4>
-                            <small class="opacity-75">Secure credentials for gateway integration</small>
+                            <small style="color: #4a5568;">Secure credentials for gateway integration</small>
                         </div>
                         <div class="form-section-body">
                             <div id="credentials-container">
@@ -283,9 +293,9 @@
                     <div class="form-section" id="webhook-section" style="display: none;">
                         <div class="form-section-header">
                             <h4 class="mb-0">
-                                <i class="fas fa-link me-2"></i>Webhook Configuration
+                                <i class="fas fa-link me-2" style="color: #1a202c;"></i>Webhook Configuration
                             </h4>
-                            <small class="opacity-75">Setup webhooks for real-time payment notifications</small>
+                            <small style="color: #4a5568;">Setup webhooks for real-time payment notifications</small>
                         </div>
                         <div class="form-section-body">
                             <div class="alert alert-info">

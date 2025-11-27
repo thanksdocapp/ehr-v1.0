@@ -8,6 +8,8 @@
     <li class="breadcrumb-item active">{{ $paymentGateway->display_name }}</li>
 @endsection
 
+@include('admin.shared.modern-ui')
+
 @push('styles')
 <style>
 .record-section {
@@ -20,9 +22,15 @@
 }
 
 .record-section-header {
-    background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
-    color: white;
+    background: #f8f9fc;
+    color: #1a202c;
     padding: 1.5rem 2rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.record-section-header h4,
+.record-section-header i {
+    color: #1a202c !important;
 }
 
 .record-section-body {
@@ -74,10 +82,10 @@
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
+    background: #1a202c;
     border: none;
     color: white;
-    box-shadow: 0 4px 15px rgba(28, 200, 138, 0.3);
+    box-shadow: 0 2px 8px rgba(26, 32, 44, 0.15);
 }
 
 .btn-primary:hover {
@@ -159,9 +167,14 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="page-title mb-4">
-        <h1><i class="fas fa-credit-card me-2 text-primary"></i>Payment Gateway Details</h1>
-        <p class="page-subtitle text-muted">Comprehensive gateway configuration and status information</p>
+    <div class="modern-page-header">
+        <div class="modern-page-header-content">
+            <h1 class="modern-page-title">
+                <i class="fas fa-credit-card" style="color: #1a202c;"></i>
+                Payment Gateway Details
+            </h1>
+            <p class="modern-page-subtitle">Comprehensive gateway configuration and status information</p>
+        </div>
     </div>
 
     <div class="row">
@@ -169,8 +182,8 @@
             <!-- Gateway Information -->
             <div class="record-section">
                 <div class="record-section-header">
-                    <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Gateway Information</h4>
-                    <small class="opacity-75">Basic gateway details and configuration</small>
+                    <h4 class="mb-0"><i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Gateway Information</h4>
+                    <small style="color: #4a5568;">Basic gateway details and configuration</small>
                 </div>
                 <div class="record-section-body">
                     <div class="info-row">
@@ -224,8 +237,8 @@
             <!-- Transaction Fees -->
             <div class="record-section">
                 <div class="record-section-header">
-                    <h4 class="mb-0"><i class="fas fa-percentage me-2"></i>Transaction Fees</h4>
-                    <small class="opacity-75">Fee structure and calculation details</small>
+                    <h4 class="mb-0"><i class="fas fa-percentage me-2" style="color: #1a202c;"></i>Transaction Fees</h4>
+                    <small style="color: #4a5568;">Fee structure and calculation details</small>
                 </div>
                 <div class="record-section-body">
                     <div class="info-row">
@@ -276,8 +289,8 @@
             <!-- Technical Information -->
             <div class="record-section">
                 <div class="record-section-header">
-                    <h4 class="mb-0"><i class="fas fa-cog me-2"></i>Technical Information</h4>
-                    <small class="opacity-75">System details and timestamps</small>
+                    <h4 class="mb-0"><i class="fas fa-cog me-2" style="color: #1a202c;"></i>Technical Information</h4>
+                    <small style="color: #4a5568;">System details and timestamps</small>
                 </div>
                 <div class="record-section-body">
                     <div class="info-row">

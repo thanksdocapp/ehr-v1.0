@@ -7,6 +7,8 @@
     <li class="breadcrumb-item active">Payment Gateways</li>
 @endsection
 
+@include('admin.shared.modern-ui')
+
 @push('styles')
 <style>
 .table-actions .btn {
@@ -23,9 +25,14 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="page-title mb-4">
-        <h1><i class="fas fa-credit-card me-2 text-primary"></i>Payment Gateways</h1>
-        <p class="page-subtitle text-muted">Manage and configure payment gateways for your hospital's billing system</p>
+    <div class="modern-page-header">
+        <div class="modern-page-header-content">
+            <h1 class="modern-page-title">
+                <i class="fas fa-credit-card" style="color: #1a202c;"></i>
+                Payment Gateways
+            </h1>
+            <p class="modern-page-subtitle">Manage and configure payment gateways for your hospital's billing system</p>
+        </div>
     </div>
 
     <!-- Quick Stats -->
@@ -37,8 +44,8 @@
                         <div class="stat-number text-primary" style="font-size: 1.75rem; font-weight: 600;">{{ $gateways->count() ?? 0 }}</div>
                         <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Total Gateways</div>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-credit-card text-white"></i>
+                    <div class="stat-icon" style="background: #f8f9fc; border: 1px solid #e2e8f0; width: 48px; height: 48px; font-size: 1.25rem;">
+                        <i class="fas fa-credit-card" style="color: #1a202c;"></i>
                     </div>
                 </div>
             </div>
@@ -50,8 +57,8 @@
                         <div class="stat-number text-success" style="font-size: 1.75rem; font-weight: 600;">{{ $gateways->where('is_active', true)->count() ?? 0 }}</div>
                         <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Active Gateways</div>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-check-circle text-white"></i>
+                    <div class="stat-icon" style="background: #f8f9fc; border: 1px solid #e2e8f0; width: 48px; height: 48px; font-size: 1.25rem;">
+                        <i class="fas fa-check-circle" style="color: #1a202c;"></i>
                     </div>
                 </div>
             </div>
@@ -63,8 +70,8 @@
                         <div class="stat-number text-warning" style="font-size: 1.75rem; font-weight: 600;">{{ $gateways->where('is_active', false)->count() ?? 0 }}</div>
                         <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Inactive Gateways</div>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-times-circle text-white"></i>
+                    <div class="stat-icon" style="background: #f8f9fc; border: 1px solid #e2e8f0; width: 48px; height: 48px; font-size: 1.25rem;">
+                        <i class="fas fa-times-circle" style="color: #1a202c;"></i>
                     </div>
                 </div>
             </div>
@@ -76,8 +83,8 @@
                         <div class="stat-number text-info" style="font-size: 1.75rem; font-weight: 600;">{{ $gateways->where('is_default', true)->count() ?? 0 }}</div>
                         <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem;">Default Gateway</div>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2); width: 48px; height: 48px; font-size: 1.25rem;">
-                        <i class="fas fa-star text-white"></i>
+                    <div class="stat-icon" style="background: #f8f9fc; border: 1px solid #e2e8f0; width: 48px; height: 48px; font-size: 1.25rem;">
+                        <i class="fas fa-star" style="color: #1a202c;"></i>
                     </div>
                 </div>
             </div>
