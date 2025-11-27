@@ -355,109 +355,55 @@ class HospitalEmailNotificationService
                 'payment_url' => $paymentUrl
             ]);
 
-            // Try template-based email first, fallback to direct email if template fails
-            $result = null;
+            // Use direct email method (same as GP emails which work successfully)
+            // This bypasses templates and sends directly, which is more reliable
+            \Log::info('Sending billing notification via direct email method (same as GP emails)', [
+                'billing_id' => $billing->id,
+                'patient_email' => $patient->email
+            ]);
             
-            try {
-                // Ensure email template exists, create if it doesn't
-                $this->ensureBillingNotificationTemplate();
+            $subject = "New Invoice from {$variables['hospital_name']} - {$variables['bill_number']}";
+            $body = $this->formatBillingEmailBody($variables);
+            
+            // Create email log entry directly (exactly like GP email method)
+            $log = \App\Models\EmailLog::create([
+                'recipient_email' => $patient->email,
+                'recipient_name' => $patient->full_name,
+                'subject' => $subject,
+                'body' => $body,
+                'variables' => $variables,
+                'patient_id' => $patient->id,
+                'metadata' => [
+                    'email_type' => 'billing_notification',
+                    'billing_id' => $billing->id,
+                ],
+                'status' => 'pending'
+            ]);
 
-                $result = $this->emailService->sendTemplateEmail(
-                    'billing_notification',
-                    [$patient->email => $patient->full_name],
-                    $variables
-                );
-
-                if ($result) {
-                    // Check if email was actually sent or failed
-                    $result->refresh();
-                    $emailStatus = $result->status;
-                    
-                    if ($emailStatus === 'sent') {
-                        \Log::info('Billing notification email sent successfully via template', [
-                            'billing_id' => $billing->id,
-                            'patient_email' => $patient->email,
-                            'email_log_id' => $result->id,
-                            'status' => $emailStatus,
-                            'sent_at' => $result->sent_at
-                        ]);
-                        return $result;
-                    } else {
-                        \Log::warning('Billing notification email template method failed, trying direct send', [
-                            'billing_id' => $billing->id,
-                            'patient_email' => $patient->email,
-                            'email_log_id' => $result->id,
-                            'status' => $emailStatus,
-                            'error_message' => $result->error_message
-                        ]);
-                        // Fall through to direct email method
-                    }
-                }
-            } catch (\Exception $templateException) {
-                \Log::warning('Billing notification template email failed, falling back to direct send', [
+            // Send email immediately (same method as GP email - this works!)
+            $this->emailService->sendImmediateEmail($log);
+            
+            // Refresh to get updated status
+            $log->refresh();
+            
+            if ($log->status === 'sent') {
+                \Log::info('Billing notification email sent successfully via direct method', [
                     'billing_id' => $billing->id,
                     'patient_email' => $patient->email,
-                    'error' => $templateException->getMessage()
+                    'email_log_id' => $log->id,
+                    'sent_at' => $log->sent_at
                 ]);
-                // Fall through to direct email method
-            }
-
-            // Fallback: Send direct email (similar to GP email method)
-            try {
-                \Log::info('Sending billing notification via direct email method', [
-                    'billing_id' => $billing->id,
-                    'patient_email' => $patient->email
-                ]);
-                
-                $subject = "New Invoice from {$variables['hospital_name']} - {$variables['bill_number']}";
-                $body = $this->formatBillingEmailBody($variables);
-                
-                // Create email log entry directly (like GP email)
-                $log = \App\Models\EmailLog::create([
-                    'recipient_email' => $patient->email,
-                    'recipient_name' => $patient->full_name,
-                    'subject' => $subject,
-                    'body' => $body,
-                    'variables' => $variables,
-                    'patient_id' => $patient->id,
-                    'metadata' => [
-                        'email_type' => 'billing_notification',
-                        'billing_id' => $billing->id,
-                    ],
-                    'status' => 'pending'
-                ]);
-
-                // Send email immediately (same method as GP email)
-                $this->emailService->sendImmediateEmail($log);
-                
-                $log->refresh();
-                
-                if ($log->status === 'sent') {
-                    \Log::info('Billing notification email sent successfully via direct method', [
-                        'billing_id' => $billing->id,
-                        'patient_email' => $patient->email,
-                        'email_log_id' => $log->id
-                    ]);
-                } else {
-                    \Log::error('Billing notification direct email also failed', [
-                        'billing_id' => $billing->id,
-                        'patient_email' => $patient->email,
-                        'email_log_id' => $log->id,
-                        'status' => $log->status,
-                        'error_message' => $log->error_message
-                    ]);
-                }
-                
-                return $log;
-            } catch (\Exception $directException) {
-                \Log::error('Both template and direct billing email methods failed', [
+            } else {
+                \Log::error('Billing notification direct email failed', [
                     'billing_id' => $billing->id,
                     'patient_email' => $patient->email,
-                    'template_error' => $templateException->getMessage() ?? 'N/A',
-                    'direct_error' => $directException->getMessage()
+                    'email_log_id' => $log->id,
+                    'status' => $log->status,
+                    'error_message' => $log->error_message
                 ]);
-                throw $directException;
             }
+            
+            return $log;
         } catch (\Exception $e) {
             \Log::error('Exception in sendBillingNotification', [
                 'billing_id' => $billing->id ?? null,
