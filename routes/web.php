@@ -205,6 +205,8 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/patients/{patient}/download-document/{type}', [\App\Http\Controllers\Staff\PatientsController::class, 'downloadDocument'])->name('patients.download-document');
         Route::get('/patients/{patient}/edit', [\App\Http\Controllers\Staff\PatientsController::class, 'edit'])->name('patients.edit');
         Route::put('/patients/{patient}', [\App\Http\Controllers\Staff\PatientsController::class, 'update'])->name('patients.update');
+        Route::get('/patients/{patient}/gp-email', [\App\Http\Controllers\Staff\PatientsController::class, 'showGpEmailForm'])->name('patients.gp-email');
+        Route::post('/patients/{patient}/gp-email', [\App\Http\Controllers\Staff\PatientsController::class, 'sendGpEmail'])->name('patients.gp-email.send');
         // Note: Staff cannot delete patients
         
         // Patient Alerts - All Alerts List

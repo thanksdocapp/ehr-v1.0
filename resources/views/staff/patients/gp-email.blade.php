@@ -1,4 +1,4 @@
-@extends('layouts.staff')
+@extends(auth()->user()->role === 'doctor' ? 'layouts.doctor' : 'layouts.staff')
 
 @include('admin.shared.modern-ui')
 
