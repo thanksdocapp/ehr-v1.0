@@ -1,8 +1,28 @@
 @php
     // Get the logo settings from the database
-    $lightLogo = app('settings')->get('site_logo');
-    $darkLogo = app('settings')->get('site_logo_dark');
-    $siteName = getAppName();
+    // Try multiple sources and keys for compatibility
+    $lightLogo = null;
+    $darkLogo = null;
+    
+    try {
+        // Try SiteSetting first (newer system)
+        if (class_exists('\App\Models\SiteSetting')) {
+            $lightLogo = \App\Models\SiteSetting::get('site_logo') ?: \App\Models\SiteSetting::get('logo_light');
+            $darkLogo = \App\Models\SiteSetting::get('site_logo_dark') ?: \App\Models\SiteSetting::get('logo_dark');
+        }
+        
+        // Fallback to Setting model if SiteSetting didn't work
+        if (!$lightLogo && class_exists('\App\Models\Setting')) {
+            $lightLogo = \App\Models\Setting::get('logo_light') ?: \App\Models\Setting::get('site_logo');
+            $darkLogo = \App\Models\Setting::get('logo_dark') ?: \App\Models\Setting::get('site_logo_dark');
+        }
+    } catch (\Exception $e) {
+        // Silently fail - will use SVG fallback
+        $lightLogo = null;
+        $darkLogo = null;
+    }
+    
+    $siteName = function_exists('getAppName') ? getAppName() : config('app.name', 'ThanksDoc EHR');
     
     // Determine which logo to use (you can add theme detection logic here later)
     $logoPath = $lightLogo ?: $darkLogo;
