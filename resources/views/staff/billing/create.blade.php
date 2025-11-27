@@ -4,6 +4,10 @@
 @section('page-title', 'Create New Bill')
 @section('page-subtitle', 'Create a new bill for patient services')
 
+@push('styles')
+@include('admin.shared.modern-ui')
+@endpush
+
 @section('breadcrumb')
     <li class="breadcrumb-item">
         <a href="{{ contextRoute('dashboard') }}">Dashboard</a>
@@ -16,13 +20,15 @@
 
 @section('content')
     <div class="fade-in-up">
-        <div class="page-title mb-4">
-            <h1>
-                <i class="fas fa-receipt me-2 text-primary"></i>Create New Bill
-            </h1>
-            <p class="page-subtitle text-muted">
-                Generate a billing record for a patient's medical services
-            </p>
+        <div class="modern-page-header">
+            <div class="modern-page-header-content">
+                <h1 class="modern-page-title">
+                    <i class="fas fa-receipt me-2"></i>Create New Bill
+                </h1>
+                <p class="modern-page-subtitle">
+                    Generate a billing record for a patient's medical services
+                </p>
+            </div>
         </div>
 
         <div class="row">
@@ -31,9 +37,9 @@
                     @csrf
 
                     <!-- Billing Information -->
-                    <div class="card mb-4">
+                    <div class="doctor-card mb-4">
                         <div class="doctor-card-header">
-                            <h5 class="mb-0">
+                            <h5 class="doctor-card-title mb-0">
                                 <i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Billing Information
                             </h5>
                         </div>
@@ -218,8 +224,8 @@
             <div class="col-lg-4">
                 <!-- Actions -->
                 <div class="doctor-card mb-4">
-                    <div class="doctor-doctor-card-header">
-                        <h5 class="doctor-doctor-card-title mb-0"><i class="fas fa-cogs me-2"></i>Actions</h5>
+                    <div class="doctor-card-header">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-cogs me-2" style="color: #1a202c;"></i>Actions</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="d-grid gap-2">
@@ -236,8 +242,8 @@
                 <!-- Staff Information -->
                 @if(auth()->user())
                     <div class="doctor-card mb-4">
-                        <div class="doctor-doctor-card-header">
-                            <h5 class="doctor-doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Staff Information</h5>
+                        <div class="doctor-card-header">
+                            <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2" style="color: #1a202c;"></i>Staff Information</h5>
                         </div>
                         <div class="doctor-card-body">
                             <div class="d-flex align-items-center mb-3">
@@ -257,21 +263,24 @@
                 @endif
 
                 <!-- Billing Guidelines -->
-                <div class="card border-info mb-4">
+                <div class="doctor-card mb-4">
+                    <div class="doctor-card-header">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Billing Guidelines</h5>
+                    </div>
                     <div class="doctor-card-body">
                         <div class="d-flex">
                             <div class="me-3">
-                                <i class="fas fa-info-circle text-info fa-2x"></i>
+                                <i class="fas fa-info-circle" style="color: #1a202c; font-size: 1.5rem;"></i>
                             </div>
                             <div>
-                                <h6 class="text-info">Billing Guidelines</h6>
-                                <ul class="mb-0 text-muted small">
-                                    <li class="mb-1"><strong>Patient Selection:</strong> Ensure correct patient is selected for accurate billing</li>
-                                    <li class="mb-1"><strong>Amount Verification:</strong> Double-check all monetary amounts before saving</li>
-                                    <li class="mb-1"><strong>Due Dates:</strong> Set realistic payment due dates based on hospital policy</li>
-                                    <li class="mb-1"><strong>Documentation:</strong> Include detailed notes for billing transparency</li>
-                                    <li class="mb-1"><strong>Privacy:</strong> All billing information is confidential and GDPR compliant</li>
-                                    <li><strong>Follow-up:</strong> Track payment status and follow up on overdue bills</li>
+                                <h6 style="color: #1a202c; font-weight: 600;">Guidelines</h6>
+                                <ul class="mb-0" style="color: #4a5568; font-size: 0.875rem;">
+                                    <li class="mb-1"><strong style="color: #1a202c;">Patient Selection:</strong> Ensure correct patient is selected for accurate billing</li>
+                                    <li class="mb-1"><strong style="color: #1a202c;">Amount Verification:</strong> Double-check all monetary amounts before saving</li>
+                                    <li class="mb-1"><strong style="color: #1a202c;">Due Dates:</strong> Set realistic payment due dates based on hospital policy</li>
+                                    <li class="mb-1"><strong style="color: #1a202c;">Documentation:</strong> Include detailed notes for billing transparency</li>
+                                    <li class="mb-1"><strong style="color: #1a202c;">Privacy:</strong> All billing information is confidential and GDPR compliant</li>
+                                    <li><strong style="color: #1a202c;">Follow-up:</strong> Track payment status and follow up on overdue bills</li>
                                 </ul>
                             </div>
                         </div>
@@ -279,20 +288,23 @@
                 </div>
 
                 <!-- Billing Types Info -->
-                <div class="card border-warning mb-4">
+                <div class="doctor-card mb-4">
+                    <div class="doctor-card-header">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-tags me-2" style="color: #1a202c;"></i>Billing Types</h5>
+                    </div>
                     <div class="doctor-card-body">
                         <div class="d-flex">
                             <div class="me-3">
-                                <i class="fas fa-tags text-warning fa-2x"></i>
+                                <i class="fas fa-tags" style="color: #1a202c; font-size: 1.5rem;"></i>
                             </div>
                             <div>
-                                <h6 class="text-warning">Billing Types</h6>
-                                <ul class="mb-0 text-muted small">
-                                    <li class="mb-1"><strong>Consultation:</strong> Doctor visit and examination fees</li>
-                                    <li class="mb-1"><strong>Procedure:</strong> Medical procedures and treatments</li>
-                                    <li class="mb-1"><strong>Medication:</strong> Prescribed medicines and pharmacy items</li>
-                                    <li class="mb-1"><strong>Lab Test:</strong> Laboratory examinations and diagnostics</li>
-                                    <li><strong>Other:</strong> Additional hospital services and fees</li>
+                                <h6 style="color: #1a202c; font-weight: 600;">Types</h6>
+                                <ul class="mb-0" style="color: #4a5568; font-size: 0.875rem;">
+                                    <li class="mb-1"><strong style="color: #1a202c;">Consultation:</strong> Doctor visit and examination fees</li>
+                                    <li class="mb-1"><strong style="color: #1a202c;">Procedure:</strong> Medical procedures and treatments</li>
+                                    <li class="mb-1"><strong style="color: #1a202c;">Medication:</strong> Prescribed medicines and pharmacy items</li>
+                                    <li class="mb-1"><strong style="color: #1a202c;">Lab Test:</strong> Laboratory examinations and diagnostics</li>
+                                    <li><strong style="color: #1a202c;">Other:</strong> Additional hospital services and fees</li>
                                 </ul>
                             </div>
                         </div>
@@ -300,15 +312,18 @@
                 </div>
 
                 <!-- Quick Tips -->
-                <div class="card border-success">
+                <div class="doctor-card">
+                    <div class="doctor-card-header">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-lightbulb me-2" style="color: #1a202c;"></i>Quick Tips</h5>
+                    </div>
                     <div class="doctor-card-body">
                         <div class="d-flex">
                             <div class="me-3">
-                                <i class="fas fa-lightbulb text-success fa-2x"></i>
+                                <i class="fas fa-lightbulb" style="color: #1a202c; font-size: 1.5rem;"></i>
                             </div>
                             <div>
-                                <h6 class="text-success">Quick Tips</h6>
-                                <ul class="mb-0 text-muted small">
+                                <h6 style="color: #1a202c; font-weight: 600;">Tips</h6>
+                                <ul class="mb-0" style="color: #4a5568; font-size: 0.875rem;">
                                     <li class="mb-1">Use clear, descriptive notes for billing details</li>
                                     <li class="mb-1">Verify patient insurance information when available</li>
                                     <li class="mb-1">Set due dates according to hospital payment policies</li>
