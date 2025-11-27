@@ -214,13 +214,22 @@ class Billing extends Model
         // Find or create corresponding invoice
         $invoice = $this->invoice ?: new Invoice();
         
+        // Calculate due_date: use billing's due_date if set, otherwise default to 30 days from billing_date
+        $dueDate = $this->due_date;
+        if (!$dueDate && $this->billing_date) {
+            $dueDate = \Carbon\Carbon::parse($this->billing_date)->addDays(30);
+        } elseif (!$dueDate) {
+            // Fallback: use current date + 30 days if billing_date is also null
+            $dueDate = now()->addDays(30);
+        }
+        
         $invoice->fill([
             'billing_id' => $this->id,
             'patient_id' => $this->patient_id,
             'appointment_id' => $this->appointment_id,
             'invoice_number' => $this->bill_number, // Use same number for consistency
-            'invoice_date' => $this->billing_date,
-            'due_date' => $this->due_date,
+            'invoice_date' => $this->billing_date ?? now(),
+            'due_date' => $dueDate,
             'subtotal' => $this->subtotal,
             'tax_amount' => $this->tax,
             'discount_amount' => $this->discount,
