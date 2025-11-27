@@ -283,6 +283,10 @@
                             <small style="color: #4a5568;">Secure credentials for gateway integration</small>
                         </div>
                         <div class="form-section-body">
+                            <div class="alert alert-info mb-3" id="credentials-info" style="display: none;">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Note:</strong> Select a gateway provider above to see the required API credentials fields.
+                            </div>
                             <div id="credentials-container">
                                 <!-- Dynamic credentials fields will be added here -->
                             </div>
@@ -403,6 +407,7 @@
 <script>
 $(document).ready(function() {
     const providers = @json($availableProviders);
+    const allWebhookUrls = @json($allWebhookUrls ?? []);
 
     // Provider change handler - show/hide credentials and webhook sections
     $('#provider').change(function() {
@@ -418,6 +423,7 @@ $(document).ready(function() {
             
             if (credentials && credentials.length > 0) {
                 credentialsSection.show();
+                $('#credentials-info').hide();
                 
                 credentials.forEach(credential => {
                     const fieldHtml = createCredentialField(credential);
@@ -438,6 +444,7 @@ $(document).ready(function() {
         } else {
             credentialsSection.hide();
             webhookSection.hide();
+            $('#credentials-info').show();
         }
     });
 
@@ -619,40 +626,58 @@ $(document).ready(function() {
 
     // Show webhook URLs for selected provider
     function showWebhookUrls(provider) {
-        const baseUrl = window.location.origin;
         const container = $('#webhook-urls-container');
+        const providerUrls = allWebhookUrls[provider] || {};
+        
+        container.html('');
         
         let webhookUrls = [];
         
-        if (provider === 'stripe') {
-            webhookUrls = [
-                { name: 'Webhook URL', url: `${baseUrl}/webhooks/stripe`, description: 'Main webhook endpoint for all Stripe events' }
-            ];
-        } else if (provider === 'paypal') {
-            webhookUrls = [
-                { name: 'Webhook URL', url: `${baseUrl}/webhooks/paypal`, description: 'PayPal IPN and webhook endpoint' }
-            ];
-        } else if (provider === 'paystack') {
-            webhookUrls = [
-                { name: 'Webhook URL', url: `${baseUrl}/webhooks/paystack`, description: 'Paystack webhook endpoint' }
-            ];
-        } else if (provider === 'flutterwave') {
-            webhookUrls = [
-                { name: 'Webhook URL', url: `${baseUrl}/webhooks/flutterwave`, description: 'Flutterwave webhook endpoint' }
-            ];
-        } else if (provider === 'coingate') {
-            webhookUrls = [
-                { name: 'Success URL', url: `${baseUrl}/payment/success`, description: 'User redirect after successful payment' },
-                { name: 'Cancel URL', url: `${baseUrl}/payment/cancel`, description: 'User redirect after cancelled payment' },
-                { name: 'Callback URL', url: `${baseUrl}/webhooks/coingate`, description: 'Server-to-server payment notifications' }
-            ];
-        } else if (provider === 'btcpay') {
-            webhookUrls = [
-                { name: 'Webhook URL', url: `${baseUrl}/webhooks/btcpay`, description: 'BTCPay Server webhook endpoint' }
-            ];
+        // Build webhook URLs array from backend data
+        if (providerUrls.webhook_url) {
+            webhookUrls.push({ 
+                name: 'Webhook URL', 
+                url: providerUrls.webhook_url, 
+                description: 'Main webhook endpoint for payment notifications' 
+            });
         }
         
-        container.html('');
+        if (providerUrls.callback_url) {
+            webhookUrls.push({ 
+                name: 'Callback URL', 
+                url: providerUrls.callback_url, 
+                description: 'Callback endpoint for payment status updates' 
+            });
+        }
+        
+        if (providerUrls.ipn_url) {
+            webhookUrls.push({ 
+                name: 'IPN URL', 
+                url: providerUrls.ipn_url, 
+                description: 'Instant Payment Notification endpoint' 
+            });
+        }
+        
+        if (providerUrls.success_url) {
+            webhookUrls.push({ 
+                name: 'Success URL', 
+                url: providerUrls.success_url, 
+                description: 'User redirect after successful payment' 
+            });
+        }
+        
+        if (providerUrls.cancel_url) {
+            webhookUrls.push({ 
+                name: 'Cancel URL', 
+                url: providerUrls.cancel_url, 
+                description: 'User redirect after cancelled payment' 
+            });
+        }
+        
+        if (webhookUrls.length === 0) {
+            container.html('<div class="col-12"><p class="text-muted">No webhook URLs configured for this provider.</p></div>');
+            return;
+        }
         
         webhookUrls.forEach(webhook => {
             const webhookHtml = `
@@ -660,7 +685,7 @@ $(document).ready(function() {
                     <label class="form-label fw-bold">${webhook.name}</label>
                     <div class="input-group">
                         <input type="text" class="form-control" value="${webhook.url}" readonly>
-                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('${webhook.url}')">
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this, '${webhook.url.replace(/'/g, "\\'")}')">
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
@@ -787,29 +812,60 @@ $(document).ready(function() {
     }
     
     // Copy to clipboard function
-    window.copyToClipboard = function(text) {
-        navigator.clipboard.writeText(text).then(function() {
-            // Show success feedback
-            const btn = event.target.closest('button');
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check text-success"></i>';
-            setTimeout(() => {
-                btn.innerHTML = originalHtml;
-            }, 2000);
-        }).catch(function(err) {
-            console.error('Could not copy text: ', err);
+    window.copyToClipboard = function(button, text) {
+        // Use text parameter if provided, otherwise get from input
+        const textToCopy = text || button.previousElementSibling.value;
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(textToCopy).then(function() {
+                // Show success feedback
+                const originalHtml = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check text-success"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalHtml;
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                fallbackCopy(textToCopy, button);
+            });
+        } else {
             // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-        });
+            fallbackCopy(textToCopy, button);
+        }
     };
+    
+    function fallbackCopy(text, button) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            const originalHtml = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check text-success"></i>';
+            setTimeout(() => {
+                button.innerHTML = originalHtml;
+            }, 2000);
+        } catch (err) {
+            console.error('Fallback copy failed: ', err);
+            alert('Failed to copy. Please copy manually: ' + text);
+        }
+        document.body.removeChild(textArea);
+    }
 
-    // Trigger provider change on page load
-    $('#provider').trigger('change');
+    // Trigger provider change on page load if provider is already selected (from old form data)
+    if ($('#provider').val()) {
+        $('#provider').trigger('change');
+    }
+    
+    // Also trigger on initial page load to ensure sections are properly initialized
+    $(window).on('load', function() {
+        if ($('#provider').val()) {
+            $('#provider').trigger('change');
+        }
+    });
 });
 </script>
 @endpush
