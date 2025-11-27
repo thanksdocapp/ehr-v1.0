@@ -210,26 +210,34 @@
         
         .doctor-nav-link i {
             color: #1a202c !important;
-            display: inline-block;
+            display: inline-block !important;
+            font-style: normal !important;
+            font-variant: normal !important;
+            text-rendering: auto !important;
+            line-height: 1 !important;
         }
 
         .doctor-nav-icon {
-            width: 24px;
-            text-align: center;
-            font-size: 1.1rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            width: 24px !important;
+            min-width: 24px !important;
+            text-align: center !important;
+            font-size: 1.1rem !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
         
-        /* Ensure Font Awesome icons are visible */
+        /* Ensure Font Awesome icons are visible and properly styled */
         .doctor-nav-link i.fas,
         .doctor-nav-link i.far,
         .doctor-nav-link i.fab,
         .doctor-nav-link i.fal,
-        .doctor-nav-link i.fad {
+        .doctor-nav-link i.fad,
+        .doctor-nav-link i[class*="fa-"] {
             font-family: "Font Awesome 6 Free", "Font Awesome 6 Pro", "Font Awesome 6 Brands" !important;
-            font-weight: 900;
+            font-weight: 900 !important;
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
         }
 
         .doctor-nav-text {
@@ -1134,6 +1142,12 @@
                     $label = $item['label'] ?? '';
                     $icon = $item['icon'] ?? 'fa-circle';
                     
+                    // Ensure icon has Font Awesome prefix (fas, far, fab, etc.)
+                    if (!empty($icon) && !preg_match('/^(fas|far|fab|fal|fad|fa)\s/', $icon)) {
+                        // If icon doesn't start with a prefix, add 'fas' as default
+                        $icon = 'fas ' . $icon;
+                    }
+                    
                     // Map menu_key to route
                     $route = '#';
                     $isActive = false;
@@ -1187,7 +1201,7 @@
                     <a href="{{ $route }}" 
                        class="doctor-nav-link {{ $isActive ? 'active' : '' }}"
                        title="{{ $label }}">
-                        <i class="{{ $icon }} doctor-nav-icon"></i>
+                        <i class="{{ $icon }} doctor-nav-icon" aria-hidden="true"></i>
                         <span class="doctor-nav-text">{{ $label }}</span>
                         @if(isset($item['badge']) && $item['badge'])
                             <span class="doctor-nav-badge">{{ $item['badge'] }}</span>
