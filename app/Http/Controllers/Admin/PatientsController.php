@@ -781,128 +781,128 @@ class PatientsController extends Controller
         $this->authorize('delete', $patient);
         
         try {
-            // Check if patient has any appointments
-            $appointmentCount = $patient->appointments()->count();
-            
-            if ($appointmentCount > 0) {
-                $message = "Cannot delete patient {$patient->full_name}. They have {$appointmentCount} appointment(s) associated with their record. Please cancel or complete all appointments before deleting the patient.";
-                
-                if (request()->wantsJson() || request()->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => $message
-                    ], 422);
-                }
-                
-                return redirect()->route('admin.patients.index')
-                                 ->with('error', $message);
-            }
-            
-            // Check if patient has other related records
-            $hasRelatedRecords = false;
-            $relatedRecordsMessage = [];
-            
-            // Check medical records
-            if ($patient->medicalRecords()->count() > 0) {
-                $hasRelatedRecords = true;
-                $relatedRecordsMessage[] = $patient->medicalRecords()->count() . ' medical record(s)';
-            }
-            
-            // Check prescriptions
-            if ($patient->prescriptions()->count() > 0) {
-                $hasRelatedRecords = true;
-                $relatedRecordsMessage[] = $patient->prescriptions()->count() . ' prescription(s)';
-            }
-            
-            // Check lab reports
-            if ($patient->labReports()->count() > 0) {
-                $hasRelatedRecords = true;
-                $relatedRecordsMessage[] = $patient->labReports()->count() . ' lab report(s)';
-            }
-            
-            // Check billing records
-            $billingCount = DB::table('billings')->where('patient_id', $patient->id)->count();
-            if ($billingCount > 0) {
-                $hasRelatedRecords = true;
-                $relatedRecordsMessage[] = $billingCount . ' billing record(s)';
-            }
-            
-            // Check invoice records
-            $invoiceCount = DB::table('invoices')->where('patient_id', $patient->id)->count();
-            if ($invoiceCount > 0) {
-                $hasRelatedRecords = true;
-                $relatedRecordsMessage[] = $invoiceCount . ' invoice(s)';
-            }
-            
-            // Check patient alerts
-            if ($patient->alerts()->count() > 0) {
-                $hasRelatedRecords = true;
-                $relatedRecordsMessage[] = $patient->alerts()->count() . ' alert(s)';
-            }
-            
-            // Check patient documents
-            if ($patient->documents()->count() > 0) {
-                $hasRelatedRecords = true;
-                $relatedRecordsMessage[] = $patient->documents()->count() . ' document(s)';
-            }
-            
-            // Check patient notifications
-            if ($patient->notifications()->count() > 0) {
-                $hasRelatedRecords = true;
-                $relatedRecordsMessage[] = $patient->notifications()->count() . ' notification(s)';
-            }
-            
-            // Check email logs
-            $emailLogCount = DB::table('email_logs')->where('patient_id', $patient->id)->count();
-            if ($emailLogCount > 0) {
-                $hasRelatedRecords = true;
-                $relatedRecordsMessage[] = $emailLogCount . ' email log(s)';
-            }
-            
-            // Check email bounces
-            $emailBounceCount = DB::table('email_bounces')->where('patient_id', $patient->id)->count();
-            if ($emailBounceCount > 0) {
-                $hasRelatedRecords = true;
-                $relatedRecordsMessage[] = $emailBounceCount . ' email bounce(s)';
-            }
-            
-            if ($hasRelatedRecords) {
-                $recordsList = implode(', ', $relatedRecordsMessage);
-                $message = "Cannot delete patient {$patient->full_name}. They have {$recordsList}. Please remove all associated data before deleting the patient to maintain data integrity.";
-                
-                if (request()->wantsJson() || request()->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => $message,
-                        'details' => [
-                            'patient_name' => $patient->full_name,
-                            'related_records' => $relatedRecordsMessage,
-                            'appointments_count' => $appointmentCount
-                        ]
-                    ], 422);
-                }
-                
-                return redirect()->route('admin.patients.index')
-                                 ->with('warning', $message);
-            }
-            
-            // Store patient name before deletion
+            // Store patient name and ID before deletion
             $patientName = $patient->full_name;
+            $patientId = $patient->id;
             
-            // Delete the patient
-            $patient->delete();
+            \Log::info('Attempting to delete patient', [
+                'patient_id' => $patientId,
+                'patient_name' => $patientName,
+                'deleted_by' => Auth::id()
+            ]);
             
-            $message = "Patient '{$patientName}' has been successfully deleted.";
+            // Use database transaction to ensure atomicity
+            DB::beginTransaction();
             
-            if (request()->wantsJson() || request()->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => $message
+            try {
+                // Delete related records first (in proper order to avoid foreign key violations)
+                // We delete explicitly to handle all cases, even if cascade is set
+                
+                // Delete appointments first (may have foreign keys to other tables)
+                $appointmentIds = DB::table('appointments')->where('patient_id', $patientId)->pluck('id');
+                if ($appointmentIds->isNotEmpty()) {
+                    // Delete any records that reference appointments
+                    DB::table('medical_records')->whereIn('appointment_id', $appointmentIds)->update(['appointment_id' => null]);
+                    DB::table('billings')->whereIn('appointment_id', $appointmentIds)->update(['appointment_id' => null]);
+                    DB::table('invoices')->whereIn('appointment_id', $appointmentIds)->update(['appointment_id' => null]);
+                    // Now delete appointments
+                    DB::table('appointments')->where('patient_id', $patientId)->delete();
+                }
+                
+                // Delete medical records
+                DB::table('medical_records')->where('patient_id', $patientId)->delete();
+                
+                // Delete prescriptions
+                DB::table('prescriptions')->where('patient_id', $patientId)->delete();
+                
+                // Delete lab reports
+                DB::table('lab_reports')->where('patient_id', $patientId)->delete();
+                
+                // Delete patient notifications
+                DB::table('patient_notifications')->where('patient_id', $patientId)->delete();
+                
+                // Delete patient alerts
+                DB::table('patient_alerts')->where('patient_id', $patientId)->delete();
+                
+                // Delete patient documents and their deliveries
+                $documentIds = DB::table('patient_documents')->where('patient_id', $patientId)->pluck('id');
+                if ($documentIds->isNotEmpty()) {
+                    DB::table('document_deliveries')->whereIn('patient_document_id', $documentIds)->delete();
+                    DB::table('patient_documents')->where('patient_id', $patientId)->delete();
+                }
+                
+                // Delete email logs
+                DB::table('email_logs')->where('patient_id', $patientId)->delete();
+                
+                // Delete email bounces
+                DB::table('email_bounces')->where('patient_id', $patientId)->delete();
+                
+                // Delete patient email consent
+                DB::table('patient_email_consent')->where('patient_id', $patientId)->delete();
+                
+                // Delete department-patient pivot records
+                DB::table('department_patient')->where('patient_id', $patientId)->delete();
+                
+                // Delete invoices (which may have payments)
+                $invoiceIds = DB::table('invoices')->where('patient_id', $patientId)->pluck('id');
+                if ($invoiceIds->isNotEmpty()) {
+                    // Delete payments associated with invoices
+                    DB::table('payments')->whereIn('invoice_id', $invoiceIds)->delete();
+                    // Delete invoice items
+                    DB::table('invoice_items')->whereIn('invoice_id', $invoiceIds)->delete();
+                    // Delete invoices
+                    DB::table('invoices')->where('patient_id', $patientId)->delete();
+                }
+                
+                // Delete billings
+                DB::table('billings')->where('patient_id', $patientId)->delete();
+                
+                // Refresh patient model to ensure we have latest state
+                $patient->refresh();
+                
+                // Now delete the patient
+                $deleted = $patient->delete();
+                
+                if (!$deleted) {
+                    throw new \Exception('Patient deletion returned false - patient may have been already deleted or model deletion failed');
+                }
+                
+                // Verify deletion
+                $stillExists = Patient::find($patientId);
+                if ($stillExists) {
+                    throw new \Exception('Patient still exists after deletion attempt - database constraint may have prevented deletion');
+                }
+                
+                DB::commit();
+                
+                $message = "Patient '{$patientName}' has been successfully deleted.";
+                
+                \Log::info('Patient deleted successfully', [
+                    'patient_id' => $patientId,
+                    'patient_name' => $patientName,
+                    'deleted_by' => Auth::id()
                 ]);
+                
+                if (request()->wantsJson() || request()->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message
+                    ]);
+                }
+                
+                return redirect()->route('admin.patients.index')
+                                 ->with('success', $message);
+                                 
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Patient deletion failed in transaction', [
+                    'patient_id' => $patientId,
+                    'patient_name' => $patientName,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e; // Re-throw to be caught by outer catch block
             }
-            
-            return redirect()->route('admin.patients.index')
-                             ->with('success', $message);
                              
         } catch (\Illuminate\Database\QueryException $e) {
             // Handle database constraint violations

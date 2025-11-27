@@ -842,10 +842,17 @@ $(document).ready(function() {
                         
                         let errorMessage = 'An error occurred while deleting the patient.';
                         
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        } else if (xhr.responseJSON && xhr.responseJSON.error) {
-                            errorMessage = xhr.responseJSON.error;
+                        // Try to extract error message from various response formats
+                        if (xhr.responseJSON) {
+                            if (xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            } else if (xhr.responseJSON.error) {
+                                errorMessage = xhr.responseJSON.error;
+                            } else if (xhr.responseJSON.errors) {
+                                // Laravel validation errors
+                                const errors = Object.values(xhr.responseJSON.errors).flat();
+                                errorMessage = errors.join(', ');
+                            }
                         } else if (xhr.responseText) {
                             try {
                                 const response = JSON.parse(xhr.responseText);
@@ -855,9 +862,26 @@ $(document).ready(function() {
                                     errorMessage = response.error;
                                 }
                             } catch (e) {
-                                // Use default error message
+                                // If response is HTML (like error page), extract text
+                                if (xhr.responseText.includes('<title>')) {
+                                    const match = xhr.responseText.match(/<title>(.*?)<\/title>/);
+                                    if (match) {
+                                        errorMessage = match[1];
+                                    }
+                                } else if (xhr.responseText.length < 500) {
+                                    // If it's a short text response, use it
+                                    errorMessage = xhr.responseText;
+                                }
                             }
                         }
+                        
+                        // Log full error details for debugging
+                        console.error('Delete patient error:', {
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            response: xhr.responseJSON || xhr.responseText,
+                            error: error
+                        });
                         
                         ModalSystem.notify({
                             type: 'error',
