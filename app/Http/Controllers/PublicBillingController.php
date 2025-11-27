@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\PaymentGateway;
+use App\Models\Billing;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -264,20 +265,108 @@ class PublicBillingController extends Controller
     }
     
     /**
-     * Handle Stripe success callback and send receipt email
+     * Handle Stripe success callback, verify payment, update records, and send receipt email
      */
     private function handleStripeSuccessCallback($invoice, $sessionId)
     {
         try {
             // Find the payment record for this session
             $payment = \App\Models\Payment::where('invoice_id', $invoice->id)
-                ->where('gateway_transaction_id', $sessionId)
-                ->orWhere(function($query) use ($sessionId) {
-                    $query->where('gateway_response', 'like', '%' . $sessionId . '%');
+                ->where(function($query) use ($sessionId) {
+                    $query->where('gateway_transaction_id', $sessionId)
+                          ->orWhere('gateway_response', 'like', '%' . $sessionId . '%');
                 })
                 ->first();
             
-            if ($payment && $payment->status === 'completed') {
+            if (!$payment) {
+                \Log::warning('Payment record not found for Stripe session', [
+                    'invoice_id' => $invoice->id,
+                    'session_id' => $sessionId
+                ]);
+                return;
+            }
+
+            // Get the gateway to verify the session
+            $gateway = \App\Models\PaymentGateway::where('provider', 'stripe')
+                ->where('is_active', true)
+                ->first();
+
+            if (!$gateway) {
+                \Log::error('Stripe gateway not found or not active');
+                return;
+            }
+
+            // Initialize Stripe gateway
+            $stripeGateway = new \App\Services\PaymentGateway\StripeGateway();
+            $credentials = array_merge($gateway->credentials ?? [], [
+                'test_mode' => $gateway->test_mode
+            ]);
+            $stripeGateway->initialize($credentials);
+
+            // For mock sessions, mark as completed
+            if (str_starts_with($sessionId, 'cs_mock_')) {
+                if ($payment->status !== 'completed') {
+                    $payment->update([
+                        'status' => 'completed',
+                        'payment_date' => now()
+                    ]);
+                    $this->updateInvoiceAndBilling($invoice);
+                }
+            } else {
+                // Verify the session with Stripe
+                try {
+                    $session = \Stripe\Checkout\Session::retrieve($sessionId);
+                    
+                    if ($session->payment_status === 'paid') {
+                        // Get the actual amount paid from Stripe (convert from cents)
+                        $amountPaid = $session->amount_total ? ($session->amount_total / 100) : $payment->amount;
+                        
+                        // Update payment record
+                        if ($payment->status !== 'completed') {
+                            $payment->update([
+                                'status' => 'completed',
+                                'amount' => $amountPaid, // Update with actual amount from Stripe
+                                'payment_date' => now(),
+                                'gateway_transaction_id' => $sessionId,
+                                'gateway_response' => array_merge(
+                                    $payment->gateway_response ?? [],
+                                    [
+                                        'session_status' => $session->status,
+                                        'payment_status' => $session->payment_status,
+                                        'amount_total' => $session->amount_total,
+                                        'currency' => $session->currency
+                                    ]
+                                )
+                            ]);
+                            
+                            // Update invoice and billing
+                            $this->updateInvoiceAndBilling($invoice);
+                            
+                            \Log::info('Payment verified and updated from Stripe session', [
+                                'payment_id' => $payment->id,
+                                'invoice_id' => $invoice->id,
+                                'amount_paid' => $amountPaid,
+                                'session_id' => $sessionId
+                            ]);
+                        }
+                    } else {
+                        \Log::warning('Stripe session payment not completed', [
+                            'session_id' => $sessionId,
+                            'payment_status' => $session->payment_status
+                        ]);
+                        return;
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to verify Stripe session', [
+                        'session_id' => $sessionId,
+                        'error' => $e->getMessage()
+                    ]);
+                    return;
+                }
+            }
+            
+            // Send receipt email if payment is completed
+            if ($payment->status === 'completed') {
                 // Check if receipt already sent (to avoid duplicates)
                 $receiptSent = Cache::get('receipt_sent_' . $payment->id, false);
                 
@@ -291,9 +380,63 @@ class PublicBillingController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            \Log::error('Error sending receipt email on success page', [
+            \Log::error('Error handling Stripe success callback', [
                 'invoice_id' => $invoice->id,
                 'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+    
+    /**
+     * Update invoice and billing status after payment
+     */
+    private function updateInvoiceAndBilling($invoice)
+    {
+        try {
+            // Refresh invoice to get latest payments
+            $invoice->refresh();
+            $invoice->load('payments');
+            
+            // Calculate total paid from all completed payments
+            $totalPaid = $invoice->payments()
+                ->where('status', 'completed')
+                ->sum('amount');
+            
+            // Update invoice status
+            if ($totalPaid >= $invoice->total_amount) {
+                $invoice->update([
+                    'status' => 'paid',
+                    'paid_date' => now(),
+                ]);
+            } elseif ($totalPaid > 0) {
+                $invoice->update(['status' => 'partial']);
+            }
+            
+            // Update billing if connected
+            if ($invoice->billing_id) {
+                $billing = \App\Models\Billing::find($invoice->billing_id);
+                if ($billing) {
+                    // Update paid_amount - the model's saving event will automatically update status
+                    $billing->update([
+                        'paid_amount' => $totalPaid,
+                        'payment_method' => $billing->payment_method ?: 'card',
+                        'payment_reference' => $billing->payment_reference ?: 'ONLINE_PAYMENT',
+                        'paid_at' => $totalPaid >= $billing->total_amount ? now() : $billing->paid_at,
+                    ]);
+                    
+                    \Log::info('Billing updated after payment', [
+                        'billing_id' => $billing->id,
+                        'invoice_id' => $invoice->id,
+                        'total_paid' => $totalPaid,
+                        'billing_status' => $billing->fresh()->status
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error updating invoice and billing', [
+                'invoice_id' => $invoice->id,
                 'error' => $e->getMessage()
             ]);
         }

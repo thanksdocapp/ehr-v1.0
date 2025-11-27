@@ -33,10 +33,26 @@
                                 </div>
                                 <div class="col-6 mb-2">
                                     @php
-                                        $latestPayment = $invoice->payments->where('status', 'completed')->first();
+                                        // Get the latest completed payment
+                                        $latestPayment = $invoice->payments->where('status', 'completed')->sortByDesc('id')->first();
+                                        
+                                        // If no completed payment found, try to get any payment
+                                        if (!$latestPayment) {
+                                            $latestPayment = $invoice->payments->sortByDesc('id')->first();
+                                        }
+                                        
+                                        // Get amount from payment or invoice
                                         $amountPaid = $latestPayment ? $latestPayment->amount : ($invoice->paid_amount ?? 0);
-                                        $currency = $invoice->currency ?? 'GBP';
-                                        $currencySymbol = $currency === 'GBP' ? '£' : ($currency === 'USD' ? '$' : $currency . ' ');
+                                        
+                                        // Get currency from payment gateway response or invoice
+                                        $currency = 'GBP';
+                                        if ($latestPayment && isset($latestPayment->gateway_response['currency'])) {
+                                            $currency = strtoupper($latestPayment->gateway_response['currency']);
+                                        } elseif ($invoice->currency) {
+                                            $currency = $invoice->currency;
+                                        }
+                                        
+                                        $currencySymbol = $currency === 'GBP' ? '£' : ($currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : $currency . ' '));
                                     @endphp
                                     {{ $currencySymbol }}{{ number_format($amountPaid, 2) }}
                                 </div>
