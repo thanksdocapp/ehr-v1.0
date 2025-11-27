@@ -154,13 +154,16 @@ class PublicBillingController extends Controller
             
             $stripeGateway->initialize($credentials);
 
+            // Build success URL - ensure it doesn't have query params already
+            $successUrl = route('public.billing.success', ['token' => $token]);
+            
             $checkoutData = [
                 'amount' => $payment->amount,
                 'currency' => 'usd',
                 'order_id' => $payment->transaction_id,
                 'customer_email' => $invoice->patient->email ?? 'customer@example.com',
                 'description' => 'Invoice #' . $invoice->invoice_number,
-                'success_url' => route('public.billing.success', ['token' => $token]),
+                'success_url' => $successUrl,
                 'cancel_url' => route('public.billing.pay', ['token' => $token]) . '?payment_cancelled=1',
                 'is_public_payment' => true,
             ];

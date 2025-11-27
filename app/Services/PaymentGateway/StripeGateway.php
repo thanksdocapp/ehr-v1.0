@@ -69,6 +69,16 @@ class StripeGateway implements PaymentGatewayInterface
                 ? $data['cancel_url'] ?? route('patient.billing.index') . '?payment=cancelled'
                 : $data['cancel_url'] ?? route('payment.cancelled');
 
+            // Fix success URL - use ? if no query params, & if query params exist
+            $successUrlWithSession = $successUrl;
+            if (strpos($successUrl, '?') !== false) {
+                // URL already has query parameters, use &
+                $successUrlWithSession = $successUrl . '&session_id={CHECKOUT_SESSION_ID}';
+            } else {
+                // URL has no query parameters, use ?
+                $successUrlWithSession = $successUrl . '?session_id={CHECKOUT_SESSION_ID}';
+            }
+
             $session = Session::create([
                 'payment_method_types' => ['card'],
                 'line_items' => [[
@@ -82,7 +92,7 @@ class StripeGateway implements PaymentGatewayInterface
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                'success_url' => $successUrl . '&session_id={CHECKOUT_SESSION_ID}',
+                'success_url' => $successUrlWithSession,
                 'cancel_url' => $cancelUrl,
                 'customer_email' => $data['customer_email'] ?? null,
                 'metadata' => [
