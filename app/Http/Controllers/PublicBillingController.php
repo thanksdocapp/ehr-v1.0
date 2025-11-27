@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Cache;
 
 class PublicBillingController extends Controller
 {
@@ -238,7 +239,7 @@ class PublicBillingController extends Controller
     /**
      * Show payment success page
      */
-    public function paymentSuccess(string $token): View|RedirectResponse
+    public function paymentSuccess(string $token, Request $request): View|RedirectResponse
     {
         $invoice = Invoice::where('payment_token', $token)->first();
 
@@ -251,7 +252,51 @@ class PublicBillingController extends Controller
             $query->where('status', 'completed')->latest();
         }]);
 
+        // Refresh invoice to get latest paid_amount
+        $invoice->refresh();
+        
+        // If session_id is provided (from Stripe), try to verify and send receipt
+        if ($request->has('session_id')) {
+            $this->handleStripeSuccessCallback($invoice, $request->session_id);
+        }
+
         return view('public.billing.success', compact('invoice', 'token'));
+    }
+    
+    /**
+     * Handle Stripe success callback and send receipt email
+     */
+    private function handleStripeSuccessCallback($invoice, $sessionId)
+    {
+        try {
+            // Find the payment record for this session
+            $payment = \App\Models\Payment::where('invoice_id', $invoice->id)
+                ->where('gateway_transaction_id', $sessionId)
+                ->orWhere(function($query) use ($sessionId) {
+                    $query->where('gateway_response', 'like', '%' . $sessionId . '%');
+                })
+                ->first();
+            
+            if ($payment && $payment->status === 'completed') {
+                // Check if receipt already sent (to avoid duplicates)
+                $receiptSent = Cache::get('receipt_sent_' . $payment->id, false);
+                
+                if (!$receiptSent) {
+                    // Send receipt email
+                    $emailService = app(\App\Services\HospitalEmailNotificationService::class);
+                    $emailService->sendPaymentReceipt($invoice, $payment);
+                    
+                    // Mark receipt as sent (cache for 1 hour)
+                    Cache::put('receipt_sent_' . $payment->id, true, 3600);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error sending receipt email on success page', [
+                'invoice_id' => $invoice->id,
+                'session_id' => $sessionId,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**

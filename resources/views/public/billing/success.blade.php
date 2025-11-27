@@ -32,7 +32,13 @@
                                     <strong>Amount Paid:</strong>
                                 </div>
                                 <div class="col-6 mb-2">
-                                    ${{ number_format($invoice->paid_amount, 2) }}
+                                    @php
+                                        $latestPayment = $invoice->payments->where('status', 'completed')->first();
+                                        $amountPaid = $latestPayment ? $latestPayment->amount : ($invoice->paid_amount ?? 0);
+                                        $currency = $invoice->currency ?? 'GBP';
+                                        $currencySymbol = $currency === 'GBP' ? '£' : ($currency === 'USD' ? '$' : $currency . ' ');
+                                    @endphp
+                                    {{ $currencySymbol }}{{ number_format($amountPaid, 2) }}
                                 </div>
                                 @if($invoice->payments->count() > 0)
                                 <div class="col-6 mb-2">

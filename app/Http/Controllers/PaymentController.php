@@ -623,6 +623,22 @@ class PaymentController extends Controller
                 if ($response['status'] === 'completed' && $patientPayment->invoice) {
                     $this->updateInvoiceStatus($patientPayment->invoice);
                     
+                    // Send payment receipt email
+                    try {
+                        $emailService = app(\App\Services\HospitalEmailNotificationService::class);
+                        $emailService->sendPaymentReceipt($patientPayment->invoice, $patientPayment);
+                        Log::info('Payment receipt email sent via webhook', [
+                            'invoice_id' => $patientPayment->invoice->id,
+                            'payment_id' => $patientPayment->id
+                        ]);
+                    } catch (Exception $e) {
+                        Log::error('Failed to send payment receipt email via webhook', [
+                            'invoice_id' => $patientPayment->invoice->id,
+                            'payment_id' => $patientPayment->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                    
                     // Also update the admin billing if connected
                     if ($patientPayment->invoice->billing_id) {
                         $adminBilling = Billing::find($patientPayment->invoice->billing_id);
