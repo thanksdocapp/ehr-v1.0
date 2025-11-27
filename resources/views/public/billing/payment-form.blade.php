@@ -51,19 +51,65 @@
                             const form = document.getElementById('proceed-payment-form');
                             const submitBtn = document.getElementById('proceed-payment-btn');
                             
+                            console.log('Payment form page loaded');
+                            console.log('Form:', form);
+                            console.log('Submit button:', submitBtn);
+                            
                             if (form && submitBtn) {
+                                // Force button visibility
+                                submitBtn.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 999 !important;';
+                                submitBtn.disabled = false;
+                                
+                                // Remove any hidden attributes
+                                submitBtn.removeAttribute('hidden');
+                                submitBtn.removeAttribute('style');
+                                submitBtn.style.display = 'block';
+                                submitBtn.style.visibility = 'visible';
+                                submitBtn.style.opacity = '1';
+                                submitBtn.style.position = 'relative';
+                                submitBtn.style.zIndex = '999';
+                                
+                                console.log('Button styles applied');
+                                
+                                // Ensure form submits properly
                                 form.addEventListener('submit', function(e) {
-                                    // Ensure form submits
+                                    console.log('Form submit event triggered');
                                     submitBtn.disabled = false;
                                     submitBtn.style.display = 'block';
                                     submitBtn.style.visibility = 'visible';
                                     submitBtn.style.opacity = '1';
+                                    
+                                    // Validate required fields
+                                    const gateway = form.querySelector('input[name="payment_gateway"]');
+                                    const amount = form.querySelector('input[name="amount"]');
+                                    
+                                    if (!gateway || !gateway.value) {
+                                        e.preventDefault();
+                                        alert('Payment gateway is required');
+                                        return false;
+                                    }
+                                    
+                                    if (!amount || !amount.value || parseFloat(amount.value) <= 0) {
+                                        e.preventDefault();
+                                        alert('Invalid payment amount');
+                                        return false;
+                                    }
+                                    
+                                    console.log('Form validation passed, submitting...');
+                                    return true;
                                 });
                                 
-                                // Ensure button is visible on load
-                                submitBtn.style.display = 'block';
-                                submitBtn.style.visibility = 'visible';
-                                submitBtn.style.opacity = '1';
+                                // Also add click handler as backup
+                                submitBtn.addEventListener('click', function(e) {
+                                    console.log('Button clicked');
+                                    const form = this.closest('form');
+                                    if (form) {
+                                        console.log('Submitting form via click handler');
+                                        form.submit();
+                                    }
+                                });
+                            } else {
+                                console.error('Form or submit button not found!');
                             }
                         });
                     </script>

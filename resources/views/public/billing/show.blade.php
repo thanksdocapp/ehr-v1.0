@@ -223,7 +223,7 @@
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="payment_gateway" 
                                                    id="gateway_{{ $gateway->id }}" value="{{ $gateway->provider}}" 
-                                                   {{ $index === 0 ? 'checked' : '' }} required>
+                                                   {{ $index === 0 ? 'checked="checked"' : '' }} required>
                                             <label class="form-check-label w-100" for="gateway_{{ $gateway->id }}">
                                                 <strong>{{ $gateway->name }}</strong>
                                                 @if($gateway->description)
@@ -236,12 +236,52 @@
                                 @endforeach
                             </div>
                             <div class="mt-4">
-                                <button type="submit" id="pay-invoice-btn" class="btn btn-pay w-100 text-white" style="display: block !important; visibility: visible !important; opacity: 1 !important;">
+                                <button type="submit" id="pay-invoice-btn" class="btn btn-pay w-100 text-white" style="display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 999 !important;">
                                     <i class="fas fa-credit-card me-2"></i>
                                     Continue to Payment
                                 </button>
                             </div>
                         </form>
+                        
+                        @push('scripts')
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                // Ensure first radio is checked
+                                const firstRadio = document.querySelector('input[name="payment_gateway"]');
+                                if (firstRadio) {
+                                    firstRadio.checked = true;
+                                    console.log('First payment gateway preselected');
+                                }
+                                
+                                // Ensure submit button is visible and functional
+                                const submitBtn = document.getElementById('pay-invoice-btn');
+                                if (submitBtn) {
+                                    submitBtn.style.display = 'block';
+                                    submitBtn.style.visibility = 'visible';
+                                    submitBtn.style.opacity = '1';
+                                    submitBtn.style.position = 'relative';
+                                    submitBtn.style.zIndex = '999';
+                                    submitBtn.disabled = false;
+                                    console.log('Submit button made visible');
+                                }
+                                
+                                // Ensure form can submit
+                                const form = submitBtn ? submitBtn.closest('form') : null;
+                                if (form) {
+                                    form.addEventListener('submit', function(e) {
+                                        const selectedGateway = document.querySelector('input[name="payment_gateway"]:checked');
+                                        if (!selectedGateway) {
+                                            e.preventDefault();
+                                            alert('Please select a payment gateway');
+                                            return false;
+                                        }
+                                        console.log('Form submitting with gateway:', selectedGateway.value);
+                                        return true;
+                                    });
+                                }
+                            });
+                        </script>
+                        @endpush
                         @else
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
