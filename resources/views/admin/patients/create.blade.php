@@ -794,12 +794,16 @@ $(document).ready(function() {
         $('#patient_id').val(newId);
     });
 
-    // GP Consent checkbox toggle - use multiple events to ensure it works
+    // GP Consent checkbox toggle - ensure checkbox state changes and handlers work
     function toggleGpDetails() {
+        const checkbox = $('#consent_share_with_gp');
         const gpDetailsGroup = $('#gp_details_group');
         const gpFields = ['gp_name', 'gp_email', 'gp_phone', 'gp_address'];
         
-        if ($('#consent_share_with_gp').is(':checked')) {
+        // Force checkbox state update if needed
+        const isChecked = checkbox.is(':checked') || checkbox.prop('checked');
+        
+        if (isChecked) {
             gpDetailsGroup.slideDown();
             gpFields.forEach(function(field) {
                 $('#' + field).prop('required', true);
@@ -813,16 +817,25 @@ $(document).ready(function() {
         }
     }
     
-    $('#consent_share_with_gp').on('change click', function() {
+    // Handle checkbox change
+    $('#consent_share_with_gp').on('change', function() {
         toggleGpDetails();
     });
     
-    // Also handle label click
-    $('label[for="consent_share_with_gp"]').on('click', function(e) {
-        // Allow default label behavior to toggle checkbox
+    // Handle checkbox click directly - use setTimeout to ensure state is updated
+    $('#consent_share_with_gp').on('click', function(e) {
+        // Use setTimeout to check state after browser processes the click
         setTimeout(function() {
             toggleGpDetails();
-        }, 50);
+        }, 10);
+    });
+    
+    // Handle label click - ensure it toggles the checkbox
+    $('label[for="consent_share_with_gp"]').on('click', function(e) {
+        // Don't prevent default - let label naturally toggle checkbox
+        setTimeout(function() {
+            toggleGpDetails();
+        }, 10);
     });
     
     // Initialize GP details visibility based on consent checkbox state

@@ -682,9 +682,12 @@ $(document).ready(function() {
         });
     });
 
-    // Handle online consultation toggle - use multiple events to ensure it works
+    // Handle online consultation toggle - ensure checkbox state changes and handlers work
     function toggleMeetingLink() {
-        if ($('#is_online').is(':checked')) {
+        const checkbox = $('#is_online');
+        const isChecked = checkbox.is(':checked') || checkbox.prop('checked');
+        
+        if (isChecked) {
             $('#meeting_link_row').show();
             $('#meeting_link').prop('required', true);
         } else {
@@ -695,16 +698,25 @@ $(document).ready(function() {
         }
     }
     
-    $('#is_online').on('change click', function() {
+    // Handle checkbox change
+    $('#is_online').on('change', function() {
         toggleMeetingLink();
     });
     
-    // Also handle label click
-    $('label[for="is_online"]').on('click', function(e) {
-        // Allow default label behavior to toggle checkbox
+    // Handle checkbox click directly - use setTimeout to ensure state is updated
+    $('#is_online').on('click', function(e) {
+        // Use setTimeout to check state after browser processes the click
         setTimeout(function() {
             toggleMeetingLink();
-        }, 50);
+        }, 10);
+    });
+    
+    // Handle label click - ensure it toggles the checkbox
+    $('label[for="is_online"]').on('click', function(e) {
+        // Don't prevent default - let label naturally toggle checkbox
+        setTimeout(function() {
+            toggleMeetingLink();
+        }, 10);
     });
     
     // Initialize on page load

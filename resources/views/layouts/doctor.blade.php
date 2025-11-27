@@ -439,7 +439,8 @@
             position: relative !important;
             float: none !important;
             pointer-events: auto !important;
-            z-index: 1 !important;
+            z-index: 10 !important;
+            opacity: 1 !important;
         }
 
         input[type="checkbox"].form-check-input:hover,
@@ -477,7 +478,7 @@
             border-width: 0 2px 2px 0 !important;
             display: block !important;
             pointer-events: none !important;
-            z-index: 2 !important;
+            z-index: 1 !important;
         }
 
         .form-check-label {
