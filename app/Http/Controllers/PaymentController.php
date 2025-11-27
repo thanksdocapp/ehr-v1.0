@@ -640,14 +640,30 @@ class PaymentController extends Controller
                     }
                     
                     // Also update the admin billing if connected
+                    // Note: syncToAdminBilling already handles this, but we ensure it's done here too
                     if ($patientPayment->invoice->billing_id) {
                         $adminBilling = Billing::find($patientPayment->invoice->billing_id);
                         if ($adminBilling) {
-                            $adminBilling->update(['status' => 'paid']);
+                            // Calculate total paid from all completed payments
+                            $totalPaid = $patientPayment->invoice->payments()
+                                ->where('status', 'completed')
+                                ->sum('amount');
+                            
+                            // Update paid_amount - the model's saving event will automatically update status to 'paid' if paid_amount >= total_amount
+                            $adminBilling->update([
+                                'paid_amount' => $totalPaid,
+                                'payment_method' => $patientPayment->payment_method ?? 'card',
+                                'payment_reference' => $patientPayment->transaction_id ?? 'ONLINE_PAYMENT',
+                                'paid_at' => $totalPaid >= $adminBilling->total_amount ? now() : $adminBilling->paid_at,
+                            ]);
+                            
                             Log::info('Admin billing updated from patient payment via webhook', [
                                 'billing_id' => $adminBilling->id,
                                 'invoice_id' => $patientPayment->invoice->id,
-                                'payment_id' => $patientPayment->id
+                                'payment_id' => $patientPayment->id,
+                                'total_paid' => $totalPaid,
+                                'billing_total' => $adminBilling->total_amount,
+                                'billing_status' => $adminBilling->fresh()->status
                             ]);
                         }
                     }
