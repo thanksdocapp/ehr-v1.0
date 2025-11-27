@@ -28,6 +28,8 @@
         
         <!-- Bootstrap JS -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
+        
+        @stack('scripts')
     </head>
     <body class="bg-light">
         <div class="min-vh-100 d-flex flex-column py-4">
@@ -44,5 +46,7 @@
                 @yield('content')
             </div>
         </div>
+        
+        @stack('scripts')
     </body>
 </html>
