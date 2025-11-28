@@ -1721,7 +1721,7 @@ class HospitalEmailNotificationService
         ];
 
         // Always send direct email with custom subject and message
-        return $this->sendDirectGpEmail($patient, $subject, $message, $variables, $sentBy, $medicalRecordAttachments, $uploadedFiles);
+        return $this->sendDirectGpEmail($patient, $subject, $message, $variables, $sentBy, $emailType, $medicalRecordAttachments, $uploadedFiles);
     }
 
     /**
@@ -1732,11 +1732,12 @@ class HospitalEmailNotificationService
      * @param string $message
      * @param array $variables
      * @param User|null $sentBy
+     * @param string $emailType
      * @param array $medicalRecordAttachments Array of MedicalRecordAttachment models
      * @param array $uploadedFiles Array of uploaded file objects
      * @return EmailLog|null
      */
-    private function sendDirectGpEmail(Patient $patient, string $subject, string $message, array $variables, User $sentBy = null, array $medicalRecordAttachments = [], array $uploadedFiles = [])
+    private function sendDirectGpEmail(Patient $patient, string $subject, string $message, array $variables, User $sentBy = null, string $emailType = 'general', array $medicalRecordAttachments = [], array $uploadedFiles = [])
     {
         try {
             $hospitalName = $variables['hospital_name'];
