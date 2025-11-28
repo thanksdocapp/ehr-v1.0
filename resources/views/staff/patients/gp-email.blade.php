@@ -231,14 +231,25 @@
 <!-- Quill Rich Text Editor -->
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Quill editor
-    let quillEditor = null;
-    const editorElement = document.getElementById('messageEditor');
-    const messageTextarea = document.getElementById('message');
-    
-    if (editorElement) {
-        quillEditor = new Quill('#messageEditor', {
+(function() {
+    // Wait for both DOM and Quill to be ready
+    function initQuillEditor() {
+        if (typeof Quill === 'undefined') {
+            console.error('Quill library not loaded');
+            setTimeout(initQuillEditor, 100);
+            return;
+        }
+        
+        const editorElement = document.getElementById('messageEditor');
+        const messageTextarea = document.getElementById('message');
+        
+        if (!editorElement) {
+            console.error('Editor element not found');
+            return;
+        }
+        
+        // Initialize Quill editor
+        let quillEditor = new Quill('#messageEditor', {
             theme: 'snow',
             modules: {
                 toolbar: [
@@ -255,37 +266,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Set initial content if exists
-        const initialContent = messageTextarea.value || '';
-        if (initialContent) {
+        const initialContent = messageTextarea ? messageTextarea.value : '';
+        if (initialContent && initialContent.trim()) {
             quillEditor.root.innerHTML = initialContent;
         }
         
         // Update hidden textarea on text change
         quillEditor.on('text-change', function() {
-            const html = quillEditor.root.innerHTML;
-            const text = quillEditor.getText().trim();
-            messageTextarea.value = html;
-            
-            // Update textarea for validation
-            if (text) {
-                messageTextarea.setCustomValidity('');
-            } else {
-                messageTextarea.setCustomValidity('Please enter a message.');
+            if (messageTextarea) {
+                const html = quillEditor.root.innerHTML;
+                const text = quillEditor.getText().trim();
+                messageTextarea.value = html;
+                
+                // Update textarea for validation
+                if (text) {
+                    messageTextarea.setCustomValidity('');
+                } else {
+                    messageTextarea.setCustomValidity('Please enter a message.');
+                }
             }
         });
-    }
-    
-    // Form validation and submission
-    const form = document.getElementById('gpEmailForm');
-    const sendBtn = document.getElementById('sendEmailBtn');
-    
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            const subject = document.getElementById('subject').value.trim();
-            let message = '';
-            
-            // Get message from Quill editor
-            if (quillEditor) {
+        
+        // Form validation and submission
+        const form = document.getElementById('gpEmailForm');
+        const sendBtn = document.getElementById('sendEmailBtn');
+        
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const subject = document.getElementById('subject');
+                const subjectValue = subject ? subject.value.trim() : '';
+                let message = '';
+                
+                // Get message from Quill editor
                 const text = quillEditor.getText().trim();
                 const html = quillEditor.root.innerHTML;
                 
@@ -297,24 +309,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Update hidden textarea with HTML content
-                messageTextarea.value = html;
+                if (messageTextarea) {
+                    messageTextarea.value = html;
+                }
                 message = text;
-            } else {
-                message = messageTextarea.value.trim();
-            }
-            
-            if (!subject || !message) {
-                e.preventDefault();
-                alert('Please fill in all required fields.');
-                return false;
-            }
-            
-            // Disable button to prevent double submission
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
-        });
+                
+                if (!subjectValue || !message) {
+                    e.preventDefault();
+                    alert('Please fill in all required fields.');
+                    return false;
+                }
+                
+                // Disable button to prevent double submission
+                if (sendBtn) {
+                    sendBtn.disabled = true;
+                    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+                }
+            });
+        }
     }
-});
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initQuillEditor);
+    } else {
+        // DOM is already ready
+        initQuillEditor();
+    }
+})();
 </script>
 @endpush
 @endsection
