@@ -9,6 +9,7 @@ use App\Models\Doctor;
 use App\Models\Department;
 use App\Services\HospitalEmailNotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class AppointmentsController extends Controller
