@@ -15,6 +15,7 @@ use App\Services\EmailNotificationService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 
 class HospitalEmailNotificationService
@@ -1674,9 +1675,11 @@ class HospitalEmailNotificationService
      * @param string $message
      * @param string $emailType
      * @param User|null $sentBy
+     * @param array $medicalRecordAttachments Array of MedicalRecordAttachment models
+     * @param array $uploadedFiles Array of uploaded file objects
      * @return EmailLog|null
      */
-    public function sendGpEmail(Patient $patient, string $subject, string $message, string $emailType = 'general', User $sentBy = null)
+    public function sendGpEmail(Patient $patient, string $subject, string $message, string $emailType = 'general', User $sentBy = null, array $medicalRecordAttachments = [], array $uploadedFiles = [])
     {
         // Check if patient has GP consent and GP email
         if (!$patient->consent_share_with_gp) {
@@ -1718,7 +1721,7 @@ class HospitalEmailNotificationService
         ];
 
         // Always send direct email with custom subject and message
-        return $this->sendDirectGpEmail($patient, $subject, $message, $variables, $sentBy);
+        return $this->sendDirectGpEmail($patient, $subject, $message, $variables, $sentBy, $medicalRecordAttachments, $uploadedFiles);
     }
 
     /**
@@ -1729,15 +1732,73 @@ class HospitalEmailNotificationService
      * @param string $message
      * @param array $variables
      * @param User|null $sentBy
+     * @param array $medicalRecordAttachments Array of MedicalRecordAttachment models
+     * @param array $uploadedFiles Array of uploaded file objects
      * @return EmailLog|null
      */
-    private function sendDirectGpEmail(Patient $patient, string $subject, string $message, array $variables, User $sentBy = null)
+    private function sendDirectGpEmail(Patient $patient, string $subject, string $message, array $variables, User $sentBy = null, array $medicalRecordAttachments = [], array $uploadedFiles = [])
     {
         try {
             $hospitalName = $variables['hospital_name'];
             $hospitalEmail = $variables['hospital_email'] ?? config('mail.from.address', 'noreply@hospital.com');
             $hospitalPhone = $variables['hospital_phone'] ?? '';
             $hospitalAddress = $variables['hospital_address'] ?? '';
+
+            // Prepare attachments array for email log
+            $attachments = [];
+            $tempFiles = [];
+            
+            // Add medical record attachments
+            foreach ($medicalRecordAttachments as $attachment) {
+                if ($attachment instanceof \App\Models\MedicalRecordAttachment) {
+                    try {
+                        $disk = Storage::disk($attachment->storage_disk);
+                        $filePath = $disk->path($attachment->file_path);
+                        
+                        if (file_exists($filePath)) {
+                            $attachments[] = [
+                                'path' => $filePath,
+                                'name' => $attachment->file_name,
+                                'type' => $attachment->file_type,
+                            ];
+                        } else {
+                            Log::warning('Medical record attachment file not found', [
+                                'attachment_id' => $attachment->id,
+                                'file_path' => $attachment->file_path,
+                                'storage_disk' => $attachment->storage_disk
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Error accessing medical record attachment', [
+                            'attachment_id' => $attachment->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
+            
+            // Add uploaded files (temporarily store them)
+            foreach ($uploadedFiles as $file) {
+                if ($file && $file->isValid()) {
+                    try {
+                        // Store file temporarily
+                        $tempPath = $file->store('temp/gp-emails', 'private');
+                        $fullPath = Storage::disk('private')->path($tempPath);
+                        $tempFiles[] = $fullPath;
+                        
+                        $attachments[] = [
+                            'path' => $fullPath,
+                            'name' => $file->getClientOriginalName(),
+                            'type' => $file->getMimeType(),
+                        ];
+                    } catch (\Exception $e) {
+                        Log::error('Error storing uploaded file for GP email', [
+                            'file_name' => $file->getClientOriginalName(),
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
 
             // Create email log entry
             $log = EmailLog::create([
@@ -1749,16 +1810,33 @@ class HospitalEmailNotificationService
                 'patient_id' => $patient->id,
                 'event' => 'gp.communication_sent',
                 'email_type' => 'medical_record',
+                'attachments' => $attachments,
                 'metadata' => [
                     'email_type' => 'gp_communication',
                     'sent_by' => $sentBy ? $sentBy->id : null,
                     'gp_email_type' => $emailType,
+                    'medical_record_count' => count($medicalRecordAttachments),
+                    'uploaded_file_count' => count($uploadedFiles),
                 ],
                 'status' => 'pending'
             ]);
 
             // Send email immediately
             $this->emailService->sendImmediateEmail($log);
+            
+            // Clean up temporary files after email is sent
+            foreach ($tempFiles as $tempFile) {
+                if (file_exists($tempFile)) {
+                    try {
+                        @unlink($tempFile);
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to delete temporary file', [
+                            'file' => $tempFile,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
 
             return $log;
         } catch (\Exception $e) {

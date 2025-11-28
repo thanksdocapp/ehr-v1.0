@@ -29,7 +29,7 @@
                     </h6>
                 </div>
                 <div class="doctor-card-body">
-                    <form action="{{ route('staff.patients.gp-email.send', $patient) }}" method="POST" id="gpEmailForm">
+                    <form action="{{ route('staff.patients.gp-email.send', $patient) }}" method="POST" id="gpEmailForm" enctype="multipart/form-data">
                         @csrf
 
                         <!-- GP Information Display -->
@@ -140,6 +140,65 @@
                             @enderror
                         </div>
 
+                        <!-- Medical Records Selection -->
+                        <div class="mb-4">
+                            <label for="medical_record_ids" class="form-label" style="color: #2d3748; font-weight: 500;">
+                                <i class="fas fa-file-medical me-2"></i>Attach Medical Records (Optional)
+                            </label>
+                            <select class="form-control @error('medical_record_ids') is-invalid @enderror" 
+                                    id="medical_record_ids" 
+                                    name="medical_record_ids[]" 
+                                    multiple
+                                    style="border: 2px solid #e2e8f0; border-radius: 6px; min-height: 120px;">
+                                @php
+                                    $medicalRecords = \App\Models\MedicalRecord::where('patient_id', $patient->id)
+                                        ->with(['doctor', 'appointment'])
+                                        ->orderBy('record_date', 'desc')
+                                        ->orderBy('created_at', 'desc')
+                                        ->get();
+                                @endphp
+                                @foreach($medicalRecords as $record)
+                                    <option value="{{ $record->id }}" {{ in_array($record->id, old('medical_record_ids', [])) ? 'selected' : '' }}>
+                                        {{ $record->record_date ? $record->record_date->format('M d, Y') : $record->created_at->format('M d, Y') }} - 
+                                        {{ ucfirst($record->record_type) }}
+                                        @if($record->doctor)
+                                            - Dr. {{ $record->doctor->full_name }}
+                                        @endif
+                                        @if($record->diagnosis)
+                                            - {{ Str::limit($record->diagnosis, 50) }}
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Hold Ctrl (or Cmd on Mac) to select multiple records. All attachments from selected records will be included.
+                            </small>
+                            @error('medical_record_ids')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- File Uploads -->
+                        <div class="mb-4">
+                            <label for="attachments" class="form-label" style="color: #2d3748; font-weight: 500;">
+                                <i class="fas fa-paperclip me-2"></i>Upload Documents (Optional)
+                            </label>
+                            <input type="file" 
+                                   class="form-control @error('attachments.*') is-invalid @enderror" 
+                                   id="attachments" 
+                                   name="attachments[]" 
+                                   multiple
+                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt,.xls,.xlsx"
+                                   style="border: 2px solid #e2e8f0; border-radius: 6px;">
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle me-1"></i>You can upload multiple files. Accepted formats: PDF, Word, Excel, Images, Text files. Max size: 10MB per file.
+                            </small>
+                            <div id="fileList" class="mt-2"></div>
+                            @error('attachments.*')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- Form Actions -->
                         <div class="d-flex justify-content-between align-items-center pt-3 border-top">
                             <a href="{{ route('staff.patients.show', $patient) }}" class="btn btn-outline-secondary">
@@ -215,6 +274,26 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('gpEmailForm');
     const sendBtn = document.getElementById('sendEmailBtn');
+    const fileInput = document.getElementById('attachments');
+    const fileList = document.getElementById('fileList');
+    
+    // Display selected files
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            fileList.innerHTML = '';
+            if (this.files.length > 0) {
+                const list = document.createElement('ul');
+                list.className = 'list-unstyled mb-0';
+                Array.from(this.files).forEach(function(file) {
+                    const li = document.createElement('li');
+                    li.className = 'mb-1';
+                    li.innerHTML = '<i class="fas fa-file me-2"></i>' + file.name + ' <small class="text-muted">(' + (file.size / 1024 / 1024).toFixed(2) + ' MB)</small>';
+                    list.appendChild(li);
+                });
+                fileList.appendChild(list);
+            }
+        });
+    }
     
     if (form) {
         form.addEventListener('submit', function(e) {
@@ -225,6 +304,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 alert('Please fill in all required fields.');
                 return false;
+            }
+            
+            // Validate file sizes
+            if (fileInput && fileInput.files.length > 0) {
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    if (fileInput.files[i].size > maxSize) {
+                        e.preventDefault();
+                        alert('File "' + fileInput.files[i].name + '" exceeds the maximum size of 10MB.');
+                        return false;
+                    }
+                }
             }
             
             // Disable button to prevent double submission

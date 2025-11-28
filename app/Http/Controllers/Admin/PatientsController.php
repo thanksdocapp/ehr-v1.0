@@ -1369,6 +1369,10 @@ class PatientsController extends Controller
             'subject' => 'required|string|max:255',
             'message' => 'required|string|max:5000',
             'email_type' => 'nullable|string|in:general,consultation,referral,update,other',
+            'medical_record_ids' => 'nullable|array',
+            'medical_record_ids.*' => 'exists:medical_records,id',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png,gif,txt,xls,xlsx',
         ]);
 
         // Check if patient has GP consent and GP email
@@ -1400,12 +1404,38 @@ class PatientsController extends Controller
             $emailType = $request->email_type ?? 'general';
             $sentBy = Auth::user();
 
+            // Process medical record attachments
+            $medicalRecordIds = $request->medical_record_ids ?? [];
+            $medicalRecordAttachments = [];
+            if (!empty($medicalRecordIds)) {
+                $medicalRecords = \App\Models\MedicalRecord::whereIn('id', $medicalRecordIds)
+                    ->where('patient_id', $patient->id)
+                    ->with('attachments')
+                    ->get();
+                
+                foreach ($medicalRecords as $record) {
+                    foreach ($record->attachments as $attachment) {
+                        $medicalRecordAttachments[] = $attachment;
+                    }
+                }
+            }
+
+            // Process uploaded files
+            $uploadedFiles = [];
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $uploadedFiles[] = $file;
+                }
+            }
+
             $emailLog = $emailService->sendGpEmail(
                 $patient,
                 $request->subject,
                 $request->message,
                 $emailType,
-                $sentBy
+                $sentBy,
+                $medicalRecordAttachments,
+                $uploadedFiles
             );
 
             if ($emailLog) {
