@@ -125,13 +125,13 @@
                             <label for="message" class="form-label" style="color: #2d3748; font-weight: 500;">
                                 <i class="fas fa-comment-alt me-2"></i>Message <span class="text-danger">*</span>
                             </label>
-                            <textarea class="form-control @error('message') is-invalid @enderror" 
+                            <!-- Rich Text Editor Container -->
+                            <div id="messageEditor" style="border: 2px solid #e2e8f0; border-radius: 6px; min-height: 300px; background: white;"></div>
+                            <!-- Hidden textarea for form submission -->
+                            <textarea class="form-control @error('message') is-invalid @enderror d-none" 
                                       id="message" 
                                       name="message" 
-                                      rows="10" 
-                                      required
-                                      placeholder="Enter your message to the GP..."
-                                      style="border: 2px solid #e2e8f0; border-radius: 6px; resize: vertical;">{{ old('message') }}</textarea>
+                                      required>{{ old('message') }}</textarea>
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle me-1"></i>Patient information will be automatically included in the email.
                             </small>
@@ -210,16 +210,98 @@
     </div>
 </div>
 
+@push('styles')
+<!-- Quill Rich Text Editor -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<style>
+    #messageEditor {
+        min-height: 300px;
+    }
+    .ql-editor {
+        min-height: 280px;
+        font-size: 14px;
+    }
+    .ql-container {
+        font-family: inherit;
+    }
+</style>
+@endpush
+
 @push('scripts')
+<!-- Quill Rich Text Editor -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Quill editor
+    let quillEditor = null;
+    const editorElement = document.getElementById('messageEditor');
+    const messageTextarea = document.getElementById('message');
+    
+    if (editorElement) {
+        quillEditor = new Quill('#messageEditor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'align': [] }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Enter your message to the GP...'
+        });
+        
+        // Set initial content if exists
+        const initialContent = messageTextarea.value || '';
+        if (initialContent) {
+            quillEditor.root.innerHTML = initialContent;
+        }
+        
+        // Update hidden textarea on text change
+        quillEditor.on('text-change', function() {
+            const html = quillEditor.root.innerHTML;
+            const text = quillEditor.getText().trim();
+            messageTextarea.value = html;
+            
+            // Update textarea for validation
+            if (text) {
+                messageTextarea.setCustomValidity('');
+            } else {
+                messageTextarea.setCustomValidity('Please enter a message.');
+            }
+        });
+    }
+    
+    // Form validation and submission
     const form = document.getElementById('gpEmailForm');
     const sendBtn = document.getElementById('sendEmailBtn');
     
     if (form) {
         form.addEventListener('submit', function(e) {
             const subject = document.getElementById('subject').value.trim();
-            const message = document.getElementById('message').value.trim();
+            let message = '';
+            
+            // Get message from Quill editor
+            if (quillEditor) {
+                const text = quillEditor.getText().trim();
+                const html = quillEditor.root.innerHTML;
+                
+                if (!text) {
+                    e.preventDefault();
+                    alert('Please enter a message.');
+                    quillEditor.focus();
+                    return false;
+                }
+                
+                // Update hidden textarea with HTML content
+                messageTextarea.value = html;
+                message = text;
+            } else {
+                message = messageTextarea.value.trim();
+            }
             
             if (!subject || !message) {
                 e.preventDefault();
