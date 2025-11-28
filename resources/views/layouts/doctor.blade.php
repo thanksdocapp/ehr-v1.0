@@ -1101,7 +1101,7 @@
     
     @stack('styles')
 </head>
-<body class="{{ auth()->check() && auth()->user()->role === 'doctor' && auth()->user()->dark_mode ? 'dark-mode' : '' }}">
+<body>
     <!-- Doctor Sidebar -->
     <aside class="doctor-sidebar" id="doctorSidebar">
         <div class="doctor-sidebar-header">
