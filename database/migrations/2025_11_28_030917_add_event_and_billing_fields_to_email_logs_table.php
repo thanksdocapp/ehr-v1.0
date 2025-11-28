@@ -15,38 +15,70 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('email_logs', function (Blueprint $table) {
-            // Check if email_type column exists to determine where to place event
-            $hasEmailType = Schema::hasColumn('email_logs', 'email_type');
-            $hasPatientId = Schema::hasColumn('email_logs', 'patient_id');
-            
+        // Check if columns exist BEFORE using them in ->after()
+        $hasEmailType = Schema::hasColumn('email_logs', 'email_type');
+        $hasPatientId = Schema::hasColumn('email_logs', 'patient_id');
+        $hasMetadata = Schema::hasColumn('email_logs', 'metadata');
+        $hasBillingId = Schema::hasColumn('email_logs', 'billing_id');
+        $hasInvoiceId = Schema::hasColumn('email_logs', 'invoice_id');
+        $hasPaymentId = Schema::hasColumn('email_logs', 'payment_id');
+        $hasEvent = Schema::hasColumn('email_logs', 'event');
+        
+        Schema::table('email_logs', function (Blueprint $table) use ($hasEmailType, $hasMetadata, $hasPatientId, $hasBillingId, $hasInvoiceId, $hasPaymentId, $hasEvent) {
             // Add event field for tracking email types/events
-            if ($hasEmailType) {
-                $table->string('event')->nullable()->after('email_type');
-            } else {
-                $table->string('event')->nullable()->after('metadata');
+            if (!$hasEvent) {
+                if ($hasEmailType) {
+                    $table->string('event')->nullable()->after('email_type');
+                } elseif ($hasMetadata) {
+                    $table->string('event')->nullable()->after('metadata');
+                } else {
+                    $table->string('event')->nullable();
+                }
             }
             
-            // Add billing and payment related fields after patient_id if it exists, otherwise after recipient_email
-            if ($hasPatientId) {
-                $table->foreignId('billing_id')->nullable()->after('patient_id')->constrained('billings')->onDelete('cascade');
-            } else {
-                // If patient_id doesn't exist, add it first, then billing_id
+            // Add patient_id if it doesn't exist
+            if (!$hasPatientId) {
                 $table->foreignId('patient_id')->nullable()->after('recipient_email')->constrained('patients')->onDelete('cascade');
-                $table->foreignId('billing_id')->nullable()->after('patient_id')->constrained('billings')->onDelete('cascade');
             }
             
-            $table->foreignId('invoice_id')->nullable()->after('billing_id')->constrained('invoices')->onDelete('cascade');
-            $table->foreignId('payment_id')->nullable()->after('invoice_id')->constrained('payments')->onDelete('cascade');
+            // Add billing and payment related fields
+            if (!$hasBillingId) {
+                $placementColumn = $hasPatientId ? 'patient_id' : 'recipient_email';
+                $table->foreignId('billing_id')->nullable()->after($placementColumn)->constrained('billings')->onDelete('cascade');
+            }
             
-            // Add indexes for better query performance
-            $table->index('event');
-            if ($hasPatientId || !$hasPatientId) {
+            if (!$hasInvoiceId) {
+                $placementColumn = $hasBillingId ? 'billing_id' : ($hasPatientId ? 'patient_id' : 'recipient_email');
+                $table->foreignId('invoice_id')->nullable()->after($placementColumn)->constrained('invoices')->onDelete('cascade');
+            }
+            
+            if (!$hasPaymentId) {
+                $placementColumn = $hasInvoiceId ? 'invoice_id' : ($hasBillingId ? 'billing_id' : ($hasPatientId ? 'patient_id' : 'recipient_email'));
+                $table->foreignId('payment_id')->nullable()->after($placementColumn)->constrained('payments')->onDelete('cascade');
+            }
+        });
+        
+        // Add indexes separately to avoid issues if columns already exist
+        $sm = Schema::getConnection()->getDoctrineSchemaManager();
+        $indexesFound = $sm->listTableIndexes('email_logs');
+        
+        Schema::table('email_logs', function (Blueprint $table) use ($indexesFound) {
+            // Only add indexes if they don't already exist
+            if (!isset($indexesFound['email_logs_event_index']) && Schema::hasColumn('email_logs', 'event')) {
+                $table->index('event');
+            }
+            if (!isset($indexesFound['email_logs_patient_id_index']) && Schema::hasColumn('email_logs', 'patient_id')) {
                 $table->index('patient_id');
             }
-            $table->index('billing_id');
-            $table->index('invoice_id');
-            $table->index('payment_id');
+            if (!isset($indexesFound['email_logs_billing_id_index']) && Schema::hasColumn('email_logs', 'billing_id')) {
+                $table->index('billing_id');
+            }
+            if (!isset($indexesFound['email_logs_invoice_id_index']) && Schema::hasColumn('email_logs', 'invoice_id')) {
+                $table->index('invoice_id');
+            }
+            if (!isset($indexesFound['email_logs_payment_id_index']) && Schema::hasColumn('email_logs', 'payment_id')) {
+                $table->index('payment_id');
+            }
         });
     }
 
