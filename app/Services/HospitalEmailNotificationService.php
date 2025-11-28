@@ -1885,20 +1885,37 @@ class HospitalEmailNotificationService
         ];
 
         $subject = 'Payment Receipt - Invoice #' . $invoice->invoice_number;
+        $body = $this->formatPaymentReceiptBody($variables);
 
         try {
-            return $this->emailService->sendImmediateEmail(
-                $patient->email,
-                $patient->full_name,
-                $subject,
-                $this->formatPaymentReceiptBody($variables)
-            );
+            // Create EmailLog entry first
+            $emailLog = EmailLog::create([
+                'recipient_email' => $patient->email,
+                'recipient_name' => $patient->full_name,
+                'subject' => $subject,
+                'body' => $body,
+                'status' => 'pending',
+                'email_template_id' => null, // Payment receipt doesn't use a template
+            ]);
+
+            // Send the email using the EmailLog
+            $this->emailService->sendImmediateEmail($emailLog);
+
+            Log::info('Payment receipt email sent successfully', [
+                'invoice_id' => $invoice->id,
+                'payment_id' => $payment->id,
+                'patient_email' => $patient->email,
+                'email_log_id' => $emailLog->id
+            ]);
+
+            return $emailLog;
         } catch (Exception $e) {
             Log::error('Failed to send payment receipt email', [
                 'invoice_id' => $invoice->id,
                 'payment_id' => $payment->id,
                 'patient_email' => $patient->email,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             return null;
         }
