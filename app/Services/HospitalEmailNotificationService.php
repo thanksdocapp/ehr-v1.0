@@ -14,6 +14,7 @@ use App\Jobs\SendEmail;
 use App\Services\EmailNotificationService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Schema;
 use Exception;
 
 class HospitalEmailNotificationService
@@ -502,25 +503,61 @@ class HospitalEmailNotificationService
             $body = $this->formatBillingEmailBody($variables);
             
             // Create email log entry directly (exactly like GP email method)
-            $log = \App\Models\EmailLog::create([
-                'recipient_email' => $patient->email,
-                'recipient_name' => $patient->full_name,
-                'subject' => $subject,
-                'body' => $body,
-                'variables' => $variables,
-                'patient_id' => $patient->id,
-                'billing_id' => $billing->id,
-                'invoice_id' => $invoice ? $invoice->id : null,
-                'event' => 'billing.invoice_sent',
-                'email_type' => 'billing',
-                'metadata' => [
-                    'email_type' => 'billing_notification',
-                    'billing_id' => $billing->id,
-                    'invoice_id' => $invoice ? $invoice->id : null,
-                    'payment_url' => $paymentUrl,
-                ],
-                'status' => 'pending'
-            ]);
+            // Use try-catch to handle any missing columns gracefully
+            try {
+                $logData = [
+                    'recipient_email' => $patient->email,
+                    'recipient_name' => $patient->full_name,
+                    'subject' => $subject,
+                    'body' => $body,
+                    'variables' => $variables,
+                    'status' => 'pending',
+                    'metadata' => [
+                        'email_type' => 'billing_notification',
+                        'billing_id' => $billing->id,
+                        'invoice_id' => $invoice ? $invoice->id : null,
+                        'payment_url' => $paymentUrl,
+                    ],
+                ];
+                
+                // Add optional fields only if they exist in the database
+                if (Schema::hasColumn('email_logs', 'patient_id')) {
+                    $logData['patient_id'] = $patient->id;
+                }
+                if (Schema::hasColumn('email_logs', 'billing_id')) {
+                    $logData['billing_id'] = $billing->id;
+                }
+                if (Schema::hasColumn('email_logs', 'invoice_id')) {
+                    $logData['invoice_id'] = $invoice ? $invoice->id : null;
+                }
+                if (Schema::hasColumn('email_logs', 'event')) {
+                    $logData['event'] = 'billing.invoice_sent';
+                }
+                if (Schema::hasColumn('email_logs', 'email_type')) {
+                    $logData['email_type'] = 'billing';
+                }
+                
+                $log = \App\Models\EmailLog::create($logData);
+            } catch (\Exception $createException) {
+                // Fallback: create without optional fields
+                \Log::warning('Failed to create EmailLog with all fields, trying minimal fields', [
+                    'error' => $createException->getMessage()
+                ]);
+                $log = \App\Models\EmailLog::create([
+                    'recipient_email' => $patient->email,
+                    'recipient_name' => $patient->full_name,
+                    'subject' => $subject,
+                    'body' => $body,
+                    'variables' => $variables,
+                    'status' => 'pending',
+                    'metadata' => [
+                        'email_type' => 'billing_notification',
+                        'billing_id' => $billing->id,
+                        'invoice_id' => $invoice ? $invoice->id : null,
+                        'payment_url' => $paymentUrl,
+                    ],
+                ]);
+            }
 
             \Log::info('Billing notification EmailLog created, attempting to send', [
                 'email_log_id' => $log->id,
@@ -1956,28 +1993,68 @@ class HospitalEmailNotificationService
 
         try {
             // Create EmailLog entry first
-            $emailLog = EmailLog::create([
-                'recipient_email' => $patient->email,
-                'recipient_name' => $patient->full_name,
-                'subject' => $subject,
-                'body' => $body,
-                'variables' => $variables,
-                'patient_id' => $patient->id,
-                'billing_id' => $billing ? $billing->id : null,
-                'invoice_id' => $invoice->id,
-                'payment_id' => $payment->id,
-                'event' => 'payment.receipt_sent',
-                'email_type' => 'billing',
-                'metadata' => [
-                    'email_type' => 'payment_receipt',
-                    'invoice_id' => $invoice->id,
-                    'payment_id' => $payment->id,
-                    'billing_id' => $billing ? $billing->id : null,
-                    'transaction_id' => $payment->transaction_id ?? $payment->gateway_transaction_id ?? null,
-                ],
-                'status' => 'pending',
-                'email_template_id' => null, // Payment receipt doesn't use a template
-            ]);
+            // Use try-catch to handle any missing columns gracefully
+            try {
+                $logData = [
+                    'recipient_email' => $patient->email,
+                    'recipient_name' => $patient->full_name,
+                    'subject' => $subject,
+                    'body' => $body,
+                    'variables' => $variables,
+                    'status' => 'pending',
+                    'email_template_id' => null, // Payment receipt doesn't use a template
+                    'metadata' => [
+                        'email_type' => 'payment_receipt',
+                        'invoice_id' => $invoice->id,
+                        'payment_id' => $payment->id,
+                        'billing_id' => $billing ? $billing->id : null,
+                        'transaction_id' => $payment->transaction_id ?? $payment->gateway_transaction_id ?? null,
+                    ],
+                ];
+                
+                // Add optional fields only if they exist in the database
+                if (Schema::hasColumn('email_logs', 'patient_id')) {
+                    $logData['patient_id'] = $patient->id;
+                }
+                if (Schema::hasColumn('email_logs', 'billing_id')) {
+                    $logData['billing_id'] = $billing ? $billing->id : null;
+                }
+                if (Schema::hasColumn('email_logs', 'invoice_id')) {
+                    $logData['invoice_id'] = $invoice->id;
+                }
+                if (Schema::hasColumn('email_logs', 'payment_id')) {
+                    $logData['payment_id'] = $payment->id;
+                }
+                if (Schema::hasColumn('email_logs', 'event')) {
+                    $logData['event'] = 'payment.receipt_sent';
+                }
+                if (Schema::hasColumn('email_logs', 'email_type')) {
+                    $logData['email_type'] = 'billing';
+                }
+                
+                $emailLog = EmailLog::create($logData);
+            } catch (\Exception $createException) {
+                // Fallback: create without optional fields
+                Log::warning('Failed to create EmailLog with all fields, trying minimal fields', [
+                    'error' => $createException->getMessage()
+                ]);
+                $emailLog = EmailLog::create([
+                    'recipient_email' => $patient->email,
+                    'recipient_name' => $patient->full_name,
+                    'subject' => $subject,
+                    'body' => $body,
+                    'variables' => $variables,
+                    'status' => 'pending',
+                    'email_template_id' => null,
+                    'metadata' => [
+                        'email_type' => 'payment_receipt',
+                        'invoice_id' => $invoice->id,
+                        'payment_id' => $payment->id,
+                        'billing_id' => $billing ? $billing->id : null,
+                        'transaction_id' => $payment->transaction_id ?? $payment->gateway_transaction_id ?? null,
+                    ],
+                ]);
+            }
 
             Log::info('Payment receipt EmailLog created, attempting to send', [
                 'email_log_id' => $emailLog->id,
