@@ -622,7 +622,7 @@
                            value="1" 
                            required>
                     <label class="form-check-label fw-bold small" for="pre_consultation_verified">
-                        ☐ I confirm the above checks are complete.
+                        I ({{ $doctorName }}) confirm the above are complete.
                     </label>
                     @error('pre_consultation_verified')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
