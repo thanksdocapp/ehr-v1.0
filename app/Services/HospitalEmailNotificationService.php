@@ -530,7 +530,28 @@ class HospitalEmailNotificationService
 
             // Send email immediately (same method as GP email - this works!)
             try {
-                $this->emailService->sendImmediateEmail($log);
+                $sendResult = $this->emailService->sendImmediateEmail($log);
+                
+                // Refresh to get updated status
+                $log->refresh();
+                
+                if ($sendResult === true && $log->status === 'sent') {
+                    \Log::info('Billing notification email sent successfully via direct method', [
+                        'billing_id' => $billing->id,
+                        'patient_email' => $patient->email,
+                        'email_log_id' => $log->id,
+                        'sent_at' => $log->sent_at
+                    ]);
+                } else {
+                    \Log::error('Billing notification direct email failed', [
+                        'billing_id' => $billing->id,
+                        'patient_email' => $patient->email,
+                        'email_log_id' => $log->id,
+                        'status' => $log->status,
+                        'error_message' => $log->error_message,
+                        'send_result' => $sendResult
+                    ]);
+                }
             } catch (\Exception $sendException) {
                 \Log::error('Exception while calling sendImmediateEmail for billing notification', [
                     'email_log_id' => $log->id,
@@ -539,28 +560,12 @@ class HospitalEmailNotificationService
                     'error' => $sendException->getMessage(),
                     'trace' => $sendException->getTraceAsString()
                 ]);
+                
+                // Refresh to get updated status
+                $log->refresh();
+                
                 // Re-throw to be caught by outer try-catch
                 throw $sendException;
-            }
-            
-            // Refresh to get updated status
-            $log->refresh();
-            
-            if ($log->status === 'sent') {
-                \Log::info('Billing notification email sent successfully via direct method', [
-                    'billing_id' => $billing->id,
-                    'patient_email' => $patient->email,
-                    'email_log_id' => $log->id,
-                    'sent_at' => $log->sent_at
-                ]);
-            } else {
-                \Log::error('Billing notification direct email failed', [
-                    'billing_id' => $billing->id,
-                    'patient_email' => $patient->email,
-                    'email_log_id' => $log->id,
-                    'status' => $log->status,
-                    'error_message' => $log->error_message
-                ]);
             }
             
             return $log;
@@ -1983,7 +1988,30 @@ class HospitalEmailNotificationService
 
             // Send the email using the EmailLog
             try {
-                $this->emailService->sendImmediateEmail($emailLog);
+                $sendResult = $this->emailService->sendImmediateEmail($emailLog);
+                
+                // Refresh to get updated status
+                $emailLog->refresh();
+
+                if ($sendResult === true && $emailLog->status === 'sent') {
+                    Log::info('Payment receipt email sent successfully', [
+                        'invoice_id' => $invoice->id,
+                        'payment_id' => $payment->id,
+                        'patient_email' => $patient->email,
+                        'email_log_id' => $emailLog->id,
+                        'sent_at' => $emailLog->sent_at
+                    ]);
+                } else {
+                    Log::error('Payment receipt email failed to send', [
+                        'invoice_id' => $invoice->id,
+                        'payment_id' => $payment->id,
+                        'patient_email' => $patient->email,
+                        'email_log_id' => $emailLog->id,
+                        'status' => $emailLog->status,
+                        'error_message' => $emailLog->error_message,
+                        'send_result' => $sendResult
+                    ]);
+                }
             } catch (\Exception $sendException) {
                 Log::error('Exception while calling sendImmediateEmail for payment receipt', [
                     'email_log_id' => $emailLog->id,
@@ -1993,30 +2021,12 @@ class HospitalEmailNotificationService
                     'error' => $sendException->getMessage(),
                     'trace' => $sendException->getTraceAsString()
                 ]);
+                
+                // Refresh to get updated status
+                $emailLog->refresh();
+                
                 // Re-throw to be caught by outer try-catch
                 throw $sendException;
-            }
-            
-            // Refresh to get updated status
-            $emailLog->refresh();
-
-            if ($emailLog->status === 'sent') {
-                Log::info('Payment receipt email sent successfully', [
-                    'invoice_id' => $invoice->id,
-                    'payment_id' => $payment->id,
-                    'patient_email' => $patient->email,
-                    'email_log_id' => $emailLog->id,
-                    'sent_at' => $emailLog->sent_at
-                ]);
-            } else {
-                Log::error('Payment receipt email failed to send', [
-                    'invoice_id' => $invoice->id,
-                    'payment_id' => $payment->id,
-                    'patient_email' => $patient->email,
-                    'email_log_id' => $emailLog->id,
-                    'status' => $emailLog->status,
-                    'error_message' => $emailLog->error_message
-                ]);
             }
 
             return $emailLog;
