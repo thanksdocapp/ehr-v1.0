@@ -581,17 +581,26 @@ $(document).ready(function() {
     function calculateBMI() {
         const weight = parseFloat($('#weight').val());
         const height = parseFloat($('#height').val());
+        const bmiField = $('#bmi');
         
-        if (weight && height) {
-            const bmi = (weight * 703) / (height * height);
-            $('#bmi').val(bmi.toFixed(1));
+        if (weight && height && height > 0) {
+            // Convert height from cm to meters
+            const heightInMeters = height / 100;
+            // Calculate BMI: weight (kg) / (height in meters)^2
+            const bmi = weight / (heightInMeters * heightInMeters);
+            bmiField.val(bmi.toFixed(1));
         } else {
-            $('#bmi').val('');
+            bmiField.val('');
         }
     }
 
     // BMI calculation on weight/height change
     $('#weight, #height').on('input', calculateBMI);
+    
+    // Calculate BMI on page load if values exist
+    if ($('#weight').val() && $('#height').val()) {
+        calculateBMI();
+    }
 
     // Add CSRF token to AJAX requests
     $.ajaxSetup({
@@ -975,31 +984,6 @@ $(document).ready(function() {
             @endif
         });
     @endif
-    
-    // BMI Calculation Function
-    function calculateBMI() {
-        const weight = parseFloat($('#weight').val());
-        const height = parseFloat($('#height').val());
-        const bmiField = $('#bmi');
-        
-        if (weight && height && height > 0) {
-            // Convert height from cm to meters
-            const heightInMeters = height / 100;
-            // Calculate BMI: weight (kg) / (height in meters)^2
-            const bmi = weight / (heightInMeters * heightInMeters);
-            bmiField.val(bmi.toFixed(1));
-        } else {
-            bmiField.val('');
-        }
-    }
-    
-    // Auto-calculate BMI when weight or height changes
-    $('#weight, #height').on('input', calculateBMI);
-    
-    // Calculate BMI on page load if values exist
-    if ($('#weight').val() && $('#height').val()) {
-        calculateBMI();
-    }
 
     // Auto-dismiss alerts after 5 seconds (except introduction script alert)
     setTimeout(function() {
