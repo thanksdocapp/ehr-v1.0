@@ -1272,11 +1272,7 @@
                     </div>
                 </div>
                 
-                <!-- Dark Mode Toggle -->
-                <button class="doctor-header-action" id="darkModeToggle" 
-                        title="{{ auth()->user()->dark_mode ? 'Disable Dark Mode' : 'Enable Dark Mode' }}">
-                    <i class="fas {{ auth()->user()->dark_mode ? 'fa-sun' : 'fa-moon' }}"></i>
-                </button>
+                {{-- Dark Mode Toggle - Disabled --}}
 
                 <!-- Notifications -->
                 <div class="position-relative">
@@ -1495,47 +1491,7 @@
                 });
             }
 
-            // Dark Mode Toggle
-            const darkModeToggle = document.getElementById('darkModeToggle');
-            if (darkModeToggle) {
-                darkModeToggle.addEventListener('click', function() {
-                    fetch('{{ route("staff.toggle-dark-mode") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            document.body.classList.toggle('dark-mode', data.dark_mode);
-                            const icon = darkModeToggle.querySelector('i');
-                            if (data.dark_mode) {
-                                icon.className = 'fas fa-sun';
-                                darkModeToggle.title = 'Disable Dark Mode';
-                            } else {
-                                icon.className = 'fas fa-moon';
-                                darkModeToggle.title = 'Enable Dark Mode';
-                            }
-                            
-                            if (window.Swal) {
-                                window.Swal.fire({
-                                    icon: 'success',
-                                    title: data.message,
-                                    timer: 1500,
-                                    showConfirmButton: false,
-                                    toast: true,
-                                    position: 'top-end'
-                                });
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error toggling dark mode:', error);
-                    });
-                });
-            }
+            // Dark Mode Toggle - Disabled
 
             // Load notifications (if you have a notification system)
             // You can integrate your notification loading logic here

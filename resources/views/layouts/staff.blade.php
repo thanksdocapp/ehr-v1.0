@@ -1131,7 +1131,7 @@
     
     @stack('styles')
 </head>
-<body class="{{ auth()->check() && auth()->user()->role === 'doctor' && auth()->user()->dark_mode ? 'dark-mode' : '' }}">
+<body>
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
@@ -1239,15 +1239,7 @@
                 <div class="header-subtitle">@yield('page-subtitle', 'Welcome to the staff portal')</div>
             </div>
             <div class="header-right">
-                {{-- Dark Mode Toggle (Doctor Role Only) --}}
-                @if(auth()->user()->role === 'doctor')
-                <div class="dark-mode-toggle me-3">
-                    <button class="btn btn-outline-secondary btn-sm" id="darkModeToggle" 
-                            title="{{ auth()->user()->dark_mode ? 'Disable Dark Mode' : 'Enable Dark Mode' }}">
-                        <i class="fas {{ auth()->user()->dark_mode ? 'fa-sun' : 'fa-moon' }}"></i>
-                    </button>
-                </div>
-                @endif
+                {{-- Dark Mode Toggle - Disabled --}}
                 
                 {{-- Staff Notification Bell --}}
                 <div class="header-notifications position-relative me-3">

@@ -189,27 +189,14 @@ class DashboardController extends Controller
 
     /**
      * Toggle dark mode for doctor users
+     * DISABLED - Dark mode feature has been disabled
      */
     public function toggleDarkMode(Request $request)
     {
-        $user = Auth::user();
-        
-        // Only allow doctors to toggle dark mode
-        if ($user->role !== 'doctor') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Dark mode is only available for doctors.'
-            ], 403);
-        }
-
-        // Toggle dark mode
-        $user->dark_mode = !$user->dark_mode;
-        $user->save();
-
+        // Dark mode feature is disabled
         return response()->json([
-            'success' => true,
-            'dark_mode' => $user->dark_mode,
-            'message' => $user->dark_mode ? 'Dark mode enabled' : 'Dark mode disabled'
-        ]);
+            'success' => false,
+            'message' => 'Dark mode feature has been disabled.'
+        ], 403);
     }
 }
