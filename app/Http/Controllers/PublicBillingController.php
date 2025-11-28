@@ -259,6 +259,39 @@ class PublicBillingController extends Controller
         // If session_id is provided (from Stripe), try to verify and send receipt
         if ($request->has('session_id')) {
             $this->handleStripeSuccessCallback($invoice, $request->session_id);
+        } else {
+            // For other payment gateways or direct payments, check if there's a completed payment
+            // and send receipt email if not already sent
+            $latestPayment = $invoice->payments()
+                ->where('status', 'completed')
+                ->latest()
+                ->first();
+            
+            if ($latestPayment) {
+                // Check if receipt already sent (to avoid duplicates)
+                $receiptSent = Cache::get('receipt_sent_' . $latestPayment->id, false);
+                
+                if (!$receiptSent) {
+                    try {
+                        $emailService = app(\App\Services\HospitalEmailNotificationService::class);
+                        $emailService->sendPaymentReceipt($invoice, $latestPayment);
+                        
+                        // Mark receipt as sent (cache for 1 hour)
+                        Cache::put('receipt_sent_' . $latestPayment->id, true, 3600);
+                        
+                        \Log::info('Payment receipt email sent from success page', [
+                            'invoice_id' => $invoice->id,
+                            'payment_id' => $latestPayment->id
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::error('Error sending receipt email on success page', [
+                            'invoice_id' => $invoice->id,
+                            'payment_id' => $latestPayment->id ?? null,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
         }
 
         return view('public.billing.success', compact('invoice', 'token'));
