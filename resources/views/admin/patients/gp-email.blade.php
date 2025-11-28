@@ -240,29 +240,68 @@
 @endpush
 
 @push('scripts')
-<!-- Quill Rich Text Editor -->
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<!-- Quill Rich Text Editor - Try multiple CDNs for reliability -->
 <script>
 (function() {
     let quillEditor = null;
+    let quillLoaded = false;
     let initAttempts = 0;
-    const maxAttempts = 50; // Try for 5 seconds
+    const maxAttempts = 100; // Try for 10 seconds
+    
+    // Try to load Quill from multiple CDNs
+    function loadQuill() {
+        if (typeof Quill !== 'undefined') {
+            quillLoaded = true;
+            initQuillEditor();
+            return;
+        }
+        
+        // Try primary CDN
+        const script1 = document.createElement('script');
+        script1.src = 'https://cdn.quilljs.com/1.3.6/quill.js';
+        script1.onload = function() {
+            quillLoaded = true;
+            initQuillEditor();
+        };
+        script1.onerror = function() {
+            // Try backup CDN
+            const script2 = document.createElement('script');
+            script2.src = 'https://cdn.jsdelivr.net/npm/quill@1.3.6/dist/quill.js';
+            script2.onload = function() {
+                quillLoaded = true;
+                initQuillEditor();
+            };
+            script2.onerror = function() {
+                console.error('Failed to load Quill from all CDNs');
+                showFallbackTextarea();
+            };
+            document.head.appendChild(script2);
+        };
+        document.head.appendChild(script1);
+    }
+    
+    function showFallbackTextarea() {
+        const editorElement = document.getElementById('messageEditor');
+        const messageTextarea = document.getElementById('message');
+        
+        if (editorElement && messageTextarea) {
+            editorElement.style.display = 'none';
+            messageTextarea.style.display = 'block';
+            messageTextarea.rows = 10;
+            messageTextarea.classList.add('form-control');
+        }
+    }
     
     function initQuillEditor() {
         initAttempts++;
         
         // Check if Quill is loaded
         if (typeof Quill === 'undefined') {
-            if (initAttempts < maxAttempts) {
+            if (initAttempts < maxAttempts && !quillLoaded) {
                 setTimeout(initQuillEditor, 100);
             } else {
-                console.error('Quill library failed to load after multiple attempts');
-                // Fallback: show textarea if Quill fails
-                const messageTextarea = document.getElementById('message');
-                if (messageTextarea) {
-                    messageTextarea.style.display = 'block';
-                    messageTextarea.classList.remove('d-none');
-                }
+                console.error('Quill library failed to load');
+                showFallbackTextarea();
             }
             return;
         }
@@ -272,6 +311,13 @@
         
         if (!editorElement) {
             console.error('Editor element not found');
+            showFallbackTextarea();
+            return;
+        }
+        
+        // If already initialized, don't reinitialize
+        if (editorElement.querySelector('.ql-container')) {
+            console.log('Quill editor already initialized');
             return;
         }
         
@@ -323,24 +369,29 @@
             console.log('Quill editor initialized successfully');
         } catch (error) {
             console.error('Error initializing Quill editor:', error);
-            // Fallback: show textarea if initialization fails
-            if (messageTextarea) {
-                messageTextarea.style.display = 'block';
-                messageTextarea.classList.remove('d-none');
-            }
+            showFallbackTextarea();
         }
         
         // Form validation and submission
+        setupFormValidation();
+    }
+    
+    function setupFormValidation() {
         const form = document.getElementById('gpEmailForm');
         const sendBtn = document.getElementById('sendEmailBtn');
         
         if (form) {
-            form.addEventListener('submit', function(e) {
+            // Remove existing listeners to avoid duplicates
+            const newForm = form.cloneNode(true);
+            form.parentNode.replaceChild(newForm, form);
+            
+            newForm.addEventListener('submit', function(e) {
                 const subject = document.getElementById('subject');
                 const subjectValue = subject ? subject.value.trim() : '';
+                const messageTextarea = document.getElementById('message');
                 let message = '';
                 
-                // Get message from Quill editor
+                // Get message from Quill editor or textarea
                 if (quillEditor) {
                     const text = quillEditor.getText().trim();
                     const html = quillEditor.root.innerHTML;
@@ -376,14 +427,14 @@
         }
     }
     
-    // Initialize when DOM is ready
+    // Start loading Quill when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initQuillEditor, 100);
+            setTimeout(loadQuill, 100);
         });
     } else {
-        // DOM is already ready, wait a bit for scripts to load
-        setTimeout(initQuillEditor, 100);
+        // DOM is already ready
+        setTimeout(loadQuill, 100);
     }
 })();
 </script>
