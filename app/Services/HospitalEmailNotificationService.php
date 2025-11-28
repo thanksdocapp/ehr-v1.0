@@ -1801,16 +1801,13 @@ class HospitalEmailNotificationService
                 }
             }
 
-            // Create email log entry
-            $log = EmailLog::create([
+            // Create email log entry - check for column existence first
+            $emailLogData = [
                 'recipient_email' => $patient->gp_email,
                 'recipient_name' => $patient->gp_name ?? 'GP',
                 'subject' => $subject,
                 'body' => $this->formatGpEmailBody($message, $variables),
                 'variables' => $variables,
-                'patient_id' => $patient->id,
-                'event' => 'gp.communication_sent',
-                'email_type' => 'medical_record',
                 'attachments' => $attachments,
                 'metadata' => [
                     'email_type' => 'gp_communication',
@@ -1820,7 +1817,21 @@ class HospitalEmailNotificationService
                     'uploaded_file_count' => count($uploadedFiles),
                 ],
                 'status' => 'pending'
-            ]);
+            ];
+
+            // Conditionally add fields if they exist in the database schema
+            $emailLogSchema = Schema::getColumnListing('email_logs');
+            if (in_array('patient_id', $emailLogSchema)) {
+                $emailLogData['patient_id'] = $patient->id;
+            }
+            if (in_array('event', $emailLogSchema)) {
+                $emailLogData['event'] = 'gp.communication_sent';
+            }
+            if (in_array('email_type', $emailLogSchema)) {
+                $emailLogData['email_type'] = 'medical_record';
+            }
+
+            $log = EmailLog::create($emailLogData);
 
             // Send email immediately
             $this->emailService->sendImmediateEmail($log);
