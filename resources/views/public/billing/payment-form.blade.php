@@ -1,4 +1,9 @@
 @extends('layouts.guest')
+@php
+    use App\Helpers\CurrencyHelper;
+    $currency = $invoice->currency ?? CurrencyHelper::getDefaultCurrency();
+    $currencySymbol = $currency === 'GBP' ? '£' : ($currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : CurrencyHelper::getCurrencySymbol()));
+@endphp
 
 @push('styles')
 <style>
@@ -40,7 +45,7 @@
 
                     <div class="mb-4">
                         <h6 class="text-muted mb-2">Amount to Pay</h6>
-                        <p class="mb-0 fs-4 fw-bold text-primary">${{ number_format($invoice->outstanding_amount, 2) }}</p>
+                        <p class="mb-0 fs-4 fw-bold text-primary">{{ $currencySymbol }}{{ number_format($invoice->outstanding_amount, 2) }}</p>
                     </div>
 
                     <form method="POST" action="{{ route('public.billing.process-payment', ['token' => $token]) }}" id="proceed-payment-form">

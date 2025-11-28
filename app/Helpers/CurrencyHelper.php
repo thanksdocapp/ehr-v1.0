@@ -14,7 +14,7 @@ class CurrencyHelper
     {
         return Cache::remember('app_default_currency', 3600, function () {
             $setting = Setting::where('key', 'default_currency')->first();
-            return $setting?->value ?? 'USD'; // Fallback to USD if not set
+            return $setting?->value ?? 'GBP'; // Fallback to GBP if not set
         });
     }
 
@@ -25,7 +25,7 @@ class CurrencyHelper
     {
         return Cache::remember('app_currency_symbol', 3600, function () {
             $setting = Setting::where('key', 'currency_symbol')->first();
-            return $setting?->value ?? '$'; // Fallback to $ if not set
+            return $setting?->value ?? '£'; // Fallback to £ if not set
         });
     }
 

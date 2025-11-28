@@ -1,4 +1,9 @@
 @extends('layouts.guest')
+@php
+    use App\Helpers\CurrencyHelper;
+    $currency = $invoice->currency ?? CurrencyHelper::getDefaultCurrency();
+    $currencySymbol = $currency === 'GBP' ? '£' : ($currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : CurrencyHelper::getCurrencySymbol()));
+@endphp
 
 @push('styles')
 <style>
@@ -191,7 +196,7 @@
                         </div>
                         <div class="col-md-4">
                             <h6 class="text-muted mb-2">Total Amount</h6>
-                            <p class="mb-0 amount-display">${{ number_format($invoice->total_amount, 2) }}</p>
+                            <p class="mb-0 amount-display">{{ $currencySymbol }}{{ number_format($invoice->total_amount, 2) }}</p>
                         </div>
                     </div>
 
@@ -214,32 +219,32 @@
                             <tbody>
                                 <tr>
                                     <td>Subtotal</td>
-                                    <td class="text-end">${{ number_format($invoice->subtotal, 2) }}</td>
+                                    <td class="text-end">{{ $currencySymbol }}{{ number_format($invoice->subtotal, 2) }}</td>
                                 </tr>
                                 @if($invoice->discount_amount > 0)
                                 <tr>
                                     <td>Discount</td>
-                                    <td class="text-end text-success">-${{ number_format($invoice->discount_amount, 2) }}</td>
+                                    <td class="text-end text-success">-{{ $currencySymbol }}{{ number_format($invoice->discount_amount, 2) }}</td>
                                 </tr>
                                 @endif
                                 @if($invoice->tax_amount > 0)
                                 <tr>
                                     <td>Tax</td>
-                                    <td class="text-end">${{ number_format($invoice->tax_amount, 2) }}</td>
+                                    <td class="text-end">{{ $currencySymbol }}{{ number_format($invoice->tax_amount, 2) }}</td>
                                 </tr>
                                 @endif
                                 <tr class="table-primary">
                                     <td><strong>Total</strong></td>
-                                    <td class="text-end"><strong>${{ number_format($invoice->total_amount, 2) }}</strong></td>
+                                    <td class="text-end"><strong>{{ $currencySymbol }}{{ number_format($invoice->total_amount, 2) }}</strong></td>
                                 </tr>
                                 @if($invoice->paid_amount > 0)
                                 <tr>
                                     <td>Paid Amount</td>
-                                    <td class="text-end text-success">${{ number_format($invoice->paid_amount, 2) }}</td>
+                                    <td class="text-end text-success">{{ $currencySymbol }}{{ number_format($invoice->paid_amount, 2) }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Balance Due</strong></td>
-                                    <td class="text-end"><strong>${{ number_format($invoice->outstanding_amount, 2) }}</strong></td>
+                                    <td class="text-end"><strong>{{ $currencySymbol }}{{ number_format($invoice->outstanding_amount, 2) }}</strong></td>
                                 </tr>
                                 @endif
                             </tbody>

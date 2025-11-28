@@ -32,7 +32,12 @@
                                     <strong>Total Amount:</strong>
                                 </div>
                                 <div class="col-6 mb-2">
-                                    ${{ number_format($invoice->total_amount, 2) }}
+                                    @php
+                                        use App\Helpers\CurrencyHelper;
+                                        $currency = $invoice->currency ?? CurrencyHelper::getDefaultCurrency();
+                                        $currencySymbol = $currency === 'GBP' ? '£' : ($currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : CurrencyHelper::getCurrencySymbol()));
+                                    @endphp
+                                    {{ $currencySymbol }}{{ number_format($invoice->total_amount, 2) }}
                                 </div>
                                 @if($invoice->paid_date)
                                 <div class="col-6 mb-2">
