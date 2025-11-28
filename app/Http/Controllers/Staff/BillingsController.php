@@ -25,19 +25,8 @@ class BillingsController extends Controller
         $user = Auth::user();
         $query = Billing::with(['patient', 'doctor', 'appointment']);
 
-        // Department-based filtering
-        $departmentId = null;
-        if ($user->role === 'doctor') {
-            $doctor = Doctor::where('user_id', $user->id)->first();
-            $departmentId = $doctor ? $doctor->department_id : null;
-        } else {
-            $departmentId = $user->department_id;
-        }
-        if ($departmentId) {
-            $query->whereHas('doctor', function($q) use ($departmentId) {
-                $q->where('department_id', $departmentId);
-            });
-        }
+        // Apply visibility rules based on user role (uses patient-department-doctor logic)
+        $query->visibleTo($user);
 
         // ===== QUICK SEARCH (Multi-field) =====
         if ($request->filled('search')) {
