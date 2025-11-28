@@ -15,30 +15,13 @@ class PrescriptionsController extends Controller
     {
         $user = Auth::user();
         
-        // Build query based on user role
+        // Build query based on user role - use visibility scope
         $query = Prescription::with(['patient', 'doctor', 'medicalRecord']);
         
-        // Role-based filtering
-        if ($user->role === 'doctor') {
-            // Doctors can see all prescriptions they created
-            $doctor = \DB::table('doctors')->where('user_id', $user->id)->first();
-            if ($doctor) {
-                $query->where('doctor_id', $doctor->id);
-            } else {
-                // If doctor record doesn't exist, show no results
-                $query->where('doctor_id', -1);
-            }
-        } elseif ($user->role === 'pharmacist') {
-            // Pharmacists can see all prescriptions
-            // No additional filtering needed
-        } else {
-            // Other staff can see prescriptions they created or are involved with
-            $query->where(function($q) use ($user) {
-                $q->where('created_by', $user->id)
-                  ->orWhereHas('medicalRecord', function($subQuery) use ($user) {
-                      $subQuery->where('created_by', $user->id);
-                  });
-            });
+        // Apply visibility rules based on user role (uses patient-department-doctor logic)
+        // Pharmacists see all, others filtered by visibility
+        if ($user->role !== 'pharmacist') {
+            $query->visibleTo($user);
         }
         
         $prescriptions = $query->latest()->paginate(15);
@@ -85,19 +68,8 @@ class PrescriptionsController extends Controller
         }
         
         $medicalRecordsQuery = MedicalRecord::with(['patient', 'appointment', 'doctor']);
-        // Filter medical records by department for all roles
-        $departmentId = null;
-        if ($user->role === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
-            $departmentId = $doctor ? $doctor->department_id : null;
-        } else {
-            $departmentId = $user->department_id;
-        }
-        if ($departmentId) {
-            $medicalRecordsQuery->whereHas('doctor', function($q) use ($departmentId) {
-                $q->where('department_id', $departmentId);
-            });
-        }
+        // Apply visibility rules for medical records
+        $medicalRecordsQuery->visibleTo($user);
         
         // If patient_id is provided, filter medical records for that patient
         if ($selectedPatientId) {

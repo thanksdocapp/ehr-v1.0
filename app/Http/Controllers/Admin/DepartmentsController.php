@@ -209,40 +209,22 @@ class DepartmentsController extends Controller
 
         // Prescription Statistics
         $prescriptionStats = [
-            'total' => \App\Models\Prescription::whereHas('patient', function($q) use ($department) {
-                $q->whereHas('departments', function($q2) use ($department) {
-                    $q2->where('departments.id', $department->id);
-                })->orWhere('department_id', $department->id);
-            })->count(),
-            'pending' => \App\Models\Prescription::whereHas('patient', function($q) use ($department) {
-                $q->whereHas('departments', function($q2) use ($department) {
-                    $q2->where('departments.id', $department->id);
-                })->orWhere('department_id', $department->id);
-            })->where('status', 'pending')->count(),
-            'this_month' => \App\Models\Prescription::whereHas('patient', function($q) use ($department) {
-                $q->whereHas('departments', function($q2) use ($department) {
-                    $q2->where('departments.id', $department->id);
-                })->orWhere('department_id', $department->id);
-            })->whereMonth('prescription_date', now()->month)->count(),
+            'total' => \App\Models\Prescription::byDepartment($department->id)->count(),
+            'pending' => \App\Models\Prescription::byDepartment($department->id)->where('status', 'pending')->count(),
+            'this_month' => \App\Models\Prescription::byDepartment($department->id)
+                ->whereMonth('prescription_date', now()->month)
+                ->whereYear('prescription_date', now()->year)
+                ->count(),
         ];
 
         // Lab Report Statistics
         $labReportStats = [
-            'total' => \App\Models\LabReport::whereHas('patient', function($q) use ($department) {
-                $q->whereHas('departments', function($q2) use ($department) {
-                    $q2->where('departments.id', $department->id);
-                })->orWhere('department_id', $department->id);
-            })->count(),
-            'pending' => \App\Models\LabReport::whereHas('patient', function($q) use ($department) {
-                $q->whereHas('departments', function($q2) use ($department) {
-                    $q2->where('departments.id', $department->id);
-                })->orWhere('department_id', $department->id);
-            })->where('status', 'pending')->count(),
-            'this_month' => \App\Models\LabReport::whereHas('patient', function($q) use ($department) {
-                $q->whereHas('departments', function($q2) use ($department) {
-                    $q2->where('departments.id', $department->id);
-                })->orWhere('department_id', $department->id);
-            })->whereMonth('test_date', now()->month)->count(),
+            'total' => \App\Models\LabReport::byDepartment($department->id)->count(),
+            'pending' => \App\Models\LabReport::byDepartment($department->id)->where('status', 'pending')->count(),
+            'this_month' => \App\Models\LabReport::byDepartment($department->id)
+                ->whereMonth('test_date', now()->month)
+                ->whereYear('test_date', now()->year)
+                ->count(),
         ];
 
         // Today's Appointments

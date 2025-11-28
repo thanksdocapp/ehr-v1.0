@@ -18,10 +18,12 @@ class AppointmentsController extends Controller
     {
         $query = Appointment::with(['patient', 'doctor', 'department']);
 
-        // Filter for doctor's own appointments if user is a doctor
+        // Apply visibility rules based on user role (uses patient-department-doctor logic)
         $user = Auth::user();
-        if ($user->role === 'doctor' && $user->doctor) {
-            $query->where('doctor_id', $user->doctor->id);
+        if ($user) {
+            $query->visibleTo($user);
+        } else {
+            $query->whereRaw('1 = 0'); // No results if no user
         }
 
         // ===== QUICK SEARCH (Multi-field) =====

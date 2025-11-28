@@ -20,35 +20,10 @@ class LabReportsController extends Controller
         // Build query based on user role
         $query = LabReport::with(['patient', 'doctor', 'medicalRecord']);
         
-        // Role-based filtering
-        if ($user->role === 'doctor') {
-            // Get the doctor ID from the doctors table
-            $doctor = Doctor::where('user_id', $user->id)->first();
-            $doctorId = $doctor ? $doctor->id : null;
-            
-            if ($doctorId) {
-                // Doctors can see all lab reports they ordered or are related to their patients
-                $query->where(function($q) use ($doctorId) {
-                    $q->where('doctor_id', $doctorId)
-                      ->orWhereHas('medicalRecord', function($subQuery) use ($doctorId) {
-                          $subQuery->where('doctor_id', $doctorId);
-                      });
-                });
-            } else {
-                // If no doctor record found, show only reports they created
-                $query->where('created_by', $user->id);
-            }
-        } elseif ($user->role === 'technician') {
-            // Technicians can see all lab reports
-            // No additional filtering needed
-        } else {
-            // Other staff can see lab reports they created or are involved with
-            $query->where(function($q) use ($user) {
-                $q->where('created_by', $user->id)
-                  ->orWhereHas('medicalRecord', function($subQuery) use ($user) {
-                      $subQuery->where('created_by', $user->id);
-                  });
-            });
+        // Apply visibility rules based on user role (uses patient-department-doctor logic)
+        // Technicians see all, others filtered by visibility
+        if ($user->role !== 'technician') {
+            $query->visibleTo($user);
         }
         
         $labReports = $query->latest()->paginate(15);
@@ -76,23 +51,7 @@ class LabReportsController extends Controller
         
         // Get medical records visible to the user
         $medicalRecordsQuery = MedicalRecord::with(['patient', 'appointment']);
-        if ($user->role === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
-            $doctorId = $doctor ? $doctor->id : null;
-            if ($doctorId) {
-                $medicalRecordsQuery->where('doctor_id', $doctorId);
-            } else {
-                $medicalRecordsQuery->where('created_by', $user->id);
-            }
-        } else {
-            // For non-doctors, show records they created or are associated with their patients
-            $medicalRecordsQuery->where(function($q) use ($user) {
-                $q->where('created_by', $user->id)
-                  ->orWhereHas('patient', function($patientQuery) use ($user) {
-                      $patientQuery->visibleTo($user);
-                  });
-            });
-        }
+        $medicalRecordsQuery->visibleTo($user);
         $medicalRecords = $medicalRecordsQuery->latest()->get();
         
         // Get doctors list for non-doctor users who need to assign a doctor
