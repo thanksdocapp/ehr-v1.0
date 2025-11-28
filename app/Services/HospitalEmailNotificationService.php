@@ -66,7 +66,16 @@ class HospitalEmailNotificationService
         return $this->emailService->sendTemplateEmail(
             'appointment_confirmation',
             [$patient->email => $patient->full_name],
-            $variables
+            $variables,
+            [
+                'event' => 'appointment.confirmation_sent',
+                'patient_id' => $patient->id,
+                'email_type' => 'appointment',
+                'metadata' => [
+                    'appointment_id' => $appointment->id,
+                    'doctor_id' => $doctor ? $doctor->id : null,
+                ]
+            ]
         );
     }
 
@@ -105,7 +114,16 @@ class HospitalEmailNotificationService
         return $this->emailService->sendTemplateEmail(
             'appointment_reminder',
             [$patient->email => $patient->full_name],
-            $variables
+            $variables,
+            [
+                'event' => 'appointment.reminder_sent',
+                'patient_id' => $patient->id,
+                'email_type' => 'appointment',
+                'metadata' => [
+                    'appointment_id' => $appointment->id,
+                    'days_before' => $daysBefore,
+                ]
+            ]
         );
     }
 
@@ -229,7 +247,15 @@ class HospitalEmailNotificationService
         return $this->emailService->sendTemplateEmail(
             'prescription_ready',
             [$patient->email => $patient->full_name],
-            $variables
+            $variables,
+            [
+                'event' => 'prescription.ready_notification',
+                'patient_id' => $patient->id,
+                'email_type' => 'prescription',
+                'metadata' => [
+                    'prescription_id' => $prescriptionInfo['id'] ?? null,
+                ]
+            ]
         );
     }
 
@@ -260,7 +286,16 @@ class HospitalEmailNotificationService
         return $this->emailService->sendTemplateEmail(
             'payment_reminder',
             [$patient->email => $patient->full_name],
-            $variables
+            $variables,
+            [
+                'event' => 'payment.reminder_sent',
+                'patient_id' => $patient->id,
+                'email_type' => 'billing',
+                'metadata' => [
+                    'invoice_number' => $billingInfo['invoice_number'] ?? null,
+                    'amount_due' => $billingInfo['amount_due'] ?? null,
+                ]
+            ]
         );
     }
 
@@ -474,9 +509,15 @@ class HospitalEmailNotificationService
                 'body' => $body,
                 'variables' => $variables,
                 'patient_id' => $patient->id,
+                'billing_id' => $billing->id,
+                'invoice_id' => $invoice ? $invoice->id : null,
+                'event' => 'billing.invoice_sent',
+                'email_type' => 'billing',
                 'metadata' => [
                     'email_type' => 'billing_notification',
                     'billing_id' => $billing->id,
+                    'invoice_id' => $invoice ? $invoice->id : null,
+                    'payment_url' => $paymentUrl,
                 ],
                 'status' => 'pending'
             ]);
@@ -1646,9 +1687,12 @@ class HospitalEmailNotificationService
                 'body' => $this->formatGpEmailBody($message, $variables),
                 'variables' => $variables,
                 'patient_id' => $patient->id,
+                'event' => 'gp.communication_sent',
+                'email_type' => 'medical_record',
                 'metadata' => [
                     'email_type' => 'gp_communication',
                     'sent_by' => $sentBy ? $sentBy->id : null,
+                    'gp_email_type' => $emailType,
                 ],
                 'status' => 'pending'
             ]);
@@ -1894,6 +1938,20 @@ class HospitalEmailNotificationService
                 'recipient_name' => $patient->full_name,
                 'subject' => $subject,
                 'body' => $body,
+                'variables' => $variables,
+                'patient_id' => $patient->id,
+                'billing_id' => $billing ? $billing->id : null,
+                'invoice_id' => $invoice->id,
+                'payment_id' => $payment->id,
+                'event' => 'payment.receipt_sent',
+                'email_type' => 'billing',
+                'metadata' => [
+                    'email_type' => 'payment_receipt',
+                    'invoice_id' => $invoice->id,
+                    'payment_id' => $payment->id,
+                    'billing_id' => $billing ? $billing->id : null,
+                    'transaction_id' => $payment->transaction_id ?? $payment->gateway_transaction_id ?? null,
+                ],
                 'status' => 'pending',
                 'email_template_id' => null, // Payment receipt doesn't use a template
             ]);

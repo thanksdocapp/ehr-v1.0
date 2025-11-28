@@ -103,6 +103,12 @@ class EmailNotificationService
                 'bcc_emails' => $options['bcc'] ?? null,
                 'attachments' => $options['attachments'] ?? null,
                 'metadata' => $options['metadata'] ?? null,
+                'event' => $options['event'] ?? null,
+                'patient_id' => $options['patient_id'] ?? null,
+                'billing_id' => $options['billing_id'] ?? null,
+                'invoice_id' => $options['invoice_id'] ?? null,
+                'payment_id' => $options['payment_id'] ?? null,
+                'email_type' => $options['email_type'] ?? 'general',
                 'status' => 'pending'
             ]);
 

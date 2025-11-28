@@ -28,7 +28,13 @@ class EmailLog extends Model
         'error_message',
         'sent_at',
         'opened_at',
-        'metadata'
+        'metadata',
+        'event',
+        'patient_id',
+        'billing_id',
+        'invoice_id',
+        'payment_id',
+        'email_type'
     ];
 
     /**
