@@ -58,25 +58,7 @@
                     <!-- Footer -->
                     <tr>
                         <td style="background-color: #f8f9fc; padding: 20px; border-top: 1px solid #e2e8f0;">
-                            <p style="color: #4a5568; font-size: 12px; margin: 0 0 10px 0; text-align: center;">
-                                <strong>{{ $hospital_name }}</strong>
-                            </p>
-                            @if($hospital_address)
-                            <p style="color: #718096; font-size: 12px; margin: 5px 0; text-align: center;">
-                                {{ $hospital_address }}
-                            </p>
-                            @endif
-                            @if($hospital_phone)
-                            <p style="color: #718096; font-size: 12px; margin: 5px 0; text-align: center;">
-                                Phone: {{ $hospital_phone }}
-                            </p>
-                            @endif
-                            @if($hospital_email)
-                            <p style="color: #718096; font-size: 12px; margin: 5px 0; text-align: center;">
-                                Email: {{ $hospital_email }}
-                            </p>
-                            @endif
-                            <p style="color: #a0aec0; font-size: 11px; margin: 15px 0 0 0; text-align: center;">
+                            <p style="color: #a0aec0; font-size: 11px; margin: 0; text-align: center;">
                                 This is an automated message sent on {{ $date }} at {{ $time }}.
                             </p>
                         </td>
