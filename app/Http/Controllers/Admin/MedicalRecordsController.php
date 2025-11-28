@@ -53,12 +53,13 @@ class MedicalRecordsController extends Controller
     {
         $query = MedicalRecord::with(['patient', 'doctor', 'appointment']);
 
-        // Department-based filtering for all roles
-        $departmentId = $this->getUserDepartmentId();
-        if ($departmentId) {
-            $query->whereHas('doctor', function($q) use ($departmentId) {
-                $q->where('department_id', $departmentId);
-            });
+        // Apply visibility rules based on user role (uses patient-department-doctor logic)
+        // Admins will see all records, doctors/staff will see only their department records
+        $user = Auth::user();
+        if ($user) {
+            $query->visibleTo($user);
+        } else {
+            $query->whereRaw('1 = 0'); // No results if no user
         }
 
         // Filter by patient

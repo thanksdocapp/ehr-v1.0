@@ -200,12 +200,12 @@ class DepartmentsController extends Controller
 
         // Medical Records Statistics
         $medicalRecordStats = [
-            'total' => \App\Models\MedicalRecord::whereHas('patient', function($q) use ($department) {
+            'total' => \App\Models\MedicalRecord::byDepartment($department->id)->count(),
                 $q->whereHas('departments', function($q2) use ($department) {
                     $q2->where('departments.id', $department->id);
                 })->orWhere('department_id', $department->id);
             })->count(),
-            'this_month' => \App\Models\MedicalRecord::whereHas('patient', function($q) use ($department) {
+            'this_month' => \App\Models\MedicalRecord::byDepartment($department->id)->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
                 $q->whereHas('departments', function($q2) use ($department) {
                     $q2->where('departments.id', $department->id);
                 })->orWhere('department_id', $department->id);

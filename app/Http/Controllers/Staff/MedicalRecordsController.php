@@ -88,35 +88,9 @@ class MedicalRecordsController extends Controller
         // Build query based on user role
         $query = MedicalRecord::with(['patient', 'doctor', 'appointment']);
         
-        // Department-based filtering for all roles
-        $departmentId = $this->getUserDepartmentId();
-        $userDepartmentIds = $this->getUserDepartmentIds();
-        
-        if (!empty($userDepartmentIds)) {
-            // Users can see records from doctors in any of their departments
-            $query->whereHas('doctor', function($q) use ($userDepartmentIds) {
-                $q->where(function($deptQuery) use ($userDepartmentIds) {
-                    $deptQuery->whereIn('department_id', $userDepartmentIds)
-                             ->orWhereHas('departments', function($pivotQuery) use ($userDepartmentIds) {
-                                 $pivotQuery->whereIn('departments.id', $userDepartmentIds);
-                             });
-                });
-            });
-        } elseif ($departmentId) {
-            // Fallback to single department check
-            $query->whereHas('doctor', function($q) use ($departmentId) {
-                $q->byDepartment($departmentId);
-            });
-        } else {
-            // Nurses and other staff can see records they created or are involved with
-            $query->where(function($q) use ($user) {
-                $q->where('created_by', $user->id)
-                  ->orWhereHas('appointment', function($subQuery) use ($user) {
-                      // Records from appointments they were involved with
-                      $subQuery->where('staff_id', $user->id);
-                  });
-            });
-        }
+        // Apply visibility rules based on user role (uses patient-department-doctor logic)
+        // This handles department filtering, doctor relationships, and patient visibility
+        $query->visibleTo($user);
 
         // ===== QUICK SEARCH (Multi-field) =====
         if ($request->filled('search')) {
