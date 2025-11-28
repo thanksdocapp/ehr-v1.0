@@ -17,6 +17,15 @@ class AppointmentsController extends Controller
     {
         $query = Appointment::with(['patient', 'doctor', 'department']);
 
+        // Apply visibility rules based on user role (uses patient-department-doctor logic)
+        // Admins will see all records, doctors/staff will see only their department records
+        $user = Auth::user();
+        if ($user) {
+            $query->visibleTo($user);
+        } else {
+            $query->whereRaw('1 = 0'); // No results if no user
+        }
+
         // Apply filters
         if ($request->filled('status')) {
             $query->where('status', $request->status);

@@ -58,6 +58,15 @@ class BillingsController extends Controller
     {
         $query = Billing::with(['patient', 'doctor', 'appointment', 'createdBy', 'invoice']);
 
+        // Apply visibility rules based on user role (uses patient-department-doctor logic)
+        // Admins will see all records, doctors/staff will see only their department records
+        $user = Auth::user();
+        if ($user) {
+            $query->visibleTo($user);
+        } else {
+            $query->whereRaw('1 = 0'); // No results if no user
+        }
+
         // Filter by patient
         if ($request->filled('patient_id')) {
             $query->where('patient_id', $request->patient_id);

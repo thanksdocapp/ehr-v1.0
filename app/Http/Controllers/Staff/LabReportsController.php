@@ -225,23 +225,7 @@ class LabReportsController extends Controller
         
         // Get medical records visible to the user
         $medicalRecordsQuery = MedicalRecord::with(['patient', 'appointment']);
-        if ($user->role === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
-            $doctorId = $doctor ? $doctor->id : null;
-            if ($doctorId) {
-                $medicalRecordsQuery->where('doctor_id', $doctorId);
-            } else {
-                $medicalRecordsQuery->where('created_by', $user->id);
-            }
-        } else {
-            // For non-doctors, show records they created or are associated with their patients
-            $medicalRecordsQuery->where(function($q) use ($user) {
-                $q->where('created_by', $user->id)
-                  ->orWhereHas('patient', function($patientQuery) use ($user) {
-                      $patientQuery->visibleTo($user);
-                  });
-            });
-        }
+        $medicalRecordsQuery->visibleTo($user);
         $medicalRecords = $medicalRecordsQuery->where(function($q) use ($labReport) {
                 $q->whereDoesntHave('labReports')
                   ->orWhere('id', $labReport->medical_record_id);
