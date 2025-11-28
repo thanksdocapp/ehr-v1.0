@@ -106,6 +106,11 @@ class MedicalRecordsController extends Controller
         $records = $query->orderBy('created_at', 'desc')->paginate(15);
 
         // Filter patients and doctors by department
+        // Get department ID from request filter or user's department
+        $departmentId = $request->filled('department_id') 
+            ? $request->department_id 
+            : $this->getUserDepartmentId();
+        
         $patientsQuery = Patient::query();
         if ($departmentId) {
             $patientsQuery->byDepartment($departmentId);
