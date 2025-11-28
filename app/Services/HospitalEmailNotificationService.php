@@ -522,8 +522,26 @@ class HospitalEmailNotificationService
                 'status' => 'pending'
             ]);
 
+            \Log::info('Billing notification EmailLog created, attempting to send', [
+                'email_log_id' => $log->id,
+                'billing_id' => $billing->id,
+                'patient_email' => $patient->email,
+            ]);
+
             // Send email immediately (same method as GP email - this works!)
-            $this->emailService->sendImmediateEmail($log);
+            try {
+                $this->emailService->sendImmediateEmail($log);
+            } catch (\Exception $sendException) {
+                \Log::error('Exception while calling sendImmediateEmail for billing notification', [
+                    'email_log_id' => $log->id,
+                    'billing_id' => $billing->id,
+                    'patient_email' => $patient->email,
+                    'error' => $sendException->getMessage(),
+                    'trace' => $sendException->getTraceAsString()
+                ]);
+                // Re-throw to be caught by outer try-catch
+                throw $sendException;
+            }
             
             // Refresh to get updated status
             $log->refresh();
@@ -1956,15 +1974,50 @@ class HospitalEmailNotificationService
                 'email_template_id' => null, // Payment receipt doesn't use a template
             ]);
 
-            // Send the email using the EmailLog
-            $this->emailService->sendImmediateEmail($emailLog);
-
-            Log::info('Payment receipt email sent successfully', [
+            Log::info('Payment receipt EmailLog created, attempting to send', [
+                'email_log_id' => $emailLog->id,
                 'invoice_id' => $invoice->id,
                 'payment_id' => $payment->id,
                 'patient_email' => $patient->email,
-                'email_log_id' => $emailLog->id
             ]);
+
+            // Send the email using the EmailLog
+            try {
+                $this->emailService->sendImmediateEmail($emailLog);
+            } catch (\Exception $sendException) {
+                Log::error('Exception while calling sendImmediateEmail for payment receipt', [
+                    'email_log_id' => $emailLog->id,
+                    'invoice_id' => $invoice->id,
+                    'payment_id' => $payment->id,
+                    'patient_email' => $patient->email,
+                    'error' => $sendException->getMessage(),
+                    'trace' => $sendException->getTraceAsString()
+                ]);
+                // Re-throw to be caught by outer try-catch
+                throw $sendException;
+            }
+            
+            // Refresh to get updated status
+            $emailLog->refresh();
+
+            if ($emailLog->status === 'sent') {
+                Log::info('Payment receipt email sent successfully', [
+                    'invoice_id' => $invoice->id,
+                    'payment_id' => $payment->id,
+                    'patient_email' => $patient->email,
+                    'email_log_id' => $emailLog->id,
+                    'sent_at' => $emailLog->sent_at
+                ]);
+            } else {
+                Log::error('Payment receipt email failed to send', [
+                    'invoice_id' => $invoice->id,
+                    'payment_id' => $payment->id,
+                    'patient_email' => $patient->email,
+                    'email_log_id' => $emailLog->id,
+                    'status' => $emailLog->status,
+                    'error_message' => $emailLog->error_message
+                ]);
+            }
 
             return $emailLog;
         } catch (Exception $e) {
