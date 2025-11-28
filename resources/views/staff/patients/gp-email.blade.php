@@ -126,12 +126,13 @@
                                 <i class="fas fa-comment-alt me-2"></i>Message <span class="text-danger">*</span>
                             </label>
                             <!-- Rich Text Editor Container -->
-                            <div id="messageEditor" style="border: 2px solid #e2e8f0; border-radius: 6px; min-height: 300px; background: white;"></div>
+                            <div id="messageEditor" style="border: 2px solid #e2e8f0; border-radius: 6px; min-height: 300px; background: white; position: relative;"></div>
                             <!-- Hidden textarea for form submission -->
-                            <textarea class="form-control @error('message') is-invalid @enderror d-none" 
+                            <textarea class="form-control @error('message') is-invalid @enderror" 
                                       id="message" 
                                       name="message" 
-                                      required>{{ old('message') }}</textarea>
+                                      required
+                                      style="display: none;">{{ old('message') }}</textarea>
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle me-1"></i>Patient information will be automatically included in the email.
                             </small>
@@ -216,13 +217,24 @@
 <style>
     #messageEditor {
         min-height: 300px;
+        background: white;
     }
-    .ql-editor {
+    #messageEditor .ql-editor {
         min-height: 280px;
         font-size: 14px;
     }
-    .ql-container {
+    #messageEditor .ql-container {
         font-family: inherit;
+        font-size: 14px;
+    }
+    #messageEditor .ql-toolbar {
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    #messageEditor .ql-container {
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
     }
 </style>
 @endpush
@@ -232,11 +244,26 @@
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
 (function() {
-    // Wait for both DOM and Quill to be ready
+    let quillEditor = null;
+    let initAttempts = 0;
+    const maxAttempts = 50; // Try for 5 seconds
+    
     function initQuillEditor() {
+        initAttempts++;
+        
+        // Check if Quill is loaded
         if (typeof Quill === 'undefined') {
-            console.error('Quill library not loaded');
-            setTimeout(initQuillEditor, 100);
+            if (initAttempts < maxAttempts) {
+                setTimeout(initQuillEditor, 100);
+            } else {
+                console.error('Quill library failed to load after multiple attempts');
+                // Fallback: show textarea if Quill fails
+                const messageTextarea = document.getElementById('message');
+                if (messageTextarea) {
+                    messageTextarea.style.display = 'block';
+                    messageTextarea.classList.remove('d-none');
+                }
+            }
             return;
         }
         
@@ -248,44 +275,60 @@
             return;
         }
         
-        // Initialize Quill editor
-        let quillEditor = new Quill('#messageEditor', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'color': [] }, { 'background': [] }],
-                    [{ 'align': [] }],
-                    ['link'],
-                    ['clean']
-                ]
-            },
-            placeholder: 'Enter your message to the GP...'
-        });
-        
-        // Set initial content if exists
-        const initialContent = messageTextarea ? messageTextarea.value : '';
-        if (initialContent && initialContent.trim()) {
-            quillEditor.root.innerHTML = initialContent;
-        }
-        
-        // Update hidden textarea on text change
-        quillEditor.on('text-change', function() {
-            if (messageTextarea) {
-                const html = quillEditor.root.innerHTML;
-                const text = quillEditor.getText().trim();
-                messageTextarea.value = html;
-                
-                // Update textarea for validation
-                if (text) {
-                    messageTextarea.setCustomValidity('');
-                } else {
-                    messageTextarea.setCustomValidity('Please enter a message.');
+        try {
+            // Clear any existing content
+            editorElement.innerHTML = '';
+            
+            // Initialize Quill editor
+            quillEditor = new Quill('#messageEditor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'align': [] }],
+                        ['link'],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Enter your message to the GP...'
+            });
+            
+            // Set initial content if exists
+            if (messageTextarea && messageTextarea.value) {
+                const initialContent = messageTextarea.value.trim();
+                if (initialContent) {
+                    quillEditor.root.innerHTML = initialContent;
                 }
             }
-        });
+            
+            // Update hidden textarea on text change
+            quillEditor.on('text-change', function() {
+                if (messageTextarea) {
+                    const html = quillEditor.root.innerHTML;
+                    const text = quillEditor.getText().trim();
+                    messageTextarea.value = html;
+                    
+                    // Update textarea for validation
+                    if (text) {
+                        messageTextarea.setCustomValidity('');
+                    } else {
+                        messageTextarea.setCustomValidity('Please enter a message.');
+                    }
+                }
+            });
+            
+            console.log('Quill editor initialized successfully');
+        } catch (error) {
+            console.error('Error initializing Quill editor:', error);
+            // Fallback: show textarea if initialization fails
+            if (messageTextarea) {
+                messageTextarea.style.display = 'block';
+                messageTextarea.classList.remove('d-none');
+            }
+        }
         
         // Form validation and submission
         const form = document.getElementById('gpEmailForm');
@@ -298,21 +341,25 @@
                 let message = '';
                 
                 // Get message from Quill editor
-                const text = quillEditor.getText().trim();
-                const html = quillEditor.root.innerHTML;
-                
-                if (!text) {
-                    e.preventDefault();
-                    alert('Please enter a message.');
-                    quillEditor.focus();
-                    return false;
+                if (quillEditor) {
+                    const text = quillEditor.getText().trim();
+                    const html = quillEditor.root.innerHTML;
+                    
+                    if (!text) {
+                        e.preventDefault();
+                        alert('Please enter a message.');
+                        quillEditor.focus();
+                        return false;
+                    }
+                    
+                    // Update hidden textarea with HTML content
+                    if (messageTextarea) {
+                        messageTextarea.value = html;
+                    }
+                    message = text;
+                } else if (messageTextarea) {
+                    message = messageTextarea.value.trim();
                 }
-                
-                // Update hidden textarea with HTML content
-                if (messageTextarea) {
-                    messageTextarea.value = html;
-                }
-                message = text;
                 
                 if (!subjectValue || !message) {
                     e.preventDefault();
@@ -331,10 +378,12 @@
     
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initQuillEditor);
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initQuillEditor, 100);
+        });
     } else {
-        // DOM is already ready
-        initQuillEditor();
+        // DOM is already ready, wait a bit for scripts to load
+        setTimeout(initQuillEditor, 100);
     }
 })();
 </script>
