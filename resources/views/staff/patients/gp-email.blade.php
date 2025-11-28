@@ -125,14 +125,13 @@
                             <label for="message" class="form-label" style="color: #2d3748; font-weight: 500;">
                                 <i class="fas fa-comment-alt me-2"></i>Message <span class="text-danger">*</span>
                             </label>
-                            <!-- Rich Text Editor Container -->
-                            <div id="messageEditor" style="border: 2px solid #e2e8f0; border-radius: 6px; min-height: 300px; background: white; position: relative;"></div>
-                            <!-- Hidden textarea for form submission -->
                             <textarea class="form-control @error('message') is-invalid @enderror" 
                                       id="message" 
                                       name="message" 
+                                      rows="10" 
                                       required
-                                      style="display: none;">{{ old('message') }}</textarea>
+                                      placeholder="Enter your message to the GP..."
+                                      style="border: 2px solid #e2e8f0; border-radius: 6px; resize: vertical;">{{ old('message') }}</textarea>
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle me-1"></i>Patient information will be automatically included in the email.
                             </small>
@@ -211,232 +210,29 @@
     </div>
 </div>
 
-@push('styles')
-<!-- Quill Rich Text Editor -->
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-<style>
-    #messageEditor {
-        min-height: 300px;
-        background: white;
-    }
-    #messageEditor .ql-editor {
-        min-height: 280px;
-        font-size: 14px;
-    }
-    #messageEditor .ql-container {
-        font-family: inherit;
-        font-size: 14px;
-    }
-    #messageEditor .ql-toolbar {
-        border-top-left-radius: 6px;
-        border-top-right-radius: 6px;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    #messageEditor .ql-container {
-        border-bottom-left-radius: 6px;
-        border-bottom-right-radius: 6px;
-    }
-</style>
-@endpush
-
 @push('scripts')
-<!-- Quill Rich Text Editor - Try multiple CDNs for reliability -->
 <script>
-(function() {
-    let quillEditor = null;
-    let quillLoaded = false;
-    let initAttempts = 0;
-    const maxAttempts = 100; // Try for 10 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('gpEmailForm');
+    const sendBtn = document.getElementById('sendEmailBtn');
     
-    // Try to load Quill from multiple CDNs
-    function loadQuill() {
-        if (typeof Quill !== 'undefined') {
-            quillLoaded = true;
-            initQuillEditor();
-            return;
-        }
-        
-        // Try primary CDN
-        const script1 = document.createElement('script');
-        script1.src = 'https://cdn.quilljs.com/1.3.6/quill.js';
-        script1.onload = function() {
-            quillLoaded = true;
-            initQuillEditor();
-        };
-        script1.onerror = function() {
-            // Try backup CDN
-            const script2 = document.createElement('script');
-            script2.src = 'https://cdn.jsdelivr.net/npm/quill@1.3.6/dist/quill.js';
-            script2.onload = function() {
-                quillLoaded = true;
-                initQuillEditor();
-            };
-            script2.onerror = function() {
-                console.error('Failed to load Quill from all CDNs');
-                showFallbackTextarea();
-            };
-            document.head.appendChild(script2);
-        };
-        document.head.appendChild(script1);
-    }
-    
-    function showFallbackTextarea() {
-        const editorElement = document.getElementById('messageEditor');
-        const messageTextarea = document.getElementById('message');
-        
-        if (editorElement && messageTextarea) {
-            editorElement.style.display = 'none';
-            messageTextarea.style.display = 'block';
-            messageTextarea.rows = 10;
-            messageTextarea.classList.add('form-control');
-        }
-    }
-    
-    function initQuillEditor() {
-        initAttempts++;
-        
-        // Check if Quill is loaded
-        if (typeof Quill === 'undefined') {
-            if (initAttempts < maxAttempts && !quillLoaded) {
-                setTimeout(initQuillEditor, 100);
-            } else {
-                console.error('Quill library failed to load');
-                showFallbackTextarea();
-            }
-            return;
-        }
-        
-        const editorElement = document.getElementById('messageEditor');
-        const messageTextarea = document.getElementById('message');
-        
-        if (!editorElement) {
-            console.error('Editor element not found');
-            showFallbackTextarea();
-            return;
-        }
-        
-        // If already initialized, don't reinitialize
-        if (editorElement.querySelector('.ql-container')) {
-            console.log('Quill editor already initialized');
-            return;
-        }
-        
-        try {
-            // Clear any existing content
-            editorElement.innerHTML = '';
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const subject = document.getElementById('subject').value.trim();
+            const message = document.getElementById('message').value.trim();
             
-            // Initialize Quill editor
-            quillEditor = new Quill('#messageEditor', {
-                theme: 'snow',
-                modules: {
-                    toolbar: [
-                        [{ 'header': [1, 2, 3, false] }],
-                        ['bold', 'italic', 'underline', 'strike'],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'align': [] }],
-                        ['link'],
-                        ['clean']
-                    ]
-                },
-                placeholder: 'Enter your message to the GP...'
-            });
-            
-            // Set initial content if exists
-            if (messageTextarea && messageTextarea.value) {
-                const initialContent = messageTextarea.value.trim();
-                if (initialContent) {
-                    quillEditor.root.innerHTML = initialContent;
-                }
+            if (!subject || !message) {
+                e.preventDefault();
+                alert('Please fill in all required fields.');
+                return false;
             }
             
-            // Update hidden textarea on text change
-            quillEditor.on('text-change', function() {
-                if (messageTextarea) {
-                    const html = quillEditor.root.innerHTML;
-                    const text = quillEditor.getText().trim();
-                    messageTextarea.value = html;
-                    
-                    // Update textarea for validation
-                    if (text) {
-                        messageTextarea.setCustomValidity('');
-                    } else {
-                        messageTextarea.setCustomValidity('Please enter a message.');
-                    }
-                }
-            });
-            
-            console.log('Quill editor initialized successfully');
-        } catch (error) {
-            console.error('Error initializing Quill editor:', error);
-            showFallbackTextarea();
-        }
-        
-        // Form validation and submission
-        setupFormValidation();
-    }
-    
-    function setupFormValidation() {
-        const form = document.getElementById('gpEmailForm');
-        const sendBtn = document.getElementById('sendEmailBtn');
-        
-        if (form) {
-            // Remove existing listeners to avoid duplicates
-            const newForm = form.cloneNode(true);
-            form.parentNode.replaceChild(newForm, form);
-            
-            newForm.addEventListener('submit', function(e) {
-                const subject = document.getElementById('subject');
-                const subjectValue = subject ? subject.value.trim() : '';
-                const messageTextarea = document.getElementById('message');
-                let message = '';
-                
-                // Get message from Quill editor or textarea
-                if (quillEditor) {
-                    const text = quillEditor.getText().trim();
-                    const html = quillEditor.root.innerHTML;
-                    
-                    if (!text) {
-                        e.preventDefault();
-                        alert('Please enter a message.');
-                        quillEditor.focus();
-                        return false;
-                    }
-                    
-                    // Update hidden textarea with HTML content
-                    if (messageTextarea) {
-                        messageTextarea.value = html;
-                    }
-                    message = text;
-                } else if (messageTextarea) {
-                    message = messageTextarea.value.trim();
-                }
-                
-                if (!subjectValue || !message) {
-                    e.preventDefault();
-                    alert('Please fill in all required fields.');
-                    return false;
-                }
-                
-                // Disable button to prevent double submission
-                if (sendBtn) {
-                    sendBtn.disabled = true;
-                    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
-                }
-            });
-        }
-    }
-    
-    // Start loading Quill when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(loadQuill, 100);
+            // Disable button to prevent double submission
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
         });
-    } else {
-        // DOM is already ready
-        setTimeout(loadQuill, 100);
     }
-})();
+});
 </script>
 @endpush
 @endsection
