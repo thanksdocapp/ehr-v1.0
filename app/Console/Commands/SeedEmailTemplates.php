@@ -45,13 +45,14 @@ class SeedEmailTemplates extends Command
                 'category' => 'appointment',
                 'status' => 'active',
                 'description' => 'Sent to patients when their appointment is confirmed',
-                'body' => 'Dear {{patient_name}},\n\nYour appointment has been confirmed with the following details:\n\nDoctor: {{doctor_name}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nDepartment: {{department}}\nLocation: {{hospital_address}}\n\nPlease arrive 15 minutes early for check-in.\n\nImportant reminders:\n- Bring your ID and insurance card\n- Bring a list of current medications\n- Inform us of any changes to your health status\n\nIf you need to cancel or reschedule, please contact us at {{hospital_phone}} at least 24 hours in advance.\n\nThank you for choosing {{hospital_name}} for your healthcare needs.\n\nBest regards,\n{{hospital_name}} Team',
+                'body' => 'Dear {{patient_name}},\n\nYour appointment has been confirmed with the following details:\n\nDoctor: {{doctor_name}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nDepartment: {{department}}\nLocation: {{hospital_address}}\n\nAdditional Notes:\n{{notes}}\n\nPlease arrive 15 minutes early for check-in.\n\nImportant reminders:\n- Bring your ID and insurance card\n- Bring a list of current medications\n- Inform us of any changes to your health status\n\nIf you need to cancel or reschedule, please contact us at {{hospital_phone}} at least 24 hours in advance.\n\nThank you for choosing {{hospital_name}} for your healthcare needs.\n\nBest regards,\n{{hospital_name}} Team',
                 'variables' => [
                     'patient_name' => 'Patient\'s full name',
                     'doctor_name' => 'Doctor\'s name',
                     'appointment_date' => 'Appointment date',
                     'appointment_time' => 'Appointment time',
                     'department' => 'Department name',
+                    'notes' => 'Additional appointment notes',
                     'hospital_name' => 'Hospital name',
                     'hospital_address' => 'Hospital address',
                     'hospital_phone' => 'Hospital phone number'
