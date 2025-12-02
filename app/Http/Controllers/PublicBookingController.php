@@ -174,7 +174,20 @@ class PublicBookingController extends Controller
     }
 
     /**
-     * Step 4: Review and confirm
+     * Step 4: Review and confirm (GET - handles direct access/refresh)
+     * Prevents 404 when /book/review is accessed via GET
+     */
+    public function showReview(Request $request)
+    {
+        $this->checkBookingEnabled();
+        
+        // Review page should only be accessible via POST with form data
+        // If accessed via GET, redirect to homepage or show 404
+        abort(404, 'Review page can only be accessed after completing the booking form.');
+    }
+
+    /**
+     * Step 4: Review and confirm (POST)
      */
     public function review(Request $request)
     {

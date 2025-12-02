@@ -87,15 +87,17 @@ Route::group(['middleware' => 'installed'], function () {
     // Public Booking Routes (with unique doctor/clinic links)
     // IMPORTANT: Specific routes must come BEFORE parameterized routes to avoid conflicts
     Route::prefix('book')->name('public.booking.')->group(function () {
-        // POST routes first (specific paths)
+        // GET routes with specific paths (must come before POST to avoid conflicts)
+        Route::get('/clinic/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showClinicBooking'])->name('clinic');
+        Route::get('/success/{appointmentNumber}', [\App\Http\Controllers\PublicBookingController::class, 'success'])->name('success');
+        // GET route for review page (handles direct access/refresh)
+        Route::get('/review', [\App\Http\Controllers\PublicBookingController::class, 'showReview'])->name('review.show');
+        
+        // POST routes (specific paths)
         Route::post('/select-datetime', [\App\Http\Controllers\PublicBookingController::class, 'selectDateTime'])->name('select-datetime');
         Route::post('/patient-details', [\App\Http\Controllers\PublicBookingController::class, 'patientDetails'])->name('patient-details');
         Route::post('/review', [\App\Http\Controllers\PublicBookingController::class, 'review'])->name('review');
         Route::post('/confirm', [\App\Http\Controllers\PublicBookingController::class, 'confirm'])->name('confirm');
-        
-        // GET routes with specific paths
-        Route::get('/clinic/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showClinicBooking'])->name('clinic');
-        Route::get('/success/{appointmentNumber}', [\App\Http\Controllers\PublicBookingController::class, 'success'])->name('success');
         
         // Parameterized route last (catches /book/{slug})
         Route::get('/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showDoctorBooking'])->name('doctor');
