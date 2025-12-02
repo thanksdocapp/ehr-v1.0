@@ -83,8 +83,8 @@ class TwoFactorAuthService
             $code = TwoFactorAuth::generateCode();
             $twoFactorAuth->storeCode($code);
 
-            // Ensure the 2FA email template exists and is active
-            $template = EmailTemplate::where('name', 'two_factor_code')->first();
+            // Ensure the 2FA email template exists and is active (check including soft-deleted)
+            $template = EmailTemplate::withTrashed()->where('name', 'two_factor_code')->first();
             if (!$template) {
                 Log::info('Creating two_factor_code email template');
                 $template = EmailTemplate::create([
@@ -104,9 +104,17 @@ class TwoFactorAuthService
                     'description' => 'Two-factor authentication code sent to users during login or when enabling 2FA.',
                 ]);
                 Log::info('Created two_factor_code template', ['template_id' => $template->id]);
-            } elseif ($template->status !== 'active') {
-                Log::info('Activating two_factor_code template', ['template_id' => $template->id]);
-                $template->update(['status' => 'active']);
+            } else {
+                // Template exists - check if soft-deleted or inactive
+                if ($template->trashed()) {
+                    Log::info('Restoring soft-deleted two_factor_code template', ['template_id' => $template->id]);
+                    $template->restore();
+                }
+                
+                if ($template->status !== 'active') {
+                    Log::info('Activating two_factor_code template', ['template_id' => $template->id, 'current_status' => $template->status]);
+                    $template->update(['status' => 'active']);
+                }
             }
 
             Log::info('Attempting to send 2FA email', [
@@ -140,10 +148,20 @@ class TwoFactorAuthService
                 );
                 
                 if (!$log) {
+                    // Check if template exists and its status
+                    $templateCheck = EmailTemplate::withTrashed()
+                        ->where('name', 'two_factor_code')
+                        ->first(['id', 'name', 'status', 'deleted_at']);
+                    
                     Log::error('2FA email service returned null - template may not exist or be active', [
                         'user_id' => $user->id,
                         'email' => $user->email,
                         'template' => 'two_factor_code',
+                        'template_exists' => $templateCheck ? 'yes' : 'no',
+                        'template_id' => $templateCheck->id ?? null,
+                        'template_status' => $templateCheck->status ?? null,
+                        'template_deleted' => $templateCheck && $templateCheck->trashed() ? 'yes' : 'no',
+                        'template_check' => $templateCheck ? $templateCheck->toArray() : null,
                     ]);
                     return false;
                 }
