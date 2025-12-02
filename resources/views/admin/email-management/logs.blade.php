@@ -551,5 +551,10 @@ function clearOldLogs() {
     }, 2000);
 }
 
+// Function to reload email logs (refresh page)
+function loadEmailLogs() {
+    window.location.reload();
+}
+
 </script>
 @endpush

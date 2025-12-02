@@ -15,7 +15,10 @@ class EmailManagementController extends Controller
      */
     public function index(Request $request)
     {
-        $query = EmailLog::with('template')->orderBy('created_at', 'desc');
+        // Include soft-deleted templates in the relationship
+        $query = EmailLog::with(['template' => function($q) {
+            $q->withTrashed(); // Include soft-deleted templates
+        }])->orderBy('created_at', 'desc');
         
         // Apply filters
         if ($request->filled('status')) {
@@ -64,7 +67,11 @@ class EmailManagementController extends Controller
      */
     public function logs(Request $request)
     {
-        $query = EmailLog::with('template')->orderBy('created_at', 'desc');
+        // Load all email logs, including those without templates
+        // Include soft-deleted templates in the relationship
+        $query = EmailLog::with(['template' => function($q) {
+            $q->withTrashed(); // Include soft-deleted templates
+        }])->orderBy('created_at', 'desc');
         
         // Apply filters
         if ($request->filled('status')) {
