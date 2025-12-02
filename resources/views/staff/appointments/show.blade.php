@@ -145,9 +145,9 @@
                                         <input type="text" class="form-control" 
                                                value="{{ $appointment->meeting_link }}" 
                                                readonly id="meeting_link_display_{{ $appointment->id }}">
-                                        <button class="btn btn-outline-secondary" 
+                                        <button class="btn btn-outline-secondary copy-meeting-link-btn" 
                                                 type="button" 
-                                                onclick="copyMeetingLink({{ $appointment->id }})"
+                                                data-appointment-id="{{ $appointment->id }}"
                                                 title="Copy Meeting Link">
                                             <i class="fas fa-copy"></i>
                                         </button>
@@ -359,19 +359,19 @@
                             <a href="{{ route('staff.appointments.edit', $appointment->id) }}" class="btn btn-outline-warning">
                                 <i class="fas fa-edit me-1"></i>Edit Appointment
                             </a>
-                            <button class="btn btn-success" onclick="updateStatus({{ $appointment->id }}, 'confirmed')">
+                            <button class="btn btn-success update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="confirmed">
                                 <i class="fas fa-check me-1"></i>Confirm Appointment
                             </button>
                         @endif
 
                         @if($appointment->status === 'confirmed' && auth()->user()->role === 'doctor')
-                            <button class="btn btn-primary" onclick="updateStatus({{ $appointment->id }}, 'completed')">
+                            <button class="btn btn-primary update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="completed">
                                 <i class="fas fa-check-double me-1"></i>Mark as Completed
                             </button>
                         @endif
 
                         @if(in_array($appointment->status, ['pending', 'confirmed']))
-                            <button class="btn btn-outline-danger" onclick="updateStatus({{ $appointment->id }}, 'cancelled')">
+                            <button class="btn btn-outline-danger update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="cancelled">
                                 <i class="fas fa-times me-1"></i>Cancel Appointment
                             </button>
                         @endif
@@ -557,6 +557,20 @@ window.updateStatus = function(appointmentId, status = null) {
     $('#statusModal').modal('show');
 };
 
+// Add event listeners for status update buttons
+$(document).ready(function() {
+    $('.update-status-btn').on('click', function() {
+        const appointmentId = $(this).data('appointment-id');
+        const status = $(this).data('status');
+        updateStatus(appointmentId, status);
+    });
+    
+    $('.copy-meeting-link-btn').on('click', function() {
+        const appointmentId = $(this).data('appointment-id');
+        copyMeetingLink(appointmentId);
+    });
+});
+
 $('#statusForm').on('submit', function(e) {
     e.preventDefault();
     
@@ -569,7 +583,7 @@ $('#statusForm').on('submit', function(e) {
     submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
     
     $.ajax({
-        url: `{{ route('staff.appointments.update-status', '') }}/${currentAppointmentId}`,
+        url: `{{ route('staff.appointments.update-status', $appointment->id) }}`,
         method: 'PATCH',
         data: {
             status: status,
