@@ -140,6 +140,9 @@ class EmailNotificationService
                     'body_length' => strlen($parsedBody)
                 ]);
                 
+                // Check if email_type column exists
+                $hasEmailTypeColumn = \Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'email_type');
+                
                 // Prepare log data
                 $logData = [
                     'email_template_id' => $template->id,
@@ -152,14 +155,30 @@ class EmailNotificationService
                     'bcc_emails' => $options['bcc'] ?? null,
                     'attachments' => $options['attachments'] ?? null,
                     'metadata' => $options['metadata'] ?? null,
-                    'event' => $options['event'] ?? null,
-                    'patient_id' => $options['patient_id'] ?? null,
-                    'billing_id' => $options['billing_id'] ?? null,
-                    'invoice_id' => $options['invoice_id'] ?? null,
-                    'payment_id' => $options['payment_id'] ?? null,
-                    'email_type' => $options['email_type'] ?? 'general',
                     'status' => 'pending'
                 ];
+                
+                // Only add optional columns if they exist in the database
+                if ($hasEmailTypeColumn) {
+                    $logData['email_type'] = $options['email_type'] ?? 'general';
+                }
+                
+                // Check for other optional columns
+                if (\Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'event')) {
+                    $logData['event'] = $options['event'] ?? null;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'patient_id')) {
+                    $logData['patient_id'] = $options['patient_id'] ?? null;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'billing_id')) {
+                    $logData['billing_id'] = $options['billing_id'] ?? null;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'invoice_id')) {
+                    $logData['invoice_id'] = $options['invoice_id'] ?? null;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'payment_id')) {
+                    $logData['payment_id'] = $options['payment_id'] ?? null;
+                }
                 
                 // Log the data being used (without sensitive info)
                 Log::info('Email log data prepared', [
@@ -167,7 +186,8 @@ class EmailNotificationService
                     'recipient' => $logData['recipient_email'],
                     'has_subject' => !empty($logData['subject']),
                     'has_body' => !empty($logData['body']),
-                    'status' => $logData['status']
+                    'status' => $logData['status'],
+                    'has_email_type_column' => $hasEmailTypeColumn
                 ]);
                 
                 $log = EmailLog::create($logData);
@@ -244,7 +264,10 @@ class EmailNotificationService
             try {
                 $template = EmailTemplate::withTrashed()->where('name', $templateName)->first();
                 if ($template) {
-                    $errorLog = EmailLog::create([
+                    // Check if email_type column exists
+                    $hasEmailTypeColumn = \Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'email_type');
+                    
+                    $errorLogData = [
                         'email_template_id' => $template->id,
                         'recipient_email' => array_key_first($to),
                         'recipient_name' => array_values($to)[0] ?? null,
@@ -252,8 +275,14 @@ class EmailNotificationService
                         'body' => 'Email sending failed: ' . $e->getMessage(),
                         'status' => 'failed',
                         'error_message' => $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine(),
-                        'email_type' => $options['email_type'] ?? 'general',
-                    ]);
+                    ];
+                    
+                    // Only add email_type if column exists
+                    if ($hasEmailTypeColumn) {
+                        $errorLogData['email_type'] = $options['email_type'] ?? 'general';
+                    }
+                    
+                    $errorLog = EmailLog::create($errorLogData);
                     
                     Log::info('Created error email log entry', [
                         'error_log_id' => $errorLog->id,
