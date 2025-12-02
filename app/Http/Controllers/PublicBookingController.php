@@ -278,7 +278,8 @@ class PublicBookingController extends Controller
     {
         $this->checkBookingEnabled();
 
-        $validator = Validator::make($request->all(), [
+        // Prepare validation rules
+        $rules = [
             'doctor_id' => 'required|exists:doctors,id',
             'service_id' => 'required|exists:booking_services,id',
             'appointment_date' => 'required|date|after_or_equal:today',
@@ -287,20 +288,43 @@ class PublicBookingController extends Controller
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
-            'date_of_birth' => 'required|date|before:today',
-            'gender' => 'required|in:male,female,other',
             'consultation_type' => 'required|in:in_person,online',
             'consent_share_with_gp' => 'nullable|boolean',
             'gp_name' => 'required_if:consent_share_with_gp,1|nullable|string|max:255',
             'gp_email' => 'required_if:consent_share_with_gp,1|nullable|email|max:255',
             'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
             'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
-        ]);
+        ];
+        
+        // Require date_of_birth and gender if they are provided (not empty strings)
+        // They should always be provided from the patient-details form, but handle edge cases
+        if ($request->has('date_of_birth') && trim($request->date_of_birth) !== '') {
+            $rules['date_of_birth'] = 'required|date|before_or_equal:today';
+        } else {
+            // If not provided, make it nullable (for backward compatibility)
+            $rules['date_of_birth'] = 'nullable|date|before_or_equal:today';
+        }
+        
+        if ($request->has('gender') && trim($request->gender) !== '') {
+            $rules['gender'] = 'required|in:male,female,other';
+        } else {
+            // If not provided, make it nullable (for backward compatibility)
+            $rules['gender'] = 'nullable|in:male,female,other';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
-            return redirect()->route('public.booking.service-selection')
+            \Log::warning('Public booking confirmation validation failed', [
+                'errors' => $validator->errors()->toArray(),
+                'input' => $request->all()
+            ]);
+            
+            // Try to redirect back to review page with errors
+            return redirect()->back()
                 ->withErrors($validator)
-                ->withInput();
+                ->withInput()
+                ->with('error', 'Please check the form and try again.');
         }
 
         try {

@@ -48,6 +48,26 @@
             <p>Please review your appointment details before confirming</p>
         </div>
         
+        @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        @endif
+        
+        @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong>Please fix the following errors:</strong>
+            <ul class="mb-0 mt-2">
+                @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        @endif
+        
         <div class="progress-steps">
             <div class="step completed">
                 <div class="step-circle"><i class="fas fa-check"></i></div>
@@ -222,9 +242,58 @@
             const form = document.getElementById('confirm-form');
             const confirmBtn = document.getElementById('confirm-btn');
             
+            if (!form || !confirmBtn) {
+                console.error('Form or confirm button not found');
+                return;
+            }
+            
+            let isSubmitting = false;
+            
+            // Handle form submission
             form.addEventListener('submit', function(e) {
-                confirmBtn.disabled = true;
-                confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+                // Prevent double submission
+                if (isSubmitting) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                isSubmitting = true;
+                
+                // Disable button and show loading state
+                if (confirmBtn && !confirmBtn.disabled) {
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+                }
+                
+                // Allow form to submit normally
+                return true;
+            });
+            
+            // Handle button click - just ensure form submits
+            confirmBtn.addEventListener('click', function(e) {
+                // Log for debugging
+                console.log('Confirm button clicked');
+                
+                // If form is already submitting, prevent click
+                if (isSubmitting) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Trigger form submission
+                if (form) {
+                    // Validate CSRF token is present
+                    const csrfToken = form.querySelector('input[name="_token"]');
+                    if (!csrfToken || !csrfToken.value) {
+                        console.error('CSRF token missing');
+                        e.preventDefault();
+                        alert('Security token missing. Please refresh the page and try again.');
+                        return false;
+                    }
+                    
+                    // Let the form submit normally
+                    return true;
+                }
             });
         });
     </script>
