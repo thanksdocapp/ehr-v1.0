@@ -126,10 +126,26 @@ class TwoFactorAuthService
 
             /** @var \App\Services\EmailNotificationService $emailService */
             $emailService = app(\App\Services\EmailNotificationService::class);
+            
+            // Get hospital name from config or settings
+            $hospitalName = config('app.name', 'Hospital');
+            try {
+                $hospitalSetting = \App\Models\SiteSetting::where('key', 'hospital_name')->first();
+                if ($hospitalSetting && $hospitalSetting->value) {
+                    $hospitalName = $hospitalSetting->value;
+                }
+            } catch (\Exception $e) {
+                // Use default if settings table doesn't exist or query fails
+                Log::warning('Could not fetch hospital_name from settings, using default', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+            
             $variables = [
                 'user_name' => $user->name,
                 'verification_code' => $code,
                 'expires_minutes' => 10,
+                'hospital_name' => $hospitalName,
             ];
             
             try {

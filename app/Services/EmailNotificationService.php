@@ -190,16 +190,51 @@ class EmailNotificationService
             }
 
             return $log;
-        } catch (Exception $e) {
-            Log::error('Failed to queue email: ' . $e->getMessage(), [
+        } catch (\Exception $e) {
+            // Log the full exception details
+            Log::error('Failed to queue email - Exception caught in sendTemplateEmail', [
                 'template' => $templateName,
                 'to' => $to,
                 'variables' => $variables,
                 'error' => $e->getMessage(),
+                'error_class' => get_class($e),
                 'trace' => $e->getTraceAsString(),
                 'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'line' => $e->getLine(),
+                'previous' => $e->getPrevious() ? [
+                    'message' => $e->getPrevious()->getMessage(),
+                    'class' => get_class($e->getPrevious())
+                ] : null
             ]);
+
+            // Try to create a minimal email log entry for tracking purposes
+            try {
+                $template = EmailTemplate::withTrashed()->where('name', $templateName)->first();
+                if ($template) {
+                    $errorLog = EmailLog::create([
+                        'email_template_id' => $template->id,
+                        'recipient_email' => array_key_first($to),
+                        'recipient_name' => array_values($to)[0] ?? null,
+                        'subject' => 'Email Send Failed: ' . $templateName,
+                        'body' => 'Email sending failed: ' . $e->getMessage(),
+                        'status' => 'failed',
+                        'error_message' => $e->getMessage(),
+                        'email_type' => $options['email_type'] ?? 'general',
+                    ]);
+                    
+                    Log::info('Created error email log entry', [
+                        'error_log_id' => $errorLog->id,
+                        'original_error' => $e->getMessage()
+                    ]);
+                    
+                    return $errorLog;
+                }
+            } catch (\Exception $logException) {
+                Log::error('Failed to create error email log entry', [
+                    'original_error' => $e->getMessage(),
+                    'log_error' => $logException->getMessage()
+                ]);
+            }
 
             return null;
         }
@@ -396,6 +431,31 @@ class EmailNotificationService
      */
     protected function parseContent(string $content, array $variables)
     {
+        // Add default variables if not provided
+        if (!isset($variables['hospital_name'])) {
+            try {
+                $hospitalSetting = \App\Models\SiteSetting::where('key', 'hospital_name')->first();
+                $variables['hospital_name'] = $hospitalSetting && $hospitalSetting->value 
+                    ? $hospitalSetting->value 
+                    : config('app.name', 'Hospital');
+            } catch (\Exception $e) {
+                $variables['hospital_name'] = config('app.name', 'Hospital');
+            }
+        }
+        
+        // Add other common defaults
+        if (!isset($variables['site_url'])) {
+            $variables['site_url'] = config('app.url', url('/'));
+        }
+        
+        if (!isset($variables['date'])) {
+            $variables['date'] = now()->format('Y-m-d');
+        }
+        
+        if (!isset($variables['time'])) {
+            $variables['time'] = now()->format('H:i:s');
+        }
+        
         try {
             // Ensure content is a string
             if (!is_string($content)) {
