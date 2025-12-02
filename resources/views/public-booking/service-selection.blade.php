@@ -307,7 +307,7 @@
         </div>
         @elseif(isset($doctor))
         <div class="info-card">
-            <h3>Dr. {{ $doctor->full_name }}</h3>
+            <h3>{{ $doctor->full_name }}</h3>
             <p>{{ $doctor->specialization }}</p>
         </div>
         @endif

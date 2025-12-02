@@ -102,7 +102,7 @@
                 </div>
                 <div class="review-row">
                     <span class="review-label">Doctor</span>
-                    <span class="review-value">Dr. {{ $doctor->full_name }}</span>
+                    <span class="review-value">{{ $doctor->full_name }}</span>
                 </div>
                 <div class="review-row">
                     <span class="review-label">Consultation Type</span>

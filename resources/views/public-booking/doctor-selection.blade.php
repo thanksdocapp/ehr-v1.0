@@ -103,7 +103,7 @@
                             <i class="fas fa-user-md"></i>
                         </div>
                         <div class="doctor-details">
-                            <h4>Dr. {{ $doctor->full_name }}</h4>
+                            <h4>{{ $doctor->full_name }}</h4>
                             <p>{{ $doctor->specialization }}</p>
                         </div>
                     </div>
