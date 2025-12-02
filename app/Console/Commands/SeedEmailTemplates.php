@@ -206,6 +206,123 @@ class SeedEmailTemplates extends Command
                 ],
                 'sender_name' => 'Hospital Appointments',
                 'sender_email' => 'appointments@hospital.com'
+            ],
+            [
+                'name' => 'discharge_instructions',
+                'subject' => 'Discharge Instructions - {{hospital_name}}',
+                'category' => 'medical',
+                'status' => 'active',
+                'description' => 'Sent to patients with discharge instructions',
+                'body' => 'Dear {{patient_name}},\n\nYou have been discharged from {{hospital_name}}. Please follow these instructions:\n\nDischarge Date: {{discharge_date}}\nAttending Doctor: {{attending_doctor}}\n\nINSTRUCTIONS:\n{{instructions}}\n\nMEDICATIONS:\n{{medications}}\n\nFollow-up Appointment: {{follow_up_date}}\n\nFor emergencies, contact: {{emergency_contact}}\n\nIf you have questions, please contact your doctor\'s office.\n\nBest regards,\n{{hospital_name}} Care Team',
+                'variables' => [
+                    'patient_name' => 'Patient\'s full name',
+                    'discharge_date' => 'Discharge date',
+                    'attending_doctor' => 'Attending doctor\'s name',
+                    'follow_up_date' => 'Follow-up appointment date',
+                    'instructions' => 'Discharge instructions',
+                    'medications' => 'Medication list',
+                    'emergency_contact' => 'Emergency contact number',
+                    'hospital_name' => 'Hospital name'
+                ],
+                'sender_name' => 'Hospital Care Team',
+                'sender_email' => 'care@hospital.com'
+            ],
+            [
+                'name' => 'prescription_ready',
+                'subject' => 'Your Prescription is Ready - {{hospital_name}}',
+                'category' => 'prescription',
+                'status' => 'active',
+                'description' => 'Sent to patients when their prescription is ready for pickup',
+                'body' => 'Dear {{patient_name}},\n\nYour prescription is ready for pickup.\n\nPRESCRIPTION DETAILS:\n- Prescription ID: {{prescription_id}}\n- Prescribed by: {{doctor_name}}\n- Ready Date: {{ready_date}}\n\nPICKUP INSTRUCTIONS:\n{{pickup_instructions}}\n\nPharmacy Hours: {{pharmacy_hours}}\nPharmacy Phone: {{pharmacy_phone}}\n\nPlease bring a valid ID when picking up your prescription.\n\nThank you,\n{{hospital_name}} Pharmacy',
+                'variables' => [
+                    'patient_name' => 'Patient\'s full name',
+                    'prescription_id' => 'Prescription ID',
+                    'doctor_name' => 'Prescribing doctor\'s name',
+                    'ready_date' => 'Date prescription is ready',
+                    'pickup_instructions' => 'Instructions for pickup',
+                    'pharmacy_hours' => 'Pharmacy operating hours',
+                    'pharmacy_phone' => 'Pharmacy phone number',
+                    'hospital_name' => 'Hospital name'
+                ],
+                'sender_name' => 'Hospital Pharmacy',
+                'sender_email' => 'pharmacy@hospital.com'
+            ],
+            [
+                'name' => 'medical_record_update',
+                'subject' => 'Medical Record Updated - {{hospital_name}}',
+                'category' => 'medical',
+                'status' => 'active',
+                'description' => 'Sent to patients when their medical record is updated',
+                'body' => 'Dear {{patient_name}},\n\nYour medical record has been updated.\n\nRECORD INFORMATION:\n- Record Date: {{record_date}}\n- Record Type: {{record_type}}\n- Updated by: {{doctor_name}}\n- Update Type: {{update_type}}\n\nCHANGES SUMMARY:\n{{changes_summary}}\n\nDIAGNOSIS:\n{{diagnosis}}\n\nTREATMENT PLAN:\n{{treatment_plan}}\n\nFollow-up Required: {{follow_up_required}}\nUpdate Date: {{update_date}}\n\nYou can view your complete medical record in your patient portal: {{patient_portal_url}}\n\n{{privacy_note}}\n\nIf you have questions, please contact us at {{contact_phone}}.\n\nBest regards,\n{{hospital_name}} Medical Records Team',
+                'variables' => [
+                    'patient_name' => 'Patient\'s full name',
+                    'record_date' => 'Medical record date',
+                    'record_type' => 'Type of medical record',
+                    'doctor_name' => 'Doctor\'s name',
+                    'update_type' => 'Type of update',
+                    'changes_summary' => 'Summary of changes',
+                    'diagnosis' => 'Diagnosis information',
+                    'treatment_plan' => 'Treatment plan details',
+                    'follow_up_required' => 'Follow-up requirement',
+                    'update_date' => 'Date of update',
+                    'patient_portal_url' => 'Patient portal URL',
+                    'privacy_note' => 'Privacy notice',
+                    'contact_phone' => 'Contact phone number',
+                    'hospital_name' => 'Hospital name'
+                ],
+                'sender_name' => 'Hospital Medical Records',
+                'sender_email' => 'medicalrecords@hospital.com'
+            ],
+            [
+                'name' => 'significant_diagnosis_notification',
+                'subject' => 'Important: New Diagnosis Information - {{hospital_name}}',
+                'category' => 'medical',
+                'status' => 'active',
+                'description' => 'Sent to patients when a significant diagnosis is recorded',
+                'body' => 'Dear {{patient_name}},\n\nWe are writing to inform you about a new diagnosis in your medical record.\n\nDIAGNOSIS INFORMATION:\n- Diagnosis: {{diagnosis_title}}\n- Diagnosed by: {{doctor_name}}\n- Diagnosis Date: {{diagnosis_date}}\n- Urgency Level: {{urgency_level}}\n\nCONDITION EXPLANATION:\n{{condition_explanation}}\n\nTREATMENT OPTIONS:\n{{treatment_options}}\n\nFOLLOW-UP INSTRUCTIONS:\n{{follow_up_instructions}}\n\nNEXT STEPS:\n{{next_steps}}\n\nTo schedule an appointment, visit: {{appointment_scheduling_url}}\n\nFor questions or concerns, please contact us at {{support_phone}}.\n\nYou can also view your medical records in your patient portal: {{patient_portal_url}}\n\nBest regards,\n{{hospital_name}} Care Team',
+                'variables' => [
+                    'patient_name' => 'Patient\'s full name',
+                    'diagnosis_title' => 'Diagnosis title',
+                    'doctor_name' => 'Doctor\'s name',
+                    'diagnosis_date' => 'Date of diagnosis',
+                    'condition_explanation' => 'Explanation of condition',
+                    'treatment_options' => 'Available treatment options',
+                    'follow_up_instructions' => 'Follow-up instructions',
+                    'urgency_level' => 'Urgency level',
+                    'next_steps' => 'Next steps for patient',
+                    'appointment_scheduling_url' => 'Appointment scheduling URL',
+                    'support_phone' => 'Support phone number',
+                    'patient_portal_url' => 'Patient portal URL',
+                    'hospital_name' => 'Hospital name'
+                ],
+                'sender_name' => 'Hospital Care Team',
+                'sender_email' => 'care@hospital.com'
+            ],
+            [
+                'name' => 'treatment_plan_update',
+                'subject' => 'Treatment Plan Updated - {{hospital_name}}',
+                'category' => 'medical',
+                'status' => 'active',
+                'description' => 'Sent to patients when their treatment plan is updated',
+                'body' => 'Dear {{patient_name}},\n\nYour treatment plan has been updated by {{doctor_name}}.\n\nUPDATE DATE: {{update_date}}\n\nTREATMENT CHANGES:\n{{treatment_changes}}\n\nNEW MEDICATIONS:\n{{new_medications}}\n\nDISCONTINUED MEDICATIONS:\n{{discontinued_medications}}\n\nDOSAGE CHANGES:\n{{dosage_changes}}\n\nSPECIAL INSTRUCTIONS:\n{{special_instructions}}\n\nNEXT APPOINTMENT:\n{{next_appointment}}\n\nMONITORING REQUIREMENTS:\n{{monitoring_requirements}}\n\nEMERGENCY INSTRUCTIONS:\n{{emergency_instructions}}\n\nFor pharmacy questions, contact: {{pharmacy_phone}}\n\nView your prescriptions in your patient portal: {{patient_portal_url}}\n\nBest regards,\n{{hospital_name}} Care Team',
+                'variables' => [
+                    'patient_name' => 'Patient\'s full name',
+                    'doctor_name' => 'Doctor\'s name',
+                    'update_date' => 'Date of update',
+                    'treatment_changes' => 'Summary of treatment changes',
+                    'new_medications' => 'New medications list',
+                    'discontinued_medications' => 'Discontinued medications',
+                    'dosage_changes' => 'Dosage change details',
+                    'special_instructions' => 'Special instructions',
+                    'next_appointment' => 'Next appointment information',
+                    'monitoring_requirements' => 'Monitoring requirements',
+                    'emergency_instructions' => 'Emergency instructions',
+                    'pharmacy_phone' => 'Pharmacy phone number',
+                    'patient_portal_url' => 'Patient portal URL',
+                    'hospital_name' => 'Hospital name'
+                ],
+                'sender_name' => 'Hospital Care Team',
+                'sender_email' => 'care@hospital.com'
             ]
         ];
         
