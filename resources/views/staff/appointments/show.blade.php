@@ -359,19 +359,19 @@
                             <a href="{{ route('staff.appointments.edit', $appointment->id) }}" class="btn btn-outline-warning">
                                 <i class="fas fa-edit me-1"></i>Edit Appointment
                             </a>
-                            <button class="btn btn-success update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="confirmed">
+                            <button type="button" class="btn btn-success update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="confirmed">
                                 <i class="fas fa-check me-1"></i>Confirm Appointment
                             </button>
                         @endif
 
                         @if($appointment->status === 'confirmed' && auth()->user()->role === 'doctor')
-                            <button class="btn btn-primary update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="completed">
+                            <button type="button" class="btn btn-primary update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="completed">
                                 <i class="fas fa-check-double me-1"></i>Mark as Completed
                             </button>
                         @endif
 
                         @if(in_array($appointment->status, ['pending', 'confirmed']))
-                            <button class="btn btn-outline-danger update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="cancelled">
+                            <button type="button" class="btn btn-outline-danger update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="cancelled">
                                 <i class="fas fa-times me-1"></i>Cancel Appointment
                             </button>
                         @endif
@@ -559,16 +559,37 @@ window.updateStatus = function(appointmentId, status = null) {
 
 // Add event listeners for status update buttons
 $(document).ready(function() {
-    $('.update-status-btn').on('click', function() {
+    console.log('Initializing appointment status buttons...');
+    
+    // Check if buttons exist
+    const statusButtons = $('.update-status-btn');
+    console.log('Found ' + statusButtons.length + ' status update buttons');
+    
+    statusButtons.on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const appointmentId = $(this).data('appointment-id');
         const status = $(this).data('status');
+        
+        console.log('Button clicked - Appointment ID:', appointmentId, 'Status:', status);
+        
+        if (!appointmentId) {
+            console.error('No appointment ID found on button');
+            alert('Error: No appointment ID found');
+            return;
+        }
+        
         updateStatus(appointmentId, status);
     });
     
-    $('.copy-meeting-link-btn').on('click', function() {
+    $('.copy-meeting-link-btn').on('click', function(e) {
+        e.preventDefault();
         const appointmentId = $(this).data('appointment-id');
         copyMeetingLink(appointmentId);
     });
+    
+    console.log('Event listeners attached successfully');
 });
 
 $('#statusForm').on('submit', function(e) {
