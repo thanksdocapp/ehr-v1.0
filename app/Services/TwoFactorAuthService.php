@@ -128,7 +128,15 @@ class TwoFactorAuthService
                 $log = $emailService->sendTemplateEmail(
                     'two_factor_code',
                     [$user->email => $user->name],
-                    $variables
+                    $variables,
+                    [
+                        'email_type' => 'two_factor',
+                        'event' => '2fa.code.sent',
+                        'metadata' => [
+                            'user_id' => $user->id,
+                            'code_expires_minutes' => 10,
+                        ]
+                    ]
                 );
                 
                 if (!$log) {
@@ -139,6 +147,13 @@ class TwoFactorAuthService
                     ]);
                     return false;
                 }
+                
+                Log::info('2FA email logged successfully', [
+                    'email_log_id' => $log->id,
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'log_status' => $log->status
+                ]);
                 
                 // Wait a moment for the email to be sent (since it's synchronous)
                 sleep(1);

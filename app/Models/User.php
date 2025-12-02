@@ -492,4 +492,59 @@ class User extends Authenticatable
             'staff' => 'Staff',
         ];
     }
+
+    /**
+     * Send the password reset notification.
+     * Override Laravel's default to use our EmailNotificationService for logging.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        try {
+            $resetUrl = url('/password/reset/' . $token . '?email=' . urlencode($this->email));
+            
+            $emailService = app(\App\Services\EmailNotificationService::class);
+            
+            $emailLog = $emailService->sendTemplateEmail(
+                'password_reset',
+                [$this->email => $this->name],
+                [
+                    'name' => $this->name,
+                    'reset_link' => $resetUrl,
+                    'hospital_name' => config('app.name', 'Hospital'),
+                ],
+                [
+                    'email_type' => 'password_reset',
+                    'event' => 'password.reset.requested',
+                    'metadata' => [
+                        'user_id' => $this->id,
+                        'token' => $token,
+                    ]
+                ]
+            );
+            
+            if ($emailLog) {
+                \Log::info('Password reset email logged via User model', [
+                    'email_log_id' => $emailLog->id,
+                    'user_id' => $this->id,
+                    'email' => $this->email
+                ]);
+            } else {
+                \Log::warning('Password reset email sent but not logged via User model', [
+                    'user_id' => $this->id,
+                    'email' => $this->email
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to send password reset email via User model', [
+                'user_id' => $this->id,
+                'email' => $this->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Don't throw - let Laravel handle it gracefully
+        }
+    }
 }

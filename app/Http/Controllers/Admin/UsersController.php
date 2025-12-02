@@ -496,7 +496,7 @@ class UsersController extends Controller
             try {
                 $emailService = app(EmailNotificationService::class);
                 
-                $emailService->sendTemplateEmail(
+                $emailLog = $emailService->sendTemplateEmail(
                     'admin_password_reset',
                     [$user->email => $user->name],
                     [
@@ -505,14 +505,35 @@ class UsersController extends Controller
                         'reset_link' => $resetLink,
                         'expiry_hours' => 24,
                         'hospital_name' => config('app.name'),
+                    ],
+                    [
+                        'email_type' => 'password_reset',
+                        'event' => 'password.reset.admin',
+                        'metadata' => [
+                            'user_id' => $user->id,
+                            'initiated_by' => auth()->id(),
+                        ]
                     ]
                 );
                 
-                \Log::info('Password reset email sent', ['user_id' => $user->id, 'email' => $user->email]);
+                if ($emailLog) {
+                    \Log::info('Password reset email logged', [
+                        'email_log_id' => $emailLog->id,
+                        'user_id' => $user->id,
+                        'email' => $user->email
+                    ]);
+                } else {
+                    \Log::warning('Password reset email sent but not logged', [
+                        'user_id' => $user->id,
+                        'email' => $user->email
+                    ]);
+                }
             } catch (\Exception $e) {
                 \Log::error('Failed to send password reset email', [
                     'user_id' => $user->id,
-                    'error' => $e->getMessage()
+                    'email' => $user->email,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
             }
         }

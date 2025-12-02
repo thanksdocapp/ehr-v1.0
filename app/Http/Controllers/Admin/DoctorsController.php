@@ -1125,17 +1125,46 @@ class DoctorsController extends Controller
             if (in_array($validated['notify_via'], ['email', 'both'])) {
                 try {
                     $emailService = app(\App\Services\EmailNotificationService::class);
-                    $emailService->sendTemplateEmail(
+                    $emailLog = $emailService->sendTemplateEmail(
                         'password_reset',
                         [$user->email => $user->name],
                         [
                             'name' => $user->name,
                             'reset_link' => $resetLink,
                             'hospital_name' => config('app.name'),
+                        ],
+                        [
+                            'email_type' => 'password_reset',
+                            'event' => 'password.reset.requested',
+                            'metadata' => [
+                                'doctor_id' => $doctor->id,
+                                'user_id' => $user->id,
+                                'reset_token_id' => $resetToken->id ?? null,
+                            ]
                         ]
                     );
+                    
+                    if ($emailLog) {
+                        \Log::info('Password reset email logged', [
+                            'email_log_id' => $emailLog->id,
+                            'doctor_id' => $doctor->id,
+                            'user_id' => $user->id,
+                            'email' => $user->email
+                        ]);
+                    } else {
+                        \Log::warning('Password reset email sent but not logged', [
+                            'doctor_id' => $doctor->id,
+                            'user_id' => $user->id,
+                            'email' => $user->email
+                        ]);
+                    }
                 } catch (\Exception $e) {
-                    \Log::error('Failed to send password reset email: ' . $e->getMessage());
+                    \Log::error('Failed to send password reset email: ' . $e->getMessage(), [
+                        'doctor_id' => $doctor->id,
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'trace' => $e->getTraceAsString()
+                    ]);
                 }
             }
 
