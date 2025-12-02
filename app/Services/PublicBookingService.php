@@ -9,6 +9,8 @@ use App\Models\Billing;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\BookingService as BookingServiceModel;
+use App\Models\User;
+use App\Models\UserNotification;
 use App\Services\GuestPatientService;
 use App\Services\HospitalEmailNotificationService;
 use Illuminate\Support\Facades\DB;
@@ -217,6 +219,17 @@ class PublicBookingService
                 ]);
             }
 
+            // Create notifications for new pending public booking
+            try {
+                $this->createPublicBookingNotifications($appointment, $patient);
+            } catch (\Exception $e) {
+                // Log error but don't fail the booking
+                \Log::error('Failed to create public booking notifications', [
+                    'appointment_id' => $appointment->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             return [
                 'appointment' => $appointment,
                 'invoice' => $invoice,
@@ -237,6 +250,95 @@ class PublicBookingService
         } while (Appointment::where('appointment_number', $number)->exists());
 
         return $number;
+    }
+
+    /**
+     * Create notifications for new pending public booking.
+     *
+     * @param Appointment $appointment
+     * @param Patient $patient
+     * @return void
+     */
+    private function createPublicBookingNotifications(Appointment $appointment, Patient $patient)
+    {
+        $patientName = trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? ''));
+        $appointmentDate = \Carbon\Carbon::parse($appointment->appointment_date)->format('M d, Y');
+        $appointmentTime = \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A');
+        
+        $notificationData = [
+            'type' => UserNotification::TYPE_APPOINTMENT,
+            'category' => UserNotification::CATEGORY_APPOINTMENT,
+            'title' => 'New Public Booking - Pending Approval',
+            'message' => "New appointment booking from {$patientName} on {$appointmentDate} at {$appointmentTime} requires your approval.",
+            'priority' => 'high',
+            'action_url' => route('staff.appointments.show', $appointment->id),
+            'related_appointment_id' => $appointment->id,
+            'related_patient_id' => $patient->id,
+            'related_doctor_id' => $appointment->doctor_id,
+            'data' => [
+                'appointment_number' => $appointment->appointment_number,
+                'source' => 'public_booking',
+                'is_guest' => $patient->is_guest ?? false,
+            ],
+        ];
+
+        // Notify all admin users
+        $adminUsers = User::where(function($query) {
+            $query->where('is_admin', true)
+                  ->orWhere('role', 'admin');
+        })
+        ->where('is_active', true)
+        ->get();
+
+        foreach ($adminUsers as $admin) {
+            UserNotification::create(array_merge($notificationData, [
+                'user_id' => $admin->id,
+            ]));
+        }
+
+        // Notify the doctor if they have a user account
+        if ($appointment->doctor && $appointment->doctor->user_id) {
+            $doctorUser = User::find($appointment->doctor->user_id);
+            if ($doctorUser && $doctorUser->is_active) {
+                UserNotification::create(array_merge($notificationData, [
+                    'user_id' => $doctorUser->id,
+                    'title' => 'New Appointment Booking - Pending',
+                    'message' => "You have a new appointment booking from {$patientName} on {$appointmentDate} at {$appointmentTime}.",
+                ]));
+            }
+        }
+
+        // Notify staff in the department (if department exists)
+        if ($appointment->department_id) {
+            $departmentStaff = User::where('department_id', $appointment->department_id)
+                ->where('is_active', true)
+                ->where('role', '!=', 'admin') // Don't duplicate admin notifications
+                ->where(function($query) {
+                    $query->where('is_admin', false)
+                          ->orWhereNull('is_admin');
+                })
+                ->get();
+
+            foreach ($departmentStaff as $staff) {
+                // Skip if already notified (doctor)
+                if ($appointment->doctor && $appointment->doctor->user_id == $staff->id) {
+                    continue;
+                }
+
+                UserNotification::create(array_merge($notificationData, [
+                    'user_id' => $staff->id,
+                    'title' => 'New Public Booking in Your Department',
+                    'message' => "New appointment booking from {$patientName} in your department on {$appointmentDate} at {$appointmentTime}.",
+                ]));
+            }
+        }
+
+        \Log::info('Public booking notifications created', [
+            'appointment_id' => $appointment->id,
+            'patient_id' => $patient->id,
+            'notified_admins' => $adminUsers->count(),
+            'notified_doctor' => $appointment->doctor && $appointment->doctor->user_id ? 1 : 0,
+        ]);
     }
 }
 
