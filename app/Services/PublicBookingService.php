@@ -55,15 +55,54 @@ class PublicBookingService
                 'address' => $data['address'] ?? null,
             ]);
             
+            // Prepare patient update data
+            $patientUpdateData = [];
+            
+            // Update date of birth and gender if provided
+            if (isset($data['date_of_birth']) && !empty($data['date_of_birth'])) {
+                $patientUpdateData['date_of_birth'] = $data['date_of_birth'];
+            }
+            if (isset($data['gender']) && !empty($data['gender'])) {
+                $patientUpdateData['gender'] = $data['gender'];
+            }
+            
+            // Handle GP consent and details
+            if (isset($data['consent_share_with_gp']) && $data['consent_share_with_gp']) {
+                $patientUpdateData['consent_share_with_gp'] = true;
+                if (isset($data['gp_name']) && !empty($data['gp_name'])) {
+                    $patientUpdateData['gp_name'] = $data['gp_name'];
+                }
+                if (isset($data['gp_email']) && !empty($data['gp_email'])) {
+                    $patientUpdateData['gp_email'] = $data['gp_email'];
+                }
+                if (isset($data['gp_phone']) && !empty($data['gp_phone'])) {
+                    $patientUpdateData['gp_phone'] = $data['gp_phone'];
+                }
+                if (isset($data['gp_address']) && !empty($data['gp_address'])) {
+                    $patientUpdateData['gp_address'] = $data['gp_address'];
+                }
+            } else {
+                // Only set to false if explicitly not provided (don't overwrite existing consent)
+                if (isset($data['consent_share_with_gp'])) {
+                    $patientUpdateData['consent_share_with_gp'] = false;
+                }
+            }
+            
             // Assign patient to the clinic/department from the booking link
             if ($departmentId) {
                 // Set legacy department_id if not already set
                 if (!$patient->department_id) {
-                    $patient->department_id = $departmentId;
-                    $patient->save();
+                    $patientUpdateData['department_id'] = $departmentId;
                 }
-                
-                // Also attach to departments pivot table (many-to-many relationship)
+            }
+            
+            // Update patient with all changes at once
+            if (!empty($patientUpdateData)) {
+                $patient->update($patientUpdateData);
+            }
+            
+            // Also attach to departments pivot table (many-to-many relationship) if department exists
+            if ($departmentId) {
                 // Check if already attached to avoid duplicates
                 if (!$patient->departments()->where('departments.id', $departmentId)->exists()) {
                     // Check if patient has any primary department

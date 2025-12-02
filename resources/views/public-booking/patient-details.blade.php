@@ -134,6 +134,29 @@
                     @enderror
                 </div>
                 
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control @error('date_of_birth') is-invalid @enderror" id="date_of_birth" name="date_of_birth" required value="{{ old('date_of_birth') }}" max="{{ date('Y-m-d') }}">
+                        @error('date_of_birth')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="gender" class="form-label">Gender <span class="text-danger">*</span></label>
+                        <select class="form-control @error('gender') is-invalid @enderror" id="gender" name="gender" required>
+                            <option value="">Select Gender</option>
+                            <option value="male" {{ old('gender') === 'male' ? 'selected' : '' }}>Male</option>
+                            <option value="female" {{ old('gender') === 'female' ? 'selected' : '' }}>Female</option>
+                            <option value="other" {{ old('gender') === 'other' ? 'selected' : '' }}>Other</option>
+                        </select>
+                        @error('gender')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+                
                 <div class="mb-3">
                     <label class="form-label">Consultation Type <span class="text-danger">*</span></label>
                     <div class="d-flex gap-3">
@@ -169,6 +192,106 @@
                 <div class="mb-3">
                     <label for="notes" class="form-label">Additional Notes (Optional)</label>
                     <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any additional information you'd like to share...">{{ old('notes') }}</textarea>
+                </div>
+                
+                <!-- GP Consent & Details -->
+                <div class="mb-3">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" 
+                               id="consent_share_with_gp" name="consent_share_with_gp" value="1" 
+                               {{ old('consent_share_with_gp') ? 'checked' : '' }}
+                               onchange="handleGpConsentChange(this)">
+                        <label class="form-check-label" for="consent_share_with_gp">
+                            <strong>I consent for you to share information with my GP.</strong>
+                        </label>
+                    </div>
+                    <small class="text-muted d-block mb-3">By checking this box, you authorize the hospital to share your medical information with your GP.</small>
+                    
+                    <div id="gp_details_group" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="gp_name" class="form-label">GP Name <span class="text-danger">*</span></label>
+                                <input type="text" name="gp_name" id="gp_name" 
+                                       class="form-control @error('gp_name') is-invalid @enderror" 
+                                       value="{{ old('gp_name') }}" placeholder="Enter GP full name">
+                                @error('gp_name')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="gp_email" class="form-label">GP Email <span class="text-danger">*</span></label>
+                                <input type="email" name="gp_email" id="gp_email" 
+                                       class="form-control @error('gp_email') is-invalid @enderror" 
+                                       value="{{ old('gp_email') }}" placeholder="gp@example.com">
+                                @error('gp_email')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="gp_phone" class="form-label">GP Phone <span class="text-danger">*</span></label>
+                                <input type="tel" name="gp_phone" id="gp_phone" 
+                                       class="form-control @error('gp_phone') is-invalid @enderror" 
+                                       value="{{ old('gp_phone') }}" placeholder="+44 123 456 7890">
+                                @error('gp_phone')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="gp_address" class="form-label">GP Address <span class="text-danger">*</span></label>
+                                <input type="text" name="gp_address" id="gp_address" 
+                                       class="form-control @error('gp_address') is-invalid @enderror" 
+                                       value="{{ old('gp_address') }}" placeholder="GP Practice Address">
+                                @error('gp_address')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <script>
+                    function handleGpConsentChange(checkbox) {
+                        var gpGroup = document.getElementById('gp_details_group');
+                        var gpFields = ['gp_name', 'gp_email', 'gp_phone', 'gp_address'];
+                        
+                        if (!gpGroup) return;
+                        
+                        var isChecked = checkbox && (checkbox.checked || checkbox.getAttribute('checked') !== null);
+                        
+                        if (isChecked) {
+                            gpGroup.style.display = 'block';
+                            gpFields.forEach(function(fieldId) {
+                                var field = document.getElementById(fieldId);
+                                if (field) {
+                                    field.required = true;
+                                }
+                            });
+                        } else {
+                            gpGroup.style.display = 'none';
+                            gpFields.forEach(function(fieldId) {
+                                var field = document.getElementById(fieldId);
+                                if (field) {
+                                    field.required = false;
+                                    field.value = '';
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Initialize on page load
+                    (function() {
+                        var checkbox = document.getElementById('consent_share_with_gp');
+                        if (checkbox) {
+                            setTimeout(function() {
+                                handleGpConsentChange(checkbox);
+                            }, 100);
+                            checkbox.addEventListener('change', function() {
+                                handleGpConsentChange(this);
+                            });
+                        }
+                    })();
+                    </script>
                 </div>
                 
                 <div class="form-check">

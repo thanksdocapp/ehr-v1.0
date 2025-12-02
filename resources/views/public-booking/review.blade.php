@@ -80,12 +80,29 @@
             <input type="hidden" name="last_name" value="{{ $patient_data['last_name'] }}">
             <input type="hidden" name="email" value="{{ $patient_data['email'] }}">
             <input type="hidden" name="phone" value="{{ $patient_data['phone'] }}">
+            <input type="hidden" name="date_of_birth" value="{{ $patient_data['date_of_birth'] ?? '' }}">
+            <input type="hidden" name="gender" value="{{ $patient_data['gender'] ?? '' }}">
             <input type="hidden" name="consultation_type" value="{{ $patient_data['consultation_type'] ?? 'in_person' }}">
             @if(isset($patient_data['department_id']))
             <input type="hidden" name="department_id" value="{{ $patient_data['department_id'] }}">
             @endif
             @if(isset($patient_data['notes']))
             <input type="hidden" name="notes" value="{{ $patient_data['notes'] }}">
+            @endif
+            @if(isset($patient_data['consent_share_with_gp']) && $patient_data['consent_share_with_gp'])
+            <input type="hidden" name="consent_share_with_gp" value="1">
+            @if(isset($patient_data['gp_name']))
+            <input type="hidden" name="gp_name" value="{{ $patient_data['gp_name'] }}">
+            @endif
+            @if(isset($patient_data['gp_email']))
+            <input type="hidden" name="gp_email" value="{{ $patient_data['gp_email'] }}">
+            @endif
+            @if(isset($patient_data['gp_phone']))
+            <input type="hidden" name="gp_phone" value="{{ $patient_data['gp_phone'] }}">
+            @endif
+            @if(isset($patient_data['gp_address']))
+            <input type="hidden" name="gp_address" value="{{ $patient_data['gp_address'] }}">
+            @endif
             @endif
             
             <div class="review-card">
@@ -150,11 +167,41 @@
                     <span class="review-label">Phone</span>
                     <span class="review-value">{{ $patient_data['phone'] }}</span>
                 </div>
+                @if(isset($patient_data['date_of_birth']))
+                <div class="review-row">
+                    <span class="review-label">Date of Birth</span>
+                    <span class="review-value">{{ \Carbon\Carbon::parse($patient_data['date_of_birth'])->format('M d, Y') }}</span>
+                </div>
+                @endif
+                @if(isset($patient_data['gender']))
+                <div class="review-row">
+                    <span class="review-label">Gender</span>
+                    <span class="review-value">{{ ucfirst($patient_data['gender']) }}</span>
+                </div>
+                @endif
                 @if(isset($patient_data['notes']) && $patient_data['notes'])
                 <div class="review-row">
                     <span class="review-label">Notes</span>
                     <span class="review-value">{{ $patient_data['notes'] }}</span>
                 </div>
+                @endif
+                @if(isset($patient_data['consent_share_with_gp']) && $patient_data['consent_share_with_gp'])
+                <div class="review-row">
+                    <span class="review-label">GP Consent</span>
+                    <span class="review-value"><i class="fas fa-check-circle text-success me-1"></i>Yes</span>
+                </div>
+                @if(isset($patient_data['gp_name']))
+                <div class="review-row">
+                    <span class="review-label">GP Name</span>
+                    <span class="review-value">{{ $patient_data['gp_name'] }}</span>
+                </div>
+                @endif
+                @if(isset($patient_data['gp_email']))
+                <div class="review-row">
+                    <span class="review-label">GP Email</span>
+                    <span class="review-value">{{ $patient_data['gp_email'] }}</span>
+                </div>
+                @endif
                 @endif
             </div>
             

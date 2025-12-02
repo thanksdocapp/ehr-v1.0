@@ -215,8 +215,15 @@ class PublicBookingController extends Controller
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
+            'date_of_birth' => 'required|date|before:today',
+            'gender' => 'required|in:male,female,other',
             'consultation_type' => 'required|in:in_person,online',
             'consent' => 'required|accepted',
+            'consent_share_with_gp' => 'nullable|boolean',
+            'gp_name' => 'required_if:consent_share_with_gp,1|nullable|string|max:255',
+            'gp_email' => 'required_if:consent_share_with_gp,1|nullable|email|max:255',
+            'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
+            'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -244,7 +251,11 @@ class PublicBookingController extends Controller
         // Get department_id from request (if booking through clinic link) or from doctor
         $departmentId = $request->department_id ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
         
-        $patientData = $request->only(['first_name', 'last_name', 'email', 'phone', 'notes', 'consultation_type']);
+        $patientData = $request->only([
+            'first_name', 'last_name', 'email', 'phone', 'notes', 'consultation_type',
+            'date_of_birth', 'gender', 'consent_share_with_gp',
+            'gp_name', 'gp_email', 'gp_phone', 'gp_address'
+        ]);
         if ($departmentId) {
             $patientData['department_id'] = $departmentId;
         }
@@ -276,7 +287,14 @@ class PublicBookingController extends Controller
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
+            'date_of_birth' => 'required|date|before:today',
+            'gender' => 'required|in:male,female,other',
             'consultation_type' => 'required|in:in_person,online',
+            'consent_share_with_gp' => 'nullable|boolean',
+            'gp_name' => 'required_if:consent_share_with_gp,1|nullable|string|max:255',
+            'gp_email' => 'required_if:consent_share_with_gp,1|nullable|email|max:255',
+            'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
+            'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
