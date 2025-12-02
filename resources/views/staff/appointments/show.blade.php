@@ -497,11 +497,14 @@
                 <h5 class="modal-title">Update Appointment Status</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="statusForm">
+            <form id="statusForm" method="POST" action="{{ route('staff.appointments.update-status', $appointment->id) }}">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" id="appointment_id_input" name="appointment_id" value="{{ $appointment->id }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="status_select" class="form-label">New Status</label>
-                        <select id="status_select" class="form-control" required>
+                        <select id="status_select" name="status" class="form-control" required>
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
                             <option value="completed">Completed</option>
@@ -510,13 +513,13 @@
                     </div>
                     <div class="mb-3">
                         <label for="staff_notes" class="form-label">Notes (Optional)</label>
-                        <textarea id="staff_notes" class="form-control" rows="3" 
+                        <textarea id="staff_notes" name="notes" class="form-control" rows="3" 
                                   placeholder="Add any notes about this status change..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Status</button>
+                    <button type="submit" class="btn btn-primary" id="submitStatusBtn">Update Status</button>
                 </div>
             </form>
         </div>
@@ -526,25 +529,22 @@
 
 @push('scripts')
 <script>
-let currentAppointmentId = null;
+let currentAppointmentId = parseInt('{{ $appointment->id }}');
 
 // Make updateStatus globally accessible
 window.updateStatus = function(appointmentId, status = null) {
     if (!appointmentId) {
         console.error('Appointment ID is required');
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Appointment ID is missing'
-            });
-        } else {
-            alert('Error: Appointment ID is missing');
-        }
+        alert('Error: Appointment ID is missing');
         return;
     }
     
     currentAppointmentId = appointmentId;
+    
+    // Update the form action with the correct appointment ID
+    const formAction = '{{ url("staff/appointments") }}/' + appointmentId + '/status';
+    $('#statusForm').attr('action', formAction);
+    $('#appointment_id_input').val(appointmentId);
     
     // Reset form
     $('#staff_notes').val('');
@@ -553,6 +553,8 @@ window.updateStatus = function(appointmentId, status = null) {
         $('#status_select').val(status);
     }
     
+    console.log('Opening modal for appointment:', appointmentId, 'Status:', status);
+    
     // Show modal - use jQuery for Bootstrap 5 compatibility
     $('#statusModal').modal('show');
 };
@@ -560,6 +562,7 @@ window.updateStatus = function(appointmentId, status = null) {
 // Add event listeners for status update buttons
 $(document).ready(function() {
     console.log('Initializing appointment status buttons...');
+    console.log('Current appointment ID:', currentAppointmentId);
     
     // Check if buttons exist
     const statusButtons = $('.update-status-btn');
@@ -595,52 +598,55 @@ $(document).ready(function() {
 $('#statusForm').on('submit', function(e) {
     e.preventDefault();
     
-    const status = $('#status_select').val();
-    const notes = $('#staff_notes').val();
+    const form = $(this);
+    const formData = new FormData(this);
+    const formAction = form.attr('action');
     
-    if (!currentAppointmentId) {
-        alert('Error: No appointment selected');
-        return;
-    }
+    console.log('Form submitting to:', formAction);
+    console.log('Form data:', Object.fromEntries(formData));
     
     // Disable submit button to prevent double submission
-    const submitBtn = $('#statusForm button[type="submit"]');
+    const submitBtn = $('#submitStatusBtn');
     const originalText = submitBtn.html();
     submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
     
-    // Build the URL correctly
-    const baseUrl = '{{ url("staff/appointments") }}';
-    const updateUrl = `${baseUrl}/${currentAppointmentId}/status`;
-    
-    console.log('Submitting status update to:', updateUrl);
-    
+    // Try AJAX first
     $.ajax({
-        url: updateUrl,
-        method: 'PATCH',
-        data: {
-            status: status,
-            notes: notes,
-            _token: $('meta[name="csrf-token"]').attr('content')
-        },
+        url: formAction,
+        method: 'POST', // Use POST with _method=PATCH
+        data: formData,
+        processData: false,
+        contentType: false,
         success: function(response) {
+            console.log('Success response:', response);
             $('#statusModal').modal('hide');
-            // Show success message
+            
+            // Show success message and reload
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'success',
                     title: 'Success!',
                     text: response.message || 'Appointment status updated successfully.',
-                    timer: 2000,
+                    timer: 1500,
                     showConfirmButton: false
                 }).then(() => {
                     location.reload();
                 });
             } else {
-                alert(response.message || 'Appointment status updated successfully.');
                 location.reload();
             }
         },
-        error: function(xhr) {
+        error: function(xhr, status, error) {
+            console.error('AJAX Error:', status, error);
+            console.error('Response:', xhr.responseText);
+            
+            // If AJAX fails, try normal form submission as fallback
+            if (xhr.status === 0 || xhr.status === 500) {
+                console.log('AJAX failed, using normal form submission...');
+                form.off('submit').submit();
+                return;
+            }
+            
             // Re-enable submit button
             submitBtn.prop('disabled', false).html(originalText);
             
@@ -663,6 +669,8 @@ $('#statusForm').on('submit', function(e) {
             }
         }
     });
+    
+    return false;
 });
 
 // Auto-dismiss alerts after 5 seconds
