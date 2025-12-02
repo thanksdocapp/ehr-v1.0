@@ -598,13 +598,24 @@ $('#statusForm').on('submit', function(e) {
     const status = $('#status_select').val();
     const notes = $('#staff_notes').val();
     
+    if (!currentAppointmentId) {
+        alert('Error: No appointment selected');
+        return;
+    }
+    
     // Disable submit button to prevent double submission
     const submitBtn = $('#statusForm button[type="submit"]');
     const originalText = submitBtn.html();
     submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
     
+    // Build the URL correctly
+    const baseUrl = '{{ url("staff/appointments") }}';
+    const updateUrl = `${baseUrl}/${currentAppointmentId}/status`;
+    
+    console.log('Submitting status update to:', updateUrl);
+    
     $.ajax({
-        url: `{{ route('staff.appointments.update-status', '') }}/${currentAppointmentId}`,
+        url: updateUrl,
         method: 'PATCH',
         data: {
             status: status,
