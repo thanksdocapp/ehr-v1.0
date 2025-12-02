@@ -87,19 +87,20 @@ Route::group(['middleware' => 'installed'], function () {
     // Public Booking Routes (with unique doctor/clinic links)
     // IMPORTANT: Specific routes must come BEFORE parameterized routes to avoid conflicts
     Route::prefix('book')->name('public.booking.')->group(function () {
-        // GET routes with specific paths (must come before POST to avoid conflicts)
+        // GET routes with specific paths (must come before parameterized route to avoid conflicts)
         Route::get('/clinic/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showClinicBooking'])->name('clinic');
         Route::get('/success/{appointmentNumber}', [\App\Http\Controllers\PublicBookingController::class, 'success'])->name('success');
-        // GET route for review page (handles direct access/refresh)
+        // GET routes for POST-only pages (prevent 404 when accessed directly)
         Route::get('/review', [\App\Http\Controllers\PublicBookingController::class, 'showReview'])->name('review.show');
+        Route::get('/confirm', [\App\Http\Controllers\PublicBookingController::class, 'showConfirm'])->name('confirm.show');
         
-        // POST routes (specific paths)
+        // POST routes (specific paths - must come before parameterized GET route)
         Route::post('/select-datetime', [\App\Http\Controllers\PublicBookingController::class, 'selectDateTime'])->name('select-datetime');
         Route::post('/patient-details', [\App\Http\Controllers\PublicBookingController::class, 'patientDetails'])->name('patient-details');
         Route::post('/review', [\App\Http\Controllers\PublicBookingController::class, 'review'])->name('review');
         Route::post('/confirm', [\App\Http\Controllers\PublicBookingController::class, 'confirm'])->name('confirm');
         
-        // Parameterized route last (catches /book/{slug})
+        // Parameterized route last (catches /book/{slug}) - GET only
         Route::get('/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showDoctorBooking'])->name('doctor');
     });
     

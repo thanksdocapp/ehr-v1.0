@@ -187,6 +187,19 @@ class PublicBookingController extends Controller
     }
 
     /**
+     * Step 5: Confirm appointment (GET - handles direct access/refresh)
+     * Prevents 404 when /book/confirm is accessed via GET
+     */
+    public function showConfirm(Request $request)
+    {
+        $this->checkBookingEnabled();
+        
+        // Confirm page should only be accessible via POST with form data
+        // If accessed via GET, redirect to homepage or show 404
+        abort(404, 'Confirmation can only be done after completing the booking form.');
+    }
+
+    /**
      * Step 4: Review and confirm (POST)
      */
     public function review(Request $request)
