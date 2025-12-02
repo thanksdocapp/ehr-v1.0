@@ -140,8 +140,23 @@ class EmailNotificationService
                     'body_length' => strlen($parsedBody)
                 ]);
                 
-                // Check if email_type column exists
-                $hasEmailTypeColumn = \Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'email_type');
+                // Check column existence safely (cache results to avoid multiple queries)
+                $columnChecks = [];
+                $columnsToCheck = ['email_type', 'event', 'patient_id', 'billing_id', 'invoice_id', 'payment_id'];
+                
+                try {
+                    foreach ($columnsToCheck as $column) {
+                        $columnChecks[$column] = \Illuminate\Support\Facades\Schema::hasColumn('email_logs', $column);
+                    }
+                } catch (\Exception $schemaException) {
+                    // If schema check fails, assume columns don't exist (safer fallback)
+                    Log::warning('Schema check failed, assuming optional columns do not exist', [
+                        'error' => $schemaException->getMessage()
+                    ]);
+                    foreach ($columnsToCheck as $column) {
+                        $columnChecks[$column] = false;
+                    }
+                }
                 
                 // Prepare log data
                 $logData = [
@@ -159,24 +174,22 @@ class EmailNotificationService
                 ];
                 
                 // Only add optional columns if they exist in the database
-                if ($hasEmailTypeColumn) {
+                if ($columnChecks['email_type']) {
                     $logData['email_type'] = $options['email_type'] ?? 'general';
                 }
-                
-                // Check for other optional columns
-                if (\Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'event')) {
+                if ($columnChecks['event']) {
                     $logData['event'] = $options['event'] ?? null;
                 }
-                if (\Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'patient_id')) {
+                if ($columnChecks['patient_id']) {
                     $logData['patient_id'] = $options['patient_id'] ?? null;
                 }
-                if (\Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'billing_id')) {
+                if ($columnChecks['billing_id']) {
                     $logData['billing_id'] = $options['billing_id'] ?? null;
                 }
-                if (\Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'invoice_id')) {
+                if ($columnChecks['invoice_id']) {
                     $logData['invoice_id'] = $options['invoice_id'] ?? null;
                 }
-                if (\Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'payment_id')) {
+                if ($columnChecks['payment_id']) {
                     $logData['payment_id'] = $options['payment_id'] ?? null;
                 }
                 
@@ -187,7 +200,7 @@ class EmailNotificationService
                     'has_subject' => !empty($logData['subject']),
                     'has_body' => !empty($logData['body']),
                     'status' => $logData['status'],
-                    'has_email_type_column' => $hasEmailTypeColumn
+                    'has_email_type_column' => $columnChecks['email_type'] ?? false
                 ]);
                 
                 $log = EmailLog::create($logData);
@@ -264,8 +277,14 @@ class EmailNotificationService
             try {
                 $template = EmailTemplate::withTrashed()->where('name', $templateName)->first();
                 if ($template) {
-                    // Check if email_type column exists
-                    $hasEmailTypeColumn = \Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'email_type');
+                    // Check if email_type column exists (safely)
+                    $hasEmailTypeColumn = false;
+                    try {
+                        $hasEmailTypeColumn = \Illuminate\Support\Facades\Schema::hasColumn('email_logs', 'email_type');
+                    } catch (\Exception $schemaEx) {
+                        // If check fails, assume column doesn't exist
+                        Log::warning('Could not check for email_type column', ['error' => $schemaEx->getMessage()]);
+                    }
                     
                     $errorLogData = [
                         'email_template_id' => $template->id,
