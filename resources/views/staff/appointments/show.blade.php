@@ -528,15 +528,34 @@
 <script>
 let currentAppointmentId = null;
 
-function updateStatus(appointmentId, status = null) {
+// Make updateStatus globally accessible
+window.updateStatus = function(appointmentId, status = null) {
+    if (!appointmentId) {
+        console.error('Appointment ID is required');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Appointment ID is missing'
+            });
+        } else {
+            alert('Error: Appointment ID is missing');
+        }
+        return;
+    }
+    
     currentAppointmentId = appointmentId;
+    
+    // Reset form
+    $('#staff_notes').val('');
     
     if (status) {
         $('#status_select').val(status);
     }
     
+    // Show modal - use jQuery for Bootstrap 5 compatibility
     $('#statusModal').modal('show');
-}
+};
 
 $('#statusForm').on('submit', function(e) {
     e.preventDefault();
@@ -544,8 +563,13 @@ $('#statusForm').on('submit', function(e) {
     const status = $('#status_select').val();
     const notes = $('#staff_notes').val();
     
+    // Disable submit button to prevent double submission
+    const submitBtn = $('#statusForm button[type="submit"]');
+    const originalText = submitBtn.html();
+    submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
+    
     $.ajax({
-        url: `/staff/appointments/${currentAppointmentId}/status`,
+        url: `{{ route('staff.appointments.update-status', '') }}/${currentAppointmentId}`,
         method: 'PATCH',
         data: {
             status: status,
@@ -554,10 +578,43 @@ $('#statusForm').on('submit', function(e) {
         },
         success: function(response) {
             $('#statusModal').modal('hide');
-            location.reload();
+            // Show success message
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: response.message || 'Appointment status updated successfully.',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                alert(response.message || 'Appointment status updated successfully.');
+                location.reload();
+            }
         },
         error: function(xhr) {
-            alert('Error updating status. Please try again.');
+            // Re-enable submit button
+            submitBtn.prop('disabled', false).html(originalText);
+            
+            let errorMessage = 'Error updating status. Please try again.';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                const errors = Object.values(xhr.responseJSON.errors).flat();
+                errorMessage = errors.join('\n');
+            }
+            
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: errorMessage
+                });
+            } else {
+                alert(errorMessage);
+            }
         }
     });
 });
