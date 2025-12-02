@@ -1,96 +1,100 @@
-# Running Database Migrations
+# Migration Instructions for Booking System
 
-## Quick Start
+The booking system requires several database tables to be created. If you're getting the error:
+```
+Table 'thanksdocnotes_db.booking_services' doesn't exist
+```
 
-### Option 1: Using Batch File (Windows)
-1. Double-click `run-migrations.bat` in the project root
-2. If PHP is not found, edit the batch file and set the correct PHP path
+## Solution 1: Run Migrations (Recommended)
 
-### Option 2: Using Command Line
-Open a terminal/command prompt in the project directory and run:
+Run these commands in order:
 
+```bash
+php artisan migrate --path=database/migrations/2025_11_28_100001_create_booking_services_table.php
+php artisan migrate --path=database/migrations/2025_11_28_100002_create_doctor_service_prices_table.php
+php artisan migrate --path=database/migrations/2025_11_28_100000_add_is_guest_to_patients_table.php
+php artisan migrate --path=database/migrations/2025_11_28_100003_add_service_fields_to_appointments_table.php
+php artisan migrate --path=database/migrations/2025_11_28_100004_add_public_booking_setting_to_settings_table.php
+```
+
+Or run all at once:
 ```bash
 php artisan migrate
 ```
 
-If you get "php is not recognized", you need to:
-1. Add PHP to your system PATH, OR
-2. Use the full path to PHP, for example:
-   ```bash
-   C:\xampp\php\php.exe artisan migrate
-   ```
+## Solution 2: Manual SQL (If migrations fail)
 
-### Option 3: Using Composer (if available)
-```bash
-composer run-script migrate
+If migrations don't work, you can run this SQL directly in your database:
+
+```sql
+-- Create booking_services table
+CREATE TABLE IF NOT EXISTS `booking_services` (
+    `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    `description` text DEFAULT NULL,
+    `default_duration_minutes` int(11) NOT NULL DEFAULT 30,
+    `default_price` decimal(10,2) DEFAULT NULL,
+    `tags` json DEFAULT NULL,
+    `created_by` bigint(20) UNSIGNED DEFAULT NULL,
+    `is_active` tinyint(1) NOT NULL DEFAULT 1,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `booking_services_created_by_foreign` (`created_by`),
+    CONSTRAINT `booking_services_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create doctor_service_prices table
+CREATE TABLE IF NOT EXISTS `doctor_service_prices` (
+    `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `doctor_id` bigint(20) UNSIGNED NOT NULL,
+    `service_id` bigint(20) UNSIGNED NOT NULL,
+    `custom_price` decimal(10,2) DEFAULT NULL,
+    `custom_duration_minutes` int(11) DEFAULT NULL,
+    `is_active` tinyint(1) NOT NULL DEFAULT 1,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `doctor_service_prices_doctor_id_service_id_unique` (`doctor_id`,`service_id`),
+    KEY `doctor_service_prices_doctor_id_foreign` (`doctor_id`),
+    KEY `doctor_service_prices_service_id_foreign` (`service_id`),
+    CONSTRAINT `doctor_service_prices_doctor_id_foreign` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `doctor_service_prices_service_id_foreign` FOREIGN KEY (`service_id`) REFERENCES `booking_services` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Add is_guest column to patients table
+ALTER TABLE `patients` ADD COLUMN IF NOT EXISTS `is_guest` tinyint(1) NOT NULL DEFAULT 0 AFTER `is_active`;
+
+-- Add service_id and created_from to appointments table
+ALTER TABLE `appointments` ADD COLUMN IF NOT EXISTS `service_id` bigint(20) UNSIGNED DEFAULT NULL AFTER `department_id`;
+ALTER TABLE `appointments` ADD COLUMN IF NOT EXISTS `created_from` varchar(255) NOT NULL DEFAULT 'Internal' AFTER `status`;
+
+-- Add foreign key for service_id (if column was just added)
+-- Note: Run this only if service_id column was just created above
+ALTER TABLE `appointments` 
+    ADD CONSTRAINT `appointments_service_id_foreign` 
+    FOREIGN KEY (`service_id`) REFERENCES `booking_services` (`id`) ON DELETE SET NULL;
 ```
 
-## What Migrations Will Run
+## Verification
 
-The following migration files will be executed:
+After running migrations or SQL, verify the tables exist:
 
-1. **2025_01_15_000001_create_patient_email_consent_table.php**
-   - Creates `patient_email_consent` table for tracking patient email consent
-
-2. **2025_01_15_000002_add_medical_record_email_fields_to_email_logs_table.php**
-   - Adds new fields to `email_logs` table for medical record email tracking
-
-3. **2025_01_15_000003_create_email_bounces_table.php**
-   - Creates `email_bounces` table for tracking email bounces and complaints
-
-## Finding PHP on Windows
-
-Common PHP installation locations:
-- `C:\php\php.exe`
-- `C:\xampp\php\php.exe`
-- `C:\wamp\bin\php\php8.1\php.exe`
-- `C:\laragon\bin\php\php-8.1\php.exe`
-- `C:\Program Files\PHP\php.exe`
-
-## Troubleshooting
-
-### "php is not recognized"
-- Add PHP to your system PATH environment variable
-- Or use the full path to php.exe in your commands
-
-### "Access denied" or permission errors
-- Run your terminal/command prompt as Administrator
-- Ensure your database user has CREATE TABLE permissions
-
-### Migration already exists
-If you see "Migration table not found", run:
 ```bash
-php artisan migrate:install
-php artisan migrate
+php artisan tinker
 ```
 
-## After Migrations
+Then in tinker:
+```php
+Schema::hasTable('booking_services'); // Should return true
+Schema::hasTable('doctor_service_prices'); // Should return true
+Schema::hasColumn('patients', 'is_guest'); // Should return true
+Schema::hasColumn('appointments', 'service_id'); // Should return true
+```
 
-Once migrations are complete:
-1. The email feature will be fully functional
-2. You can start tracking patient email consent
-3. Email logs will include medical record information
-4. Bounce tracking will be available
+## Next Steps
 
-## Option 4: Manual SQL Execution
-
-If you have direct database access (phpMyAdmin, MySQL Workbench, etc.), you can run the SQL files directly:
-
-1. Navigate to `database/migrations/SQL/` folder
-2. Run the SQL files in this order:
-   - `manual_migration_2025_01_15_000001.sql` (creates patient_email_consent table)
-   - `manual_migration_2025_01_15_000002.sql` (adds fields to email_logs table)
-   - `manual_migration_2025_01_15_000003.sql` (creates email_bounces table)
-
-**Note:** The second migration uses MySQL 8.0+ syntax (`ADD COLUMN IF NOT EXISTS`). If you're using an older MySQL version, you may need to modify the SQL or check for column existence manually.
-
-## Verifying Migrations
-
-To check if migrations ran successfully, you can:
-1. Check your database for the new tables:
-   - `patient_email_consent`
-   - `email_bounces`
-   - Verify `email_logs` table has the new columns
-2. Visit the email compose page - the migration warning should disappear
-3. Run `php artisan migrate:status` to see migration status (if PHP is available)
-
+Once tables are created:
+1. Go to Admin → Booking Services → Create your first service
+2. Enable public booking in Admin → Settings → General
+3. Doctors can now customize their service pricing in their dashboard

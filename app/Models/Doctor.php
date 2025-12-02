@@ -94,6 +94,18 @@ class Doctor extends Model
         return $this->hasMany(Testimonial::class);
     }
 
+    public function servicePrices(): HasMany
+    {
+        return $this->hasMany(DoctorServicePrice::class);
+    }
+
+    public function services(): BelongsToMany
+    {
+        return $this->belongsToMany(BookingService::class, 'doctor_service_prices', 'doctor_id', 'service_id')
+            ->withPivot('custom_price', 'custom_duration_minutes', 'is_active')
+            ->withTimestamps();
+    }
+
     // Scopes
     public function scopeActive($query)
     {

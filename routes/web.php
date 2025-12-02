@@ -84,6 +84,28 @@ Route::group(['middleware' => 'installed'], function () {
     Route::get('/appointments/doctors/{departmentId}', [AppointmentController::class, 'getDoctorsByDepartment'])->name('appointments.doctors');
     Route::get('/appointments/slots/{doctorId}', [AppointmentController::class, 'getAvailableSlots'])->name('appointments.slots');
     
+    // Public Booking Routes (with unique doctor/clinic links)
+    // IMPORTANT: Specific routes must come BEFORE parameterized routes to avoid conflicts
+    Route::prefix('book')->name('public.booking.')->group(function () {
+        // POST routes first (specific paths)
+        Route::post('/select-datetime', [\App\Http\Controllers\PublicBookingController::class, 'selectDateTime'])->name('select-datetime');
+        Route::post('/patient-details', [\App\Http\Controllers\PublicBookingController::class, 'patientDetails'])->name('patient-details');
+        Route::post('/review', [\App\Http\Controllers\PublicBookingController::class, 'review'])->name('review');
+        Route::post('/confirm', [\App\Http\Controllers\PublicBookingController::class, 'confirm'])->name('confirm');
+        
+        // GET routes with specific paths
+        Route::get('/clinic/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showClinicBooking'])->name('clinic');
+        Route::get('/success/{appointmentNumber}', [\App\Http\Controllers\PublicBookingController::class, 'success'])->name('success');
+        
+        // Parameterized route last (catches /book/{slug})
+        Route::get('/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showDoctorBooking'])->name('doctor');
+    });
+    
+    // Public Booking API Routes
+    Route::prefix('api')->name('public.api.')->group(function () {
+        Route::get('/doctor/{id}/available-slots', [\App\Http\Controllers\PublicBookingController::class, 'getAvailableSlots'])->name('available-slots');
+    });
+    
     // Patient Management API Routes
     Route::get('/api/patients/stats', [AppointmentController::class, 'getPatientStats'])->name('api.patients.stats');
     Route::get('/api/patients/search', [AppointmentController::class, 'searchPatients'])->name('api.patients.search');
@@ -293,6 +315,17 @@ Route::group(['middleware' => 'installed'], function () {
             Route::get('{billing}/edit', [\App\Http\Controllers\Staff\BillingsController::class, 'edit'])->name('edit');
             Route::put('{billing}', [\App\Http\Controllers\Staff\BillingsController::class, 'update'])->name('update');
             Route::post('{billing}/send-to-patient', [\App\Http\Controllers\Staff\BillingsController::class, 'sendToPatient'])->name('send-to-patient');
+        });
+        
+        // Doctor Services Management
+        Route::prefix('doctor-services')->name('doctor-services.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'store'])->name('store');
+            Route::get('/{bookingService}/edit', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'edit'])->name('edit');
+            Route::put('/{bookingService}', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'update'])->name('update');
+            Route::post('/{bookingService}/toggle-status', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'toggleStatus'])->name('toggle-status');
+            Route::delete('/{bookingService}', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'destroy'])->name('destroy');
         });
         
         // Staff Notifications
@@ -519,6 +552,12 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/api/appointments/calendar-data', [\App\Http\Controllers\Admin\AppointmentsController::class, 'getCalendarData'])->name('api.appointments.calendar-data');
         Route::get('/api/appointments/today', [\App\Http\Controllers\Admin\AppointmentsController::class, 'getTodayAppointments'])->name('api.appointments.today');
         
+        // Booking Services Management
+        Route::resource('booking-services', \App\Http\Controllers\Admin\BookingServicesController::class);
+        Route::post('/booking-services/{bookingService}/toggle-status', [\App\Http\Controllers\Admin\BookingServicesController::class, 'toggleStatus'])->name('booking-services.toggle-status');
+        Route::get('/booking-services/{bookingService}/assign-doctor', [\App\Http\Controllers\Admin\BookingServicesController::class, 'assignDoctor'])->name('booking-services.assign-doctor');
+        Route::post('/booking-services/{bookingService}/assign-doctor', [\App\Http\Controllers\Admin\BookingServicesController::class, 'storeDoctorAssignment'])->name('booking-services.store-doctor-assignment');
+        
         // Patients Management
         Route::get('/patients/export/csv', [\App\Http\Controllers\Admin\PatientsController::class, 'exportCsv'])->name('patients.export.csv');
         Route::get('/patients/import', [\App\Http\Controllers\Admin\PatientsController::class, 'showImport'])->name('patients.import');
@@ -527,6 +566,8 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/patients/{patient}/download-document/{type}', [\App\Http\Controllers\Admin\PatientsController::class, 'downloadDocument'])->name('patients.download-document');
         Route::get('/patients/{patient}/gp-email', [\App\Http\Controllers\Admin\PatientsController::class, 'showGpEmailForm'])->name('patients.gp-email');
         Route::post('/patients/{patient}/gp-email', [\App\Http\Controllers\Admin\PatientsController::class, 'sendGpEmail'])->name('patients.gp-email.send');
+        Route::get('/patients/{patient}/convert-guest', [\App\Http\Controllers\Admin\PatientsController::class, 'showConvertGuest'])->name('patients.convert-guest');
+        Route::post('/patients/{patient}/convert-guest', [\App\Http\Controllers\Admin\PatientsController::class, 'convertGuest'])->name('patients.convert-guest.post');
         
         // Patient Alerts - All Alerts List
         Route::get('/alerts', [\App\Http\Controllers\Admin\AlertsController::class, 'index'])->name('alerts.index');

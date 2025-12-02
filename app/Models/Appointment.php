@@ -16,10 +16,12 @@ class Appointment extends Model
         'patient_id',
         'doctor_id',
         'department_id',
+        'service_id',
         'appointment_date',
         'appointment_time',
         'type',
         'status',
+        'created_from',
         'reason',
         'symptoms',
         'notes',
@@ -64,6 +66,11 @@ class Appointment extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(BookingService::class, 'service_id');
     }
 
     public function medicalRecord()

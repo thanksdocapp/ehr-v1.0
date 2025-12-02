@@ -268,6 +268,9 @@ class PublicBillingController extends Controller
                 ->first();
             
             if ($latestPayment) {
+                // Ensure billing is updated even if callback wasn't called
+                $this->updateInvoiceAndBilling($invoice);
+                
                 // Check if receipt already sent (to avoid duplicates)
                 $receiptSent = Cache::get('receipt_sent_' . $latestPayment->id, false);
                 
@@ -292,6 +295,20 @@ class PublicBillingController extends Controller
                     }
                 }
             }
+        }
+        
+        // Always ensure billing is updated when viewing success page (fallback)
+        $this->updateInvoiceAndBilling($invoice);
+
+        // Check if this payment was from a booking flow
+        $bookingAppointmentNumber = session('booking_appointment_number');
+        if ($bookingAppointmentNumber) {
+            // Clear the session
+            session()->forget('booking_appointment_number');
+            // Redirect to booking success page
+            return redirect()->route('public.booking.success', [
+                'appointment_number' => $bookingAppointmentNumber
+            ])->with('payment_success', true);
         }
 
         return view('public.billing.success', compact('invoice', 'token'));
@@ -451,9 +468,22 @@ class PublicBillingController extends Controller
             if ($invoice->billing_id) {
                 $billing = \App\Models\Billing::find($invoice->billing_id);
                 if ($billing) {
-                    // Update paid_amount - the model's saving event will automatically update status
+                    // Calculate balance
+                    $balance = $billing->total_amount - $totalPaid;
+                    
+                    // Determine status based on payment
+                    $status = 'pending';
+                    if ($totalPaid >= $billing->total_amount) {
+                        $status = 'paid';
+                    } elseif ($totalPaid > 0) {
+                        $status = 'partially_paid';
+                    }
+                    
+                    // Update paid_amount, balance, and status
                     $billing->update([
                         'paid_amount' => $totalPaid,
+                        'balance' => $balance,
+                        'status' => $status,
                         'payment_method' => $billing->payment_method ?: 'card',
                         'payment_reference' => $billing->payment_reference ?: 'ONLINE_PAYMENT',
                         'paid_at' => $totalPaid >= $billing->total_amount ? now() : $billing->paid_at,
@@ -463,9 +493,20 @@ class PublicBillingController extends Controller
                         'billing_id' => $billing->id,
                         'invoice_id' => $invoice->id,
                         'total_paid' => $totalPaid,
-                        'billing_status' => $billing->fresh()->status
+                        'balance' => $balance,
+                        'billing_status' => $billing->fresh()->status,
+                        'billing_total' => $billing->total_amount
+                    ]);
+                } else {
+                    \Log::warning('Billing record not found for invoice', [
+                        'invoice_id' => $invoice->id,
+                        'billing_id' => $invoice->billing_id
                     ]);
                 }
+            } else {
+                \Log::warning('Invoice has no billing_id to update', [
+                    'invoice_id' => $invoice->id
+                ]);
             }
         } catch (\Exception $e) {
             \Log::error('Error updating invoice and billing', [

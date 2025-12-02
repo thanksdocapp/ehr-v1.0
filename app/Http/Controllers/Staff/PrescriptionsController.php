@@ -89,6 +89,13 @@ class PrescriptionsController extends Controller
 
     public function store(Request $request)
     {
+        // Check if patient is a guest
+        $patient = Patient::find($request->patient_id);
+        if ($patient && $patient->is_guest) {
+            return redirect()->back()
+                ->with('error', 'Cannot create prescriptions for guest patients. Please convert the patient to a full patient first.')
+                ->withInput();
+        }
         $user = Auth::user();
         
         // Only doctors and pharmacists can create prescriptions
@@ -231,6 +238,12 @@ class PrescriptionsController extends Controller
 
     public function update(Request $request, Prescription $prescription)
     {
+        // Check if patient is a guest
+        if ($prescription->patient && $prescription->patient->is_guest) {
+            return redirect()->back()
+                ->with('error', 'Cannot edit prescriptions for guest patients. Please convert the patient to a full patient first.')
+                ->withInput();
+        }
         $user = Auth::user();
         
         // Role-based permission checks

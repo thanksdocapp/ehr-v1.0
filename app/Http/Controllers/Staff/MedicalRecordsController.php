@@ -388,6 +388,13 @@ class MedicalRecordsController extends Controller
 
     public function store(Request $request)
     {
+        // Check if patient is a guest
+        $patient = Patient::find($request->patient_id);
+        if ($patient && $patient->is_guest) {
+            return redirect()->back()
+                ->with('error', 'Cannot create medical records for guest patients. Please convert the patient to a full patient first.')
+                ->withInput();
+        }
         $user = Auth::user();
         
         // Only doctors and nurses can create medical records
@@ -592,6 +599,13 @@ class MedicalRecordsController extends Controller
 
     public function update(Request $request, MedicalRecord $medicalRecord)
     {
+        // Check if patient is a guest
+        if ($medicalRecord->patient && $medicalRecord->patient->is_guest) {
+            return redirect()->back()
+                ->with('error', 'Cannot edit medical records for guest patients. Please convert the patient to a full patient first.')
+                ->withInput();
+        }
+
         $user = Auth::user();
         
         // Only doctors can edit medical records, and only their own

@@ -393,12 +393,18 @@ class AppointmentsController extends Controller
         $start = $request->get('start', now()->startOfMonth()->format('Y-m-d'));
         $end = $request->get('end', now()->endOfMonth()->format('Y-m-d'));
 
-        $appointments = Appointment::with(['patient', 'doctor', 'department'])
+        $appointments = Appointment::with(['patient', 'doctor', 'department', 'service'])
             ->whereBetween('appointment_date', [$start, $end])
             ->get()
             ->map(function ($appointment) {
                 $startDateTime = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
-                $endDateTime = $startDateTime->copy()->addHour(); // Default 1 hour duration
+                
+                // Calculate end time based on service duration or default to 1 hour
+                $duration = 60; // Default 60 minutes
+                if ($appointment->service) {
+                    $duration = $appointment->service->default_duration_minutes ?? 60;
+                }
+                $endDateTime = $startDateTime->copy()->addMinutes($duration);
                 
                 $statusColor = $this->getStatusColor($appointment->status);
                 $textColor = in_array($appointment->status, ['pending']) ? '#000' : '#fff';
@@ -422,7 +428,10 @@ class AppointmentsController extends Controller
                         'type' => $appointment->type ?? 'consultation',
                         'reason' => $appointment->reason ?? '',
                         'appointment_number' => $appointment->appointment_number ?? '',
-                        'is_online' => $appointment->is_online ?? false
+                        'is_online' => $appointment->is_online ?? false,
+                        'service_id' => $appointment->service_id,
+                        'service_name' => $appointment->service->name ?? null,
+                        'created_from' => $appointment->created_from ?? null
                     ]
                 ];
             });

@@ -315,6 +315,9 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-primary text-white">{{ ucfirst(str_replace('_', ' ', $bill->type)) }}</span>
+                                    @if($bill->appointment_id)
+                                    <br><small class="text-muted">Appointment: {{ $bill->appointment->appointment_number ?? 'N/A' }}</small>
+                                    @endif
                                 </td>
                                 <td>
                                     <div class="fw-bold">{{ CurrencyHelper::format($bill->total_amount) }}</div>

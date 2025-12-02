@@ -1189,6 +1189,11 @@
                             $route = route('staff.billing.index');
                             $isActive = request()->routeIs('staff.billing.*');
                             break;
+                        case 'doctor-services':
+                        case 'services':
+                            $route = route('staff.doctor-services.index');
+                            $isActive = request()->routeIs('staff.doctor-services.*');
+                            break;
                         default:
                             // Try to use route if provided, otherwise skip
                             if (isset($item['route'])) {
@@ -1308,6 +1313,7 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="border-radius: 16px; margin-top: 0.5rem;">
                         <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item" href="{{ route('change-password') }}"><i class="fas fa-key me-2"></i>Change Password</a></li>
+                        <li><a class="dropdown-item" href="{{ route('staff.doctor-services.index') }}"><i class="fas fa-briefcase-medical me-2"></i>Services</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="POST" action="{{ route('logout') }}" class="d-inline">

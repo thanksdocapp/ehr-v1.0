@@ -540,6 +540,22 @@
                         </div>
 
                         <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-calendar-check me-1"></i>Public Online Booking
+                            </label>
+                            <div class="form-check form-switch">
+                                <input type="hidden" name="public_booking_enabled" value="0">
+                                <input class="form-check-input" type="checkbox" id="public_booking_enabled" 
+                                       name="public_booking_enabled" value="1" 
+                                       {{ old('public_booking_enabled', $settings['public_booking_enabled'] ?? '1') == '1' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="public_booking_enabled">
+                                    Allow Public Online Booking
+                                </label>
+                            </div>
+                            <div class="form-help">When enabled, patients can book appointments through unique doctor/clinic booking links. This is separate from patient login.</div>
+                        </div>
+
+                        <div class="form-group">
                             <label for="session_timeout" class="form-label">
                                 <i class="fas fa-clock me-1"></i>Session Timeout (minutes)
                             </label>

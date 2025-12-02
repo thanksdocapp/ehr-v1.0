@@ -442,6 +442,9 @@
                                 <td>
                                     <div class="fw-bold text-primary">#{{ $bill->bill_number }}</div>
                                     <small class="text-muted">{{ $bill->created_at->format('M d, Y') }}</small>
+                                    @if($bill->appointment_id && $bill->appointment)
+                                    <br><small class="text-info"><i class="fas fa-calendar-check me-1"></i>Appt: {{ $bill->appointment->appointment_number }}</small>
+                                    @endif
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">

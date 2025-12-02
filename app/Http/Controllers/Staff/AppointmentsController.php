@@ -247,7 +247,10 @@ class AppointmentsController extends Controller
 
     public function show($id)
     {
-        $appointment = Appointment::with([
+        $user = Auth::user();
+        
+        // Use the same visibility logic as index method
+        $query = Appointment::with([
             'patient' => function($query) {
                 $query->with(['alerts' => function($q) {
                     $q->with('creator')->latest();
@@ -256,13 +259,16 @@ class AppointmentsController extends Controller
             'doctor',
             'department',
             'medicalRecord.prescriptions'
-        ])->findOrFail($id);
+        ]);
         
-        // Check authorization - doctors can only view their own appointments
-        $user = Auth::user();
-        if ($user->role === 'doctor' && $user->doctor && $appointment->doctor_id !== $user->doctor->id) {
-            abort(403, 'You can only view your own appointments.');
+        // Apply visibility rules based on user role (uses patient-department-doctor logic)
+        if ($user) {
+            $query->visibleTo($user);
+        } else {
+            $query->whereRaw('1 = 0'); // No results if no user
         }
+        
+        $appointment = $query->findOrFail($id);
         
         // If AJAX request, return JSON
         if (request()->ajax() || request()->wantsJson()) {
@@ -661,7 +667,7 @@ class AppointmentsController extends Controller
             $start = $request->get('start', now()->startOfMonth()->format('Y-m-d'));
             $end = $request->get('end', now()->endOfMonth()->format('Y-m-d'));
 
-            $query = Appointment::with(['patient', 'doctor', 'department'])
+            $query = Appointment::with(['patient', 'doctor', 'department', 'service'])
                 ->whereBetween('appointment_date', [$start, $end]);
 
             // Filter for doctor's own appointments if user is a doctor
@@ -678,7 +684,13 @@ class AppointmentsController extends Controller
                 ->map(function ($appointment) use ($user) {
                     try {
                         $startDateTime = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
-                        $endDateTime = $startDateTime->copy()->addHour(); // Default 1 hour duration
+                        
+                        // Calculate end time based on service duration or default to 1 hour
+                        $duration = 60; // Default 60 minutes
+                        if ($appointment->service) {
+                            $duration = $appointment->service->default_duration_minutes ?? 60;
+                        }
+                        $endDateTime = $startDateTime->copy()->addMinutes($duration);
                         
                         $title = $appointment->patient->full_name ?? 'Unknown Patient';
                         if ($user->role !== 'doctor' && $appointment->doctor) {
@@ -705,6 +717,9 @@ class AppointmentsController extends Controller
                                 'department_id' => $appointment->department_id,
                                 'status' => $appointment->status,
                                 'type' => $appointment->type ?? 'consultation',
+                                'service_id' => $appointment->service_id,
+                                'service_name' => $appointment->service->name ?? null,
+                                'created_from' => $appointment->created_from ?? null,
                                 'reason' => $appointment->reason ?? '',
                                 'appointment_number' => $appointment->appointment_number ?? '',
                                 'is_online' => $appointment->is_online ?? false

@@ -47,6 +47,7 @@ class Patient extends Authenticatable
         'gp_phone',
         'gp_address',
         'is_active',
+        'is_guest',
         'department_id',
         'created_by_doctor_id',
         'assigned_doctor_id',
@@ -64,6 +65,7 @@ class Patient extends Authenticatable
         'allergies' => 'array',
         'medical_conditions' => 'array',
         'is_active' => 'boolean',
+        'is_guest' => 'boolean',
         'consent_share_with_gp' => 'boolean',
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
@@ -190,6 +192,16 @@ class Patient extends Authenticatable
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopeGuest($query)
+    {
+        return $query->where('is_guest', true);
+    }
+
+    public function scopeNotGuest($query)
+    {
+        return $query->where('is_guest', false);
     }
 
     public function scopeByBloodGroup($query, $bloodGroup)
@@ -408,6 +420,21 @@ class Patient extends Authenticatable
                                 ->whereDoesntHave('departments');
                     });
                 }
+                
+                // OR patients with appointments to doctors in the doctor's departments
+                // This ensures guest patients from public bookings appear in the list
+                if (!empty($doctorDepartmentIds)) {
+                    $q->orWhereHas('appointments', function($appointmentQuery) use ($doctorDepartmentIds) {
+                        $appointmentQuery->whereHas('doctor', function($doctorQuery) use ($doctorDepartmentIds) {
+                            $doctorQuery->where(function($deptQuery) use ($doctorDepartmentIds) {
+                                $deptQuery->whereIn('department_id', $doctorDepartmentIds)
+                                         ->orWhereHas('departments', function($pivotQuery) use ($doctorDepartmentIds) {
+                                             $pivotQuery->whereIn('departments.id', $doctorDepartmentIds);
+                                         });
+                            });
+                        });
+                    });
+                }
             });
         }
         
@@ -433,6 +460,18 @@ class Patient extends Authenticatable
                     $subQuery->whereIn('department_id', $userDepartmentIds)
                             // Only use department_id if patient has no departments in pivot table
                             ->whereDoesntHave('departments');
+                })
+                // OR patients with appointments to doctors in the user's departments
+                // This ensures guest patients from public bookings appear in the list
+                ->orWhereHas('appointments', function($appointmentQuery) use ($userDepartmentIds) {
+                    $appointmentQuery->whereHas('doctor', function($doctorQuery) use ($userDepartmentIds) {
+                        $doctorQuery->where(function($deptQuery) use ($userDepartmentIds) {
+                            $deptQuery->whereIn('department_id', $userDepartmentIds)
+                                     ->orWhereHas('departments', function($pivotQuery) use ($userDepartmentIds) {
+                                         $pivotQuery->whereIn('departments.id', $userDepartmentIds);
+                                     });
+                        });
+                    });
                 });
             });
         }
@@ -715,5 +754,30 @@ class Patient extends Authenticatable
     public function getEmailForPasswordReset()
     {
         return $this->email;
+    }
+
+    /**
+     * Convert guest patient to full patient.
+     * 
+     * @param array $additionalData Additional required fields (DOB, address, gender, etc.)
+     * @return bool
+     */
+    public function convertToFullPatient(array $additionalData = [])
+    {
+        if (!$this->is_guest) {
+            return false; // Already a full patient
+        }
+
+        $this->fill($additionalData);
+        $this->is_guest = false;
+        return $this->save();
+    }
+
+    /**
+     * Check if patient can perform certain actions (not a guest).
+     */
+    public function canPerformActions()
+    {
+        return !$this->is_guest;
     }
 }

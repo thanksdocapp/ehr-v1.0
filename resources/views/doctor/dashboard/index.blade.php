@@ -18,6 +18,46 @@
                     </p>
                 </div>
                 <div class="mt-3 mt-md-0">
+                    @php
+                        $bookingLink = null;
+                        if (isset($doctor) && $doctor) {
+                            // Get the doctor's primary department
+                            $department = $doctor->primaryDepartment();
+                            
+                            if ($department) {
+                                // Use department slug for the booking link
+                                if ($department->slug) {
+                                    $bookingLink = route('public.booking.clinic', ['slug' => $department->slug]);
+                                } else {
+                                    // Generate slug from department name if it doesn't exist
+                                    $department->slug = \Illuminate\Support\Str::slug($department->name);
+                                    $department->save();
+                                    $bookingLink = route('public.booking.clinic', ['slug' => $department->slug]);
+                                }
+                            } else {
+                                // Fallback: if no department, use doctor slug (for backward compatibility)
+                                if ($doctor->slug) {
+                                    $bookingLink = route('public.booking.doctor', ['slug' => $doctor->slug]);
+                                } else {
+                                    // Generate slug if it doesn't exist
+                                    $doctor->slug = \Illuminate\Support\Str::slug($doctor->first_name . ' ' . $doctor->last_name);
+                                    $doctor->save();
+                                    $bookingLink = route('public.booking.doctor', ['slug' => $doctor->slug]);
+                                }
+                            }
+                        }
+                    @endphp
+                    @if($bookingLink)
+                    <button type="button" onclick="copyBookingLink('{{ $bookingLink }}')" class="btn btn-success btn-lg me-2" style="border-radius: 12px; font-weight: 600;" title="Copy your public booking link" id="copy-booking-link-btn">
+                        <i class="fas fa-link me-2"></i>Copy Booking Link
+                    </button>
+                    <small class="d-block text-muted mt-1" id="booking-link-display" style="font-size: 0.75rem;">{{ $bookingLink }}</small>
+                    @else
+                    <button type="button" class="btn btn-secondary btn-lg me-2" style="border-radius: 12px; font-weight: 600;" disabled title="Doctor profile incomplete - no department assigned">
+                        <i class="fas fa-link me-2"></i>Booking Link Unavailable
+                    </button>
+                    <small class="d-block text-muted mt-1">No department assigned to doctor</small>
+                    @endif
                     <a href="{{ route('staff.appointments.create') }}" class="btn btn-doctor-primary btn-lg me-2" style="border-radius: 12px; font-weight: 600;">
                         <i class="fas fa-plus me-2"></i>New Appointment
                     </a>
@@ -243,6 +283,16 @@
                         </div>
                         <div class="doctor-quick-action-title">Prescription</div>
                         <div class="doctor-quick-action-subtitle">Write</div>
+                    </a>
+                </div>
+                
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <a href="{{ route('staff.doctor-services.index') }}" class="doctor-quick-action">
+                        <div class="doctor-quick-action-icon" style="background: transparent; color: #000;">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="doctor-quick-action-title">Services</div>
+                        <div class="doctor-quick-action-subtitle">Manage</div>
                     </a>
                 </div>
                 
@@ -649,6 +699,106 @@
 <!-- FullCalendar JavaScript -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script>
+// Copy booking link function - Make it globally accessible
+window.copyBookingLink = function(link) {
+    if (!link || link === 'null' || link === 'undefined') {
+        console.error('No link provided to copyBookingLink');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Link Unavailable',
+                text: 'Booking link is not available. Please ensure your doctor profile is complete.',
+            });
+        } else {
+            alert('Booking link is not available. Please ensure your doctor profile is complete.');
+        }
+        return false;
+    }
+
+    console.log('Attempting to copy link:', link);
+
+    // Try modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(function() {
+            console.log('Link copied successfully via Clipboard API');
+            // Show success message
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Link Copied!',
+                    text: 'Your booking link has been copied to clipboard.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                alert('Booking link copied to clipboard!');
+            }
+        }).catch(function(err) {
+            console.error('Clipboard API failed, trying fallback:', err);
+            // Fallback for older browsers or when clipboard API fails
+            window.fallbackCopy(link);
+        });
+    } else {
+        console.log('Clipboard API not available, using fallback');
+        // Fallback for browsers without clipboard API
+        window.fallbackCopy(link);
+    }
+};
+
+// Fallback copy function (also make it globally accessible)
+window.fallbackCopy = function(link) {
+    const textArea = document.createElement('textarea');
+    textArea.value = link;
+    textArea.style.position = 'fixed';
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = '0';
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            console.log('Link copied successfully via fallback method');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Link Copied!',
+                    text: 'Your booking link has been copied to clipboard.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                alert('Booking link copied to clipboard!');
+            }
+        } else {
+            throw new Error('execCommand returned false');
+        }
+    } catch (err) {
+        console.error('Failed to copy: ', err);
+        // Show the link in a prompt so user can copy manually
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Copy Link Manually',
+                html: '<p>Please copy this link:</p><input type="text" class="form-control mt-2" value="' + link + '" readonly onclick="this.select(); document.execCommand(\'copy\');" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">',
+                confirmButtonText: 'OK',
+                width: '600px'
+            });
+        } else {
+            prompt('Copy this link:', link);
+        }
+    }
+    document.body.removeChild(textArea);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Add fade-in animation to cards
     const cards = document.querySelectorAll('.doctor-card, .doctor-stat-card');

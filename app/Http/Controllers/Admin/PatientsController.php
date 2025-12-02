@@ -96,6 +96,11 @@ class PatientsController extends Controller
             $query->whereDate('date_of_birth', '>=', $minDOB);
         }
 
+        // Guest status filter
+        if ($request->filled('is_guest')) {
+            $query->where('is_guest', $request->is_guest == '1');
+        }
+
         // Gender
         if ($request->filled('gender')) {
             $query->where('gender', $request->gender);
@@ -1470,6 +1475,59 @@ class PatientsController extends Controller
             return redirect()->back()
                              ->with('error', 'Failed to send email: ' . $e->getMessage())
                              ->withInput();
+        }
+    }
+
+    /**
+     * Show form to convert guest patient to full patient.
+     */
+    public function showConvertGuest(Patient $patient)
+    {
+        if (!$patient->is_guest) {
+            return redirect()->route('admin.patients.show', $patient)
+                ->with('info', 'This patient is already a full patient.');
+        }
+
+        return view('admin.patients.convert-guest', compact('patient'));
+    }
+
+    /**
+     * Convert guest patient to full patient.
+     */
+    public function convertGuest(Request $request, Patient $patient)
+    {
+        if (!$patient->is_guest) {
+            return redirect()->route('admin.patients.show', $patient)
+                ->with('info', 'This patient is already a full patient.');
+        }
+
+        $validator = \Validator::make($request->all(), [
+            'date_of_birth' => 'required|date|before:today',
+            'gender' => 'required|in:male,female,other',
+            'address' => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        try {
+            $patient->update([
+                'date_of_birth' => $request->date_of_birth,
+                'gender' => $request->gender,
+                'address' => $request->address,
+                'is_guest' => false,
+            ]);
+
+            return redirect()->route('admin.patients.show', $patient)
+                ->with('success', 'Patient successfully converted from guest to full patient.');
+        } catch (\Exception $e) {
+            \Log::error('Failed to convert guest patient', [
+                'patient_id' => $patient->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Failed to convert patient: ' . $e->getMessage())->withInput();
         }
     }
 }

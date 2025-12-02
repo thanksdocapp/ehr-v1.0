@@ -11,6 +11,24 @@
     <!-- Patient Alert Bar -->
     @include('components.patient-alert-bar', ['patient' => $patient])
     
+    <!-- Guest Patient Banner -->
+    @if($patient->is_guest)
+    <div class="alert alert-warning border-0 mb-4 fade-in-up">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h6 class="alert-heading mb-1">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Guest Patient Record
+                </h6>
+                <p class="mb-0">This is a guest patient record. Some features are restricted. 
+                <a href="{{ route('admin.patients.convert-guest', $patient) }}" class="alert-link">Convert to full patient</a> to enable all features.</p>
+            </div>
+            <a href="{{ route('admin.patients.convert-guest', $patient) }}" class="btn btn-warning">
+                <i class="fas fa-user-check me-2"></i>Convert to Full Patient
+            </a>
+        </div>
+    </div>
+    @endif
+    
     <!-- Modern Page Header -->
     <div class="modern-page-header fade-in-up">
         <div class="modern-page-header-content">
@@ -20,6 +38,11 @@
                     <p class="modern-page-subtitle">Patient ID: {{ $patient->patient_id }}</p>
                 </div>
                 <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
+                    @if($patient->is_guest)
+                    <span class="badge-modern badge-modern-secondary me-2">
+                        Guest
+                    </span>
+                    @endif
                     <span class="badge-modern {{ $patient->is_active ? 'badge-modern-success' : 'badge-modern-danger' }}">
                         {{ $patient->is_active ? 'Active' : 'Inactive' }}
                     </span>

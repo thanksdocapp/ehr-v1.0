@@ -257,6 +257,14 @@
                         </select>
                     </div>
                     <div class="col-md-3">
+                        <label class="form-label">Guest Status</label>
+                        <select name="is_guest" class="form-select">
+                            <option value="">All Patients</option>
+                            <option value="1" {{ request('is_guest') === '1' ? 'selected' : '' }}>Guests Only</option>
+                            <option value="0" {{ request('is_guest') === '0' ? 'selected' : '' }}>Full Patients Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label">Assigned Doctor</label>
                         <select name="assigned_doctor_id" class="form-select">
                             <option value="">All Doctors</option>
@@ -487,7 +495,12 @@
                                             {{ strtoupper(substr($patient->first_name, 0, 1)) }}
                                         </div>
                                         <div>
-                                            <div class="fw-bold">{{ $patient->full_name }}</div>
+                                            <div class="fw-bold d-flex align-items-center gap-2">
+                                                {{ $patient->full_name }}
+                                                @if($patient->is_guest)
+                                                <span class="badge bg-secondary" style="font-size: 0.7rem;">Guest</span>
+                                                @endif
+                                            </div>
                                             <small class="text-muted">ID: {{ $patient->patient_id }}</small>
                                         </div>
                                     </div>
@@ -631,6 +644,13 @@
                                            class="btn btn-sm btn-outline-secondary" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        @if($patient->is_guest)
+                                        <button class="btn btn-sm btn-outline-warning" 
+                                                onclick="convertGuest({{ $patient->id }})" 
+                                                title="Convert to Full Patient">
+                                            <i class="fas fa-user-check"></i>
+                                        </button>
+                                        @endif
                                         <button class="btn btn-sm btn-outline-info" 
                                                 onclick="viewAppointments({{ $patient->id }})" 
                                                 title="Appointments">
@@ -899,6 +919,10 @@ $(document).ready(function() {
 
     function refreshTable() {
         location.reload();
+    }
+
+    function convertGuest(patientId) {
+        window.location.href = `{{ route('admin.patients.index') }}/${patientId}/convert-guest`;
     }
 
     function exportPatients() {

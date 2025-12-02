@@ -62,6 +62,7 @@ class SettingsController extends Controller
                 'registration_enabled' => 'nullable|string',
                 'kyc_required' => 'nullable|string',
                 'patient_login_enabled' => 'nullable|string',
+                'public_booking_enabled' => 'nullable|string',
                 'logo_light' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
                 'logo_dark' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
                 'favicon' => 'nullable|image|mimes:png,jpg,jpeg,ico|max:1024',
@@ -87,6 +88,7 @@ class SettingsController extends Controller
                 'kyc_required' => $request->has('kyc_required') ? '1' : '0',
                 'enable_frontend' => $request->input('enable_frontend', '0') == '1' ? '1' : '0',
                 'patient_login_enabled' => $request->input('patient_login_enabled', '1') == '1' ? '1' : '0',
+                'public_booking_enabled' => $request->input('public_booking_enabled', '1') == '1' ? '1' : '0',
                 'debug_mode' => $request->debug_mode ?? '0',
                 'cache_enabled' => $request->cache_enabled ?? '1',
                 'session_timeout' => $request->session_timeout ?? '120',
@@ -95,7 +97,7 @@ class SettingsController extends Controller
             ];
 
             foreach ($generalSettings as $key => $value) {
-                $type = in_array($key, ['maintenance_mode', 'registration_enabled', 'kyc_required', 'enable_frontend', 'patient_login_enabled', 'show_powered_by']) ? 'boolean' : 'string';
+                $type = in_array($key, ['maintenance_mode', 'registration_enabled', 'kyc_required', 'enable_frontend', 'patient_login_enabled', 'public_booking_enabled', 'show_powered_by']) ? 'boolean' : 'string';
                 Setting::set($key, $value, $type, 'general');
             }
         

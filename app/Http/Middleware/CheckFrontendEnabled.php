@@ -16,11 +16,14 @@ class CheckFrontendEnabled
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Skip this middleware for admin, patient, and staff routes
+        // Skip this middleware for admin, patient, staff, and public booking routes
         // These routes should be accessible regardless of frontend setting
         if ($request->is('admin/*') || 
             $request->is('patient/*') || 
             $request->is('staff/*') ||
+            $request->is('book/*') ||
+            $request->is('pay/*') ||
+            $request->is('api/*') ||
             $request->is('login*') ||
             $request->is('logout*') ||
             $request->is('password/reset*') ||

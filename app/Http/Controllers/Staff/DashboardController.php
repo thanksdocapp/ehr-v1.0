@@ -136,7 +136,12 @@ class DashboardController extends Controller
 
         // Use doctor-specific layout for doctors
         if ($user->role === 'doctor') {
-            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments'));
+            // Get doctor model with department relationship for booking link
+            $doctor = Doctor::where('user_id', $user->id)
+                ->with(['departments', 'department'])
+                ->first();
+            
+            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor'));
         }
 
         return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments'));
