@@ -583,7 +583,7 @@ $('#statusForm').on('submit', function(e) {
     submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
     
     $.ajax({
-        url: `{{ route('staff.appointments.update-status', $appointment->id) }}`,
+        url: `{{ route('staff.appointments.update-status', '') }}/${currentAppointmentId}`,
         method: 'PATCH',
         data: {
             status: status,
