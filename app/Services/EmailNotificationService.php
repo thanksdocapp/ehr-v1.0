@@ -88,7 +88,10 @@ class EmailNotificationService
                 Log::info('Parsing email template content', [
                     'template_id' => $template->id,
                     'template_name' => $templateName,
-                    'variables_count' => count($variables)
+                    'variables_count' => count($variables),
+                    'variables_keys' => array_keys($variables),
+                    'template_subject_preview' => substr($template->subject, 0, 100),
+                    'template_body_preview' => substr(strip_tags($template->body), 0, 100)
                 ]);
                 
                 $parsedSubject = $this->parseContent($template->subject, $variables);
@@ -97,7 +100,9 @@ class EmailNotificationService
                 Log::info('Email template parsed successfully', [
                     'template_id' => $template->id,
                     'subject_length' => strlen($parsedSubject),
-                    'body_length' => strlen($parsedBody)
+                    'body_length' => strlen($parsedBody),
+                    'parsed_subject_preview' => substr($parsedSubject, 0, 100),
+                    'parsed_body_preview' => substr(strip_tags($parsedBody), 0, 100)
                 ]);
                 
                 // Validate parsed content is not empty
@@ -130,10 +135,13 @@ class EmailNotificationService
                 Log::info('Creating email log entry', [
                     'template_id' => $template->id,
                     'recipient' => array_key_first($to),
-                    'email_type' => $options['email_type'] ?? 'general'
+                    'email_type' => $options['email_type'] ?? 'general',
+                    'subject_length' => strlen($parsedSubject),
+                    'body_length' => strlen($parsedBody)
                 ]);
                 
-                $log = EmailLog::create([
+                // Prepare log data
+                $logData = [
                     'email_template_id' => $template->id,
                     'recipient_email' => array_key_first($to),
                     'recipient_name' => array_values($to)[0] ?? null,
@@ -151,20 +159,38 @@ class EmailNotificationService
                     'payment_id' => $options['payment_id'] ?? null,
                     'email_type' => $options['email_type'] ?? 'general',
                     'status' => 'pending'
+                ];
+                
+                // Log the data being used (without sensitive info)
+                Log::info('Email log data prepared', [
+                    'template_id' => $logData['email_template_id'],
+                    'recipient' => $logData['recipient_email'],
+                    'has_subject' => !empty($logData['subject']),
+                    'has_body' => !empty($logData['body']),
+                    'status' => $logData['status']
                 ]);
+                
+                $log = EmailLog::create($logData);
                 
                 Log::info('Email log created successfully', [
                     'log_id' => $log->id,
-                    'template_id' => $template->id
+                    'template_id' => $template->id,
+                    'status' => $log->status
                 ]);
             } catch (\Exception $createException) {
-                Log::error('Failed to create email log', [
-                    'template_id' => $template->id,
+                Log::error('Failed to create email log - DETAILED ERROR', [
+                    'template_id' => $template->id ?? null,
                     'template_name' => $templateName,
                     'recipient' => array_key_first($to),
                     'error' => $createException->getMessage(),
+                    'error_class' => get_class($createException),
                     'trace' => $createException->getTraceAsString(),
-                    'error_info' => $createException instanceof \Illuminate\Database\QueryException ? $createException->errorInfo : null
+                    'file' => $createException->getFile(),
+                    'line' => $createException->getLine(),
+                    'error_info' => $createException instanceof \Illuminate\Database\QueryException ? $createException->errorInfo : null,
+                    'sql_state' => $createException instanceof \Illuminate\Database\QueryException ? ($createException->errorInfo[0] ?? null) : null,
+                    'error_code' => $createException instanceof \Illuminate\Database\QueryException ? ($createException->errorInfo[1] ?? null) : null,
+                    'error_message_db' => $createException instanceof \Illuminate\Database\QueryException ? ($createException->errorInfo[2] ?? null) : null,
                 ]);
                 throw new Exception("Failed to create email log: " . $createException->getMessage());
             }
@@ -191,11 +217,12 @@ class EmailNotificationService
 
             return $log;
         } catch (\Exception $e) {
-            // Log the full exception details
-            Log::error('Failed to queue email - Exception caught in sendTemplateEmail', [
+            // Log the full exception details with maximum detail
+            Log::error('CRITICAL: Failed to queue email - Exception caught in sendTemplateEmail', [
                 'template' => $templateName,
                 'to' => $to,
-                'variables' => $variables,
+                'variables_keys' => array_keys($variables),
+                'variables_count' => count($variables),
                 'error' => $e->getMessage(),
                 'error_class' => get_class($e),
                 'trace' => $e->getTraceAsString(),
@@ -203,8 +230,14 @@ class EmailNotificationService
                 'line' => $e->getLine(),
                 'previous' => $e->getPrevious() ? [
                     'message' => $e->getPrevious()->getMessage(),
-                    'class' => get_class($e->getPrevious())
-                ] : null
+                    'class' => get_class($e->getPrevious()),
+                    'file' => $e->getPrevious()->getFile(),
+                    'line' => $e->getPrevious()->getLine()
+                ] : null,
+                'error_info' => $e instanceof \Illuminate\Database\QueryException ? $e->errorInfo : null,
+                'sql_state' => $e instanceof \Illuminate\Database\QueryException ? ($e->errorInfo[0] ?? null) : null,
+                'error_code' => $e instanceof \Illuminate\Database\QueryException ? ($e->errorInfo[1] ?? null) : null,
+                'error_message_db' => $e instanceof \Illuminate\Database\QueryException ? ($e->errorInfo[2] ?? null) : null,
             ]);
 
             // Try to create a minimal email log entry for tracking purposes
@@ -218,21 +251,28 @@ class EmailNotificationService
                         'subject' => 'Email Send Failed: ' . $templateName,
                         'body' => 'Email sending failed: ' . $e->getMessage(),
                         'status' => 'failed',
-                        'error_message' => $e->getMessage(),
+                        'error_message' => $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine(),
                         'email_type' => $options['email_type'] ?? 'general',
                     ]);
                     
                     Log::info('Created error email log entry', [
                         'error_log_id' => $errorLog->id,
-                        'original_error' => $e->getMessage()
+                        'original_error' => $e->getMessage(),
+                        'original_error_class' => get_class($e)
                     ]);
                     
                     return $errorLog;
+                } else {
+                    Log::error('Cannot create error log - template not found', [
+                        'template_name' => $templateName
+                    ]);
                 }
             } catch (\Exception $logException) {
                 Log::error('Failed to create error email log entry', [
                     'original_error' => $e->getMessage(),
-                    'log_error' => $logException->getMessage()
+                    'log_error' => $logException->getMessage(),
+                    'log_error_class' => get_class($logException),
+                    'log_trace' => $logException->getTraceAsString()
                 ]);
             }
 

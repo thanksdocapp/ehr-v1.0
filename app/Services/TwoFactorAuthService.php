@@ -169,7 +169,14 @@ class TwoFactorAuthService
                         ->where('name', 'two_factor_code')
                         ->first(['id', 'name', 'status', 'deleted_at']);
                     
-                    Log::error('2FA email service returned null - template may not exist or be active', [
+                    // Check for recent error logs to see what went wrong
+                    $recentErrorLog = \App\Models\EmailLog::where('recipient_email', $user->email)
+                        ->where('email_type', 'two_factor')
+                        ->orWhere('email_type', 'general')
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+                    
+                    Log::error('2FA email service returned null - checking logs for error details', [
                         'user_id' => $user->id,
                         'email' => $user->email,
                         'template' => 'two_factor_code',
@@ -178,7 +185,15 @@ class TwoFactorAuthService
                         'template_status' => $templateCheck->status ?? null,
                         'template_deleted' => $templateCheck && $templateCheck->trashed() ? 'yes' : 'no',
                         'template_check' => $templateCheck ? $templateCheck->toArray() : null,
+                        'recent_error_log_id' => $recentErrorLog->id ?? null,
+                        'recent_error_log_status' => $recentErrorLog->status ?? null,
+                        'recent_error_message' => $recentErrorLog->error_message ?? null,
+                        'check_laravel_log' => 'Look for "CRITICAL: Failed to queue email" or "Failed to create email log" entries',
                     ]);
+                    
+                    // Check Laravel log for the actual exception
+                    Log::error('Please check Laravel log for detailed exception: Look for entries containing "CRITICAL: Failed to queue email" or "Failed to create email log"');
+                    
                     return false;
                 }
                 
