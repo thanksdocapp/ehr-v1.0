@@ -85,8 +85,20 @@ class EmailNotificationService
 
             // Parse subject and body with error handling
             try {
+                Log::info('Parsing email template content', [
+                    'template_id' => $template->id,
+                    'template_name' => $templateName,
+                    'variables_count' => count($variables)
+                ]);
+                
                 $parsedSubject = $this->parseContent($template->subject, $variables);
                 $parsedBody = $this->parseContent($template->body, $variables);
+                
+                Log::info('Email template parsed successfully', [
+                    'template_id' => $template->id,
+                    'subject_length' => strlen($parsedSubject),
+                    'body_length' => strlen($parsedBody)
+                ]);
                 
                 // Validate parsed content is not empty
                 if (empty(trim($parsedSubject))) {
@@ -107,35 +119,75 @@ class EmailNotificationService
                 Log::error('Failed to parse email template', [
                     'template_id' => $template->id,
                     'template_name' => $templateName,
-                    'error' => $parseException->getMessage()
+                    'error' => $parseException->getMessage(),
+                    'trace' => $parseException->getTraceAsString()
                 ]);
                 throw new Exception("Failed to parse email template '{$templateName}': " . $parseException->getMessage());
             }
 
             // Create email log entry
-            $log = EmailLog::create([
-                'email_template_id' => $template->id,
-                'recipient_email' => array_key_first($to),
-                'recipient_name' => array_values($to)[0] ?? null,
-                'subject' => $parsedSubject,
-                'body' => $parsedBody,
-                'variables' => $variables,
-                'cc_emails' => $options['cc'] ?? null,
-                'bcc_emails' => $options['bcc'] ?? null,
-                'attachments' => $options['attachments'] ?? null,
-                'metadata' => $options['metadata'] ?? null,
-                'event' => $options['event'] ?? null,
-                'patient_id' => $options['patient_id'] ?? null,
-                'billing_id' => $options['billing_id'] ?? null,
-                'invoice_id' => $options['invoice_id'] ?? null,
-                'payment_id' => $options['payment_id'] ?? null,
-                'email_type' => $options['email_type'] ?? 'general',
-                'status' => 'pending'
-            ]);
+            try {
+                Log::info('Creating email log entry', [
+                    'template_id' => $template->id,
+                    'recipient' => array_key_first($to),
+                    'email_type' => $options['email_type'] ?? 'general'
+                ]);
+                
+                $log = EmailLog::create([
+                    'email_template_id' => $template->id,
+                    'recipient_email' => array_key_first($to),
+                    'recipient_name' => array_values($to)[0] ?? null,
+                    'subject' => $parsedSubject,
+                    'body' => $parsedBody,
+                    'variables' => $variables,
+                    'cc_emails' => $options['cc'] ?? null,
+                    'bcc_emails' => $options['bcc'] ?? null,
+                    'attachments' => $options['attachments'] ?? null,
+                    'metadata' => $options['metadata'] ?? null,
+                    'event' => $options['event'] ?? null,
+                    'patient_id' => $options['patient_id'] ?? null,
+                    'billing_id' => $options['billing_id'] ?? null,
+                    'invoice_id' => $options['invoice_id'] ?? null,
+                    'payment_id' => $options['payment_id'] ?? null,
+                    'email_type' => $options['email_type'] ?? 'general',
+                    'status' => 'pending'
+                ]);
+                
+                Log::info('Email log created successfully', [
+                    'log_id' => $log->id,
+                    'template_id' => $template->id
+                ]);
+            } catch (\Exception $createException) {
+                Log::error('Failed to create email log', [
+                    'template_id' => $template->id,
+                    'template_name' => $templateName,
+                    'recipient' => array_key_first($to),
+                    'error' => $createException->getMessage(),
+                    'trace' => $createException->getTraceAsString(),
+                    'error_info' => $createException instanceof \Illuminate\Database\QueryException ? $createException->errorInfo : null
+                ]);
+                throw new Exception("Failed to create email log: " . $createException->getMessage());
+            }
 
             // Send email immediately for shared hosting compatibility
             // (Queue workers often don't work on shared hosting)
-            $this->sendImmediateEmail($log);
+            try {
+                Log::info('Sending email immediately', ['log_id' => $log->id]);
+                $this->sendImmediateEmail($log);
+                Log::info('Email sent successfully', ['log_id' => $log->id]);
+            } catch (\Exception $sendException) {
+                // Don't fail the whole operation if sending fails - log is already created
+                Log::error('Failed to send email immediately', [
+                    'log_id' => $log->id,
+                    'error' => $sendException->getMessage(),
+                    'trace' => $sendException->getTraceAsString()
+                ]);
+                // Update log status to failed
+                $log->update([
+                    'status' => 'failed',
+                    'error_message' => $sendException->getMessage()
+                ]);
+            }
 
             return $log;
         } catch (Exception $e) {
