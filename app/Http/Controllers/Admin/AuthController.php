@@ -63,7 +63,7 @@ class AuthController extends Controller
             $hasAdminAccess = $user->is_admin || // Simple admin flag
                              $user->role === 'admin' || // Role field
                              ($user->roles && $user->roles->whereIn('name', ['super_admin', 'admin'])->count() > 0) || // Role relationships
-                             ($user->hasPermission && $user->hasPermission('admin.access')); // Permission system
+                             (method_exists($user, 'hasPermission') && $user->hasPermission('admin.access')); // Permission system
             
             if ($hasAdminAccess) {
                 // Check if 2FA is required (either enabled by user OR forced by admin settings)
