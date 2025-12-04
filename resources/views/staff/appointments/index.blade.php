@@ -529,8 +529,9 @@
                                         
                                         {{-- Confirm appointment --}}
                                         @if($appointment->status === 'pending' && in_array(auth()->user()->role, ['admin', 'doctor', 'nurse', 'receptionist']))
-                                            <button class="btn btn-sm btn-outline-success" 
-                                                    onclick="updateStatus({{ $appointment->id }}, 'confirmed')" 
+                                            <button type="button" class="btn btn-sm btn-outline-success update-status-btn" 
+                                                    data-appointment-id="{{ $appointment->id }}" 
+                                                    data-status="confirmed"
                                                     title="Confirm Appointment">
                                                 <i class="fas fa-check"></i>
                                             </button>
@@ -538,8 +539,9 @@
                                         
                                         {{-- Complete appointment (only doctors) --}}
                                         @if($appointment->status === 'confirmed' && auth()->user()->role === 'doctor' && $appointment->doctor_id === auth()->user()->id)
-                                            <button class="btn btn-sm btn-outline-info" 
-                                                    onclick="updateStatus({{ $appointment->id }}, 'completed')" 
+                                            <button type="button" class="btn btn-sm btn-outline-info update-status-btn" 
+                                                    data-appointment-id="{{ $appointment->id }}" 
+                                                    data-status="completed"
                                                     title="Mark as Completed">
                                                 <i class="fas fa-check-double"></i>
                                             </button>
@@ -554,8 +556,9 @@
                                                 in_array(auth()->user()->role, ['nurse', 'receptionist'])
                                             )
                                         )
-                                            <button class="btn btn-sm btn-outline-danger" 
-                                                    onclick="updateStatus({{ $appointment->id }}, 'cancelled')" 
+                                            <button type="button" class="btn btn-sm btn-outline-danger update-status-btn" 
+                                                    data-appointment-id="{{ $appointment->id }}" 
+                                                    data-status="cancelled"
                                                     title="Cancel Appointment">
                                                 <i class="fas fa-times"></i>
                                             </button>
@@ -696,7 +699,8 @@ $(document).ready(function() {
 
 let currentAppointmentId = null;
 
-function updateStatus(appointmentId, status = null) {
+// Make updateStatus globally accessible (for any legacy calls)
+window.updateStatus = function(appointmentId, status = null) {
     currentAppointmentId = appointmentId;
     
     if (status) {
@@ -704,13 +708,45 @@ function updateStatus(appointmentId, status = null) {
     }
     
     $('#statusModal').modal('show');
-}
+};
+
+// Event delegation for update status buttons (works with DataTables)
+$(document).on('click', '.update-status-btn', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const appointmentId = $(this).data('appointment-id');
+    const status = $(this).data('status');
+    
+    if (!appointmentId) {
+        alert('Error: Appointment ID not found');
+        return;
+    }
+    
+    currentAppointmentId = appointmentId;
+    
+    if (status) {
+        $('#status_select').val(status);
+    }
+    
+    $('#statusModal').modal('show');
+});
 
 $('#statusForm').on('submit', function(e) {
     e.preventDefault();
     
+    if (!currentAppointmentId) {
+        alert('Error: No appointment selected');
+        return;
+    }
+    
     const status = $('#status_select').val();
     const notes = $('#staff_notes').val();
+    
+    // Disable submit button
+    const submitBtn = $(this).find('button[type="submit"]');
+    const originalText = submitBtn.html();
+    submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
     
     $.ajax({
         url: `/staff/appointments/${currentAppointmentId}/status`,
@@ -721,14 +757,20 @@ $('#statusForm').on('submit', function(e) {
             _token: '{{ csrf_token() }}'
         },
         success: function(response) {
+            $('#statusModal').modal('hide');
             if (response.success) {
                 location.reload();
             } else {
-                alert('Error updating status: ' + response.message);
+                alert('Error updating status: ' + (response.message || 'Unknown error'));
+                submitBtn.prop('disabled', false).html(originalText);
             }
         },
-        error: function() {
-            alert('Error updating appointment status. Please try again.');
+        error: function(xhr) {
+            submitBtn.prop('disabled', false).html(originalText);
+            const errorMessage = xhr.responseJSON && xhr.responseJSON.message 
+                ? xhr.responseJSON.message 
+                : 'Error updating appointment status. Please try again.';
+            alert(errorMessage);
         }
     });
 });
