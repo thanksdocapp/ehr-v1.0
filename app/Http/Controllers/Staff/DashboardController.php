@@ -204,4 +204,36 @@ class DashboardController extends Controller
             'message' => 'Dark mode feature has been disabled.'
         ], 403);
     }
+    
+    /**
+     * Reorder custom menu items (Quick Links) for the current user
+     */
+    public function reorderCustomMenuItems(Request $request)
+    {
+        try {
+            $request->validate([
+                'order' => 'required|array',
+                'order.*.id' => 'required|integer|exists:custom_menu_items,id',
+                'order.*.order' => 'required|integer|min:1'
+            ]);
+            
+            // Update the order for each menu item
+            foreach ($request->order as $item) {
+                \App\Models\CustomMenuItem::where('id', $item['id'])
+                    ->update(['order' => $item['order']]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Quick Links order updated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error reordering custom menu items: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update order. Please try again.'
+            ], 500);
+        }
+    }
 }

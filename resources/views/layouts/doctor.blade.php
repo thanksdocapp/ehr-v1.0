@@ -1224,13 +1224,19 @@
         @endphp
         @if($customMenuItems->count() > 0)
         <nav class="doctor-nav-section">
-            <div class="doctor-nav-title">Quick Links</div>
+            <div class="doctor-nav-title">
+                Quick Links
+                <i class="fas fa-grip-vertical ms-2" style="font-size: 0.8rem; opacity: 0.5;" title="Drag to reorder"></i>
+            </div>
+            <div id="quickLinksSortable">
             @foreach($customMenuItems as $customItem)
-            <div class="doctor-nav-item">
+            <div class="doctor-nav-item draggable-item" data-id="{{ $customItem->id }}" style="cursor: move;">
+                <i class="fas fa-grip-vertical drag-handle" style="opacity: 0.3; margin-right: 8px; cursor: grab;"></i>
                 <a href="{{ $customItem->url }}" 
                    target="{{ $customItem->target }}"
                    class="doctor-nav-link"
-                   rel="noopener noreferrer">
+                   rel="noopener noreferrer"
+                   style="flex: 1;">
                     <i class="{{ $customItem->icon ?? 'fas fa-external-link-alt' }} doctor-nav-icon"></i>
                     <span class="doctor-nav-text">{{ $customItem->label }}</span>
                     @if($customItem->target === '_blank')
@@ -1239,6 +1245,7 @@
                 </a>
             </div>
             @endforeach
+            </div>
         </nav>
         @endif
     </aside>
@@ -1354,6 +1361,7 @@
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     
     @stack('scripts')
     
@@ -1501,8 +1509,75 @@
 
             // Load notifications (if you have a notification system)
             // You can integrate your notification loading logic here
+            
+            // Initialize Quick Links Sortable
+            const quickLinksContainer = document.getElementById('quickLinksSortable');
+            if (quickLinksContainer && typeof Sortable !== 'undefined') {
+                new Sortable(quickLinksContainer, {
+                    animation: 150,
+                    handle: '.drag-handle',
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+                    onEnd: function(evt) {
+                        // Get the new order
+                        const items = quickLinksContainer.querySelectorAll('.draggable-item');
+                        const order = [];
+                        items.forEach(function(item, index) {
+                            order.push({
+                                id: item.getAttribute('data-id'),
+                                order: index + 1
+                            });
+                        });
+                        
+                        // Save the new order via AJAX
+                        fetch('{{ route("staff.custom-menu-items.reorder") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ order: order })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Show subtle success feedback
+                                const feedback = document.createElement('div');
+                                feedback.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 12px 24px; border-radius: 8px; z-index: 9999; animation: fadeInOut 2s;';
+                                feedback.innerHTML = '<i class="fas fa-check me-2"></i>Quick Links order saved';
+                                document.body.appendChild(feedback);
+                                setTimeout(() => feedback.remove(), 2000);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error saving order:', error);
+                        });
+                    }
+                });
+            }
         });
     </script>
+    <style>
+    .sortable-ghost {
+        opacity: 0.4;
+    }
+    .sortable-chosen {
+        background: rgba(0, 123, 255, 0.1);
+    }
+    .draggable-item {
+        display: flex;
+        align-items: center;
+    }
+    .drag-handle:hover {
+        opacity: 0.7 !important;
+    }
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0; }
+        10%, 90% { opacity: 1; }
+    }
+    </style>
 </body>
 </html>
 

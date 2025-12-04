@@ -215,6 +215,9 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/api/stats', [\App\Http\Controllers\Staff\DashboardController::class, 'getStats'])->name('api.stats');
         Route::post('/toggle-dark-mode', [\App\Http\Controllers\Staff\DashboardController::class, 'toggleDarkMode'])->name('toggle-dark-mode');
         
+        // Custom Menu Items (Quick Links) - Reorder
+        Route::post('/custom-menu-items/reorder', [\App\Http\Controllers\Staff\DashboardController::class, 'reorderCustomMenuItems'])->name('custom-menu-items.reorder');
+        
         // Auto-complete suggestions API
         Route::get('/api/suggestions/diagnosis', [\App\Http\Controllers\Api\SuggestionController::class, 'getDiagnosisSuggestions'])->name('api.suggestions.diagnosis');
         Route::get('/api/suggestions/medication', [\App\Http\Controllers\Api\SuggestionController::class, 'getMedicationSuggestions'])->name('api.suggestions.medication');
