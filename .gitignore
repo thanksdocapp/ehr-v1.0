@@ -18,6 +18,15 @@ yarn-error.log
 /.vscode
 *.log
 *.cache
+ENV_VARIABLES_LOCATION.md
+MIGRATION_INSTRUCTIONS.md
+REQUIREMENTS.md
+RUN_MIGRATIONS.md
+USER_MANUAL.md
+README.md
+CHANGELOG.md
+.github/
+ENV_UPDATE_SUMMARY.md
 
 # Laravel specific
 /storage/app/*

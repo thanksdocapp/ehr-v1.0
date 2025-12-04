@@ -438,51 +438,60 @@ class PatientsController extends Controller
         // Check authorization - only doctors and admins can create patients
         $user = Auth::user();
         if ($user->role !== 'doctor' && !$user->is_admin && $user->role !== 'admin') {
-            abort(403, 'You do not have permission to create patients. Only doctors and admins can create patients.');
+            return redirect()->back()
+                ->with('error', 'You do not have permission to create patients. Only doctors and admins can create patients.')
+                ->withInput();
         }
         
-        // Calculate age from DOB to determine if guardian ID is required
-        $dateOfBirth = $request->date_of_birth ? Carbon::parse($request->date_of_birth) : null;
-        $age = $dateOfBirth ? $dateOfBirth->age : null;
-        $isUnder18 = $age !== null && $age < 18;
-        
-        // Build validation rules
-        $validationRules = [
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:patients',
-            'phone' => 'required|string|max:20',
-            'date_of_birth' => 'required|date',
-            'gender' => 'required|in:male,female,other',
-            'patient_id' => 'nullable|string|max:255|unique:patients',
-            'blood_group' => 'nullable|string|max:10',
-            'address' => 'nullable|string|max:500',
-            'city' => 'nullable|string|max:100',
-            'state' => 'nullable|string|max:100',
-            'postal_code' => 'nullable|string|max:20',
-            'insurance_provider' => 'nullable|string|max:255',
-            'insurance_number' => 'nullable|string|max:255',
-            'allergies' => 'nullable|array',
-            'allergies.*' => 'nullable|string|max:255',
-            'medical_history' => 'nullable|string|max:2000',
-            'is_active' => 'nullable|boolean',
-            'emergency_contact_name' => 'nullable|string|max:255',
-            'emergency_contact_phone' => 'nullable|string|max:20',
-            'department_id' => 'nullable|exists:departments,id', // Backward compatibility
-            'department_ids' => 'nullable|array',
-            'department_ids.*' => 'nullable|exists:departments,id',
-            // ID Documents
-            'patient_id_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // 5MB max
-            'guardian_id_document' => $isUnder18 ? 'required|file|mimes:pdf,jpg,jpeg,png|max:5120' : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            // GP Consent and Details
-            'consent_share_with_gp' => 'nullable|boolean',
-            'gp_name' => 'nullable|required_if:consent_share_with_gp,1|string|max:255',
-            'gp_email' => 'nullable|required_if:consent_share_with_gp,1|email|max:255',
-            'gp_phone' => 'nullable|required_if:consent_share_with_gp,1|string|max:20',
-            'gp_address' => 'nullable|required_if:consent_share_with_gp,1|string|max:1000',
-        ];
-        
-        $request->validate($validationRules);
+        try {
+            // Calculate age from DOB to determine if guardian ID is required
+            $dateOfBirth = $request->date_of_birth ? Carbon::parse($request->date_of_birth) : null;
+            $age = $dateOfBirth ? $dateOfBirth->age : null;
+            $isUnder18 = $age !== null && $age < 18;
+            
+            // Build validation rules
+            $validationRules = [
+                'first_name' => 'required|string|max:255',
+                'last_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:patients',
+                'phone' => 'required|string|max:20',
+                'date_of_birth' => 'required|date',
+                'gender' => 'required|in:male,female,other',
+                'patient_id' => 'nullable|string|max:255|unique:patients',
+                'blood_group' => 'nullable|string|max:10',
+                'address' => 'nullable|string|max:500',
+                'city' => 'nullable|string|max:100',
+                'state' => 'nullable|string|max:100',
+                'postal_code' => 'nullable|string|max:20',
+                'insurance_provider' => 'nullable|string|max:255',
+                'insurance_number' => 'nullable|string|max:255',
+                'allergies' => 'nullable|array',
+                'allergies.*' => 'nullable|string|max:255',
+                'medical_history' => 'nullable|string|max:2000',
+                'is_active' => 'nullable|boolean',
+                'emergency_contact_name' => 'nullable|string|max:255',
+                'emergency_contact_phone' => 'nullable|string|max:20',
+                'department_id' => 'nullable|exists:departments,id', // Backward compatibility
+                'department_ids' => 'nullable|array',
+                'department_ids.*' => 'nullable|exists:departments,id',
+                // ID Documents
+                'patient_id_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // 5MB max
+                'guardian_id_document' => $isUnder18 ? 'required|file|mimes:pdf,jpg,jpeg,png|max:5120' : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                // GP Consent and Details
+                'consent_share_with_gp' => 'nullable|boolean',
+                'gp_name' => 'nullable|required_if:consent_share_with_gp,1|string|max:255',
+                'gp_email' => 'nullable|required_if:consent_share_with_gp,1|email|max:255',
+                'gp_phone' => 'nullable|required_if:consent_share_with_gp,1|string|max:20',
+                'gp_address' => 'nullable|required_if:consent_share_with_gp,1|string|max:1000',
+            ];
+            
+            $validated = $request->validate($validationRules);
+            
+            \Log::info('Patient creation validation passed', [
+                'user_id' => $user->id,
+                'user_role' => $user->role,
+                'data' => $validated
+            ]);
 
         // Handle file uploads - Patient ID Document
         $patientIdDocumentPath = null;
@@ -596,19 +605,54 @@ class PatientsController extends Controller
             $data['department_id'] = $user->department_id;
         }
 
-        $patient = Patient::create($data);
-        
-        // Sync departments to many-to-many relationship
-        if (!empty($departmentIds)) {
-            $syncData = [];
-            foreach ($departmentIds as $index => $deptId) {
-                $syncData[$deptId] = ['is_primary' => $index === 0]; // First department is primary
+            $patient = Patient::create($data);
+            
+            \Log::info('Patient created successfully', [
+                'patient_id' => $patient->id,
+                'patient_number' => $patient->patient_id,
+                'created_by' => $user->id
+            ]);
+            
+            // Sync departments to many-to-many relationship
+            if (!empty($departmentIds)) {
+                $syncData = [];
+                foreach ($departmentIds as $index => $deptId) {
+                    $syncData[$deptId] = ['is_primary' => $index === 0]; // First department is primary
+                }
+                $patient->departments()->sync($syncData);
+                
+                \Log::info('Patient departments synced', [
+                    'patient_id' => $patient->id,
+                    'departments' => $departmentIds
+                ]);
             }
-            $patient->departments()->sync($syncData);
-        }
 
-        return redirect()->route('staff.patients.index')
-            ->with('success', 'Patient created successfully with ID: ' . $patient->patient_id);
+            return redirect()->route('staff.patients.index')
+                ->with('success', 'Patient created successfully with ID: ' . $patient->patient_id);
+                
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::warning('Patient creation validation failed', [
+                'errors' => $e->errors(),
+                'user_id' => $user->id
+            ]);
+            
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput()
+                ->with('error', 'Please check the form for errors.');
+                
+        } catch (\Exception $e) {
+            \Log::error('Patient creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => $user->id,
+                'data' => $request->except(['patient_id_document', 'guardian_id_document'])
+            ]);
+            
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create patient: ' . $e->getMessage());
+        }
     }
 
     public function edit(Patient $patient)
