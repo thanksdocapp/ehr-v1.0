@@ -282,40 +282,50 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-12 mb-3">
-                                <label for="address" class="form-label fw-semibold">Address</label>
-                                <textarea name="address" id="address" rows="3" 
-                                          class="form-control @error('address') is-invalid @enderror" 
-                                          placeholder="Enter complete address">{{ old('address') }}</textarea>
+                            <div class="col-md-6 mb-3">
+                                <label for="address" class="form-label fw-semibold">Address Line 1</label>
+                                <input type="text" name="address" id="address"
+                                       class="form-control @error('address') is-invalid @enderror"
+                                       value="{{ old('address') }}" placeholder="House number and street name">
                                 @error('address')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="address_line_2" class="form-label fw-semibold">Address Line 2 <small class="text-muted">(Optional)</small></label>
+                                <input type="text" name="address_line_2" id="address_line_2"
+                                       class="form-control @error('address_line_2') is-invalid @enderror"
+                                       value="{{ old('address_line_2') }}" placeholder="Apartment, suite, unit, etc.">
+                                @error('address_line_2')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label for="city" class="form-label fw-semibold">City</label>
-                                <input type="text" name="city" id="city" 
-                                       class="form-control @error('city') is-invalid @enderror" 
-                                       value="{{ old('city') }}" placeholder="Enter city">
+                                <label for="city" class="form-label fw-semibold">Town/City</label>
+                                <input type="text" name="city" id="city"
+                                       class="form-control @error('city') is-invalid @enderror"
+                                       value="{{ old('city') }}" placeholder="Enter town or city">
                                 @error('city')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="state" class="form-label fw-semibold">State</label>
-                                <input type="text" name="state" id="state" 
-                                       class="form-control @error('state') is-invalid @enderror" 
-                                       value="{{ old('state') }}" placeholder="Enter state">
+                                <label for="state" class="form-label fw-semibold">County</label>
+                                <input type="text" name="state" id="state"
+                                       class="form-control @error('state') is-invalid @enderror"
+                                       value="{{ old('state') }}" placeholder="Enter county">
                                 @error('state')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="postal_code" class="form-label fw-semibold">Postal Code</label>
-                                <input type="text" name="postal_code" id="postal_code" 
-                                       class="form-control @error('postal_code') is-invalid @enderror" 
-                                       value="{{ old('postal_code') }}" placeholder="Enter postal code">
+                                <label for="postal_code" class="form-label fw-semibold">Postcode</label>
+                                <input type="text" name="postal_code" id="postal_code"
+                                       class="form-control @error('postal_code') is-invalid @enderror"
+                                       value="{{ old('postal_code') }}" placeholder="e.g. SW1A 1AA"
+                                       style="text-transform: uppercase;">
                                 @error('postal_code')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror

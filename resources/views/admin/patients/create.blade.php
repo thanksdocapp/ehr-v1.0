@@ -314,27 +314,44 @@
                         <!-- Hidden field for backward compatibility with single department_id -->
                         <input type="hidden" id="department_id" name="department_id" value="">
 
-                        <div class="form-group">
-                            <label for="address" class="form-label">
-                                <i class="fas fa-map-marker-alt me-1"></i>Address
-                            </label>
-                            <textarea class="form-control @error('address') is-invalid @enderror" 
-                                      id="address" name="address" rows="3" 
-                                      placeholder="Enter complete address">{{ old('address') }}</textarea>
-                            @error('address')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="address" class="form-label">
+                                        <i class="fas fa-map-marker-alt me-1"></i>Address Line 1
+                                    </label>
+                                    <input type="text" class="form-control @error('address') is-invalid @enderror"
+                                           id="address" name="address" value="{{ old('address') }}"
+                                           placeholder="House number and street name">
+                                    @error('address')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="address_line_2" class="form-label">
+                                        <i class="fas fa-map-marker-alt me-1"></i>Address Line 2 <small class="text-muted">(Optional)</small>
+                                    </label>
+                                    <input type="text" class="form-control @error('address_line_2') is-invalid @enderror"
+                                           id="address_line_2" name="address_line_2" value="{{ old('address_line_2') }}"
+                                           placeholder="Apartment, suite, unit, etc.">
+                                    @error('address_line_2')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="city" class="form-label">
-                                        <i class="fas fa-city me-1"></i>City
+                                        <i class="fas fa-city me-1"></i>Town/City
                                     </label>
-                                    <input type="text" class="form-control @error('city') is-invalid @enderror" 
-                                           id="city" name="city" value="{{ old('city') }}" 
-                                           placeholder="Enter city">
+                                    <input type="text" class="form-control @error('city') is-invalid @enderror"
+                                           id="city" name="city" value="{{ old('city') }}"
+                                           placeholder="Enter town or city">
                                     @error('city')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -343,11 +360,11 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="state" class="form-label">
-                                        <i class="fas fa-map me-1"></i>State
+                                        <i class="fas fa-map me-1"></i>County
                                     </label>
-                                    <input type="text" class="form-control @error('state') is-invalid @enderror" 
-                                           id="state" name="state" value="{{ old('state') }}" 
-                                           placeholder="Enter state">
+                                    <input type="text" class="form-control @error('state') is-invalid @enderror"
+                                           id="state" name="state" value="{{ old('state') }}"
+                                           placeholder="Enter county">
                                     @error('state')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -356,11 +373,11 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="postal_code" class="form-label">
-                                        <i class="fas fa-mail-bulk me-1"></i>Postal Code
+                                        <i class="fas fa-mail-bulk me-1"></i>Postcode
                                     </label>
-                                    <input type="text" class="form-control @error('postal_code') is-invalid @enderror" 
-                                           id="postal_code" name="postal_code" value="{{ old('postal_code') }}" 
-                                           placeholder="Enter postal code">
+                                    <input type="text" class="form-control @error('postal_code') is-invalid @enderror"
+                                           id="postal_code" name="postal_code" value="{{ old('postal_code') }}"
+                                           placeholder="e.g. SW1A 1AA" style="text-transform: uppercase;">
                                     @error('postal_code')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
