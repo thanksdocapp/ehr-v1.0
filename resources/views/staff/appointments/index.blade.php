@@ -702,34 +702,44 @@ let currentAppointmentId = null;
 // Make updateStatus globally accessible (for any legacy calls)
 window.updateStatus = function(appointmentId, status = null) {
     currentAppointmentId = appointmentId;
-    
+
     if (status) {
         $('#status_select').val(status);
     }
-    
-    $('#statusModal').modal('show');
+
+    // Use Bootstrap 5 native modal API
+    var modalElement = document.getElementById('statusModal');
+    if (modalElement) {
+        var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+    }
 };
 
 // Event delegation for update status buttons (works with DataTables)
 $(document).on('click', '.update-status-btn', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const appointmentId = $(this).data('appointment-id');
     const status = $(this).data('status');
-    
+
     if (!appointmentId) {
         alert('Error: Appointment ID not found');
         return;
     }
-    
+
     currentAppointmentId = appointmentId;
-    
+
     if (status) {
         $('#status_select').val(status);
     }
-    
-    $('#statusModal').modal('show');
+
+    // Use Bootstrap 5 native modal API
+    var modalElement = document.getElementById('statusModal');
+    if (modalElement) {
+        var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+    }
 });
 
 $('#statusForm').on('submit', function(e) {
@@ -757,7 +767,12 @@ $('#statusForm').on('submit', function(e) {
             _token: '{{ csrf_token() }}'
         },
         success: function(response) {
-            $('#statusModal').modal('hide');
+            // Use Bootstrap 5 native modal API to hide
+            var modalElement = document.getElementById('statusModal');
+            if (modalElement) {
+                var modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) modal.hide();
+            }
             if (response.success) {
                 location.reload();
             } else {
