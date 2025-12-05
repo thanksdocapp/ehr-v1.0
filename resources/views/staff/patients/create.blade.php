@@ -310,14 +310,23 @@
                         </div>
 
                         <div class="mb-3" id="guardian_id_document_group" style="display: none;">
+                            <div class="alert alert-warning d-flex align-items-center mb-2" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <div>
+                                    <strong>Parent/Guardian ID Required</strong><br>
+                                    <small>Patient is under 18 years old. Please upload parent/guardian identification document.</small>
+                                </div>
+                            </div>
                             <label for="guardian_id_document" class="form-label fw-semibold">
                                 Parent/Guardian ID Document <span class="text-danger">*</span>
-                                <small class="text-muted">(Required if patient is under 18)</small>
                             </label>
                             <input type="file" name="guardian_id_document" id="guardian_id_document" 
                                    class="form-control @error('guardian_id_document') is-invalid @enderror" 
                                    accept=".pdf,.jpg,.jpeg,.png">
-                            <small class="text-muted">Accepted formats: PDF, JPG, JPEG, PNG (Max 5MB). Required for patients under 18 years of age.</small>
+                            <small class="text-muted d-block mt-1">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Accepted formats: PDF, JPG, JPEG, PNG (Max 5MB)
+                            </small>
                             @error('guardian_id_document')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -586,6 +595,27 @@
 </div>
 @endsection
 
+@push('styles')
+<style>
+    #guardian_id_document_group {
+        transition: all 0.3s ease-in-out;
+    }
+    
+    #guardian_id_document_group.highlight {
+        animation: highlightPulse 1s ease-in-out;
+    }
+    
+    @keyframes highlightPulse {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+        }
+        50% {
+            box-shadow: 0 0 20px 5px rgba(255, 193, 7, 0.5);
+        }
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
 $(document).ready(function() {
@@ -668,25 +698,52 @@ $(document).ready(function() {
     
     // Age calculation and guardian ID requirement
     function calculateAgeAndToggleGuardian() {
-        const birthDate = new Date($('#date_of_birth').val());
+        const birthDateValue = $('#date_of_birth').val();
+        if (!birthDateValue) {
+            return;
+        }
+        
+        const birthDate = new Date(birthDateValue);
         const today = new Date();
         const age = Math.floor((today - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
         const guardianGroup = $('#guardian_id_document_group');
         const guardianInput = $('#guardian_id_document');
         
+        console.log('Calculated age:', age, 'years');
+        
         if (age < 0) {
-            alert('Birth date cannot be in the future.');
+            alert('⚠️ Birth date cannot be in the future.');
             $('#date_of_birth').val('');
             guardianGroup.slideUp();
             guardianInput.prop('required', false);
         } else if (age > 150) {
-            alert('Please check the birth date. Age seems too high.');
+            alert('⚠️ Please check the birth date. Age seems too high.');
         } else {
             // Show/hide guardian ID document field based on age
             if (age < 18) {
-                guardianGroup.slideDown();
+                console.log('Patient is under 18 - showing guardian ID document field');
+                guardianGroup.slideDown(400, function() {
+                    // Scroll to the field to make it visible
+                    $('html, body').animate({
+                        scrollTop: guardianGroup.offset().top - 100
+                    }, 300);
+                });
                 guardianInput.prop('required', true);
+                
+                // Show tooltip/notification
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Guardian ID Required',
+                        text: `Patient is ${age} years old (under 18). Parent/Guardian ID document is required.`,
+                        timer: 3000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                }
             } else {
+                console.log('Patient is 18 or older - hiding guardian ID document field');
                 guardianGroup.slideUp();
                 guardianInput.prop('required', false);
                 guardianInput.val('');
@@ -695,6 +752,11 @@ $(document).ready(function() {
     }
     
     $('#date_of_birth').on('change', calculateAgeAndToggleGuardian);
+    
+    // Also check on page load if date is already set
+    if ($('#date_of_birth').val()) {
+        calculateAgeAndToggleGuardian();
+    }
     
     // GP Consent checkbox toggle - robust implementation with multiple fallbacks
     function toggleGpDetails() {
