@@ -210,19 +210,21 @@
                                 var today = new Date();
                                 var years = today.getFullYear() - birthDate.getFullYear();
                                 var months = today.getMonth() - birthDate.getMonth();
+                                var days = today.getDate() - birthDate.getDate();
 
-                                if (months < 0) { years--; months += 12; }
-                                if (today.getDate() < birthDate.getDate()) {
+                                if (days < 0) {
                                     months--;
-                                    if (months < 0) { years--; months += 12; }
+                                    var prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                                    days += prevMonth.getDate();
                                 }
+                                if (months < 0) { years--; months += 12; }
 
                                 if (years < 0) {
                                     ageDisp.value = 'Invalid (future date)';
                                     return;
                                 }
 
-                                ageDisp.value = years + ' years, ' + months + ' months';
+                                ageDisp.value = years + ' years, ' + months + ' months, ' + days + ' days';
                                 ageDisp.style.color = '#28a745';
                                 ageDisp.style.fontWeight = '600';
 
