@@ -227,32 +227,6 @@
                                 ageDisp.value = years + ' years, ' + months + ' months, ' + days + ' days';
                                 ageDisp.style.color = '#28a745';
                                 ageDisp.style.fontWeight = '600';
-
-                                // Toggle guardian requirement
-                                if (years < 18) {
-                                    if (guardianAlert) guardianAlert.style.display = 'flex';
-                                    if (guardianStar) guardianStar.style.display = 'inline';
-                                    if (guardianOptText) guardianOptText.style.display = 'none';
-                                    if (guardianInput) { guardianInput.required = true; guardianInput.style.borderColor = '#ffc107'; }
-
-                                    // Show toast notification (with SweetAlert2 check)
-                                    if (typeof Swal !== 'undefined') {
-                                        Swal.fire({
-                                            icon: 'info',
-                                            title: 'Guardian ID Required',
-                                            text: 'Patient is ' + years + ' years, ' + months + ' months old (under 18). Guardian ID document is required.',
-                                            timer: 3500,
-                                            showConfirmButton: false,
-                                            toast: true,
-                                            position: 'top-end'
-                                        });
-                                    }
-                                } else {
-                                    if (guardianAlert) guardianAlert.style.display = 'none';
-                                    if (guardianStar) guardianStar.style.display = 'none';
-                                    if (guardianOptText) guardianOptText.style.display = 'inline';
-                                    if (guardianInput) { guardianInput.required = false; guardianInput.style.borderColor = ''; }
-                                }
                             }
 
                             // Attach events
@@ -262,21 +236,6 @@
                                 dobField.addEventListener('input', calcAge);
                                 dobField.addEventListener('blur', calcAge);
                             }
-
-                            // Ensure alert is hidden by default on page load
-                            function hideGuardianAlert() {
-                                var guardianAlert = document.getElementById('guardian_required_alert');
-                                var guardianStar = document.getElementById('guardian_required_star');
-                                var guardianOptText = document.getElementById('guardian_optional_text');
-                                var guardianInput = document.getElementById('guardian_id_document');
-                                if (guardianAlert) guardianAlert.style.display = 'none';
-                                if (guardianStar) guardianStar.style.display = 'none';
-                                if (guardianOptText) guardianOptText.style.display = 'inline';
-                                if (guardianInput) { guardianInput.required = false; guardianInput.style.borderColor = ''; }
-                            }
-
-                            // Hide alert first, then calculate age
-                            hideGuardianAlert();
 
                             // Run on load
                             calcAge();
@@ -290,7 +249,7 @@
                         <!-- Guardian ID Document (Always visible in this card, required for Under 18) -->
                         <hr class="my-3">
                         <div id="guardian_id_document_section">
-                            <div id="guardian_required_alert" class="alert alert-warning d-flex align-items-center mb-3" role="alert" style="display: none;">
+                            <div id="guardian_required_alert" class="alert alert-warning d-flex align-items-center mb-3" role="alert" style="display: none !important;">
                                 <i class="fas fa-exclamation-triangle me-2 fa-2x"></i>
                                 <div>
                                     <strong>Guardian ID Document Required</strong><br>
@@ -318,6 +277,89 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Guardian Age Check Script - MUST be after guardian elements -->
+                        <script>
+                        (function() {
+                            var lastShownAge = null;
+
+                            function toggleGuardian() {
+                                var dob = document.getElementById('date_of_birth');
+                                var guardianAlert = document.getElementById('guardian_required_alert');
+                                var guardianStar = document.getElementById('guardian_required_star');
+                                var guardianOptText = document.getElementById('guardian_optional_text');
+                                var guardianInput = document.getElementById('guardian_id_document');
+
+                                if (!dob || !guardianAlert) return;
+
+                                var val = dob.value;
+                                if (!val || val.trim() === '') {
+                                    // No DOB - hide alert, not required
+                                    guardianAlert.style.cssText = 'display: none !important;';
+                                    if (guardianStar) guardianStar.style.display = 'none';
+                                    if (guardianOptText) guardianOptText.style.display = 'inline';
+                                    if (guardianInput) { guardianInput.required = false; guardianInput.style.borderColor = ''; }
+                                    return;
+                                }
+
+                                var birthDate = new Date(val);
+                                if (isNaN(birthDate.getTime())) return;
+
+                                var today = new Date();
+                                var years = today.getFullYear() - birthDate.getFullYear();
+                                var months = today.getMonth() - birthDate.getMonth();
+                                if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
+                                    years--;
+                                }
+
+                                if (years < 0) return; // Future date
+
+                                if (years < 18) {
+                                    // Under 18 - show alert, required
+                                    guardianAlert.style.cssText = 'display: flex !important;';
+                                    if (guardianStar) guardianStar.style.display = 'inline';
+                                    if (guardianOptText) guardianOptText.style.display = 'none';
+                                    if (guardianInput) { guardianInput.required = true; guardianInput.style.borderColor = '#ffc107'; }
+
+                                    // Show toast only once per age change
+                                    if (lastShownAge !== years && typeof Swal !== 'undefined') {
+                                        lastShownAge = years;
+                                        Swal.fire({
+                                            icon: 'info',
+                                            title: 'Guardian ID Required',
+                                            text: 'Patient is ' + years + ' years old (under 18). Guardian ID document is required.',
+                                            timer: 3500,
+                                            showConfirmButton: false,
+                                            toast: true,
+                                            position: 'top-end'
+                                        });
+                                    }
+                                } else {
+                                    // 18 or over - hide alert, not required
+                                    guardianAlert.style.cssText = 'display: none !important;';
+                                    if (guardianStar) guardianStar.style.display = 'none';
+                                    if (guardianOptText) guardianOptText.style.display = 'inline';
+                                    if (guardianInput) { guardianInput.required = false; guardianInput.style.borderColor = ''; }
+                                    lastShownAge = null;
+                                }
+                            }
+
+                            // Attach to DOB field
+                            var dobField = document.getElementById('date_of_birth');
+                            if (dobField) {
+                                dobField.addEventListener('change', toggleGuardian);
+                                dobField.addEventListener('input', toggleGuardian);
+                                dobField.addEventListener('blur', toggleGuardian);
+                            }
+
+                            // Run on load
+                            toggleGuardian();
+                            setTimeout(toggleGuardian, 100);
+                            setTimeout(toggleGuardian, 500);
+                            setTimeout(toggleGuardian, 1000);
+                            window.addEventListener('load', function() { setTimeout(toggleGuardian, 200); });
+                        })();
+                        </script>
                     </div>
                 </div>
 
