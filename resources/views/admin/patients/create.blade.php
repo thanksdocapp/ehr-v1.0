@@ -283,6 +283,19 @@
                                             if (guardianStar) guardianStar.style.display = 'inline';
                                             if (guardianOptText) guardianOptText.style.display = 'none';
                                             if (guardianInput) { guardianInput.required = true; guardianInput.style.borderColor = '#ffc107'; }
+
+                                            // Show toast notification (with SweetAlert2 check)
+                                            if (typeof Swal !== 'undefined') {
+                                                Swal.fire({
+                                                    icon: 'info',
+                                                    title: 'Guardian ID Required',
+                                                    text: 'Patient is ' + years + ' years, ' + months + ' months old (under 18). Guardian ID document is required.',
+                                                    timer: 3500,
+                                                    showConfirmButton: false,
+                                                    toast: true,
+                                                    position: 'top-end'
+                                                });
+                                            }
                                         } else {
                                             if (guardianAlert) guardianAlert.style.display = 'none';
                                             if (guardianStar) guardianStar.style.display = 'none';
