@@ -538,25 +538,29 @@ window.updateStatus = function(appointmentId, status = null) {
         alert('Error: Appointment ID is missing');
         return;
     }
-    
+
     currentAppointmentId = appointmentId;
-    
+
     // Update the form action with the correct appointment ID
     const formAction = '{{ url("staff/appointments") }}/' + appointmentId + '/status';
     $('#statusForm').attr('action', formAction);
     $('#appointment_id_input').val(appointmentId);
-    
+
     // Reset form
     $('#staff_notes').val('');
-    
+
     if (status) {
         $('#status_select').val(status);
     }
-    
+
     console.log('Opening modal for appointment:', appointmentId, 'Status:', status);
-    
-    // Show modal - use jQuery for Bootstrap 5 compatibility
-    $('#statusModal').modal('show');
+
+    // Show modal - use Bootstrap 5 native API
+    var modalElement = document.getElementById('statusModal');
+    if (modalElement) {
+        var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+    }
 };
 
 // Add event listeners for status update buttons
@@ -619,8 +623,13 @@ $('#statusForm').on('submit', function(e) {
         contentType: false,
         success: function(response) {
             console.log('Success response:', response);
-            $('#statusModal').modal('hide');
-            
+            // Hide modal - use Bootstrap 5 native API
+            var modalElement = document.getElementById('statusModal');
+            if (modalElement) {
+                var modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) modal.hide();
+            }
+
             // Show success message and reload
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
