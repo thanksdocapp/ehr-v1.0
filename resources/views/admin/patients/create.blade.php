@@ -814,7 +814,15 @@ $(document).ready(function() {
 
     // Age calculator with years and months - Auto-calculates on change and page load
     function calculateAgeAndToggleGuardian() {
-        const dateStr = $('#date_of_birth').val();
+        var dobElement = document.getElementById('date_of_birth');
+        var ageDisplayElement = document.getElementById('calculated_age_display');
+
+        if (!dobElement || !ageDisplayElement) {
+            console.error('Required elements not found');
+            return;
+        }
+
+        const dateStr = dobElement.value;
         const ageDisplay = $('#calculated_age_display');
         const guardianInput = $('#guardian_id_document');
         const guardianAlert = $('#guardian_required_alert');
@@ -822,7 +830,9 @@ $(document).ready(function() {
         const guardianOptionalText = $('#guardian_optional_text');
         const dobField = $('#date_of_birth');
 
-        if (!dateStr) {
+        console.log('calculateAgeAndToggleGuardian called, DOB value:', dateStr);
+
+        if (!dateStr || dateStr.trim() === '') {
             ageDisplay.val('Enter date of birth first').removeClass('text-danger text-success');
             // Reset guardian field to optional state
             guardianAlert.hide();
@@ -838,10 +848,12 @@ $(document).ready(function() {
             // dd-mm-yyyy format
             const parts = dateStr.split('-');
             birthDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            console.log('Parsed dd-mm-yyyy:', parts[2], parts[1] - 1, parts[0]);
         } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
             // yyyy-mm-dd format
             birthDate = new Date(dateStr);
         } else {
+            console.log('Date format not recognized:', dateStr);
             ageDisplay.val('Invalid date format').removeClass('text-success').addClass('text-danger');
             return;
         }
@@ -925,24 +937,37 @@ $(document).ready(function() {
     }
 
     // Attach event handlers to Date of Birth - multiple events for text input
-    $('#date_of_birth').on('change input blur keyup', function() {
-        // Only calculate if we have a complete date (10 chars for dd-mm-yyyy)
-        const val = $(this).val();
-        if (val.length === 10 || val.length === 0) {
-            calculateAgeAndToggleGuardian();
-        }
-    });
+    var dobInput = document.getElementById('date_of_birth');
 
-    // Also use native event listener as backup
-    document.getElementById('date_of_birth').addEventListener('change', function() {
-        calculateAgeAndToggleGuardian();
-    });
+    if (dobInput) {
+        // jQuery event handlers
+        $('#date_of_birth').on('change input blur keyup', function() {
+            // Only calculate if we have a complete date (10 chars for dd-mm-yyyy) or empty
+            const val = $(this).val();
+            console.log('DOB input event, value length:', val.length);
+            if (val.length === 10 || val.length === 0) {
+                calculateAgeAndToggleGuardian();
+            }
+        });
 
-    // AUTO-CALCULATE age on page load
-    calculateAgeAndToggleGuardian();
-    setTimeout(function() {
+        // Native event listeners as backup
+        dobInput.addEventListener('change', calculateAgeAndToggleGuardian);
+        dobInput.addEventListener('blur', calculateAgeAndToggleGuardian);
+
+        // AUTO-CALCULATE age on page load
+        console.log('Page loaded - DOB field found, initializing age calculation');
+        console.log('Current DOB value:', dobInput.value);
+
+        // Run calculation immediately
         calculateAgeAndToggleGuardian();
-    }, 200);
+
+        // Also run after delays to ensure DOM is ready
+        setTimeout(calculateAgeAndToggleGuardian, 100);
+        setTimeout(calculateAgeAndToggleGuardian, 300);
+        setTimeout(calculateAgeAndToggleGuardian, 500);
+    } else {
+        console.error('Date of birth field not found!');
+    }
 
     // Show Guardian ID required state if validation error exists
     @if($errors->has('guardian_id_document'))
