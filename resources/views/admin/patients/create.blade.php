@@ -393,7 +393,7 @@
                         </div>
 
                         <div class="form-group" id="guardian_id_document_group">
-                            <div id="guardian_required_alert" class="alert alert-warning d-flex align-items-center mb-3" role="alert" style="display: none !important;">
+                            <div id="guardian_required_alert" class="alert alert-warning d-flex align-items-center mb-3" role="alert" style="display: none;">
                                 <i class="fas fa-exclamation-triangle me-2 fa-lg"></i>
                                 <div>
                                     <strong>Guardian ID Document Required</strong><br>
