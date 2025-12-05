@@ -451,15 +451,127 @@
                                     <label for="postal_code" class="form-label">
                                         <i class="fas fa-mail-bulk me-1"></i>Postcode
                                     </label>
-                                    <input type="text" class="form-control @error('postal_code') is-invalid @enderror"
-                                           id="postal_code" name="postal_code" value="{{ old('postal_code') }}"
-                                           placeholder="e.g. SW1A 1AA" style="text-transform: uppercase;">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control @error('postal_code') is-invalid @enderror"
+                                               id="postal_code" name="postal_code" value="{{ old('postal_code') }}"
+                                               placeholder="e.g. SW1A 1AA" style="text-transform: uppercase;">
+                                        <button type="button" class="btn btn-outline-primary" id="postcode_lookup_btn">
+                                            <i class="fas fa-search"></i> Lookup
+                                        </button>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>Enter postcode and click Lookup to auto-fill address
+                                    </small>
                                     @error('postal_code')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Postcode Lookup Script -->
+                        <script>
+                        (function() {
+                            var lookupBtn = document.getElementById('postcode_lookup_btn');
+                            var postcodeInput = document.getElementById('postal_code');
+
+                            if (lookupBtn && postcodeInput) {
+                                lookupBtn.addEventListener('click', function() {
+                                    var postcode = postcodeInput.value.trim().replace(/\s/g, '');
+                                    if (!postcode) {
+                                        alert('Please enter a postcode');
+                                        return;
+                                    }
+
+                                    // Show loading state
+                                    lookupBtn.disabled = true;
+                                    lookupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Looking up...';
+
+                                    // Use Postcodes.io API (free, no API key required)
+                                    fetch('https://api.postcodes.io/postcodes/' + encodeURIComponent(postcode))
+                                        .then(function(response) { return response.json(); })
+                                        .then(function(data) {
+                                            if (data.status === 200 && data.result) {
+                                                var result = data.result;
+
+                                                // Fill in address fields
+                                                var cityField = document.getElementById('city');
+                                                var stateField = document.getElementById('state');
+
+                                                if (cityField) {
+                                                    // Use admin_district (borough/city) or post_town
+                                                    cityField.value = result.admin_district || result.post_town || '';
+                                                }
+                                                if (stateField) {
+                                                    // Use county or region
+                                                    stateField.value = result.admin_county || result.region || '';
+                                                }
+
+                                                // Format postcode properly
+                                                postcodeInput.value = result.postcode || postcode.toUpperCase();
+
+                                                // Show success toast
+                                                if (typeof Swal !== 'undefined') {
+                                                    Swal.fire({
+                                                        icon: 'success',
+                                                        title: 'Address Found',
+                                                        text: 'Town/City and County have been filled in.',
+                                                        timer: 2500,
+                                                        showConfirmButton: false,
+                                                        toast: true,
+                                                        position: 'top-end'
+                                                    });
+                                                }
+                                            } else {
+                                                // Postcode not found
+                                                if (typeof Swal !== 'undefined') {
+                                                    Swal.fire({
+                                                        icon: 'error',
+                                                        title: 'Postcode Not Found',
+                                                        text: 'Please check the postcode and try again.',
+                                                        timer: 3000,
+                                                        showConfirmButton: false,
+                                                        toast: true,
+                                                        position: 'top-end'
+                                                    });
+                                                } else {
+                                                    alert('Postcode not found. Please check and try again.');
+                                                }
+                                            }
+                                        })
+                                        .catch(function(error) {
+                                            console.error('Postcode lookup error:', error);
+                                            if (typeof Swal !== 'undefined') {
+                                                Swal.fire({
+                                                    icon: 'error',
+                                                    title: 'Lookup Failed',
+                                                    text: 'Unable to lookup postcode. Please enter address manually.',
+                                                    timer: 3000,
+                                                    showConfirmButton: false,
+                                                    toast: true,
+                                                    position: 'top-end'
+                                                });
+                                            } else {
+                                                alert('Unable to lookup postcode. Please enter address manually.');
+                                            }
+                                        })
+                                        .finally(function() {
+                                            // Reset button
+                                            lookupBtn.disabled = false;
+                                            lookupBtn.innerHTML = '<i class="fas fa-search"></i> Lookup';
+                                        });
+                                });
+
+                                // Also trigger lookup on Enter key in postcode field
+                                postcodeInput.addEventListener('keypress', function(e) {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        lookupBtn.click();
+                                    }
+                                });
+                            }
+                        })();
+                        </script>
                     </div>
                 </div>
 
