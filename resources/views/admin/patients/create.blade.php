@@ -201,16 +201,25 @@
                                     <label for="date_of_birth" class="form-label">
                                         <i class="fas fa-calendar me-1"></i>Date of Birth *
                                     </label>
-                                    <input type="text" class="form-control @error('date_of_birth') is-invalid @enderror" 
-                                           id="date_of_birth" name="date_of_birth" 
-                                           value="{{ old('date_of_birth') ? formatDate(old('date_of_birth')) : '' }}" 
-                                           placeholder="dd-mm-yyyy" 
-                                           pattern="\d{2}-\d{2}-\d{4}" 
+                                    <input type="text" class="form-control @error('date_of_birth') is-invalid @enderror"
+                                           id="date_of_birth" name="date_of_birth"
+                                           value="{{ old('date_of_birth') ? formatDate(old('date_of_birth')) : '' }}"
+                                           placeholder="dd-mm-yyyy"
+                                           pattern="\d{2}-\d{2}-\d{4}"
                                            maxlength="10" required>
                                     <small class="form-text text-muted">Format: dd-mm-yyyy (e.g., 15-01-2025)</small>
                                     @error('date_of_birth')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="fas fa-calculator me-1"></i>Calculated Age
+                                    </label>
+                                    <input type="text" class="form-control bg-light" id="calculated_age_display"
+                                           value="Enter date of birth first" readonly>
+                                    <small class="form-text text-muted">Auto-calculated: Years and months</small>
                                 </div>
 
                                 <div class="form-group">
@@ -383,19 +392,27 @@
                             @enderror
                         </div>
 
-                        <div class="form-group" id="guardian_id_document_group" style="display: none;">
+                        <div class="form-group" id="guardian_id_document_group">
+                            <div id="guardian_required_alert" class="alert alert-warning d-flex align-items-center mb-3" role="alert" style="display: none !important;">
+                                <i class="fas fa-exclamation-triangle me-2 fa-lg"></i>
+                                <div>
+                                    <strong>Guardian ID Document Required</strong><br>
+                                    <small>Patient is under 18 years old. Please upload parent/guardian identification document.</small>
+                                </div>
+                            </div>
                             <label for="guardian_id_document" class="form-label">
-                                <i class="fas fa-file-pdf me-1"></i>Parent/Guardian ID Document <span class="text-danger">*</span>
-                                <small class="text-muted">(Required if patient is under 18)</small>
+                                <i class="fas fa-file-pdf me-1"></i>Parent/Guardian ID Document
+                                <span id="guardian_required_star" class="text-danger" style="display: none;">*</span>
+                                <small id="guardian_optional_text" class="text-muted">(Optional - Required for under 18)</small>
                             </label>
-                            <input type="file" class="form-control @error('guardian_id_document') is-invalid @enderror" 
-                                   id="guardian_id_document" name="guardian_id_document" 
+                            <input type="file" class="form-control @error('guardian_id_document') is-invalid @enderror"
+                                   id="guardian_id_document" name="guardian_id_document"
                                    accept=".pdf,.jpg,.jpeg,.png">
                             <small class="form-text text-muted">
-                                Accepted formats: PDF, JPG, JPEG, PNG (Max 5MB). Required for patients under 18 years of age.
+                                Accepted formats: PDF, JPG, JPEG, PNG (Max 5MB). Required if patient is under 18.
                             </small>
                             @error('guardian_id_document')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
                         
@@ -778,57 +795,133 @@ $(document).ready(function() {
         $(this).val(value);
     });
 
-    // Age calculator and guardian ID requirement
+    // Age calculator with years and months - Auto-calculates on change and page load
     function calculateAgeAndToggleGuardian() {
         const dateStr = $('#date_of_birth').val();
-        const guardianGroup = $('#guardian_id_document_group');
+        const ageDisplay = $('#calculated_age_display');
         const guardianInput = $('#guardian_id_document');
-        
-        if (dateStr) {
-            // Handle both dd-mm-yyyy and yyyy-mm-dd formats
-            let dob;
-            if (dateStr.match(/^\d{2}-\d{2}-\d{4}$/)) {
-                // dd-mm-yyyy format
-                const parts = dateStr.split('-');
-                dob = new Date(parts[2], parts[1] - 1, parts[0]);
-            } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                // yyyy-mm-dd format (from date input)
-                dob = new Date(dateStr);
-            }
-            
-            if (dob && !isNaN(dob.getTime())) {
-                const today = new Date();
-                const age = Math.floor((today - dob) / (365.25 * 24 * 60 * 60 * 1000));
-                
-                // Show/hide guardian ID document field based on age
-                if (age < 18) {
-                    guardianGroup.slideDown();
-                    guardianInput.prop('required', true);
-                } else {
-                    guardianGroup.slideUp();
-                    guardianInput.prop('required', false);
-                    guardianInput.val(''); // Clear value if not required
-                }
-                
-                if ($('#age-display').length) {
-                    $('#age-display').html(`<strong>${age} years old</strong>`);
-                }
-            }
+        const guardianAlert = $('#guardian_required_alert');
+        const guardianStar = $('#guardian_required_star');
+        const guardianOptionalText = $('#guardian_optional_text');
+        const dobField = $('#date_of_birth');
+
+        if (!dateStr) {
+            ageDisplay.val('Enter date of birth first').removeClass('text-danger text-success');
+            // Reset guardian field to optional state
+            guardianAlert.hide();
+            guardianStar.hide();
+            guardianOptionalText.show();
+            guardianInput.prop('required', false).removeClass('border-warning');
+            return;
+        }
+
+        // Handle both dd-mm-yyyy and yyyy-mm-dd formats
+        let birthDate;
+        if (dateStr.match(/^\d{2}-\d{2}-\d{4}$/)) {
+            // dd-mm-yyyy format
+            const parts = dateStr.split('-');
+            birthDate = new Date(parts[2], parts[1] - 1, parts[0]);
+        } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            // yyyy-mm-dd format
+            birthDate = new Date(dateStr);
         } else {
-            guardianGroup.slideUp();
-            guardianInput.prop('required', false);
-            if ($('#age-display').length) {
-                $('#age-display').html('<span class="text-muted">Select date of birth</span>');
+            ageDisplay.val('Invalid date format').removeClass('text-success').addClass('text-danger');
+            return;
+        }
+
+        if (!birthDate || isNaN(birthDate.getTime())) {
+            ageDisplay.val('Invalid date').removeClass('text-success').addClass('text-danger');
+            return;
+        }
+
+        const today = new Date();
+
+        // Calculate years and months accurately
+        let years = today.getFullYear() - birthDate.getFullYear();
+        let months = today.getMonth() - birthDate.getMonth();
+
+        if (months < 0) {
+            years--;
+            months += 12;
+        }
+
+        // If birth day hasn't occurred this month yet, subtract a month
+        if (today.getDate() < birthDate.getDate()) {
+            months--;
+            if (months < 0) {
+                years--;
+                months += 12;
             }
         }
+
+        console.log('Age Calculated:', years, 'years', months, 'months from DOB:', dateStr);
+
+        // Validate date
+        if (years < 0) {
+            // Date is in the future
+            ageDisplay.val('Invalid (future date)').removeClass('text-success').addClass('text-danger');
+            dobField.addClass('is-invalid');
+            guardianAlert.hide();
+            guardianStar.hide();
+            guardianOptionalText.show();
+            guardianInput.prop('required', false).removeClass('border-warning');
+            return;
+        } else if (years > 150) {
+            // Age too high
+            ageDisplay.val('Invalid (age > 150)').removeClass('text-success').addClass('text-danger');
+            dobField.addClass('is-invalid');
+            return;
+        } else {
+            // Valid date - show age with years and months
+            const ageText = years + ' years, ' + months + ' months';
+            ageDisplay.val(ageText).removeClass('text-danger').addClass('text-success');
+            dobField.removeClass('is-invalid');
+        }
+
+        // Toggle Guardian ID required status based on age (field always visible)
+        if (years < 18) {
+            console.log('Patient is under 18 - Guardian ID REQUIRED');
+            guardianAlert.slideDown(300).css('display', 'flex');
+            guardianStar.show();
+            guardianOptionalText.hide();
+            guardianInput.prop('required', true).addClass('border-warning');
+
+            // Show notification
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Guardian ID Required',
+                    text: `Patient is ${years} years, ${months} months old (under 18). Guardian ID document is required.`,
+                    timer: 3500,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }
+        } else {
+            console.log('Patient is 18 or older - Guardian ID optional');
+            guardianAlert.slideUp(300);
+            guardianStar.hide();
+            guardianOptionalText.show();
+            guardianInput.prop('required', false).removeClass('border-warning');
+        }
     }
-    
+
     $('#date_of_birth').on('change input', calculateAgeAndToggleGuardian);
-    
-    // Calculate age on page load if date is already set
-    if ($('#date_of_birth').val()) {
+
+    // Calculate age on page load
+    setTimeout(function() {
         calculateAgeAndToggleGuardian();
-    }
+    }, 100);
+
+    // Show Guardian ID required state if validation error exists
+    @if($errors->has('guardian_id_document'))
+        console.log('Guardian ID validation error detected');
+        $('#guardian_required_alert').show().css('display', 'flex');
+        $('#guardian_required_star').show();
+        $('#guardian_optional_text').hide();
+        $('#guardian_id_document').prop('required', true).addClass('border-warning');
+    @endif
 
     // Convert date format from dd-mm-yyyy to yyyy-mm-dd before form submission
     $('form').on('submit', function() {
@@ -1004,7 +1097,7 @@ $(document).ready(function() {
         if (!$('#gender').val()) errors.push('Gender is required');
         
         // Check guardian ID if patient is under 18
-        if ($('#guardian_id_document_group').is(':visible') && !$('#guardian_id_document').val()) {
+        if ($('#guardian_id_document').prop('required') && !$('#guardian_id_document').val()) {
             errors.push('Guardian ID document is required for patients under 18');
         }
         

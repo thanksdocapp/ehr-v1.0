@@ -182,32 +182,33 @@
                             </div>
                         </div>
 
-                        <!-- Guardian ID Document (Shows for Under 18) -->
-                        <div id="guardian_id_document_section" style="display: {{ $errors->has('guardian_id_document') ? 'block' : 'none' }};">
-                            <hr class="my-3">
-                            
-                            <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <!-- Guardian ID Document (Always visible in this card, required for Under 18) -->
+                        <hr class="my-3">
+                        <div id="guardian_id_document_section">
+                            <div id="guardian_required_alert" class="alert alert-warning d-flex align-items-center mb-3" role="alert" style="display: none;">
                                 <i class="fas fa-exclamation-triangle me-2 fa-2x"></i>
                                 <div>
                                     <strong>Guardian ID Document Required</strong><br>
                                     <small>Patient is under 18 years old. Please upload parent/guardian identification document.</small>
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-12 mb-0">
                                     <label for="guardian_id_document" class="form-label fw-semibold">
-                                        <i class="fas fa-user-shield me-1"></i>Guardian ID Document <span class="text-danger">*</span>
+                                        <i class="fas fa-user-shield me-1"></i>Guardian ID Document
+                                        <span id="guardian_required_star" class="text-danger" style="display: none;">*</span>
+                                        <small id="guardian_optional_text" class="text-muted">(Optional - Required for under 18)</small>
                                     </label>
-                                    <input type="file" name="guardian_id_document" id="guardian_id_document" 
-                                           class="form-control border-warning @error('guardian_id_document') is-invalid @enderror" 
+                                    <input type="file" name="guardian_id_document" id="guardian_id_document"
+                                           class="form-control @error('guardian_id_document') is-invalid @enderror"
                                            accept=".pdf,.jpg,.jpeg,.png">
-                                    <small class="text-danger d-block mt-1 fw-bold">
-                                        <i class="fas fa-exclamation-circle me-1"></i>
-                                        Required for patients under 18: PDF, JPG, PNG (Max 5MB)
+                                    <small id="guardian_help_text" class="text-muted d-block mt-1">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Accepted formats: PDF, JPG, PNG (Max 5MB). Required if patient is under 18.
                                     </small>
                                     @error('guardian_id_document')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
@@ -818,26 +819,34 @@ $(document).ready(function() {
     function calculateAgeAndToggleGuardian() {
         const birthDateValue = $('#date_of_birth').val();
         const ageDisplay = $('#calculated_age_display');
-        
+        const guardianInput = $('#guardian_id_document');
+        const guardianAlert = $('#guardian_required_alert');
+        const guardianStar = $('#guardian_required_star');
+        const guardianOptionalText = $('#guardian_optional_text');
+        const dobField = $('#date_of_birth');
+
         if (!birthDateValue) {
             ageDisplay.val('Enter date of birth first').removeClass('text-danger text-success');
-            $('#guardian_id_document_section').hide();
-            $('#guardian_id_document').prop('required', false);
+            // Reset guardian field to optional state
+            guardianAlert.hide();
+            guardianStar.hide();
+            guardianOptionalText.show();
+            guardianInput.prop('required', false).removeClass('border-warning');
             return;
         }
-        
+
         const birthDate = new Date(birthDateValue);
         const today = new Date();
-        
+
         // Calculate years and months accurately
         let years = today.getFullYear() - birthDate.getFullYear();
         let months = today.getMonth() - birthDate.getMonth();
-        
+
         if (months < 0) {
             years--;
             months += 12;
         }
-        
+
         // If birth day hasn't occurred this month yet, subtract a month
         if (today.getDate() < birthDate.getDate()) {
             months--;
@@ -846,19 +855,15 @@ $(document).ready(function() {
                 months += 12;
             }
         }
-        
-        const guardianSection = $('#guardian_id_document_section');
-        const guardianInput = $('#guardian_id_document');
-        const dobField = $('#date_of_birth');
-        
+
         console.log('Age Calculated:', years, 'years', months, 'months from DOB:', birthDateValue);
-        
+
         // Validate date
         if (years < 0) {
             // Date is in the future
-            ageDisplay.val('❌ Invalid (future date)').removeClass('text-success').addClass('text-danger');
+            ageDisplay.val('Invalid (future date)').removeClass('text-success').addClass('text-danger');
             dobField.addClass('is-invalid');
-            
+
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'error',
@@ -869,15 +874,18 @@ $(document).ready(function() {
             } else {
                 alert('Birth date cannot be in the future.');
             }
-            
-            guardianSection.slideUp();
-            guardianInput.prop('required', false);
+
+            // Reset guardian to optional
+            guardianAlert.hide();
+            guardianStar.hide();
+            guardianOptionalText.show();
+            guardianInput.prop('required', false).removeClass('border-warning');
             return;
         } else if (years > 150) {
             // Age too high
-            ageDisplay.val('❌ Invalid (age > 150)').removeClass('text-success').addClass('text-danger');
+            ageDisplay.val('Invalid (age > 150)').removeClass('text-success').addClass('text-danger');
             dobField.addClass('is-invalid');
-            
+
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'warning',
@@ -896,12 +904,14 @@ $(document).ready(function() {
             dobField.removeClass('is-invalid');
         }
 
-        // Show/hide Guardian ID section within the same card based on age
+        // Toggle Guardian ID required status based on age (field always visible)
         if (years < 18) {
-            console.log('✓ Patient is under 18 - showing Guardian ID section');
-            guardianSection.slideDown(300);
-            guardianInput.prop('required', true);
-            
+            console.log('Patient is under 18 - Guardian ID REQUIRED');
+            guardianAlert.slideDown(300);
+            guardianStar.show();
+            guardianOptionalText.hide();
+            guardianInput.prop('required', true).addClass('border-warning');
+
             // Show notification
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
@@ -915,41 +925,38 @@ $(document).ready(function() {
                 });
             }
         } else {
-            console.log('✓ Patient is 18 or older - hiding Guardian ID section');
-            guardianSection.slideUp(300);
-            guardianInput.prop('required', false);
-            guardianInput.val(''); // Clear file input
+            console.log('Patient is 18 or older - Guardian ID optional');
+            guardianAlert.slideUp(300);
+            guardianStar.hide();
+            guardianOptionalText.show();
+            guardianInput.prop('required', false).removeClass('border-warning');
         }
     }
-    
+
     // Attach change event handler to Date of Birth
-    $('#date_of_birth').on('change', function() {
-        console.log('📅 Date of birth changed:', $(this).val());
+    $('#date_of_birth').on('change input', function() {
+        console.log('Date of birth changed:', $(this).val());
         calculateAgeAndToggleGuardian();
     });
-    
+
     // AUTO-CALCULATE age on page load if DOB already has a value
-    $(document).ready(function() {
-        console.log('🔄 Page loaded - initializing age calculation');
-        const initialDOB = $('#date_of_birth').val();
-        console.log('📅 Initial DOB value:', initialDOB);
-        
-        if (initialDOB && initialDOB.trim() !== '') {
-            console.log('✓ DOB found on page load - calculating age automatically...');
-            setTimeout(function() {
-                calculateAgeAndToggleGuardian();
-            }, 300);
-        } else {
-            console.log('ℹ️ No DOB found on page load');
-        }
-        
-        // Show Guardian ID section if validation error exists
-        @if($errors->has('guardian_id_document'))
-            console.log('⚠️ Guardian ID validation error detected - showing section');
-            $('#guardian_id_document_section').show();
-            $('#guardian_id_document').prop('required', true);
-        @endif
-    });
+    console.log('Page loaded - initializing age calculation');
+    const initialDOB = $('#date_of_birth').val();
+    console.log('Initial DOB value:', initialDOB);
+
+    // Always run calculation on page load
+    setTimeout(function() {
+        calculateAgeAndToggleGuardian();
+    }, 100);
+
+    // Show Guardian ID required state if validation error exists
+    @if($errors->has('guardian_id_document'))
+        console.log('Guardian ID validation error detected');
+        $('#guardian_required_alert').show();
+        $('#guardian_required_star').show();
+        $('#guardian_optional_text').hide();
+        $('#guardian_id_document').prop('required', true).addClass('border-warning');
+    @endif
     
     // GP Consent checkbox toggle - robust implementation with multiple fallbacks
     function toggleGpDetails() {
