@@ -567,119 +567,113 @@ window.updateStatus = function(appointmentId, status = null) {
 $(document).ready(function() {
     console.log('Initializing appointment status buttons...');
     console.log('Current appointment ID:', currentAppointmentId);
-    
-    // Check if buttons exist
-    const statusButtons = $('.update-status-btn');
-    console.log('Found ' + statusButtons.length + ' status update buttons');
-    
-    statusButtons.on('click', function(e) {
+
+    // Use event delegation for status update buttons (works even if buttons are added dynamically)
+    $(document).on('click', '.update-status-btn', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const appointmentId = $(this).data('appointment-id');
         const status = $(this).data('status');
-        
+
         console.log('Button clicked - Appointment ID:', appointmentId, 'Status:', status);
-        
+
         if (!appointmentId) {
             console.error('No appointment ID found on button');
             alert('Error: No appointment ID found');
             return;
         }
-        
+
         updateStatus(appointmentId, status);
     });
-    
-    $('.copy-meeting-link-btn').on('click', function(e) {
+
+    $(document).on('click', '.copy-meeting-link-btn', function(e) {
         e.preventDefault();
         const appointmentId = $(this).data('appointment-id');
         copyMeetingLink(appointmentId);
     });
-    
-    console.log('Event listeners attached successfully');
-});
 
-$('#statusForm').on('submit', function(e) {
-    e.preventDefault();
-    
-    const form = $(this);
-    const formData = new FormData(this);
-    const formAction = form.attr('action');
-    
-    console.log('Form submitting to:', formAction);
-    console.log('Form data:', Object.fromEntries(formData));
-    
-    // Disable submit button to prevent double submission
-    const submitBtn = $('#submitStatusBtn');
-    const originalText = submitBtn.html();
-    submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
-    
-    // Try AJAX first
-    $.ajax({
-        url: formAction,
-        method: 'POST', // Use POST with _method=PATCH
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            console.log('Success response:', response);
-            // Hide modal - use Bootstrap 5 native API
-            var modalElement = document.getElementById('statusModal');
-            if (modalElement) {
-                var modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) modal.hide();
-            }
+    // Move form submit handler inside document.ready
+    $('#statusForm').on('submit', function(e) {
+        e.preventDefault();
 
-            // Show success message and reload
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: response.message || 'Appointment status updated successfully.',
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(() => {
+        const form = $(this);
+        const status = $('#status_select').val();
+        const notes = $('#staff_notes').val();
+        const formAction = form.attr('action');
+
+        console.log('Form submitting to:', formAction);
+        console.log('Status:', status, 'Notes:', notes);
+
+        // Disable submit button to prevent double submission
+        const submitBtn = $('#submitStatusBtn');
+        const originalText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
+
+        // Use AJAX with proper PATCH method
+        $.ajax({
+            url: formAction,
+            method: 'PATCH',
+            data: {
+                status: status,
+                notes: notes,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                console.log('Success response:', response);
+                // Hide modal - use Bootstrap 5 native API
+                var modalElement = document.getElementById('statusModal');
+                if (modalElement) {
+                    var modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                }
+
+                // Show success message and reload
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.message || 'Appointment status updated successfully.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
                     location.reload();
-                });
-            } else {
-                location.reload();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', status, error);
+                console.error('Response:', xhr.responseText);
+
+                // Re-enable submit button
+                submitBtn.prop('disabled', false).html(originalText);
+
+                let errorMessage = 'Error updating status. Please try again.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    const errors = Object.values(xhr.responseJSON.errors).flat();
+                    errorMessage = errors.join('\n');
+                }
+
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: errorMessage
+                    });
+                } else {
+                    alert(errorMessage);
+                }
             }
-        },
-        error: function(xhr, status, error) {
-            console.error('AJAX Error:', status, error);
-            console.error('Response:', xhr.responseText);
-            
-            // If AJAX fails, try normal form submission as fallback
-            if (xhr.status === 0 || xhr.status === 500) {
-                console.log('AJAX failed, using normal form submission...');
-                form.off('submit').submit();
-                return;
-            }
-            
-            // Re-enable submit button
-            submitBtn.prop('disabled', false).html(originalText);
-            
-            let errorMessage = 'Error updating status. Please try again.';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMessage = xhr.responseJSON.message;
-            } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                const errors = Object.values(xhr.responseJSON.errors).flat();
-                errorMessage = errors.join('\n');
-            }
-            
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: errorMessage
-                });
-            } else {
-                alert(errorMessage);
-            }
-        }
+        });
+
+        return false;
     });
-    
-    return false;
+
+    console.log('Event listeners attached successfully');
 });
 
 // Auto-dismiss alerts after 5 seconds
