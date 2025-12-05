@@ -45,88 +45,204 @@
                 <!-- Personal Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2"></i>Personal Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="first_name" class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
-                                <input type="text" name="first_name" id="first_name" 
-                                       class="form-control @error('first_name') is-invalid @enderror" 
-                                       value="{{ old('first_name') }}" required>
-                                @error('first_name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" name="first_name" id="first_name" 
+                                           class="form-control @error('first_name') is-invalid @enderror" 
+                                           value="{{ old('first_name') }}" 
+                                           placeholder="Enter first name" required>
+                                    @error('first_name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="last_name" class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                                <input type="text" name="last_name" id="last_name" 
-                                       class="form-control @error('last_name') is-invalid @enderror" 
-                                       value="{{ old('last_name') }}" required>
-                                @error('last_name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" name="last_name" id="last_name" 
+                                           class="form-control @error('last_name') is-invalid @enderror" 
+                                           value="{{ old('last_name') }}" 
+                                           placeholder="Enter last name" required>
+                                    @error('last_name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="date_of_birth" class="form-label fw-semibold">Date of Birth <span class="text-danger">*</span></label>
-                                <input type="date" name="date_of_birth" id="date_of_birth" 
-                                       class="form-control @error('date_of_birth') is-invalid @enderror" 
-                                       value="{{ old('date_of_birth') }}" 
-                                       max="{{ date('Y-m-d') }}"
-                                       min="{{ date('Y-m-d', strtotime('-150 years')) }}"
-                                       required>
+                                <label for="gender" class="form-label fw-semibold">Gender <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-venus-mars"></i></span>
+                                    <select name="gender" id="gender" class="form-select @error('gender') is-invalid @enderror" required>
+                                        <option value="">Select Gender</option>
+                                        <option value="male" {{ old('gender') === 'male' ? 'selected' : '' }}>Male</option>
+                                        <option value="female" {{ old('gender') === 'female' ? 'selected' : '' }}>Female</option>
+                                        <option value="other" {{ old('gender') === 'other' ? 'selected' : '' }}>Other</option>
+                                    </select>
+                                    @error('gender')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="blood_group" class="form-label fw-semibold">Blood Group</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-tint"></i></span>
+                                    <select name="blood_group" id="blood_group" class="form-select @error('blood_group') is-invalid @enderror">
+                                        <option value="">Select Blood Group</option>
+                                        <option value="A+" {{ old('blood_group') == 'A+' ? 'selected' : '' }}>A+</option>
+                                        <option value="A-" {{ old('blood_group') == 'A-' ? 'selected' : '' }}>A-</option>
+                                        <option value="B+" {{ old('blood_group') == 'B+' ? 'selected' : '' }}>B+</option>
+                                        <option value="B-" {{ old('blood_group') == 'B-' ? 'selected' : '' }}>B-</option>
+                                        <option value="AB+" {{ old('blood_group') == 'AB+' ? 'selected' : '' }}>AB+</option>
+                                        <option value="AB-" {{ old('blood_group') == 'AB-' ? 'selected' : '' }}>AB-</option>
+                                        <option value="O+" {{ old('blood_group') == 'O+' ? 'selected' : '' }}>O+</option>
+                                        <option value="O-" {{ old('blood_group') == 'O-' ? 'selected' : '' }}>O-</option>
+                                    </select>
+                                    @error('blood_group')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-0">
+                                <label for="patient_id" class="form-label fw-semibold">Patient ID</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                                    <input type="text" name="patient_id" id="patient_id" 
+                                           class="form-control @error('patient_id') is-invalid @enderror" 
+                                           value="{{ old('patient_id', 'PAT-' . strtoupper(\Illuminate\Support\Str::random(6))) }}" 
+                                           placeholder="Auto-generated" readonly>
+                                    @error('patient_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Auto-generated unique patient ID
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Age & Guardian Documents -->
+                <div class="doctor-card mb-4 border-warning">
+                    <div class="doctor-card-header" style="background: linear-gradient(135deg, #ffc107 0%, #ff6b35 100%);">
+                        <h5 class="doctor-card-title mb-0 text-white">
+                            <i class="fas fa-birthday-cake me-2"></i>Age & Guardian Documents
+                        </h5>
+                    </div>
+                    <div class="doctor-card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="date_of_birth" class="form-label fw-semibold">
+                                    Date of Birth <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                    <input type="date" name="date_of_birth" id="date_of_birth" 
+                                           class="form-control @error('date_of_birth') is-invalid @enderror" 
+                                           value="{{ old('date_of_birth') }}" 
+                                           max="{{ date('Y-m-d') }}"
+                                           min="{{ date('Y-m-d', strtotime('-150 years')) }}"
+                                           required>
+                                    @error('date_of_birth')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                                 <small class="text-muted">
                                     <i class="fas fa-info-circle me-1"></i>
                                     Maximum: Today | Minimum: 150 years ago
                                 </small>
-                                @error('date_of_birth')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
                             </div>
+                            
                             <div class="col-md-6 mb-3">
-                                <label for="gender" class="form-label fw-semibold">Gender <span class="text-danger">*</span></label>
-                                <select name="gender" id="gender" class="form-select @error('gender') is-invalid @enderror" required>
-                                    <option value="">Select Gender</option>
-                                    <option value="male" {{ old('gender') === 'male' ? 'selected' : '' }}>Male</option>
-                                    <option value="female" {{ old('gender') === 'female' ? 'selected' : '' }}>Female</option>
-                                    <option value="other" {{ old('gender') === 'other' ? 'selected' : '' }}>Other</option>
-                                </select>
-                                @error('gender')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <label class="form-label fw-semibold">Calculated Age</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-calculator"></i></span>
+                                    <input type="text" id="calculated_age_display" 
+                                           class="form-control bg-light fw-bold" 
+                                           value="Enter date of birth first" 
+                                           readonly>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Automatically calculated from DOB
+                                </small>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="blood_group" class="form-label fw-semibold">Blood Group</label>
-                                <select name="blood_group" id="blood_group" class="form-select @error('blood_group') is-invalid @enderror">
-                                    <option value="">Select Blood Group</option>
-                                    <option value="A+" {{ old('blood_group') == 'A+' ? 'selected' : '' }}>A+</option>
-                                    <option value="A-" {{ old('blood_group') == 'A-' ? 'selected' : '' }}>A-</option>
-                                    <option value="B+" {{ old('blood_group') == 'B+' ? 'selected' : '' }}>B+</option>
-                                    <option value="B-" {{ old('blood_group') == 'B-' ? 'selected' : '' }}>B-</option>
-                                    <option value="AB+" {{ old('blood_group') == 'AB+' ? 'selected' : '' }}>AB+</option>
-                                    <option value="AB-" {{ old('blood_group') == 'AB-' ? 'selected' : '' }}>AB-</option>
-                                    <option value="O+" {{ old('blood_group') == 'O+' ? 'selected' : '' }}>O+</option>
-                                    <option value="O-" {{ old('blood_group') == 'O-' ? 'selected' : '' }}>O-</option>
-                                </select>
-                                @error('blood_group')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+
+                        <!-- Manual Guardian Toggle -->
+                        <div class="mb-3" id="guardian_toggle_section">
+                            <div class="alert alert-info d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2 fa-lg"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Guardian ID Document:</strong> Required for patients under 18 years old
+                                </div>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="$('#guardian_id_document_group').slideDown(); $('#guardian_id_document').prop('required', true); $(this).parent().parent().hide();">
+                                    <i class="fas fa-plus me-1"></i>Add Guardian ID
+                                </button>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="patient_id" class="form-label fw-semibold">Patient ID</label>
-                                <input type="text" name="patient_id" id="patient_id" 
-                                       class="form-control @error('patient_id') is-invalid @enderror" 
-                                       value="{{ old('patient_id', 'PAT-' . strtoupper(\Illuminate\Support\Str::random(6))) }}" 
-                                       placeholder="Auto-generated" readonly>
-                                <small class="text-muted">Auto-generated unique patient ID</small>
-                                @error('patient_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                        </div>
+
+                        <!-- Guardian & Patient ID Documents Section -->
+                        <div id="guardian_id_document_group" style="display: {{ $errors->has('guardian_id_document') || old('date_of_birth') ? 'block' : 'none' }};">
+                            <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2 fa-2x"></i>
+                                <div>
+                                    <strong>Parent/Guardian ID Required</strong><br>
+                                    <small>Patient is under 18 years old. Please upload parent/guardian identification document.</small>
+                                </div>
                             </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="patient_id_document" class="form-label fw-semibold">
+                                        <i class="fas fa-id-card me-1"></i>Patient ID Document
+                                    </label>
+                                    <input type="file" name="patient_id_document" id="patient_id_document" 
+                                           class="form-control @error('patient_id_document') is-invalid @enderror" 
+                                           accept=".pdf,.jpg,.jpeg,.png">
+                                    <small class="text-muted d-block mt-1">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Optional: PDF, JPG, PNG (Max 5MB)
+                                    </small>
+                                    @error('patient_id_document')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="guardian_id_document" class="form-label fw-semibold">
+                                        <i class="fas fa-user-shield me-1"></i>Guardian ID Document <span class="text-danger" id="guardian_required_star">*</span>
+                                    </label>
+                                    <input type="file" name="guardian_id_document" id="guardian_id_document" 
+                                           class="form-control border-warning @error('guardian_id_document') is-invalid @enderror" 
+                                           accept=".pdf,.jpg,.jpeg,.png">
+                                    <small class="text-danger d-block mt-1 fw-bold">
+                                        <i class="fas fa-exclamation-circle me-1"></i>
+                                        Required for under 18: PDF, JPG, PNG (Max 5MB)
+                                    </small>
+                                    @error('guardian_id_document')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-2 mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            <strong>Security:</strong> All uploaded documents are stored securely and can only be accessed by authorized staff (Admin and Doctors).
                         </div>
                     </div>
                 </div>
@@ -140,21 +256,29 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
-                                <input type="email" name="email" id="email" 
-                                       class="form-control @error('email') is-invalid @enderror" 
-                                       value="{{ old('email') }}" required>
-                                @error('email')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                    <input type="email" name="email" id="email" 
+                                           class="form-control @error('email') is-invalid @enderror" 
+                                           value="{{ old('email') }}" 
+                                           placeholder="patient@example.com" required>
+                                    @error('email')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="phone" class="form-label fw-semibold">Phone Number <span class="text-danger">*</span></label>
-                                <input type="tel" name="phone" id="phone" 
-                                       class="form-control @error('phone') is-invalid @enderror" 
-                                       value="{{ old('phone') }}" required>
-                                @error('phone')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                    <input type="tel" name="phone" id="phone" 
+                                           class="form-control @error('phone') is-invalid @enderror" 
+                                           value="{{ old('phone') }}" 
+                                           placeholder="+44 123 456 7890" required>
+                                    @error('phone')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
                         <div class="row">
@@ -298,64 +422,6 @@
                     </div>
                 </div>
                 @endif
-                
-                <!-- Identification Documents -->
-                <div class="doctor-card mb-4">
-                    <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-id-card me-2"></i>Identification Documents</h5>
-                    </div>
-                    <div class="doctor-card-body">
-                        <div class="mb-3">
-                            <label for="patient_id_document" class="form-label fw-semibold">Patient ID Document</label>
-                            <input type="file" name="patient_id_document" id="patient_id_document" 
-                                   class="form-control @error('patient_id_document') is-invalid @enderror" 
-                                   accept=".pdf,.jpg,.jpeg,.png">
-                            <small class="text-muted">Accepted formats: PDF, JPG, JPEG, PNG (Max 5MB)</small>
-                            @error('patient_id_document')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Manual toggle for Guardian ID (if JavaScript fails) -->
-                        <div class="mb-3" id="guardian_toggle_section">
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Is patient under 18 years old? 
-                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="$('#guardian_id_document_group').slideDown(); $('#guardian_id_document').prop('required', true);">
-                                    <i class="fas fa-plus me-1"></i>Add Guardian ID Document
-                                </button>
-                            </small>
-                        </div>
-                        
-                        <div class="mb-3" id="guardian_id_document_group" style="display: {{ $errors->has('guardian_id_document') || old('date_of_birth') ? 'block' : 'none' }};">
-                            <div class="alert alert-warning d-flex align-items-center mb-2" role="alert">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                <div>
-                                    <strong>Parent/Guardian ID Required</strong><br>
-                                    <small>Patient is under 18 years old. Please upload parent/guardian identification document.</small>
-                                </div>
-                            </div>
-                            <label for="guardian_id_document" class="form-label fw-semibold">
-                                Parent/Guardian ID Document <span class="text-danger" id="guardian_required_star">*</span>
-                            </label>
-                            <input type="file" name="guardian_id_document" id="guardian_id_document" 
-                                   class="form-control @error('guardian_id_document') is-invalid @enderror" 
-                                   accept=".pdf,.jpg,.jpeg,.png">
-                            <small class="text-muted d-block mt-1">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Accepted formats: PDF, JPG, JPEG, PNG (Max 5MB)
-                            </small>
-                            @error('guardian_id_document')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        
-                        <div class="alert alert-info mt-3 mb-0">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>Note:</strong> All uploaded documents are stored securely and can only be accessed by authorized staff (Admin and Doctors).
-                        </div>
-                    </div>
-                </div>
 
                 <!-- GP Consent & Details -->
                 <div class="doctor-card mb-4">
@@ -615,8 +681,12 @@
 
 @push('styles')
 <style>
+    /* Guardian ID Document Section */
     #guardian_id_document_group {
         transition: all 0.3s ease-in-out;
+        border-left: 4px solid #ffc107;
+        padding-left: 15px;
+        margin-left: -15px;
     }
     
     #guardian_id_document_group.highlight {
@@ -630,6 +700,35 @@
         50% {
             box-shadow: 0 0 20px 5px rgba(255, 193, 7, 0.5);
         }
+    }
+    
+    /* Modern Input Group Styling */
+    .input-group-text {
+        min-width: 45px;
+        justify-content: center;
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+    
+    .input-group:focus-within .input-group-text {
+        border-color: #80bdff;
+        background-color: #e7f1ff;
+    }
+    
+    /* Calculated Age Display */
+    #calculated_age_display.text-success {
+        color: #28a745 !important;
+        font-weight: bold;
+    }
+    
+    #calculated_age_display.text-danger {
+        color: #dc3545 !important;
+    }
+    
+    /* Modern Card Header Gradients */
+    .doctor-card-header.bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
     }
 </style>
 @endpush
@@ -717,7 +816,10 @@ $(document).ready(function() {
     // Age calculation and guardian ID requirement
     function calculateAgeAndToggleGuardian() {
         const birthDateValue = $('#date_of_birth').val();
+        const ageDisplay = $('#calculated_age_display');
+        
         if (!birthDateValue) {
+            ageDisplay.val('Enter date of birth first').removeClass('text-danger text-success fw-bold');
             return;
         }
         
@@ -732,13 +834,8 @@ $(document).ready(function() {
         
         if (age < 0) {
             // Date is in the future
+            ageDisplay.val('❌ Invalid (future date)').removeClass('text-success fw-bold').addClass('text-danger');
             dobField.addClass('is-invalid');
-            const errorMsg = dobField.siblings('.invalid-feedback');
-            if (errorMsg.length === 0) {
-                dobField.after('<div class="invalid-feedback" style="display: block;">Birth date cannot be in the future.</div>');
-            } else {
-                errorMsg.text('Birth date cannot be in the future.').show();
-            }
             
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
@@ -747,23 +844,16 @@ $(document).ready(function() {
                     text: 'Birth date cannot be in the future. Please select a valid date.',
                     confirmButtonColor: '#d33'
                 });
-            } else {
-                alert('⚠️ Birth date cannot be in the future. Please select a valid date.');
             }
             
-            dobField.val('');
             guardianGroup.slideUp();
             guardianInput.prop('required', false);
+            $('#guardian_toggle_section').show();
             return;
         } else if (age > 150) {
             // Age too high
+            ageDisplay.val('❌ Invalid (age > 150)').removeClass('text-success fw-bold').addClass('text-danger');
             dobField.addClass('is-invalid');
-            const errorMsg = dobField.siblings('.invalid-feedback');
-            if (errorMsg.length === 0) {
-                dobField.after('<div class="invalid-feedback" style="display: block;">Please check the birth date. Age seems too high.</div>');
-            } else {
-                errorMsg.text('Please check the birth date. Age seems too high.').show();
-            }
             
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
@@ -772,46 +862,44 @@ $(document).ready(function() {
                     text: 'The date entered would make the patient over 150 years old. Please verify the date.',
                     confirmButtonColor: '#f0ad4e'
                 });
-            } else {
-                alert('⚠️ Please check the birth date. Age seems too high.');
             }
             return;
         } else {
-            // Valid date - remove any error styling
+            // Valid date - show age
+            ageDisplay.val(age + ' years old').removeClass('text-danger').addClass('text-success fw-bold');
             dobField.removeClass('is-invalid');
-            dobField.siblings('.invalid-feedback').hide();
         }
-            // Show/hide guardian ID document field based on age
-            if (age < 18) {
-                console.log('Patient is under 18 - showing guardian ID document field');
-                $('#guardian_toggle_section').hide(); // Hide manual toggle
-                guardianGroup.slideDown(400, function() {
-                    // Scroll to the field to make it visible
-                    $('html, body').animate({
-                        scrollTop: guardianGroup.offset().top - 100
-                    }, 300);
+
+        // Show/hide guardian ID document field based on age
+        if (age < 18) {
+            console.log('Patient is under 18 - showing guardian ID document field');
+            $('#guardian_toggle_section').hide();
+            guardianGroup.slideDown(400, function() {
+                // Scroll to the field to make it visible
+                $('html, body').animate({
+                    scrollTop: guardianGroup.offset().top - 100
+                }, 300);
+            });
+            guardianInput.prop('required', true);
+            
+            // Show tooltip/notification
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Guardian ID Required',
+                    text: `Patient is ${age} years old (under 18). Parent/Guardian ID document is required.`,
+                    timer: 3000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
                 });
-                guardianInput.prop('required', true);
-                
-                // Show tooltip/notification
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Guardian ID Required',
-                        text: `Patient is ${age} years old (under 18). Parent/Guardian ID document is required.`,
-                        timer: 3000,
-                        showConfirmButton: false,
-                        toast: true,
-                        position: 'top-end'
-                    });
-                }
-            } else {
-                console.log('Patient is 18 or older - hiding guardian ID document field');
-                $('#guardian_toggle_section').show(); // Show manual toggle
-                guardianGroup.slideUp();
-                guardianInput.prop('required', false);
-                guardianInput.val('');
             }
+        } else {
+            console.log('Patient is 18 or older - hiding guardian ID document field');
+            $('#guardian_toggle_section').show();
+            guardianGroup.slideUp();
+            guardianInput.prop('required', false);
+            guardianInput.val('');
         }
     }
     
