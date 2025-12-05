@@ -592,7 +592,7 @@
                         <hr class="my-3">
                         <p class="small text-muted mb-0">
                             <i class="fas fa-info-circle me-1"></i>
-                            Patient will receive login credentials via email after registration.
+                            Patient account will be created. Login credentials can be shared manually if needed.
                         </p>
                     </div>
                 </div>
