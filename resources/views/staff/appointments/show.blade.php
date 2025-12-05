@@ -359,19 +359,19 @@
                             <a href="{{ route('staff.appointments.edit', $appointment->id) }}" class="btn btn-outline-warning">
                                 <i class="fas fa-edit me-1"></i>Edit Appointment
                             </a>
-                            <button type="button" class="btn btn-success update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="confirmed">
+                            <button type="button" class="btn btn-success" onclick="openStatusModal({{ $appointment->id }}, 'confirmed')">
                                 <i class="fas fa-check me-1"></i>Confirm Appointment
                             </button>
                         @endif
 
                         @if($appointment->status === 'confirmed' && auth()->user()->role === 'doctor')
-                            <button type="button" class="btn btn-primary update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="completed">
+                            <button type="button" class="btn btn-primary" onclick="openStatusModal({{ $appointment->id }}, 'completed')">
                                 <i class="fas fa-check-double me-1"></i>Mark as Completed
                             </button>
                         @endif
 
                         @if(in_array($appointment->status, ['pending', 'confirmed']))
-                            <button type="button" class="btn btn-outline-danger update-status-btn" data-appointment-id="{{ $appointment->id }}" data-status="cancelled">
+                            <button type="button" class="btn btn-outline-danger" onclick="openStatusModal({{ $appointment->id }}, 'cancelled')">
                                 <i class="fas fa-times me-1"></i>Cancel Appointment
                             </button>
                         @endif
@@ -529,151 +529,124 @@
 
 @push('scripts')
 <script>
-let currentAppointmentId = parseInt('{{ $appointment->id }}');
+var currentAppointmentId = {{ $appointment->id }};
+var statusModal = null;
 
-// Make updateStatus globally accessible
-window.updateStatus = function(appointmentId, status = null) {
-    if (!appointmentId) {
-        console.error('Appointment ID is required');
-        alert('Error: Appointment ID is missing');
-        return;
+// Initialize modal when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    var modalElement = document.getElementById('statusModal');
+    if (modalElement && typeof bootstrap !== 'undefined') {
+        statusModal = new bootstrap.Modal(modalElement);
     }
+});
+
+// Global function to open status modal - called directly from onclick
+function openStatusModal(appointmentId, status) {
+    console.log('openStatusModal called:', appointmentId, status);
 
     currentAppointmentId = appointmentId;
 
-    // Update the form action with the correct appointment ID
-    const formAction = '{{ url("staff/appointments") }}/' + appointmentId + '/status';
-    $('#statusForm').attr('action', formAction);
-    $('#appointment_id_input').val(appointmentId);
-
-    // Reset form
-    $('#staff_notes').val('');
-
-    if (status) {
-        $('#status_select').val(status);
+    // Set the status dropdown
+    var statusSelect = document.getElementById('status_select');
+    if (statusSelect && status) {
+        statusSelect.value = status;
     }
 
-    console.log('Opening modal for appointment:', appointmentId, 'Status:', status);
+    // Clear notes
+    var notesField = document.getElementById('staff_notes');
+    if (notesField) {
+        notesField.value = '';
+    }
 
-    // Show modal - use Bootstrap 5 native API
+    // Update form action
+    var form = document.getElementById('statusForm');
+    if (form) {
+        form.action = '{{ url("staff/appointments") }}/' + appointmentId + '/status';
+    }
+
+    // Show modal
     var modalElement = document.getElementById('statusModal');
-    if (modalElement) {
+    if (modalElement && typeof bootstrap !== 'undefined') {
         var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
         modal.show();
+    } else {
+        console.error('Bootstrap modal not available');
+        alert('Error: Modal not available. Please refresh the page.');
     }
-};
+}
 
-// Add event listeners for status update buttons
-$(document).ready(function() {
-    console.log('Initializing appointment status buttons...');
-    console.log('Current appointment ID:', currentAppointmentId);
+// Form submission handler
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('statusForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-    // Use event delegation for status update buttons (works even if buttons are added dynamically)
-    $(document).on('click', '.update-status-btn', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
+            var status = document.getElementById('status_select').value;
+            var notes = document.getElementById('staff_notes').value;
+            var submitBtn = document.getElementById('submitStatusBtn');
+            var originalText = submitBtn.innerHTML;
 
-        const appointmentId = $(this).data('appointment-id');
-        const status = $(this).data('status');
+            // Disable button
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
 
-        console.log('Button clicked - Appointment ID:', appointmentId, 'Status:', status);
+            // Send AJAX request
+            fetch('{{ url("staff/appointments") }}/' + currentAppointmentId + '/status', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: status,
+                    notes: notes
+                })
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                console.log('Response:', data);
 
-        if (!appointmentId) {
-            console.error('No appointment ID found on button');
-            alert('Error: No appointment ID found');
-            return;
-        }
-
-        updateStatus(appointmentId, status);
-    });
-
-    $(document).on('click', '.copy-meeting-link-btn', function(e) {
-        e.preventDefault();
-        const appointmentId = $(this).data('appointment-id');
-        copyMeetingLink(appointmentId);
-    });
-
-    // Move form submit handler inside document.ready
-    $('#statusForm').on('submit', function(e) {
-        e.preventDefault();
-
-        const form = $(this);
-        const status = $('#status_select').val();
-        const notes = $('#staff_notes').val();
-        const formAction = form.attr('action');
-
-        console.log('Form submitting to:', formAction);
-        console.log('Status:', status, 'Notes:', notes);
-
-        // Disable submit button to prevent double submission
-        const submitBtn = $('#submitStatusBtn');
-        const originalText = submitBtn.html();
-        submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
-
-        // Use AJAX with proper PATCH method
-        $.ajax({
-            url: formAction,
-            method: 'PATCH',
-            data: {
-                status: status,
-                notes: notes,
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                console.log('Success response:', response);
-                // Hide modal - use Bootstrap 5 native API
+                // Hide modal
                 var modalElement = document.getElementById('statusModal');
-                if (modalElement) {
+                if (modalElement && typeof bootstrap !== 'undefined') {
                     var modal = bootstrap.Modal.getInstance(modalElement);
                     if (modal) modal.hide();
                 }
 
-                // Show success message and reload
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: response.message || 'Appointment status updated successfully.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
+                if (data.success) {
+                    // Show success and reload
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: data.message || 'Appointment status updated successfully.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(function() {
+                            location.reload();
+                        });
+                    } else {
+                        alert('Status updated successfully!');
                         location.reload();
-                    });
+                    }
                 } else {
-                    location.reload();
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    alert('Error: ' + (data.message || 'Unknown error'));
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX Error:', status, error);
-                console.error('Response:', xhr.responseText);
-
-                // Re-enable submit button
-                submitBtn.prop('disabled', false).html(originalText);
-
-                let errorMessage = 'Error updating status. Please try again.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    const errors = Object.values(xhr.responseJSON.errors).flat();
-                    errorMessage = errors.join('\n');
-                }
-
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: errorMessage
-                    });
-                } else {
-                    alert(errorMessage);
-                }
-            }
+            })
+            .catch(function(error) {
+                console.error('Fetch error:', error);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                alert('Error updating status. Please try again.');
+            });
         });
-
-        return false;
-    });
-
-    console.log('Event listeners attached successfully');
+    }
 });
 
 // Auto-dismiss alerts after 5 seconds

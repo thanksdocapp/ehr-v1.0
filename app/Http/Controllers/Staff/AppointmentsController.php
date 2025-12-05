@@ -591,13 +591,19 @@ class AppointmentsController extends Controller
         try {
             $appointment = Appointment::findOrFail($id);
             $user = Auth::user();
-            
+
+            // Handle both JSON and form data
+            $data = $request->all();
+            if ($request->isJson() || $request->wantsJson()) {
+                $data = $request->json()->all();
+            }
+
             $request->validate([
                 'status' => 'required|in:pending,confirmed,completed,cancelled',
                 'notes' => 'nullable|string'
             ]);
-            
-            $newStatus = $request->status;
+
+            $newStatus = $data['status'] ?? $request->status;
             
             // Role-based restrictions
             if ($newStatus === 'completed' && $user->role !== 'doctor') {
@@ -626,8 +632,9 @@ class AppointmentsController extends Controller
             $appointment->update(['status' => $newStatus]);
             
             // Add notes if provided
-            if ($request->filled('notes')) {
-                $noteLog = "\n\n[STATUS UPDATE " . now()->format('Y-m-d H:i') . " by " . $user->name . "]: Status changed to {$newStatus}. Notes: " . $request->notes;
+            $notes = $data['notes'] ?? $request->notes;
+            if (!empty($notes)) {
+                $noteLog = "\n\n[STATUS UPDATE " . now()->format('Y-m-d H:i') . " by " . $user->name . "]: Status changed to {$newStatus}. Notes: " . $notes;
                 $appointment->update([
                     'notes' => ($appointment->notes ?? '') . $noteLog
                 ]);
