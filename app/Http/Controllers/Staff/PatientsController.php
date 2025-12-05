@@ -459,11 +459,35 @@ class PatientsController extends Controller
             }
             
             // Now calculate age from validated DOB to determine if guardian ID is required
-            $dateOfBirth = $request->date_of_birth ? Carbon::parse($request->date_of_birth) : null;
+            $dateOfBirth = null;
             $age = null;
             $isUnder18 = false;
             
+            try {
+                $dateOfBirth = $request->date_of_birth ? Carbon::parse($request->date_of_birth) : null;
+            } catch (\Exception $e) {
+                \Log::error('Error parsing date of birth', [
+                    'date' => $request->date_of_birth,
+                    'error' => $e->getMessage()
+                ]);
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['date_of_birth' => 'Invalid date format.'])
+                    ->with('error', 'Please enter a valid date of birth.');
+            }
+            
             if ($dateOfBirth) {
+                // Double-check date is not in future (shouldn't happen after validation)
+                if ($dateOfBirth->isFuture()) {
+                    \Log::warning('Future date detected after validation', [
+                        'date' => $dateOfBirth->toDateString()
+                    ]);
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['date_of_birth' => 'Date of birth cannot be in the future.'])
+                        ->with('error', 'Date of birth cannot be in the future.');
+                }
+                
                 // Check if date is reasonable (not more than 150 years ago)
                 $maxAge = 150;
                 if ($dateOfBirth->diffInYears(now()) > $maxAge) {
@@ -474,14 +498,18 @@ class PatientsController extends Controller
                 }
                 
                 $age = $dateOfBirth->age;
-                // Only set isUnder18 to true if age is valid (>= 0 and < 18)
+                // IMPORTANT: Only require guardian ID for VALID ages between 0 and 17
                 $isUnder18 = ($age >= 0 && $age < 18);
                 
-                \Log::info('Patient age calculated', [
+                \Log::info('Patient age validation', [
                     'date_of_birth' => $dateOfBirth->toDateString(),
-                    'age' => $age,
-                    'is_under_18' => $isUnder18
+                    'calculated_age' => $age,
+                    'is_under_18' => $isUnder18,
+                    'guardian_id_will_be_required' => $isUnder18,
+                    'has_guardian_file' => $request->hasFile('guardian_id_document')
                 ]);
+            } else {
+                \Log::warning('No date of birth provided');
             }
             
             // Build validation rules based on calculated age
@@ -523,10 +551,18 @@ class PatientsController extends Controller
             \Log::info('Validation rules for guardian ID', [
                 'is_under_18' => $isUnder18,
                 'age' => $age,
-                'guardian_rule' => $isUnder18 ? 'required' : 'nullable'
+                'date_of_birth' => $dateOfBirth ? $dateOfBirth->toDateString() : 'null',
+                'guardian_rule' => $isUnder18 ? 'required' : 'nullable',
+                'has_guardian_document' => $request->hasFile('guardian_id_document'),
+                'all_files' => array_keys($request->allFiles())
             ]);
             
-            $validated = $request->validate($validationRules);
+            // Custom error messages
+            $messages = [
+                'guardian_id_document.required' => 'Guardian/Parent ID document is required for patients under 18 years old (Age: ' . ($age ?? 'unknown') . ' years).',
+            ];
+            
+            $validated = $request->validate($validationRules, $messages);
             
             \Log::info('Patient creation validation passed', [
                 'user_id' => $user->id,
