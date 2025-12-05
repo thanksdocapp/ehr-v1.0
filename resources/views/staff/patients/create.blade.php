@@ -933,21 +933,25 @@ $(document).ready(function() {
         }
     }
 
-    // Attach change event handler to Date of Birth
-    $('#date_of_birth').on('change input', function() {
-        console.log('Date of birth changed:', $(this).val());
+    // Attach event handlers to Date of Birth - multiple events for reliability
+    $('#date_of_birth').on('change input blur', function() {
+        console.log('Date of birth event triggered:', $(this).val());
         calculateAgeAndToggleGuardian();
     });
 
-    // AUTO-CALCULATE age on page load if DOB already has a value
-    console.log('Page loaded - initializing age calculation');
-    const initialDOB = $('#date_of_birth').val();
-    console.log('Initial DOB value:', initialDOB);
+    // Also use native event listener as backup
+    document.getElementById('date_of_birth').addEventListener('change', function() {
+        calculateAgeAndToggleGuardian();
+    });
 
-    // Always run calculation on page load
+    // AUTO-CALCULATE age on page load
+    console.log('Page loaded - initializing age calculation');
+
+    // Run calculation immediately and after short delay for reliability
+    calculateAgeAndToggleGuardian();
     setTimeout(function() {
         calculateAgeAndToggleGuardian();
-    }, 100);
+    }, 200);
 
     // Show Guardian ID required state if validation error exists
     @if($errors->has('guardian_id_document'))

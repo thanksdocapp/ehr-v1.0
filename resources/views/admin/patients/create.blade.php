@@ -907,12 +907,25 @@ $(document).ready(function() {
         }
     }
 
-    $('#date_of_birth').on('change input', calculateAgeAndToggleGuardian);
+    // Attach event handlers to Date of Birth - multiple events for text input
+    $('#date_of_birth').on('change input blur keyup', function() {
+        // Only calculate if we have a complete date (10 chars for dd-mm-yyyy)
+        const val = $(this).val();
+        if (val.length === 10 || val.length === 0) {
+            calculateAgeAndToggleGuardian();
+        }
+    });
 
-    // Calculate age on page load
+    // Also use native event listener as backup
+    document.getElementById('date_of_birth').addEventListener('change', function() {
+        calculateAgeAndToggleGuardian();
+    });
+
+    // AUTO-CALCULATE age on page load
+    calculateAgeAndToggleGuardian();
     setTimeout(function() {
         calculateAgeAndToggleGuardian();
-    }, 100);
+    }, 200);
 
     // Show Guardian ID required state if validation error exists
     @if($errors->has('guardian_id_document'))
