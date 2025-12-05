@@ -315,6 +315,21 @@
                                         dobField.addEventListener('keyup', calcAge);
                                     }
 
+                                    // Ensure alert is hidden by default on page load
+                                    function hideGuardianAlert() {
+                                        var guardianAlert = document.getElementById('guardian_required_alert');
+                                        var guardianStar = document.getElementById('guardian_required_star');
+                                        var guardianOptText = document.getElementById('guardian_optional_text');
+                                        var guardianInput = document.getElementById('guardian_id_document');
+                                        if (guardianAlert) guardianAlert.style.display = 'none';
+                                        if (guardianStar) guardianStar.style.display = 'none';
+                                        if (guardianOptText) guardianOptText.style.display = 'inline';
+                                        if (guardianInput) { guardianInput.required = false; guardianInput.style.borderColor = ''; }
+                                    }
+
+                                    // Hide alert first, then calculate age
+                                    hideGuardianAlert();
+
                                     // Run on load
                                     calcAge();
                                     setTimeout(calcAge, 100);
