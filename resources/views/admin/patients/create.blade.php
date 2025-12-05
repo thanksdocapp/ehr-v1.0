@@ -965,9 +965,15 @@ $(document).ready(function() {
         setTimeout(calculateAgeAndToggleGuardian, 100);
         setTimeout(calculateAgeAndToggleGuardian, 300);
         setTimeout(calculateAgeAndToggleGuardian, 500);
+        setTimeout(calculateAgeAndToggleGuardian, 1000);
     } else {
         console.error('Date of birth field not found!');
     }
+
+    // Additional fallback - run on window load event for production
+    $(window).on('load', function() {
+        setTimeout(calculateAgeAndToggleGuardian, 100);
+    });
 
     // Show Guardian ID required state if validation error exists
     @if($errors->has('guardian_id_document'))

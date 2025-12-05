@@ -967,17 +967,12 @@ $(document).ready(function() {
     if (dobInput) {
         // jQuery event handlers
         $('#date_of_birth').on('change input blur keyup', function() {
-            console.log('Date of birth event triggered:', $(this).val());
             calculateAgeAndToggleGuardian();
         });
 
         // Native event listeners as backup
         dobInput.addEventListener('change', calculateAgeAndToggleGuardian);
         dobInput.addEventListener('input', calculateAgeAndToggleGuardian);
-
-        // AUTO-CALCULATE age on page load
-        console.log('Page loaded - DOB field found, initializing age calculation');
-        console.log('Current DOB value:', dobInput.value);
 
         // Run calculation immediately
         calculateAgeAndToggleGuardian();
@@ -986,9 +981,13 @@ $(document).ready(function() {
         setTimeout(calculateAgeAndToggleGuardian, 100);
         setTimeout(calculateAgeAndToggleGuardian, 300);
         setTimeout(calculateAgeAndToggleGuardian, 500);
-    } else {
-        console.error('Date of birth field not found!');
+        setTimeout(calculateAgeAndToggleGuardian, 1000);
     }
+
+    // Additional fallback - run on window load event
+    $(window).on('load', function() {
+        setTimeout(calculateAgeAndToggleGuardian, 100);
+    });
 
     // Show Guardian ID required state if validation error exists
     @if($errors->has('guardian_id_document'))
