@@ -316,7 +316,18 @@
                             @enderror
                         </div>
 
-                        <div class="mb-3" id="guardian_id_document_group" style="display: none;">
+                        <!-- Manual toggle for Guardian ID (if JavaScript fails) -->
+                        <div class="mb-3" id="guardian_toggle_section">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Is patient under 18 years old? 
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="$('#guardian_id_document_group').slideDown(); $('#guardian_id_document').prop('required', true);">
+                                    <i class="fas fa-plus me-1"></i>Add Guardian ID Document
+                                </button>
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3" id="guardian_id_document_group" style="display: {{ $errors->has('guardian_id_document') || old('date_of_birth') ? 'block' : 'none' }};">
                             <div class="alert alert-warning d-flex align-items-center mb-2" role="alert">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
                                 <div>
@@ -325,7 +336,7 @@
                                 </div>
                             </div>
                             <label for="guardian_id_document" class="form-label fw-semibold">
-                                Parent/Guardian ID Document <span class="text-danger">*</span>
+                                Parent/Guardian ID Document <span class="text-danger" id="guardian_required_star">*</span>
                             </label>
                             <input type="file" name="guardian_id_document" id="guardian_id_document" 
                                    class="form-control @error('guardian_id_document') is-invalid @enderror" 
@@ -773,6 +784,7 @@ $(document).ready(function() {
             // Show/hide guardian ID document field based on age
             if (age < 18) {
                 console.log('Patient is under 18 - showing guardian ID document field');
+                $('#guardian_toggle_section').hide(); // Hide manual toggle
                 guardianGroup.slideDown(400, function() {
                     // Scroll to the field to make it visible
                     $('html, body').animate({
@@ -795,6 +807,7 @@ $(document).ready(function() {
                 }
             } else {
                 console.log('Patient is 18 or older - hiding guardian ID document field');
+                $('#guardian_toggle_section').show(); // Show manual toggle
                 guardianGroup.slideUp();
                 guardianInput.prop('required', false);
                 guardianInput.val('');
@@ -802,12 +815,32 @@ $(document).ready(function() {
         }
     }
     
-    $('#date_of_birth').on('change', calculateAgeAndToggleGuardian);
-    
-    // Also check on page load if date is already set
-    if ($('#date_of_birth').val()) {
+    // Attach change event handler
+    $('#date_of_birth').on('change', function() {
+        console.log('Date of birth changed:', $(this).val());
         calculateAgeAndToggleGuardian();
+    });
+    
+    // Also check on page load if date is already set (including old() values)
+    console.log('Page loaded - checking if DOB is set');
+    const initialDOB = $('#date_of_birth').val();
+    console.log('Initial DOB value:', initialDOB);
+    
+    if (initialDOB && initialDOB.trim() !== '') {
+        console.log('DOB found on page load, calculating age...');
+        setTimeout(function() {
+            calculateAgeAndToggleGuardian();
+        }, 100);
+    } else {
+        console.log('No DOB found on page load');
     }
+    
+    // Show guardian field if validation error exists
+    @if($errors->has('guardian_id_document'))
+        console.log('Guardian ID validation error detected - ensuring field is visible');
+        $('#guardian_id_document_group').show();
+        $('#guardian_id_document').prop('required', true);
+    @endif
     
     // GP Consent checkbox toggle - robust implementation with multiple fallbacks
     function toggleGpDetails() {
