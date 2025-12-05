@@ -641,17 +641,49 @@ class PatientsController extends Controller
                 ->withInput()
                 ->with('error', 'Please check the form for errors.');
                 
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Catch database-specific errors (duplicate entries, constraint violations, etc.)
+            \Log::error('Patient creation database error', [
+                'error' => $e->getMessage(),
+                'sql_code' => $e->getCode(),
+                'user_id' => $user->id
+            ]);
+            
+            // Check for duplicate entry error
+            if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                $errorMessage = 'A patient with this email or patient ID already exists. Please use different values.';
+            } else {
+                $errorMessage = 'Database error: Unable to create patient. Please try again or contact support.';
+            }
+            
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $errorMessage);
+                
+        } catch (\Illuminate\Contracts\Filesystem\FileNotFoundException $e) {
+            // File upload errors
+            \Log::error('Patient creation file upload error', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id
+            ]);
+            
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'File upload failed. Please ensure your files are less than 5MB and try again.');
+                
         } catch (\Exception $e) {
-            \Log::error('Patient creation failed', [
+            // Catch all other errors
+            \Log::error('Patient creation failed - unexpected error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
+                'error_class' => get_class($e),
                 'user_id' => $user->id,
                 'data' => $request->except(['patient_id_document', 'guardian_id_document'])
             ]);
             
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Failed to create patient: ' . $e->getMessage());
+                ->with('error', 'Failed to create patient: ' . $e->getMessage() . '. Please try again or contact support if the problem persists.');
         }
     }
 

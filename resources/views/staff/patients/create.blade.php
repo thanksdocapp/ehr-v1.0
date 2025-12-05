@@ -589,14 +589,33 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
+    // Log any server-side errors for debugging
+    @if($errors->any())
+        console.error('Validation errors:', @json($errors->all()));
+    @endif
+    
+    @if(session('error'))
+        console.error('Server error:', '{{ session('error') }}');
+    @endif
+    
+    // Scroll to error summary if present
+    if ($('.alert-danger').length > 0) {
+        $('html, body').animate({
+            scrollTop: $('.alert-danger').first().offset().top - 100
+        }, 500);
+    }
+    
     // Form validation
     $('#patientCreateForm').on('submit', function(e) {
         let isValid = true;
+        let errorMessages = [];
         
         // Check required fields
         $(this).find('[required]').each(function() {
             if (!$(this).val().trim()) {
                 $(this).addClass('is-invalid');
+                const fieldName = $(this).closest('.mb-3').find('label').text().replace('*', '').trim();
+                errorMessages.push(fieldName + ' is required');
                 isValid = false;
             } else {
                 $(this).removeClass('is-invalid');
@@ -605,11 +624,16 @@ $(document).ready(function() {
         
         if (!isValid) {
             e.preventDefault();
-            alert('Please fill in all required fields.');
+            alert('Please fill in all required fields:\n\n' + errorMessages.join('\n'));
+            // Scroll to first invalid field
+            $('html, body').animate({
+                scrollTop: $('.is-invalid').first().offset().top - 100
+            }, 500);
             return false;
         }
         
         // Show loading state
+        console.log('Submitting patient creation form...');
         $(this).find('button[type="submit"]').html('<i class="fas fa-spinner fa-spin"></i> Creating Patient...').prop('disabled', true);
     });
     
