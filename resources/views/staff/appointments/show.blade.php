@@ -359,19 +359,19 @@
                             <a href="{{ route('staff.appointments.edit', $appointment->id) }}" class="btn btn-outline-warning">
                                 <i class="fas fa-edit me-1"></i>Edit Appointment
                             </a>
-                            <button type="button" class="btn btn-success" onclick="openStatusModal({{ $appointment->id }}, 'confirmed')">
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmModal">
                                 <i class="fas fa-check me-1"></i>Confirm Appointment
                             </button>
                         @endif
 
                         @if($appointment->status === 'confirmed' && auth()->user()->role === 'doctor')
-                            <button type="button" class="btn btn-primary" onclick="openStatusModal({{ $appointment->id }}, 'completed')">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#completeModal">
                                 <i class="fas fa-check-double me-1"></i>Mark as Completed
                             </button>
                         @endif
 
                         @if(in_array($appointment->status, ['pending', 'confirmed']))
-                            <button type="button" class="btn btn-outline-danger" onclick="openStatusModal({{ $appointment->id }}, 'cancelled')">
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
                                 <i class="fas fa-times me-1"></i>Cancel Appointment
                             </button>
                         @endif
@@ -489,37 +489,84 @@
     </div>
 </div>
 
-<!-- Status Update Modal -->
-<div class="modal fade" id="statusModal" tabindex="-1">
+<!-- Confirm Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Update Appointment Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>Confirm Appointment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form id="statusForm" method="POST" action="{{ route('staff.appointments.update-status', $appointment->id) }}">
+            <form method="POST" action="{{ route('staff.appointments.update-status', $appointment->id) }}">
                 @csrf
                 @method('PATCH')
-                <input type="hidden" id="appointment_id_input" name="appointment_id" value="{{ $appointment->id }}">
+                <input type="hidden" name="status" value="confirmed">
                 <div class="modal-body">
+                    <p>Are you sure you want to confirm this appointment?</p>
                     <div class="mb-3">
-                        <label for="status_select" class="form-label">New Status</label>
-                        <select id="status_select" name="status" class="form-control" required>
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="staff_notes" class="form-label">Notes (Optional)</label>
-                        <textarea id="staff_notes" name="notes" class="form-control" rows="3" 
-                                  placeholder="Add any notes about this status change..."></textarea>
+                        <label for="confirm_notes" class="form-label">Notes (Optional)</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Add any notes..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="submitStatusBtn">Update Status</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-check me-1"></i>Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Complete Modal -->
+<div class="modal fade" id="completeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-check-double me-2"></i>Complete Appointment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ route('staff.appointments.update-status', $appointment->id) }}">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="status" value="completed">
+                <div class="modal-body">
+                    <p>Mark this appointment as completed?</p>
+                    <div class="mb-3">
+                        <label for="complete_notes" class="form-label">Notes (Optional)</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Add any notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check-double me-1"></i>Complete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-times-circle me-2"></i>Cancel Appointment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ route('staff.appointments.update-status', $appointment->id) }}">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="status" value="cancelled">
+                <div class="modal-body">
+                    <p class="text-danger"><strong>Are you sure you want to cancel this appointment?</strong></p>
+                    <div class="mb-3">
+                        <label for="cancel_notes" class="form-label">Reason for Cancellation</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Enter reason..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-times me-1"></i>Cancel Appointment</button>
                 </div>
             </form>
         </div>
@@ -529,125 +576,7 @@
 
 @push('scripts')
 <script>
-var currentAppointmentId = {{ $appointment->id }};
-var statusModal = null;
-
-// Initialize modal when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    var modalElement = document.getElementById('statusModal');
-    if (modalElement && typeof bootstrap !== 'undefined') {
-        statusModal = new bootstrap.Modal(modalElement);
-    }
-});
-
-// Global function to open status modal - called directly from onclick
-function openStatusModal(appointmentId, status) {
-    console.log('openStatusModal called:', appointmentId, status);
-
-    currentAppointmentId = appointmentId;
-
-    // Set the status dropdown
-    var statusSelect = document.getElementById('status_select');
-    if (statusSelect && status) {
-        statusSelect.value = status;
-    }
-
-    // Clear notes
-    var notesField = document.getElementById('staff_notes');
-    if (notesField) {
-        notesField.value = '';
-    }
-
-    // Update form action
-    var form = document.getElementById('statusForm');
-    if (form) {
-        form.action = '{{ url("staff/appointments") }}/' + appointmentId + '/status';
-    }
-
-    // Show modal
-    var modalElement = document.getElementById('statusModal');
-    if (modalElement && typeof bootstrap !== 'undefined') {
-        var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-        modal.show();
-    } else {
-        console.error('Bootstrap modal not available');
-        alert('Error: Modal not available. Please refresh the page.');
-    }
-}
-
-// Form submission handler
-document.addEventListener('DOMContentLoaded', function() {
-    var form = document.getElementById('statusForm');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            var status = document.getElementById('status_select').value;
-            var notes = document.getElementById('staff_notes').value;
-            var submitBtn = document.getElementById('submitStatusBtn');
-            var originalText = submitBtn.innerHTML;
-
-            // Disable button
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
-
-            // Send AJAX request
-            fetch('{{ url("staff/appointments") }}/' + currentAppointmentId + '/status', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    status: status,
-                    notes: notes
-                })
-            })
-            .then(function(response) {
-                return response.json();
-            })
-            .then(function(data) {
-                console.log('Response:', data);
-
-                // Hide modal
-                var modalElement = document.getElementById('statusModal');
-                if (modalElement && typeof bootstrap !== 'undefined') {
-                    var modal = bootstrap.Modal.getInstance(modalElement);
-                    if (modal) modal.hide();
-                }
-
-                if (data.success) {
-                    // Show success and reload
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: data.message || 'Appointment status updated successfully.',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(function() {
-                            location.reload();
-                        });
-                    } else {
-                        alert('Status updated successfully!');
-                        location.reload();
-                    }
-                } else {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalText;
-                    alert('Error: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(function(error) {
-                console.error('Fetch error:', error);
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-                alert('Error updating status. Please try again.');
-            });
-        });
-    }
-});
+// Simple script - modals use native Bootstrap data attributes
 
 // Auto-dismiss alerts after 5 seconds
 setTimeout(function() {

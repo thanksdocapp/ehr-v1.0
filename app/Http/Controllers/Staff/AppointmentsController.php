@@ -592,27 +592,22 @@ class AppointmentsController extends Controller
             $appointment = Appointment::findOrFail($id);
             $user = Auth::user();
 
-            // Handle both JSON and form data
-            $data = $request->all();
-            if ($request->isJson() || $request->wantsJson()) {
-                $data = $request->json()->all();
-            }
-
             $request->validate([
                 'status' => 'required|in:pending,confirmed,completed,cancelled',
                 'notes' => 'nullable|string'
             ]);
 
-            $newStatus = $data['status'] ?? $request->status;
+            $newStatus = $request->input('status');
             
             // Role-based restrictions
             if ($newStatus === 'completed' && $user->role !== 'doctor') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only doctors can mark appointments as completed.'
-                ], 403);
+                $message = 'Only doctors can mark appointments as completed.';
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $message], 403);
+                }
+                return redirect()->back()->with('error', $message);
             }
-            
+
             // Status transition validation
             $validTransitions = [
                 'pending' => ['confirmed', 'cancelled'],
@@ -620,37 +615,48 @@ class AppointmentsController extends Controller
                 'completed' => [], // Completed appointments cannot be changed
                 'cancelled' => [] // Cancelled appointments cannot be changed
             ];
-            
+
             if (!in_array($newStatus, $validTransitions[$appointment->status] ?? [])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Cannot change status from {$appointment->status} to {$newStatus}."
-                ], 400);
+                $message = "Cannot change status from {$appointment->status} to {$newStatus}.";
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $message], 400);
+                }
+                return redirect()->back()->with('error', $message);
             }
             
             // Update appointment
             $appointment->update(['status' => $newStatus]);
             
             // Add notes if provided
-            $notes = $data['notes'] ?? $request->notes;
+            $notes = $request->input('notes');
             if (!empty($notes)) {
                 $noteLog = "\n\n[STATUS UPDATE " . now()->format('Y-m-d H:i') . " by " . $user->name . "]: Status changed to {$newStatus}. Notes: " . $notes;
                 $appointment->update([
                     'notes' => ($appointment->notes ?? '') . $noteLog
                 ]);
             }
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Appointment status updated successfully.',
-                'status' => $newStatus
-            ]);
-            
+
+            // Handle both AJAX and form submissions
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Appointment status updated successfully.',
+                    'status' => $newStatus
+                ]);
+            }
+
+            return redirect()->route('staff.appointments.show', $id)
+                ->with('success', 'Appointment status updated to ' . ucfirst($newStatus) . '.');
+
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error updating appointment status. Please try again.'
-            ], 500);
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error updating appointment status. Please try again.'
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Error updating appointment status. Please try again.');
         }
     }
 
