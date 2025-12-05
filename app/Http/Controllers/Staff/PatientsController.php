@@ -446,8 +446,36 @@ class PatientsController extends Controller
         try {
             // Calculate age from DOB to determine if guardian ID is required
             $dateOfBirth = $request->date_of_birth ? Carbon::parse($request->date_of_birth) : null;
-            $age = $dateOfBirth ? $dateOfBirth->age : null;
-            $isUnder18 = $age !== null && $age < 18;
+            $age = null;
+            $isUnder18 = false;
+            
+            if ($dateOfBirth) {
+                // Check if date is not in the future
+                if ($dateOfBirth->isFuture()) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['date_of_birth' => 'Date of birth cannot be in the future.'])
+                        ->with('error', 'Please enter a valid date of birth.');
+                }
+                
+                // Check if date is reasonable (not more than 150 years ago)
+                $maxAge = 150;
+                if ($dateOfBirth->diffInYears(now()) > $maxAge) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['date_of_birth' => 'Date of birth seems incorrect. Please check the date.'])
+                        ->with('error', 'Please enter a valid date of birth.');
+                }
+                
+                $age = $dateOfBirth->age;
+                $isUnder18 = $age < 18;
+                
+                \Log::info('Patient age calculated', [
+                    'date_of_birth' => $dateOfBirth->toDateString(),
+                    'age' => $age,
+                    'is_under_18' => $isUnder18
+                ]);
+            }
             
             // Build validation rules
             $validationRules = [
@@ -455,7 +483,7 @@ class PatientsController extends Controller
                 'last_name' => 'required|string|max:255',
                 'email' => 'required|email|unique:patients',
                 'phone' => 'required|string|max:20',
-                'date_of_birth' => 'required|date',
+                'date_of_birth' => 'required|date|before_or_equal:today',
                 'gender' => 'required|in:male,female,other',
                 'patient_id' => 'nullable|string|max:255|unique:patients',
                 'blood_group' => 'nullable|string|max:10',

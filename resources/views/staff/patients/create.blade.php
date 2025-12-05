@@ -73,7 +73,14 @@
                                 <label for="date_of_birth" class="form-label fw-semibold">Date of Birth <span class="text-danger">*</span></label>
                                 <input type="date" name="date_of_birth" id="date_of_birth" 
                                        class="form-control @error('date_of_birth') is-invalid @enderror" 
-                                       value="{{ old('date_of_birth') }}" required>
+                                       value="{{ old('date_of_birth') }}" 
+                                       max="{{ date('Y-m-d') }}"
+                                       min="{{ date('Y-m-d', strtotime('-150 years')) }}"
+                                       required>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Maximum: Today | Minimum: 150 years ago
+                                </small>
                                 @error('date_of_birth')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -708,17 +715,61 @@ $(document).ready(function() {
         const age = Math.floor((today - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
         const guardianGroup = $('#guardian_id_document_group');
         const guardianInput = $('#guardian_id_document');
+        const dobField = $('#date_of_birth');
         
-        console.log('Calculated age:', age, 'years');
+        console.log('Calculated age:', age, 'years from DOB:', birthDateValue);
         
         if (age < 0) {
-            alert('⚠️ Birth date cannot be in the future.');
-            $('#date_of_birth').val('');
+            // Date is in the future
+            dobField.addClass('is-invalid');
+            const errorMsg = dobField.siblings('.invalid-feedback');
+            if (errorMsg.length === 0) {
+                dobField.after('<div class="invalid-feedback" style="display: block;">Birth date cannot be in the future.</div>');
+            } else {
+                errorMsg.text('Birth date cannot be in the future.').show();
+            }
+            
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Date',
+                    text: 'Birth date cannot be in the future. Please select a valid date.',
+                    confirmButtonColor: '#d33'
+                });
+            } else {
+                alert('⚠️ Birth date cannot be in the future. Please select a valid date.');
+            }
+            
+            dobField.val('');
             guardianGroup.slideUp();
             guardianInput.prop('required', false);
+            return;
         } else if (age > 150) {
-            alert('⚠️ Please check the birth date. Age seems too high.');
+            // Age too high
+            dobField.addClass('is-invalid');
+            const errorMsg = dobField.siblings('.invalid-feedback');
+            if (errorMsg.length === 0) {
+                dobField.after('<div class="invalid-feedback" style="display: block;">Please check the birth date. Age seems too high.</div>');
+            } else {
+                errorMsg.text('Please check the birth date. Age seems too high.').show();
+            }
+            
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Unusual Date',
+                    text: 'The date entered would make the patient over 150 years old. Please verify the date.',
+                    confirmButtonColor: '#f0ad4e'
+                });
+            } else {
+                alert('⚠️ Please check the birth date. Age seems too high.');
+            }
+            return;
         } else {
+            // Valid date - remove any error styling
+            dobField.removeClass('is-invalid');
+            dobField.siblings('.invalid-feedback').hide();
+        }
             // Show/hide guardian ID document field based on age
             if (age < 18) {
                 console.log('Patient is under 18 - showing guardian ID document field');
