@@ -170,9 +170,9 @@
                                 <label class="form-label fw-semibold">Calculated Age</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-calculator"></i></span>
-                                    <input type="text" id="calculated_age_display" 
-                                           class="form-control bg-light" 
-                                           value="Enter date of birth first" 
+                                    <input type="text" id="calculated_age_display"
+                                           class="form-control bg-light"
+                                           value="Enter date of birth first"
                                            readonly>
                                 </div>
                                 <small class="text-muted">
@@ -181,6 +181,81 @@
                                 </small>
                             </div>
                         </div>
+
+                        <!-- Inline Age Calculator - No jQuery dependency -->
+                        <script>
+                        (function() {
+                            function calcAge() {
+                                var dob = document.getElementById('date_of_birth');
+                                var ageDisp = document.getElementById('calculated_age_display');
+                                var guardianAlert = document.getElementById('guardian_required_alert');
+                                var guardianStar = document.getElementById('guardian_required_star');
+                                var guardianOptText = document.getElementById('guardian_optional_text');
+                                var guardianInput = document.getElementById('guardian_id_document');
+
+                                if (!dob || !ageDisp) return;
+
+                                var val = dob.value;
+                                if (!val || val.trim() === '') {
+                                    ageDisp.value = 'Enter date of birth first';
+                                    return;
+                                }
+
+                                var birthDate = new Date(val);
+                                if (isNaN(birthDate.getTime())) {
+                                    ageDisp.value = 'Invalid date';
+                                    return;
+                                }
+
+                                var today = new Date();
+                                var years = today.getFullYear() - birthDate.getFullYear();
+                                var months = today.getMonth() - birthDate.getMonth();
+
+                                if (months < 0) { years--; months += 12; }
+                                if (today.getDate() < birthDate.getDate()) {
+                                    months--;
+                                    if (months < 0) { years--; months += 12; }
+                                }
+
+                                if (years < 0) {
+                                    ageDisp.value = 'Invalid (future date)';
+                                    return;
+                                }
+
+                                ageDisp.value = years + ' years, ' + months + ' months';
+                                ageDisp.style.color = '#28a745';
+                                ageDisp.style.fontWeight = '600';
+
+                                // Toggle guardian requirement
+                                if (years < 18) {
+                                    if (guardianAlert) guardianAlert.style.display = 'flex';
+                                    if (guardianStar) guardianStar.style.display = 'inline';
+                                    if (guardianOptText) guardianOptText.style.display = 'none';
+                                    if (guardianInput) { guardianInput.required = true; guardianInput.style.borderColor = '#ffc107'; }
+                                } else {
+                                    if (guardianAlert) guardianAlert.style.display = 'none';
+                                    if (guardianStar) guardianStar.style.display = 'none';
+                                    if (guardianOptText) guardianOptText.style.display = 'inline';
+                                    if (guardianInput) { guardianInput.required = false; guardianInput.style.borderColor = ''; }
+                                }
+                            }
+
+                            // Attach events
+                            var dobField = document.getElementById('date_of_birth');
+                            if (dobField) {
+                                dobField.addEventListener('change', calcAge);
+                                dobField.addEventListener('input', calcAge);
+                                dobField.addEventListener('blur', calcAge);
+                            }
+
+                            // Run on load
+                            calcAge();
+                            setTimeout(calcAge, 100);
+                            setTimeout(calcAge, 500);
+                            setTimeout(calcAge, 1000);
+                            window.addEventListener('load', function() { setTimeout(calcAge, 100); });
+                        })();
+                        </script>
 
                         <!-- Guardian ID Document (Always visible in this card, required for Under 18) -->
                         <hr class="my-3">

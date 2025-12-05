@@ -222,6 +222,93 @@
                                     <small class="form-text text-muted">Auto-calculated: Years and months</small>
                                 </div>
 
+                                <!-- Inline Age Calculator - No jQuery dependency -->
+                                <script>
+                                (function() {
+                                    function calcAge() {
+                                        var dob = document.getElementById('date_of_birth');
+                                        var ageDisp = document.getElementById('calculated_age_display');
+                                        var guardianAlert = document.getElementById('guardian_required_alert');
+                                        var guardianStar = document.getElementById('guardian_required_star');
+                                        var guardianOptText = document.getElementById('guardian_optional_text');
+                                        var guardianInput = document.getElementById('guardian_id_document');
+
+                                        if (!dob || !ageDisp) return;
+
+                                        var val = dob.value;
+                                        if (!val || val.trim() === '') {
+                                            ageDisp.value = 'Enter date of birth first';
+                                            return;
+                                        }
+
+                                        // Handle dd-mm-yyyy format (admin form uses text input with mask)
+                                        var birthDate;
+                                        if (val.match(/^\d{2}-\d{2}-\d{4}$/)) {
+                                            var parts = val.split('-');
+                                            birthDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                                        } else if (val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                            birthDate = new Date(val);
+                                        } else {
+                                            ageDisp.value = 'Invalid date format';
+                                            return;
+                                        }
+
+                                        if (isNaN(birthDate.getTime())) {
+                                            ageDisp.value = 'Invalid date';
+                                            return;
+                                        }
+
+                                        var today = new Date();
+                                        var years = today.getFullYear() - birthDate.getFullYear();
+                                        var months = today.getMonth() - birthDate.getMonth();
+
+                                        if (months < 0) { years--; months += 12; }
+                                        if (today.getDate() < birthDate.getDate()) {
+                                            months--;
+                                            if (months < 0) { years--; months += 12; }
+                                        }
+
+                                        if (years < 0) {
+                                            ageDisp.value = 'Invalid (future date)';
+                                            return;
+                                        }
+
+                                        ageDisp.value = years + ' years, ' + months + ' months';
+                                        ageDisp.style.color = '#28a745';
+                                        ageDisp.style.fontWeight = '600';
+
+                                        // Toggle guardian requirement
+                                        if (years < 18) {
+                                            if (guardianAlert) guardianAlert.style.display = 'flex';
+                                            if (guardianStar) guardianStar.style.display = 'inline';
+                                            if (guardianOptText) guardianOptText.style.display = 'none';
+                                            if (guardianInput) { guardianInput.required = true; guardianInput.style.borderColor = '#ffc107'; }
+                                        } else {
+                                            if (guardianAlert) guardianAlert.style.display = 'none';
+                                            if (guardianStar) guardianStar.style.display = 'none';
+                                            if (guardianOptText) guardianOptText.style.display = 'inline';
+                                            if (guardianInput) { guardianInput.required = false; guardianInput.style.borderColor = ''; }
+                                        }
+                                    }
+
+                                    // Attach events
+                                    var dobField = document.getElementById('date_of_birth');
+                                    if (dobField) {
+                                        dobField.addEventListener('change', calcAge);
+                                        dobField.addEventListener('input', calcAge);
+                                        dobField.addEventListener('blur', calcAge);
+                                        dobField.addEventListener('keyup', calcAge);
+                                    }
+
+                                    // Run on load
+                                    calcAge();
+                                    setTimeout(calcAge, 100);
+                                    setTimeout(calcAge, 500);
+                                    setTimeout(calcAge, 1000);
+                                    window.addEventListener('load', function() { setTimeout(calcAge, 100); });
+                                })();
+                                </script>
+
                                 <div class="form-group">
                                     <label for="gender" class="form-label">
                                         <i class="fas fa-venus-mars me-1"></i>Gender *
