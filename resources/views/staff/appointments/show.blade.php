@@ -70,6 +70,27 @@
                         </div>
                     </div>
                     
+                    @if($appointment->service)
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted"><i class="fas fa-concierge-bell me-1"></i>Service Name</label>
+                                <div class="fw-bold">{{ $appointment->service->name }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted"><i class="fas fa-pound-sign me-1"></i>Service Fee</label>
+                                <div class="fw-bold text-success">&pound;{{ number_format($appointment->service->default_price, 2) }}</div>
+                            </div>
+                        </div>
+                        @if($appointment->service->description)
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <label class="form-label text-muted"><i class="fas fa-info-circle me-1"></i>Service Description</label>
+                                    <div class="fw-bold">{{ $appointment->service->description }}</div>
+                                </div>
+                            </div>
+                        @endif
+                    @endif
+
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label text-muted"><i class="fas fa-calendar me-1"></i>Date</label>

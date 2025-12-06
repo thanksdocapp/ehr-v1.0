@@ -4,7 +4,14 @@
       "Bash(git push)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(php artisan migrate:*)",
+      "Bash(php artisan tinker --execute=\"DB::statement(''DROP TABLE IF EXISTS doctor_availability_exceptions'');\")",
+      "Bash(php artisan:*)",
+      "Bash(php artisan route:list:*)",
+      "Bash(findstr:*)",
+      "Bash(php -r:*)"
     ],
     "deny": [],
     "ask": []

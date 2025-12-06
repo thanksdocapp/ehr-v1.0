@@ -74,17 +74,19 @@ class BookingService extends Model
 
     public function isAvailableForDoctor($doctorId)
     {
+        // Check if doctor has a specific price entry for this service (regardless of is_active)
         $doctorPrice = $this->doctorPrices()
             ->where('doctor_id', $doctorId)
-            ->where('is_active', true)
             ->first();
 
         // If doctor has a custom price entry, use its is_active status
+        // This allows explicitly disabling a service for specific doctors
         if ($doctorPrice) {
-            return $doctorPrice->is_active;
+            return (bool) $doctorPrice->is_active;
         }
 
-        // Otherwise, use global service is_active status
+        // If no specific entry exists, the service is available for all doctors
+        // when the global service is active
         return $this->is_active;
     }
 }

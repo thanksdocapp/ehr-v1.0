@@ -266,6 +266,55 @@ class DocumentTemplatesController extends Controller
     }
 
     /**
+     * Activate the template.
+     */
+    public function activate(DocumentTemplate $documentTemplate)
+    {
+        $this->authorize('deactivate', $documentTemplate);
+
+        $documentTemplate->update([
+            'is_active' => true,
+            'updated_by' => Auth::id(),
+        ]);
+
+        return back()->with('success', 'Template activated successfully.');
+    }
+
+    /**
+     * Clone a template.
+     */
+    public function clone(DocumentTemplate $documentTemplate)
+    {
+        $this->authorize('create', DocumentTemplate::class);
+
+        // Generate unique slug for clone
+        $baseSlug = $documentTemplate->slug . '-copy';
+        $slug = $baseSlug;
+        $counter = 1;
+        while (DocumentTemplate::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        // Create the clone
+        $clone = DocumentTemplate::create([
+            'name' => $documentTemplate->name . ' (Copy)',
+            'type' => $documentTemplate->type,
+            'slug' => $slug,
+            'builder_config' => $documentTemplate->builder_config,
+            'render_mode' => $documentTemplate->render_mode,
+            'content' => $documentTemplate->content,
+            'schema' => $documentTemplate->schema,
+            'is_active' => false, // Clone is inactive by default
+            'created_by' => Auth::id(),
+        ]);
+
+        return redirect()
+            ->route('admin.document-templates.edit', $clone)
+            ->with('success', 'Template cloned successfully. You can now edit the copy.');
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(DocumentTemplate $documentTemplate)

@@ -24,6 +24,10 @@ use Illuminate\Support\Facades\Auth;
 // Dynamic CSS Route (must be accessible without middleware)
 Route::get('/css/dynamic-theme.css', [\App\Http\Controllers\ThemeController::class, 'dynamicCss'])->name('theme.css');
 
+// Document tracking routes (no auth required for tracking pixels)
+Route::get('/track/document/open/{token}', [\App\Http\Controllers\DocumentTrackingController::class, 'trackOpen'])->name('document.track.open');
+Route::get('/track/document/click/{token}', [\App\Http\Controllers\DocumentTrackingController::class, 'trackClick'])->name('document.track.click');
+
 // Root Route Handler - Patient Booking Page
 Route::get('/', function () {
     if (!File::exists(storage_path('installed'))) {
@@ -333,7 +337,17 @@ Route::group(['middleware' => 'installed'], function () {
             Route::post('/{bookingService}/toggle-status', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'toggleStatus'])->name('toggle-status');
             Route::delete('/{bookingService}', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'destroy'])->name('destroy');
         });
-        
+
+        // Doctor Schedule / Availability Management
+        Route::prefix('schedule')->name('schedule.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Staff\ScheduleController::class, 'index'])->name('index');
+            Route::put('/availability', [\App\Http\Controllers\Staff\ScheduleController::class, 'updateAvailability'])->name('update-availability');
+            Route::post('/blocked-date', [\App\Http\Controllers\Staff\ScheduleController::class, 'addBlockedDate'])->name('add-blocked-date');
+            Route::delete('/blocked-date/{id}', [\App\Http\Controllers\Staff\ScheduleController::class, 'removeBlockedDate'])->name('remove-blocked-date');
+            Route::get('/slots', [\App\Http\Controllers\Staff\ScheduleController::class, 'getAvailableSlotsForDate'])->name('slots');
+            Route::get('/blocked-dates', [\App\Http\Controllers\Staff\ScheduleController::class, 'getBlockedDates'])->name('blocked-dates');
+        });
+
         // Staff Notifications
         Route::prefix('notifications')->name('notifications.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Staff\NotificationController::class, 'index'])->name('index');
@@ -592,7 +606,10 @@ Route::group(['middleware' => 'installed'], function () {
         // Document Templates
         Route::resource('document-templates', \App\Http\Controllers\Admin\DocumentTemplatesController::class);
         Route::post('/document-templates/{documentTemplate}/deactivate', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'deactivate'])->name('document-templates.deactivate');
-        
+        Route::post('/document-templates/{documentTemplate}/activate', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'activate'])->name('document-templates.activate');
+        Route::get('/document-templates/{documentTemplate}/clone', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'clone'])->name('document-templates.clone');
+        Route::get('/document-templates/{template}/schema', [\App\Http\Controllers\Admin\PatientDocumentsController::class, 'getTemplateSchema'])->name('document-templates.schema');
+
         // Patient Documents
         Route::get('/patients/{patient}/documents', [\App\Http\Controllers\Admin\PatientDocumentsController::class, 'index'])->name('patients.documents.index');
         Route::get('/patients/{patient}/documents/create', [\App\Http\Controllers\Admin\PatientDocumentsController::class, 'create'])->name('patients.documents.create');
@@ -604,6 +621,8 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/patients/{patient}/documents/{document}/void', [\App\Http\Controllers\Admin\PatientDocumentsController::class, 'void'])->name('patients.documents.void');
         Route::get('/patients/{patient}/documents/{document}/download', [\App\Http\Controllers\Admin\PatientDocumentsController::class, 'download'])->name('patients.documents.download');
         Route::post('/patients/{patient}/documents/bulk-action', [\App\Http\Controllers\Admin\PatientDocumentsController::class, 'bulkAction'])->name('patients.documents.bulk-action');
+        Route::post('/patients/{patient}/documents/{document}/sign', [\App\Http\Controllers\Admin\PatientDocumentsController::class, 'sign'])->name('patients.documents.sign');
+        Route::post('/patients/{patient}/documents/{document}/request-signature', [\App\Http\Controllers\Admin\PatientDocumentsController::class, 'requestSignature'])->name('patients.documents.request-signature');
         
         // Document Deliveries
         Route::get('/patients/{patient}/documents/{document}/deliveries', [\App\Http\Controllers\Admin\DocumentDeliveriesController::class, 'index'])->name('patients.documents.deliveries.index');

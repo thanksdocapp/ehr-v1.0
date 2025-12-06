@@ -432,6 +432,24 @@ class PatientDocumentsController extends Controller
     }
 
     /**
+     * Get template schema for form filling (AJAX endpoint).
+     */
+    public function getTemplateSchema(DocumentTemplate $template)
+    {
+        $schema = $this->templateRenderer->buildFormSchema($template);
+
+        return response()->json([
+            'success' => true,
+            'template' => [
+                'id' => $template->id,
+                'name' => $template->name,
+                'type' => $template->type,
+            ],
+            'schema' => $schema,
+        ]);
+    }
+
+    /**
      * Get branding information for logos/signatures.
      */
     protected function getBranding($user): array
@@ -453,5 +471,118 @@ class PatientDocumentsController extends Controller
         }
 
         return $branding;
+    }
+
+    /**
+     * Collect patient signature on the document.
+     */
+    public function sign(Patient $patient, PatientDocument $document, Request $request)
+    {
+        $this->authorize('view', $document);
+
+        if (!$document->isFinal()) {
+            return back()->with('error', 'Only finalized documents can be signed.');
+        }
+
+        if ($document->signed_by_patient) {
+            return back()->with('error', 'This document has already been signed.');
+        }
+
+        $request->validate([
+            'signature' => 'required|string',
+        ]);
+
+        // Store signature (base64 image data)
+        $signatureData = $request->input('signature');
+
+        // Optionally save the signature image to storage
+        if (Str::startsWith($signatureData, 'data:image')) {
+            $signaturePath = 'signatures/' . date('Y/m') . '/signature_' . $document->id . '_' . time() . '.png';
+
+            // Extract base64 data
+            $imageData = explode(',', $signatureData)[1] ?? '';
+            $decodedImage = base64_decode($imageData);
+
+            if ($decodedImage) {
+                Storage::disk('private')->put($signaturePath, $decodedImage);
+            }
+        }
+
+        // Update document with signature info
+        $document->update([
+            'signed_by_patient' => true,
+            'signed_at' => now(),
+            'updated_by' => Auth::id(),
+        ]);
+
+        return back()->with('success', 'Document signed successfully by ' . $patient->full_name . '.');
+    }
+
+    /**
+     * Request patient signature via email.
+     */
+    public function requestSignature(Patient $patient, PatientDocument $document, Request $request)
+    {
+        $this->authorize('send', $document);
+
+        if (!$document->isFinal()) {
+            return back()->with('error', 'Only finalized documents can be sent for signature.');
+        }
+
+        if ($document->signed_by_patient) {
+            return back()->with('error', 'This document has already been signed.');
+        }
+
+        $request->validate([
+            'email' => 'required|email',
+            'message' => 'nullable|string|max:1000',
+        ]);
+
+        // Generate a secure signature token
+        $signatureToken = Str::random(64);
+
+        // Store token in document meta or a separate table
+        // For simplicity, we'll use a cache-based approach
+        \Cache::put(
+            'document_signature_' . $document->id,
+            [
+                'token' => $signatureToken,
+                'patient_id' => $patient->id,
+                'expires_at' => now()->addDays(7),
+            ],
+            now()->addDays(7)
+        );
+
+        // Send email with signature link
+        try {
+            $signatureUrl = route('public.document.sign', [
+                'document' => $document->id,
+                'token' => $signatureToken,
+            ]);
+
+            // Use the email service to send
+            $emailService = app(\App\Services\HospitalEmailNotificationService::class);
+
+            $emailData = [
+                'patient_name' => $patient->full_name,
+                'document_title' => $document->title,
+                'signature_url' => $signatureUrl,
+                'custom_message' => $request->input('message'),
+                'hospital_name' => \App\Models\Setting::get('hospital_name', config('app.name')),
+                'expires_in' => '7 days',
+            ];
+
+            // Send using a template or direct mail
+            \Mail::to($request->input('email'))->send(new \App\Mail\DocumentSignatureRequest($document, $patient, $signatureUrl, $request->input('message')));
+
+            return back()->with('success', 'Signature request sent successfully to ' . $request->input('email') . '.');
+        } catch (\Exception $e) {
+            \Log::error('Failed to send signature request email', [
+                'document_id' => $document->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to send signature request: ' . $e->getMessage());
+        }
     }
 }

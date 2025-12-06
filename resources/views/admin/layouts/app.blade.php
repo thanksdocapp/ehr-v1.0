@@ -360,17 +360,26 @@ use Illuminate\Support\Facades\Storage;
             transform: scale(1.1);
         }
 
-        .notification-badge {
-            font-size: 0.65rem !important;
-            min-width: 18px !important;
-            height: 18px !important;
-            display: none !important;
-            align-items: center !important;
-            justify-content: center !important;
-            font-weight: 600 !important;
-            z-index: 10 !important;
-            border: 2px solid white !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+        .notification-badge-count {
+            font-size: 0.65rem;
+            min-width: 18px;
+            height: 18px;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            z-index: 10;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            animation: pulse-badge 2s infinite;
+        }
+
+        .notification-badge-count.show {
+            display: flex !important;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
         }
 
         .admin-profile {
@@ -2158,7 +2167,7 @@ use Illuminate\Support\Facades\Storage;
                 <div class="header-notifications position-relative me-3">
                     <button class="notification-btn btn border-0 p-2 position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-bell fs-5 text-secondary"></i>
-                        <span id="adminNotificationCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.65rem; min-width: 18px; height: 18px; display: none !important;">
+                        <span id="adminNotificationCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge-count" style="display: none; font-size: 0.65rem; min-width: 18px; height: 18px; line-height: 18px; padding: 0 6px;">
                             0
                         </span>
                     </button>
@@ -2944,26 +2953,16 @@ use Illuminate\Support\Facades\Storage;
         function updateAdminNotificationBadge(count) {
             const badge = $('#adminNotificationCount');
             console.log('🏷️ Badge update - Count:', count, 'Element:', badge.length);
-            
+
             if (count > 0) {
                 const displayCount = count > 99 ? '99+' : count;
                 badge.text(displayCount)
-                     .removeClass('d-none')
-                     .css({
-                         'display': 'flex !important',
-                         'visibility': 'visible',
-                         'opacity': '1'
-                     })
-                     .show();
+                     .addClass('show')
+                     .css('display', 'flex');
                 console.log('📍 Badge shown with count:', displayCount);
             } else {
-                badge.addClass('d-none')
-                     .css({
-                         'display': 'none !important',
-                         'visibility': 'hidden',
-                         'opacity': '0'
-                     })
-                     .hide();
+                badge.removeClass('show')
+                     .css('display', 'none');
                 console.log('🔸 Badge hidden (count is 0)');
             }
         }

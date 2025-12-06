@@ -93,7 +93,7 @@ class PublicBookingController extends Controller
         // If department_id is provided but no doctor_id, show doctor selection
         if ($request->department_id && !$request->doctor_id) {
             $department = Department::findOrFail($request->department_id);
-            $doctors = Doctor::where('department_id', $department->id)
+            $doctors = Doctor::byDepartment($department->id)
                 ->active()
                 ->get()
                 ->filter(function($doctor) use ($service) {

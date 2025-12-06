@@ -104,6 +104,62 @@ class DocumentDelivery extends Model
     }
 
     /**
+     * Mark delivery as opened.
+     */
+    public function markAsOpened(): void
+    {
+        if (!$this->opened_at) {
+            $this->update([
+                'opened_at' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * Check if delivery was opened.
+     */
+    public function isOpened(): bool
+    {
+        return $this->opened_at !== null;
+    }
+
+    /**
+     * Generate tracking token for this delivery.
+     */
+    public function getTrackingToken(): string
+    {
+        return base64_encode($this->id . ':' . md5($this->id . $this->created_at . config('app.key')));
+    }
+
+    /**
+     * Get delivery by tracking token.
+     */
+    public static function findByTrackingToken(string $token): ?self
+    {
+        $decoded = base64_decode($token);
+        $parts = explode(':', $decoded);
+
+        if (count($parts) !== 2) {
+            return null;
+        }
+
+        $id = $parts[0];
+        $delivery = self::find($id);
+
+        if (!$delivery) {
+            return null;
+        }
+
+        // Verify token
+        $expectedHash = md5($delivery->id . $delivery->created_at . config('app.key'));
+        if ($parts[1] !== $expectedHash) {
+            return null;
+        }
+
+        return $delivery;
+    }
+
+    /**
      * Scope to filter by status.
      */
     public function scopeOfStatus($query, string $status)

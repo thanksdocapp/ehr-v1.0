@@ -449,55 +449,6 @@
             </div>
         </div>
 
-        <!-- Theme Colors Section -->
-        <div class="form-section">
-            <div class="form-section-header">
-                <h4 class="mb-0"><i class="fas fa-palette me-2"></i>Theme Colors</h4>
-                <small class="opacity-75">Customize your application's primary and secondary colors</small>
-            </div>
-            <div class="form-section-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="primary_color" class="form-label">
-                                <i class="fas fa-paint-brush me-1"></i>Primary Color *
-                            </label>
-                            <input type="color" class="form-control" id="primary_color" name="primary_color"
-                                   value="{{ old('primary_color', $settings['primary_color'] ?? '#007bff') }}" required>
-                            <div class="form-help">Main color used throughout the application</div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="secondary_color" class="form-label">
-                                <i class="fas fa-brush me-1"></i>Secondary Color *
-                            </label>
-                            <input type="color" class="form-control" id="secondary_color" name="secondary_color"
-                                   value="{{ old('secondary_color', $settings['secondary_color'] ?? '#6c757d') }}" required>
-                            <div class="form-help">Accent color for secondary elements</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="alert alert-info mt-3">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Note:</strong> Color changes will be applied to the frontend website and future patient portal. The admin panel maintains its own fixed color scheme.
-                </div>
-                
-                <div class="alert alert-warning mt-2">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Frontend Only:</strong> These colors will only affect:
-                    <ul class="mb-0 mt-2">
-                        <li>Public website pages</li>
-                        <li>Patient portal (when implemented)</li>
-                        <li>Email templates and notifications</li>
-                        <li class="text-muted"><em>Admin panel colors remain unchanged</em></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
         <!-- Security & Performance Section -->
         <div class="form-section">
             <div class="form-section-header">
@@ -785,7 +736,7 @@ $(document).ready(function() {
             $('#app_name').focus();
             return false;
         }
-        
+
         // Show loading message for settings save
         showLoading('Saving general settings...');
     });

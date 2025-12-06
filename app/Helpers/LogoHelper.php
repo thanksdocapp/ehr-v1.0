@@ -92,7 +92,9 @@ if (!function_exists('getPrimaryColor')) {
      */
     function getPrimaryColor($fallback = null)
     {
-        $primaryColor = \App\Models\Setting::get('primary_color');
+        // Get primary color from appearance settings group
+        $appearanceSettings = \App\Models\Setting::getGroup('appearance');
+        $primaryColor = $appearanceSettings['primary_color'] ?? null;
         
         return $primaryColor ?: ($fallback ?: '#007bff');
     }
@@ -107,7 +109,9 @@ if (!function_exists('getSecondaryColor')) {
      */
     function getSecondaryColor($fallback = null)
     {
-        $secondaryColor = \App\Models\Setting::get('secondary_color');
+        // Get secondary color from appearance settings group
+        $appearanceSettings = \App\Models\Setting::getGroup('appearance');
+        $secondaryColor = $appearanceSettings['secondary_color'] ?? null;
         
         return $secondaryColor ?: ($fallback ?: '#6c757d');
     }

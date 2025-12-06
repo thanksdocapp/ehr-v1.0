@@ -52,7 +52,8 @@ class Patient extends Authenticatable
         'created_by_doctor_id',
         'assigned_doctor_id',
         'email_verified_at',
-        'remember_token'
+        'remember_token',
+        'notification_preferences',
     ];
 
     protected $hidden = [
@@ -69,6 +70,7 @@ class Patient extends Authenticatable
         'consent_share_with_gp' => 'boolean',
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'notification_preferences' => 'array',
     ];
 
     // Relationships

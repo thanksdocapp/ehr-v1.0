@@ -43,12 +43,13 @@ class SettingsController extends Controller
             'total_departments' => Department::count(),
             'system_uptime' => $this->getSystemUptime()
         ];
-        
+
         return view('admin.settings.general', compact('settings', 'statistics'));
     }
 
     public function updateGeneral(Request $request)
     {
+        try {
             $validator = Validator::make($request->all(), [
                 'app_name' => 'required|string|max:255',
                 'app_description' => 'nullable|string|max:500',
@@ -66,13 +67,11 @@ class SettingsController extends Controller
                 'logo_light' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
                 'logo_dark' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
                 'favicon' => 'nullable|image|mimes:png,jpg,jpeg,ico|max:1024',
-                'primary_color' => 'nullable|string|regex:/^#[a-fA-F0-9]{3,6}$/',
-                'secondary_color' => 'nullable|string|regex:/^#[a-fA-F0-9]{3,6}$/',
             ]);
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
+            if ($validator->fails()) {
+                return back()->withErrors($validator)->withInput();
+            }
 
             $generalSettings = [
                 'app_name' => $request->app_name,
@@ -92,35 +91,38 @@ class SettingsController extends Controller
                 'debug_mode' => $request->debug_mode ?? '0',
                 'cache_enabled' => $request->cache_enabled ?? '1',
                 'session_timeout' => $request->session_timeout ?? '120',
-                'primary_color' => $request->primary_color ?? '#007bff',
-                'secondary_color' => $request->secondary_color ?? '#6c757d',
             ];
 
             foreach ($generalSettings as $key => $value) {
                 $type = in_array($key, ['maintenance_mode', 'registration_enabled', 'kyc_required', 'enable_frontend', 'patient_login_enabled', 'public_booking_enabled', 'show_powered_by']) ? 'boolean' : 'string';
                 Setting::set($key, $value, $type, 'general');
             }
-        
-        // Also sync hospital name with app name in SiteSetting for frontend compatibility
-        \App\Models\SiteSetting::set('hospital_name', $request->app_name, 'Hospital Name');
-        \App\Models\SiteSetting::set('app_name', $request->app_name, 'Application Name');
-        \App\Models\SiteSetting::set('app_version', $request->app_version ?? '1.0', 'Application Version');
-        \App\Models\SiteSetting::set('company_name', $request->company_name ?? '', 'Company Name');
 
-        // Handle logo uploads
-        $this->handleLogoUploads($request);
+            // Also sync hospital name with app name in SiteSetting for frontend compatibility
+            \App\Models\SiteSetting::set('hospital_name', $request->app_name, 'Hospital Name');
+            \App\Models\SiteSetting::set('app_name', $request->app_name, 'Application Name');
+            \App\Models\SiteSetting::set('app_version', $request->app_version ?? '1.0', 'Application Version');
+            \App\Models\SiteSetting::set('company_name', $request->company_name ?? '', 'Company Name');
 
-        Setting::clearCache();
-        CurrencyHelper::clearCache();
-        
-        // Clear theme cache by touching the CSS route (optional optimization)
-        try {
-            \Illuminate\Support\Facades\Cache::forget('dynamic_theme_css');
+            // Handle logo uploads
+            $this->handleLogoUploads($request);
+
+            Setting::clearCache();
+            CurrencyHelper::clearCache();
+
+            // Clear theme cache by touching the CSS route (optional optimization)
+            try {
+                \Illuminate\Support\Facades\Cache::forget('dynamic_theme_css');
+            } catch (\Exception $e) {
+                // Ignore cache clearing errors
+            }
+
+            return back()->with('success', 'General settings updated successfully');
+
         } catch (\Exception $e) {
-            // Ignore cache clearing errors
+            \Log::error('Error updating general settings: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update settings: ' . $e->getMessage())->withInput();
         }
-        
-        return back()->with('success', 'General settings updated successfully');
     }
     
     /**
@@ -738,15 +740,45 @@ class SettingsController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'primary_color' => 'required|string|regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/',
-                'secondary_color' => 'required|string|regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/',
-                'accent_color' => 'nullable|string|regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/',
-                'text_color' => 'nullable|string|regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/',
-                'background_color' => 'nullable|string|regex:/^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/',
+                'primary_color' => 'required|string|max:7',
+                'secondary_color' => 'required|string|max:7',
+                'accent_color' => 'nullable|string|max:7',
+                'text_color' => 'nullable|string|max:7',
+                'background_color' => 'nullable|string|max:7',
+                'sidebar_color' => 'nullable|string|max:7',
+                'success_color' => 'nullable|string|max:7',
+                'danger_color' => 'nullable|string|max:7',
+                'warning_color' => 'nullable|string|max:7',
+                'info_color' => 'nullable|string|max:7',
                 'theme_mode' => 'required|string|in:default,custom,dark,light',
                 'border_radius' => 'nullable|integer|min:0|max:50',
                 'font_family' => 'nullable|string|max:100',
+                'button_height' => 'nullable|integer|min:28|max:60',
+                'button_hover_color' => 'nullable|string|max:7',
+                'button_secondary_hover_color' => 'nullable|string|max:7',
+                'button_success_hover_color' => 'nullable|string|max:7',
+                'button_danger_hover_color' => 'nullable|string|max:7',
+                'button_warning_hover_color' => 'nullable|string|max:7',
+                'button_info_hover_color' => 'nullable|string|max:7',
             ]);
+
+            // Additional validation for hex color format using a helper function
+            $colorFields = ['primary_color', 'secondary_color', 'accent_color', 'text_color',
+                           'background_color', 'sidebar_color', 'success_color', 'danger_color',
+                           'warning_color', 'info_color', 'button_hover_color', 'button_secondary_hover_color',
+                           'button_success_hover_color', 'button_danger_hover_color',
+                           'button_warning_hover_color', 'button_info_hover_color'];
+
+            foreach ($colorFields as $field) {
+                $value = $request->input($field);
+                if ($value) {
+                    // Ensure the value is a string and starts with #
+                    $value = trim((string) $value);
+                    if (!$this->isValidHexColor($value)) {
+                        return back()->withErrors([$field => 'Invalid hex color format. Use format #RRGGBB (e.g., #FF0000)'])->withInput();
+                    }
+                }
+            }
 
             if ($validator->fails()) {
                 return back()->withErrors($validator)->withInput();
@@ -758,20 +790,39 @@ class SettingsController extends Controller
                 'accent_color' => $request->accent_color ?? '#FF6B35',
                 'text_color' => $request->text_color ?? '#2C3E50',
                 'background_color' => $request->background_color ?? '#FFFFFF',
+                'sidebar_color' => $request->sidebar_color ?? '#2C3E50',
+                'success_color' => $request->success_color ?? '#28A745',
+                'danger_color' => $request->danger_color ?? '#DC3545',
+                'warning_color' => $request->warning_color ?? '#FFC107',
+                'info_color' => $request->info_color ?? '#17A2B8',
                 'theme_mode' => $request->theme_mode,
                 'border_radius' => $request->border_radius ?? 15,
                 'font_family' => $request->font_family ?? 'Lato',
+                'button_height' => $request->button_height ?? 38,
+                'button_hover_color' => $request->button_hover_color ?? '#0056b3',
+                'button_secondary_hover_color' => $request->button_secondary_hover_color ?? '#545b62',
+                'button_success_hover_color' => $request->button_success_hover_color ?? '#1e7e34',
+                'button_danger_hover_color' => $request->button_danger_hover_color ?? '#c82333',
+                'button_warning_hover_color' => $request->button_warning_hover_color ?? '#d39e00',
+                'button_info_hover_color' => $request->button_info_hover_color ?? '#138496',
             ];
 
             foreach ($appearanceSettings as $key => $value) {
-                $type = in_array($key, ['border_radius']) ? 'integer' : 'string';
+                $type = in_array($key, ['border_radius', 'button_height']) ? 'integer' : 'string';
                 Setting::set($key, $value, $type, 'appearance');
             }
 
             Setting::clearCache();
-            
+
+            // Clear any cached theme CSS
+            try {
+                \Illuminate\Support\Facades\Cache::forget('dynamic_theme_css');
+            } catch (\Exception $e) {
+                // Ignore cache clearing errors
+            }
+
             return back()->with('success', 'Theme settings updated successfully!');
-            
+
         } catch (\Exception $e) {
             \Log::error('Error updating appearance settings: ' . $e->getMessage());
             return back()->with('error', 'Failed to update theme settings: ' . $e->getMessage());
@@ -2080,13 +2131,44 @@ class SettingsController extends Controller
                     $table->enum('status', ['completed', 'failed', 'in_progress'])->default('completed');
                     $table->timestamps();
                 });
-                
+
                 \Log::info('Created backup_logs table');
             }
         } catch (\Exception $e) {
             \Log::error('Error creating backup_logs table: ' . $e->getMessage());
             // Continue without the table - we'll just skip logging
         }
+    }
+
+    /**
+     * Validate hex color format without using regex in Laravel validator
+     * This avoids the "No ending delimiter" error with pipe characters
+     *
+     * @param string $color The color value to validate
+     * @return bool True if valid hex color format
+     */
+    private function isValidHexColor($color)
+    {
+        // Must be a string
+        if (!is_string($color)) {
+            return false;
+        }
+
+        // Must start with #
+        if (strlen($color) < 1 || $color[0] !== '#') {
+            return false;
+        }
+
+        // Get hex part (without #)
+        $hex = substr($color, 1);
+
+        // Must be 6 characters for full hex color (#RRGGBB)
+        if (strlen($hex) !== 6) {
+            return false;
+        }
+
+        // All characters must be valid hex digits
+        return ctype_xdigit($hex);
     }
 }
 

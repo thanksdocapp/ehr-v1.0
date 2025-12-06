@@ -23,36 +23,39 @@
     
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-    
+
+    <!-- Dynamic Theme CSS - Uses admin appearance settings -->
+    <link rel="stylesheet" href="{{ route('theme.css') }}?v={{ time() }}">
+
     <!-- Custom Doctor Styles -->
     <style>
         :root {
-            /* Medical Professional Color Scheme */
-            --doctor-primary: #0d6efd;
-            --doctor-primary-dark: #0a58ca;
-            --doctor-secondary: #6c757d;
-            --doctor-success: #198754;
-            --doctor-warning: #ffc107;
-            --doctor-danger: #dc3545;
-            --doctor-info: #0dcaf0;
+            /* Medical Professional Color Scheme - Uses dynamic theme colors */
+            --doctor-primary: var(--primary-color, #0d6efd);
+            --doctor-primary-dark: var(--button-hover-primary, #0a58ca);
+            --doctor-secondary: var(--secondary-color, #6c757d);
+            --doctor-success: var(--success-color, #198754);
+            --doctor-warning: var(--warning-color, #ffc107);
+            --doctor-danger: var(--danger-color, #dc3545);
+            --doctor-info: var(--info-color, #0dcaf0);
             --doctor-light: #f8f9fa;
             --doctor-dark: #212529;
-            
-            /* Medical Theme Colors */
-            --medical-blue: #1e88e5;
-            --medical-green: #43a047;
-            --medical-teal: #00acc1;
-            --medical-red: #e53935;
-            --medical-orange: #fb8c00;
-            
+
+            /* Medical Theme Colors - Uses dynamic colors */
+            --medical-blue: var(--primary-color, #1e88e5);
+            --medical-green: var(--success-color, #43a047);
+            --medical-teal: var(--info-color, #00acc1);
+            --medical-red: var(--danger-color, #e53935);
+            --medical-orange: var(--warning-color, #fb8c00);
+
             /* UI Colors */
-            --bg-primary: #ffffff;
+            --bg-primary: var(--background-color, #ffffff);
             --bg-secondary: #f8f9fa;
             --bg-sidebar: #ffffff;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
+            --text-primary: var(--text-color, #212529);
+            --text-secondary: var(--secondary-color, #6c757d);
             --border-color: #e2e8f0;
-            
+
             /* Layout */
             --sidebar-width: 280px;
             --header-height: 75px;
@@ -1194,6 +1197,11 @@
                             $route = route('staff.doctor-services.index');
                             $isActive = request()->routeIs('staff.doctor-services.*');
                             break;
+                        case 'schedule':
+                        case 'availability':
+                            $route = route('staff.schedule.index');
+                            $isActive = request()->routeIs('staff.schedule.*');
+                            break;
                         default:
                             // Try to use route if provided, otherwise skip
                             if (isset($item['route'])) {
@@ -1290,17 +1298,25 @@
                 <div class="position-relative">
                     <button class="doctor-header-action" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-bell"></i>
-                        <span id="doctorNotificationCount" class="badge d-none">0</span>
+                        <span id="doctorNotificationCount" class="badge rounded-pill bg-danger position-absolute" style="display: none; top: -2px; right: -2px; font-size: 0.6rem; min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px;">0</span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="width: 380px; max-height: 450px; overflow-y: auto; border-radius: 16px; margin-top: 0.5rem;">
-                        <div class="p-3 border-bottom">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
                             <h6 class="mb-0 fw-bold"><i class="fas fa-bell me-2"></i>Notifications</h6>
+                            <a href="javascript:void(0)" class="text-muted small" onclick="markAllNotificationsRead()">Mark all read</a>
                         </div>
                         <div id="doctorNotificationList" class="p-2">
                             <div class="text-center py-4">
-                                <i class="fas fa-bell-slash text-muted mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
-                                <p class="mb-0 small text-muted">No new notifications</p>
+                                <div class="spinner-border spinner-border-sm text-primary mb-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mb-0 small text-muted">Loading notifications...</p>
                             </div>
+                        </div>
+                        <div class="p-2 border-top text-center">
+                            <a href="{{ route('staff.notifications.index') }}" class="text-primary small fw-semibold">
+                                <i class="fas fa-eye me-1"></i>View All Notifications
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -1320,6 +1336,7 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="border-radius: 16px; margin-top: 0.5rem;">
                         <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item" href="{{ route('change-password') }}"><i class="fas fa-key me-2"></i>Change Password</a></li>
+                        <li><a class="dropdown-item" href="{{ route('staff.schedule.index') }}"><i class="fas fa-calendar-alt me-2"></i>My Schedule</a></li>
                         <li><a class="dropdown-item" href="{{ route('staff.doctor-services.index') }}"><i class="fas fa-briefcase-medical me-2"></i>Services</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
@@ -1507,8 +1524,11 @@
 
             // Dark Mode Toggle - Disabled
 
-            // Load notifications (if you have a notification system)
-            // You can integrate your notification loading logic here
+            // Load notifications for doctor
+            loadDoctorNotifications();
+
+            // Refresh notifications every 30 seconds
+            setInterval(loadDoctorNotifications, 30000);
             
             // Initialize Quick Links Sortable
             const quickLinksContainer = document.getElementById('quickLinksSortable');
@@ -1559,6 +1579,98 @@
             }
         });
     </script>
+
+    <!-- Doctor Notification Functions -->
+    <script>
+    function loadDoctorNotifications() {
+        fetch('{{ route("staff.notifications.api.staff") }}')
+            .then(response => response.json())
+            .then(data => {
+                updateDoctorNotificationBadge(data.total_count);
+                updateDoctorNotificationList(data.notifications);
+            })
+            .catch(error => {
+                console.error('Failed to load notifications:', error);
+            });
+    }
+
+    function updateDoctorNotificationBadge(count) {
+        const badge = document.getElementById('doctorNotificationCount');
+        if (!badge) return;
+
+        if (count > 0) {
+            const displayCount = count > 99 ? '99+' : count;
+            badge.textContent = displayCount;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function updateDoctorNotificationList(notifications) {
+        const container = document.getElementById('doctorNotificationList');
+        if (!container) return;
+
+        if (!notifications || notifications.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-bell-slash text-muted mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
+                    <p class="mb-0 small text-muted">No new notifications</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        notifications.forEach(notification => {
+            const iconClass = notification.icon || 'fas fa-bell';
+            const typeColor = notification.type === 'warning' ? '#ffc107' :
+                            notification.type === 'info' ? '#17a2b8' :
+                            notification.type === 'success' ? '#28a745' : '#007bff';
+
+            html += `
+                <a href="${notification.url || '#'}" class="d-flex align-items-start p-2 rounded text-decoration-none notification-item mb-1" style="background: rgba(0,0,0,0.02);">
+                    <div class="flex-shrink-0 me-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: ${typeColor}15;">
+                            <i class="${iconClass}" style="color: ${typeColor};"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 min-width-0">
+                        <div class="fw-semibold text-dark small">${notification.title}</div>
+                        <div class="text-muted small text-truncate">${notification.message}</div>
+                        <div class="text-muted small mt-1">
+                            <i class="fas fa-clock me-1"></i>${notification.created_at}
+                            ${notification.count ? `<span class="badge bg-${notification.type === 'warning' ? 'warning text-dark' : notification.type === 'success' ? 'success' : 'primary'} ms-2">${notification.count}</span>` : ''}
+                        </div>
+                    </div>
+                </a>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function markAllNotificationsRead() {
+        fetch('{{ route("staff.notifications.markAllAsRead") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadDoctorNotifications();
+            }
+        })
+        .catch(error => {
+            console.error('Failed to mark notifications as read:', error);
+        });
+    }
+    </script>
+
     <style>
     .sortable-ghost {
         opacity: 0.4;
@@ -1576,6 +1688,9 @@
     @keyframes fadeInOut {
         0%, 100% { opacity: 0; }
         10%, 90% { opacity: 1; }
+    }
+    .notification-item:hover {
+        background: rgba(0,0,0,0.05) !important;
     }
     </style>
 </body>

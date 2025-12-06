@@ -301,6 +301,164 @@
                     </div>
                 </div>
 
+                <!-- Notification Preferences -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-bell me-2"></i>
+                            Notification Preferences
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @php
+                            $notifPrefs = $patient->notification_preferences ?? [];
+                        @endphp
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Choose how you'd like to receive notifications about appointments, lab results, and other updates.
+                        </div>
+
+                        <!-- Channel Preferences -->
+                        <h6 class="mb-3">Notification Channels</h6>
+                        <div class="row mb-4">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="notification_preferences[email_enabled]" value="0">
+                                    <input class="form-check-input" type="checkbox" id="pref_email"
+                                           name="notification_preferences[email_enabled]" value="1"
+                                           {{ old('notification_preferences.email_enabled', $notifPrefs['email_enabled'] ?? true) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="pref_email">
+                                        <i class="fas fa-envelope me-1"></i> Email Notifications
+                                    </label>
+                                </div>
+                                <small class="text-muted">Receive notifications via email</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="notification_preferences[sms_enabled]" value="0">
+                                    <input class="form-check-input" type="checkbox" id="pref_sms"
+                                           name="notification_preferences[sms_enabled]" value="1"
+                                           {{ old('notification_preferences.sms_enabled', $notifPrefs['sms_enabled'] ?? false) ? 'checked' : '' }}
+                                           {{ empty($patient->phone) ? 'disabled' : '' }}>
+                                    <label class="form-check-label" for="pref_sms">
+                                        <i class="fas fa-sms me-1"></i> SMS Notifications
+                                    </label>
+                                </div>
+                                <small class="text-muted">{{ empty($patient->phone) ? 'Add phone number to enable' : 'Receive text messages' }}</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="notification_preferences[push_enabled]" value="0">
+                                    <input class="form-check-input" type="checkbox" id="pref_push"
+                                           name="notification_preferences[push_enabled]" value="1"
+                                           {{ old('notification_preferences.push_enabled', $notifPrefs['push_enabled'] ?? true) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="pref_push">
+                                        <i class="fas fa-mobile-alt me-1"></i> Push Notifications
+                                    </label>
+                                </div>
+                                <small class="text-muted">Browser and mobile push alerts</small>
+                            </div>
+                        </div>
+
+                        <!-- Notification Types -->
+                        <h6 class="mb-3">Notification Types</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="notification_preferences[appointment_reminders]" value="0">
+                                    <input class="form-check-input" type="checkbox" id="pref_appointments"
+                                           name="notification_preferences[appointment_reminders]" value="1"
+                                           {{ old('notification_preferences.appointment_reminders', $notifPrefs['appointment_reminders'] ?? true) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="pref_appointments">
+                                        <i class="fas fa-calendar-check me-1"></i> Appointment Reminders
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="notification_preferences[lab_results]" value="0">
+                                    <input class="form-check-input" type="checkbox" id="pref_lab_results"
+                                           name="notification_preferences[lab_results]" value="1"
+                                           {{ old('notification_preferences.lab_results', $notifPrefs['lab_results'] ?? true) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="pref_lab_results">
+                                        <i class="fas fa-flask me-1"></i> Lab Results Ready
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="notification_preferences[prescription_updates]" value="0">
+                                    <input class="form-check-input" type="checkbox" id="pref_prescriptions"
+                                           name="notification_preferences[prescription_updates]" value="1"
+                                           {{ old('notification_preferences.prescription_updates', $notifPrefs['prescription_updates'] ?? true) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="pref_prescriptions">
+                                        <i class="fas fa-pills me-1"></i> Prescription Updates
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="notification_preferences[billing_alerts]" value="0">
+                                    <input class="form-check-input" type="checkbox" id="pref_billing"
+                                           name="notification_preferences[billing_alerts]" value="1"
+                                           {{ old('notification_preferences.billing_alerts', $notifPrefs['billing_alerts'] ?? true) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="pref_billing">
+                                        <i class="fas fa-file-invoice-dollar me-1"></i> Billing Alerts
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="notification_preferences[health_tips]" value="0">
+                                    <input class="form-check-input" type="checkbox" id="pref_health_tips"
+                                           name="notification_preferences[health_tips]" value="1"
+                                           {{ old('notification_preferences.health_tips', $notifPrefs['health_tips'] ?? false) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="pref_health_tips">
+                                        <i class="fas fa-heartbeat me-1"></i> Health Tips & Updates
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="notification_preferences[promotional]" value="0">
+                                    <input class="form-check-input" type="checkbox" id="pref_promotional"
+                                           name="notification_preferences[promotional]" value="1"
+                                           {{ old('notification_preferences.promotional', $notifPrefs['promotional'] ?? false) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="pref_promotional">
+                                        <i class="fas fa-bullhorn me-1"></i> Promotional Messages
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quiet Hours -->
+                        <h6 class="mb-3 mt-3">Quiet Hours (Do Not Disturb)</h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="notification_preferences[quiet_hours_enabled]" value="0">
+                                    <input class="form-check-input" type="checkbox" id="pref_quiet_hours"
+                                           name="notification_preferences[quiet_hours_enabled]" value="1"
+                                           {{ old('notification_preferences.quiet_hours_enabled', $notifPrefs['quiet_hours_enabled'] ?? false) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="pref_quiet_hours">Enable Quiet Hours</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="quiet_start" class="form-label">From</label>
+                                <input type="time" class="form-control" id="quiet_start"
+                                       name="notification_preferences[quiet_hours_start]"
+                                       value="{{ old('notification_preferences.quiet_hours_start', $notifPrefs['quiet_hours_start'] ?? '22:00') }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="quiet_end" class="form-label">To</label>
+                                <input type="time" class="form-control" id="quiet_end"
+                                       name="notification_preferences[quiet_hours_end]"
+                                       value="{{ old('notification_preferences.quiet_hours_end', $notifPrefs['quiet_hours_end'] ?? '08:00') }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Change Password -->
                 <div class="card mb-4">
                     <div class="card-header">

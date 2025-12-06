@@ -124,11 +124,15 @@ class DocumentDeliveriesController extends Controller
         $clinicName = config('app.name', 'Clinic');
         $subject = "New document from {$clinicName}: {$document->title}";
 
+        // Generate tracking token for email open tracking
+        $trackingToken = $delivery->getTrackingToken();
+
         $emailBody = view('emails.documents.send', [
             'document' => $document,
             'patient' => $patient,
             'recipientName' => $recipientName,
             'clinicName' => $clinicName,
+            'trackingToken' => $trackingToken,
         ])->render();
 
         // Configure SMTP settings from database before sending

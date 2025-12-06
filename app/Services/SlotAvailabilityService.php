@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\BookingService;
+use App\Models\DoctorAvailabilityException;
 use Carbon\Carbon;
 
 class SlotAvailabilityService
@@ -21,6 +22,11 @@ class SlotAvailabilityService
     {
         $doctor = Doctor::findOrFail($doctorId);
         $dateObj = Carbon::parse($date);
+
+        // Check if date is blocked by doctor
+        if ($this->isDateBlocked($doctorId, $dateObj)) {
+            return []; // Doctor has blocked this date
+        }
 
         // Get service duration (default 30 minutes if no service)
         $duration = 30;
@@ -49,7 +55,7 @@ class SlotAvailabilityService
             ->whereIn('status', ['pending', 'confirmed', 'rescheduled'])
             ->get();
 
-        // Get blocked times
+        // Get blocked times (breaks + partial day blocks)
         $blockedTimes = $this->getBlockedTimes($doctor, $dateObj);
 
         // Generate time slots
@@ -77,6 +83,36 @@ class SlotAvailabilityService
     }
 
     /**
+     * Check if a specific date is blocked by the doctor.
+     *
+     * @param int $doctorId
+     * @param Carbon $date
+     * @return bool
+     */
+    public function isDateBlocked($doctorId, $date)
+    {
+        return DoctorAvailabilityException::where('doctor_id', $doctorId)
+            ->whereDate('exception_date', $date)
+            ->where('type', 'blocked')
+            ->where('is_all_day', true)
+            ->exists();
+    }
+
+    /**
+     * Get blocked date exception for a specific date (if any).
+     *
+     * @param int $doctorId
+     * @param Carbon $date
+     * @return DoctorAvailabilityException|null
+     */
+    public function getBlockedException($doctorId, $date)
+    {
+        return DoctorAvailabilityException::where('doctor_id', $doctorId)
+            ->whereDate('exception_date', $date)
+            ->first();
+    }
+
+    /**
      * Get working hours for a doctor on a specific day.
      *
      * @param Doctor $doctor
@@ -95,13 +131,31 @@ class SlotAvailabilityService
                     'end' => $dayAvailability['end'] ?? '17:00'
                 ];
             }
+            // If explicitly set to not available
+            if (isset($dayAvailability['available']) && !$dayAvailability['available']) {
+                return [
+                    'available' => false,
+                    'start' => null,
+                    'end' => null
+                ];
+            }
         }
 
-        // Default working hours if not set
+        // Default working hours if not set (Monday-Friday)
+        $weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        if (in_array($dayName, $weekdays)) {
+            return [
+                'available' => true,
+                'start' => '09:00',
+                'end' => '17:00'
+            ];
+        }
+
+        // Weekend - not available by default
         return [
-            'available' => true,
-            'start' => '09:00',
-            'end' => '17:00'
+            'available' => false,
+            'start' => null,
+            'end' => null
         ];
     }
 
@@ -122,12 +176,27 @@ class SlotAvailabilityService
             $dayAvailability = $doctor->availability[$dayName];
             if (isset($dayAvailability['breaks']) && is_array($dayAvailability['breaks'])) {
                 foreach ($dayAvailability['breaks'] as $break) {
-                    $blocked[] = [
-                        'start' => $break['start'] ?? null,
-                        'end' => $break['end'] ?? null
-                    ];
+                    if (!empty($break['start']) && !empty($break['end'])) {
+                        $blocked[] = [
+                            'start' => $break['start'],
+                            'end' => $break['end']
+                        ];
+                    }
                 }
             }
+        }
+
+        // Check for partial day blocks from exceptions
+        $exception = DoctorAvailabilityException::where('doctor_id', $doctor->id)
+            ->whereDate('exception_date', $date)
+            ->where('is_all_day', false)
+            ->first();
+
+        if ($exception && $exception->start_time && $exception->end_time) {
+            $blocked[] = [
+                'start' => $exception->start_time->format('H:i'),
+                'end' => $exception->end_time->format('H:i')
+            ];
         }
 
         return $blocked;
@@ -174,5 +243,20 @@ class SlotAvailabilityService
 
         return true;
     }
-}
 
+    /**
+     * Get blocked dates for a doctor within a date range.
+     *
+     * @param int $doctorId
+     * @param string $startDate
+     * @param string $endDate
+     * @return \Illuminate\Support\Collection
+     */
+    public function getBlockedDatesInRange($doctorId, $startDate, $endDate)
+    {
+        return DoctorAvailabilityException::where('doctor_id', $doctorId)
+            ->whereBetween('exception_date', [$startDate, $endDate])
+            ->where('type', 'blocked')
+            ->get();
+    }
+}

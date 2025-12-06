@@ -23,17 +23,21 @@
     
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-    
+
+    <!-- Dynamic Theme CSS - Uses admin appearance settings -->
+    <link rel="stylesheet" href="{{ route('theme.css') }}?v={{ time() }}">
+
     <!-- Custom Styles -->
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-dark: #3730a3;
-            --secondary: #64748b;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #06b6d4;
+            /* Uses dynamic theme colors with fallbacks */
+            --primary: var(--primary-color, #4f46e5);
+            --primary-dark: var(--button-hover-primary, #3730a3);
+            --secondary: var(--secondary-color, #64748b);
+            --success: var(--success-color, #22c55e);
+            --warning: var(--warning-color, #f59e0b);
+            --danger: var(--danger-color, #ef4444);
+            --info: var(--info-color, #06b6d4);
             --light: #f8fafc;
             --dark: #0f172a;
             --sidebar-width: 280px;

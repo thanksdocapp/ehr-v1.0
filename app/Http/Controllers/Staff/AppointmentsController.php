@@ -258,6 +258,7 @@ class AppointmentsController extends Controller
             },
             'doctor',
             'department',
+            'service',
             'medicalRecord.prescriptions'
         ]);
         

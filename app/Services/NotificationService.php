@@ -11,16 +11,25 @@ use App\Models\LabReport;
 use App\Models\UserNotification;
 use App\Models\PatientNotification;
 use App\Services\EmailNotificationService;
+use App\Services\SmsNotificationService;
+use App\Services\PushNotificationService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 
 class NotificationService
 {
     protected $emailNotificationService;
+    protected $smsNotificationService;
+    protected $pushNotificationService;
 
-    public function __construct(EmailNotificationService $emailNotificationService)
-    {
+    public function __construct(
+        EmailNotificationService $emailNotificationService,
+        SmsNotificationService $smsNotificationService = null,
+        PushNotificationService $pushNotificationService = null
+    ) {
         $this->emailNotificationService = $emailNotificationService;
+        $this->smsNotificationService = $smsNotificationService ?? app(SmsNotificationService::class);
+        $this->pushNotificationService = $pushNotificationService ?? app(PushNotificationService::class);
     }
 
     /**
@@ -52,6 +61,12 @@ class NotificationService
                 ]));
             }
         }
+
+        // Send SMS notification if patient has SMS preferences enabled
+        $this->sendAppointmentSms($appointment, $eventType);
+
+        // Send Push notification
+        $this->sendAppointmentPush($appointment, $eventType);
 
         Log::info("Appointment notification sent for event: {$eventType}", ['appointment_id' => $appointment->id]);
     }
@@ -119,6 +134,14 @@ class NotificationService
             'related_doctor_id' => $prescription->doctor_id,
         ]));
 
+        // Send SMS notification for prescription ready
+        if ($eventType === 'dispensed' && $this->patientHasSmsEnabled($prescription->patient)) {
+            $this->smsNotificationService->sendPrescriptionReady($prescription->patient);
+        }
+
+        // Send Push notification
+        $this->sendPrescriptionPush($prescription, $eventType);
+
         Log::info("Prescription notification sent for event: {$eventType}", ['prescription_id' => $prescription->id]);
     }
 
@@ -143,6 +166,14 @@ class NotificationService
             'related_patient_id' => $labReport->patient_id,
             'related_doctor_id' => $labReport->doctor_id,
         ]);
+
+        // Send SMS notification for lab results
+        if ($this->patientHasSmsEnabled($labReport->patient)) {
+            $this->smsNotificationService->sendLabResultReady($labReport->patient, $labReport->test_name);
+        }
+
+        // Send Push notification
+        $this->pushNotificationService->sendLabResultNotification($labReport->patient, $labReport->test_name);
 
         Log::info('Lab result patient notification sent', ['lab_report_id' => $labReport->id]);
     }
@@ -460,10 +491,226 @@ class NotificationService
 
         return [
             'patient' => array_merge($patientMessages[$eventType] ?? $patientMessages['created'], [
-                'type' => PatientNotification::TYPE_APPOINTMENT, 
+                'type' => PatientNotification::TYPE_APPOINTMENT,
                 'category' => PatientNotification::CATEGORY_APPOINTMENT,
                 'data' => ['appointment_id' => $appointment->id, 'status' => $appointment->status]]),
             'doctor' => $doctorMessages[$eventType] ?? $doctorMessages['created']
         ];
+    }
+
+    /**
+     * Check if patient has SMS notifications enabled.
+     *
+     * @param Patient $patient
+     * @return bool
+     */
+    protected function patientHasSmsEnabled($patient): bool
+    {
+        // Check patient notification preferences
+        $preferences = $patient->notification_preferences ?? [];
+
+        // Default to true if not explicitly set to false
+        return ($preferences['sms_enabled'] ?? config('notifications.sms.enabled_by_default', false))
+            && !empty($patient->phone);
+    }
+
+    /**
+     * Check if patient has Push notifications enabled.
+     *
+     * @param Patient $patient
+     * @return bool
+     */
+    protected function patientHasPushEnabled($patient): bool
+    {
+        $preferences = $patient->notification_preferences ?? [];
+        return $preferences['push_enabled'] ?? config('notifications.push.enabled_by_default', true);
+    }
+
+    /**
+     * Check if user has SMS notifications enabled.
+     *
+     * @param User $user
+     * @return bool
+     */
+    protected function userHasSmsEnabled($user): bool
+    {
+        $preferences = $user->notification_preferences ?? [];
+        return ($preferences['sms_enabled'] ?? false) && !empty($user->phone);
+    }
+
+    /**
+     * Check if user has Push notifications enabled.
+     *
+     * @param User $user
+     * @return bool
+     */
+    protected function userHasPushEnabled($user): bool
+    {
+        $preferences = $user->notification_preferences ?? [];
+        return $preferences['push_enabled'] ?? true;
+    }
+
+    /**
+     * Send SMS notification for appointment events.
+     *
+     * @param Appointment $appointment
+     * @param string $eventType
+     * @return void
+     */
+    protected function sendAppointmentSms(Appointment $appointment, string $eventType): void
+    {
+        try {
+            $patient = $appointment->patient;
+
+            if (!$this->patientHasSmsEnabled($patient)) {
+                return;
+            }
+
+            switch ($eventType) {
+                case 'created':
+                case 'confirmed':
+                    $this->smsNotificationService->sendAppointmentConfirmation($appointment);
+                    break;
+                case 'reminder':
+                    $this->smsNotificationService->sendAppointmentReminder($appointment);
+                    break;
+                case 'cancelled':
+                    $doctorName = $appointment->doctor
+                        ? $appointment->doctor->first_name . ' ' . $appointment->doctor->last_name
+                        : 'your doctor';
+                    $message = "Your appointment with Dr. {$doctorName} has been cancelled. Please contact us to reschedule.";
+                    $this->smsNotificationService->sendToPatient($patient, $message);
+                    break;
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send appointment SMS', [
+                'appointment_id' => $appointment->id,
+                'event_type' => $eventType,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send Push notification for appointment events.
+     *
+     * @param Appointment $appointment
+     * @param string $eventType
+     * @return void
+     */
+    protected function sendAppointmentPush(Appointment $appointment, string $eventType): void
+    {
+        try {
+            $patient = $appointment->patient;
+
+            if (!$this->patientHasPushEnabled($patient)) {
+                return;
+            }
+
+            $doctorName = $appointment->doctor
+                ? 'Dr. ' . $appointment->doctor->first_name . ' ' . $appointment->doctor->last_name
+                : 'your doctor';
+            $appointmentDateTime = $appointment->appointment_date->format('M j') . ' at ' . $appointment->appointment_time;
+
+            $titles = [
+                'created' => 'Appointment Booked',
+                'confirmed' => 'Appointment Confirmed',
+                'cancelled' => 'Appointment Cancelled',
+                'reminder' => 'Appointment Reminder',
+            ];
+
+            $messages = [
+                'created' => "Your appointment with {$doctorName} on {$appointmentDateTime} has been booked.",
+                'confirmed' => "Your appointment with {$doctorName} on {$appointmentDateTime} is confirmed.",
+                'cancelled' => "Your appointment with {$doctorName} on {$appointmentDateTime} has been cancelled.",
+                'reminder' => "Reminder: You have an appointment with {$doctorName} on {$appointmentDateTime}.",
+            ];
+
+            $this->pushNotificationService->sendAppointmentNotification(
+                $patient,
+                $titles[$eventType] ?? 'Appointment Update',
+                $messages[$eventType] ?? "Update for your appointment with {$doctorName}.",
+                ['appointment_id' => $appointment->id, 'type' => $eventType]
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to send appointment push notification', [
+                'appointment_id' => $appointment->id,
+                'event_type' => $eventType,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send Push notification for prescription events.
+     *
+     * @param Prescription $prescription
+     * @param string $eventType
+     * @return void
+     */
+    protected function sendPrescriptionPush(Prescription $prescription, string $eventType): void
+    {
+        try {
+            $patient = $prescription->patient;
+
+            if (!$this->patientHasPushEnabled($patient)) {
+                return;
+            }
+
+            $titles = [
+                'created' => 'New Prescription',
+                'dispensed' => 'Prescription Ready',
+                'refill_due' => 'Refill Reminder',
+            ];
+
+            $messages = [
+                'created' => 'A new prescription has been created for you.',
+                'dispensed' => 'Your prescription is ready for pickup.',
+                'refill_due' => 'Your prescription is due for a refill.',
+            ];
+
+            if (isset($titles[$eventType])) {
+                $this->pushNotificationService->sendToPatient(
+                    $patient,
+                    $titles[$eventType],
+                    $messages[$eventType],
+                    ['prescription_id' => $prescription->id, 'type' => $eventType]
+                );
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send prescription push notification', [
+                'prescription_id' => $prescription->id,
+                'event_type' => $eventType,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send billing SMS notification.
+     *
+     * @param Billing $billing
+     * @param string $eventType
+     * @return void
+     */
+    protected function sendBillingSms(Billing $billing, string $eventType): void
+    {
+        try {
+            $patient = $billing->patient;
+
+            if (!$this->patientHasSmsEnabled($patient)) {
+                return;
+            }
+
+            if ($eventType === 'payment_due') {
+                $this->smsNotificationService->sendPaymentReminder($patient, $billing->balance);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send billing SMS', [
+                'billing_id' => $billing->id,
+                'event_type' => $eventType,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

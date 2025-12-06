@@ -61,6 +61,8 @@ class ProfileController extends Controller
             'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
             'current_password' => ['nullable', 'required_with:new_password', 'string'],
             'new_password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'notification_preferences' => ['nullable', 'array'],
+            'notification_preferences.*' => ['nullable'],
         ]);
 
         if ($validator->fails()) {
@@ -109,6 +111,7 @@ class ProfileController extends Controller
             'insurance_number' => $request->insurance_number,
             'allergies' => $request->allergies ? explode(',', $request->allergies) : null,
             'medical_conditions' => $request->medical_conditions ? explode(',', $request->medical_conditions) : null,
+            'notification_preferences' => $this->processNotificationPreferences($request->notification_preferences ?? []),
         ];
 
         // Include photo in update if it was uploaded
@@ -139,5 +142,46 @@ class ProfileController extends Controller
         }
 
         return back()->with('success', 'Profile photo deleted successfully!');
+    }
+
+    /**
+     * Process notification preferences from form input.
+     *
+     * @param array $preferences
+     * @return array
+     */
+    protected function processNotificationPreferences(array $preferences): array
+    {
+        $processed = [];
+
+        // Boolean preferences (convert string "0"/"1" to boolean)
+        $booleanKeys = [
+            'email_enabled',
+            'sms_enabled',
+            'push_enabled',
+            'appointment_reminders',
+            'lab_results',
+            'prescription_updates',
+            'billing_alerts',
+            'health_tips',
+            'promotional',
+            'quiet_hours_enabled',
+        ];
+
+        foreach ($booleanKeys as $key) {
+            if (isset($preferences[$key])) {
+                $processed[$key] = (bool) $preferences[$key];
+            }
+        }
+
+        // Time preferences
+        if (isset($preferences['quiet_hours_start'])) {
+            $processed['quiet_hours_start'] = $preferences['quiet_hours_start'];
+        }
+        if (isset($preferences['quiet_hours_end'])) {
+            $processed['quiet_hours_end'] = $preferences['quiet_hours_end'];
+        }
+
+        return $processed;
     }
 }

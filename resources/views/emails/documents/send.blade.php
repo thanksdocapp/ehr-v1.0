@@ -34,6 +34,11 @@
         <p>This is an automated message from {{ $clinicName }}.</p>
         <p>Please do not reply to this email directly.</p>
     </div>
+
+    {{-- Email open tracking pixel --}}
+    @if(isset($trackingToken) && $trackingToken)
+    <img src="{{ route('document.track.open', $trackingToken) }}" width="1" height="1" style="display:none;visibility:hidden;width:1px;height:1px;" alt="" />
+    @endif
 </body>
 </html>
 

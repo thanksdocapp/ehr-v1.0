@@ -83,6 +83,23 @@ class Kernel extends ConsoleKernel
                      // Skip if command doesn't exist
                      return !class_exists('App\Console\Commands\SendMedicalRecordFollowUps');
                  });
+
+        // Notification Digest Emails
+        // Send daily digest at 6 AM
+        $schedule->command('notifications:digest daily')
+                 ->dailyAt('06:00')
+                 ->timezone(config('app.timezone', 'UTC'))
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->appendOutputTo(storage_path('logs/notification-digest.log'));
+
+        // Send weekly digest on Mondays at 7 AM
+        $schedule->command('notifications:digest weekly')
+                 ->weeklyOn(1, '07:00')
+                 ->timezone(config('app.timezone', 'UTC'))
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->appendOutputTo(storage_path('logs/notification-digest.log'));
     }
 
     /**

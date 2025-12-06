@@ -247,13 +247,25 @@ class PublicBookingService
                 }
             }
 
-            // Send confirmation email
+            // Send confirmation email to patient
             try {
                 $this->emailService->sendAppointmentConfirmation($appointment);
             } catch (\Exception $e) {
                 // Log error but don't fail the booking
                 \Log::error('Failed to send appointment confirmation email', [
                     'appointment_id' => $appointment->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            // Send notification email to doctor
+            try {
+                $this->emailService->notifyDoctorNewAppointment($appointment, $doctor);
+            } catch (\Exception $e) {
+                // Log error but don't fail the booking
+                \Log::error('Failed to send doctor notification email', [
+                    'appointment_id' => $appointment->id,
+                    'doctor_id' => $doctor->id,
                     'error' => $e->getMessage()
                 ]);
             }
