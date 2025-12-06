@@ -23,22 +23,18 @@ use Illuminate\Support\Facades\Storage;
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
+    <!-- Dynamic Theme CSS - Uses admin appearance settings -->
+    <link rel="stylesheet" href="{{ route('theme.css') }}?v={{ time() }}">
+
     <style>
         :root {
-            --primary-color: #1a1a2e;
-            --secondary-color: #16213e;
-            --accent-color: #0f3460;
+            /* Admin layout specific variables - inherits from dynamic theme CSS */
             --gold-color: #e94560;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-            --info-color: #17a2b8;
             --light-bg: #f8f9fa;
             --dark-text: #2c3e50;
             --sidebar-width: 280px;
             --header-height: 70px;
-            --gradient-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             --gradient-card: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 

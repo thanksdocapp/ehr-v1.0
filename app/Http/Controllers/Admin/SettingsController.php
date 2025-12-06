@@ -812,11 +812,16 @@ class SettingsController extends Controller
                 Setting::set($key, $value, $type, 'appearance');
             }
 
+            // Store a theme version hash for cache busting
+            Setting::set('theme_version', time(), 'integer', 'appearance');
+
             Setting::clearCache();
 
             // Clear any cached theme CSS
             try {
                 \Illuminate\Support\Facades\Cache::forget('dynamic_theme_css');
+                \Illuminate\Support\Facades\Cache::forget('settings_group_appearance');
+                \Illuminate\Support\Facades\Artisan::call('cache:clear');
             } catch (\Exception $e) {
                 // Ignore cache clearing errors
             }

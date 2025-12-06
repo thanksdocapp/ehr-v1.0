@@ -18,8 +18,9 @@ class ThemeController extends Controller
             if (!\Illuminate\Support\Facades\File::exists(storage_path('installed'))) {
                 $colors = $this->getDefaultColors();
             } else {
-                // Get current theme colors from appearance settings group
-                $appearanceSettings = Setting::getGroup('appearance');
+                // Get current theme colors directly from database (bypass cache for reliability)
+                $appearanceSettings = Setting::where('group', 'appearance')->get()->pluck('value', 'key')->toArray();
+
                 $colors = [
                     'primary' => $appearanceSettings['primary_color'] ?? '#007bff',
                     'secondary' => $appearanceSettings['secondary_color'] ?? '#6c757d',
@@ -44,21 +45,25 @@ class ThemeController extends Controller
             // Generate CSS content with dynamic colors
             $css = $this->generateDynamicCss($colors);
 
-            // Return CSS response with proper headers
+            // Return CSS response with proper headers - prevent any caching
             return response($css, 200, [
-                'Content-Type' => 'text/css',
-                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Content-Type' => 'text/css; charset=UTF-8',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate, max-age=0',
                 'Pragma' => 'no-cache',
-                'Expires' => '0',
+                'Expires' => 'Thu, 01 Jan 1970 00:00:00 GMT',
+                'X-Content-Type-Options' => 'nosniff',
             ]);
         } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('ThemeController error: ' . $e->getMessage());
+
             // Return default CSS if there's any error
             $css = $this->generateDynamicCss($this->getDefaultColors());
             return response($css, 200, [
-                'Content-Type' => 'text/css',
-                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Content-Type' => 'text/css; charset=UTF-8',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate, max-age=0',
                 'Pragma' => 'no-cache',
-                'Expires' => '0',
+                'Expires' => 'Thu, 01 Jan 1970 00:00:00 GMT',
             ]);
         }
     }
