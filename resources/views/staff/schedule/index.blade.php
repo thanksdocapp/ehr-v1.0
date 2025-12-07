@@ -266,26 +266,26 @@
                     <div class="row g-3">
                         <div class="col-6">
                             <div class="text-center p-3 bg-primary bg-opacity-10 rounded-3">
-                                <div class="fs-3 fw-bold text-primary">{{ $workingDays }}</div>
-                                <small class="text-muted">Working Days</small>
+                                <div class="fs-3 fw-bold" style="color: #0d6efd !important;">{{ $workingDays }}</div>
+                                <small class="text-dark">Working Days</small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="text-center p-3 bg-success bg-opacity-10 rounded-3">
-                                <div class="fs-3 fw-bold text-success">{{ $totalHours }}</div>
-                                <small class="text-muted">Hours/Week</small>
+                                <div class="fs-3 fw-bold" style="color: #198754 !important;">{{ $totalHours }}</div>
+                                <small class="text-dark">Hours/Week</small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="text-center p-3 bg-warning bg-opacity-10 rounded-3">
-                                <div class="fs-3 fw-bold text-warning">{{ $blockedDates->count() }}</div>
-                                <small class="text-muted">Blocked Dates</small>
+                                <div class="fs-3 fw-bold" style="color: #b45309 !important;">{{ $blockedDates->count() }}</div>
+                                <small class="text-dark">Blocked Dates</small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="text-center p-3 bg-info bg-opacity-10 rounded-3">
-                                <div class="fs-3 fw-bold text-info">{{ $upcomingAppointments->sum() }}</div>
-                                <small class="text-muted">Upcoming Appts</small>
+                                <div class="fs-3 fw-bold" style="color: #0891b2 !important;">{{ $upcomingAppointments->sum() }}</div>
+                                <small class="text-dark">Upcoming Appts</small>
                             </div>
                         </div>
                     </div>

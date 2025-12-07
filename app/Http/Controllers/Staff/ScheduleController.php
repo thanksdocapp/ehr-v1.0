@@ -29,11 +29,20 @@ class ScheduleController extends Controller
         $availability = $doctor->availability ?? $this->getDefaultAvailability();
 
         // Get upcoming blocked dates
-        $blockedDates = DoctorAvailabilityException::forDoctor($doctor->id)
-            ->upcoming()
-            ->blocked()
-            ->orderBy('exception_date')
-            ->get();
+        try {
+            $blockedDates = DoctorAvailabilityException::forDoctor($doctor->id)
+                ->upcoming()
+                ->blocked()
+                ->orderBy('exception_date')
+                ->get();
+        } catch (\Exception $e) {
+            // Log the error and use empty collection as fallback
+            \Log::error('Error fetching blocked dates: ' . $e->getMessage(), [
+                'doctor_id' => $doctor->id,
+                'exception' => $e
+            ]);
+            $blockedDates = collect([]);
+        }
 
         // Get upcoming appointments count per day (next 7 days)
         $upcomingAppointments = Appointment::where('doctor_id', $doctor->id)
