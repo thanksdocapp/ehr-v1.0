@@ -205,7 +205,8 @@ class RoleMenuVisibility extends Model
                 'communication' => ['label' => 'Communication', 'icon' => 'fa-paper-plane', 'order' => 10],
                 'email-logs' => ['label' => 'Email Logs', 'icon' => 'fa-envelope-open-text', 'order' => 11],
                 'advanced-reports' => ['label' => 'Advanced Reports', 'icon' => 'fa-chart-line', 'order' => 12],
-                'system-settings' => ['label' => 'System Settings', 'icon' => 'fa-cog', 'order' => 13],
+                'integrations' => ['label' => 'External Integrations', 'icon' => 'fa-plug', 'order' => 13],
+                'system-settings' => ['label' => 'System Settings', 'icon' => 'fa-cog', 'order' => 14],
             ];
         }
         
@@ -249,6 +250,7 @@ class RoleMenuVisibility extends Model
                 'communication' => true,
                 'email-logs' => true,
                 'advanced-reports' => true,
+                'integrations' => true,
                 'system-settings' => true,
             ],
             'doctor' => [

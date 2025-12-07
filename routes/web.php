@@ -180,6 +180,9 @@ Route::group(['middleware' => 'installed'], function () {
     
     // Payment Webhooks (public, no auth required)
     Route::post('/payment/webhook/{provider}', [PaymentController::class, 'handleWebhook'])->name('payment.webhook');
+
+    // Integration Webhooks (public, no auth required - for Randox, Quincy, Vista Health callbacks)
+    Route::post('/integrations/webhook/{module}', [\App\Http\Controllers\Admin\IntegrationsController::class, 'webhook'])->name('admin.integrations.webhook');
     
     // Paystack callback route (public, no auth required)
     Route::get('/payment/paystack/callback', [PaymentController::class, 'paystackCallback'])->name('payment.paystack.callback');
@@ -699,7 +702,17 @@ Route::group(['middleware' => 'installed'], function () {
             Route::post('/{paymentGateway}/test-connection', [\App\Http\Controllers\Admin\PaymentGatewayController::class, 'testConnection'])->name('test-connection');
             Route::post('/update-order', [\App\Http\Controllers\Admin\PaymentGatewayController::class, 'updateOrder'])->name('update-order');
         });
-        
+
+        // External Integrations Management (Randox, Quincy, Vista Health)
+        Route::prefix('integrations')->name('integrations.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\IntegrationsController::class, 'index'])->name('index');
+            Route::get('/{module}', [\App\Http\Controllers\Admin\IntegrationsController::class, 'show'])->name('show');
+            Route::put('/{module}', [\App\Http\Controllers\Admin\IntegrationsController::class, 'update'])->name('update');
+            Route::post('/{module}/test-connection', [\App\Http\Controllers\Admin\IntegrationsController::class, 'testConnection'])->name('test-connection');
+            Route::post('/{module}/toggle-status', [\App\Http\Controllers\Admin\IntegrationsController::class, 'toggleStatus'])->name('toggle-status');
+            Route::get('/{module}/requests', [\App\Http\Controllers\Admin\IntegrationsController::class, 'requests'])->name('requests');
+        });
+
         // Departments Management
         Route::get('/departments', [\App\Http\Controllers\Admin\DepartmentsController::class, 'index'])->name('departments.index');
         Route::get('/departments/create', [\App\Http\Controllers\Admin\DepartmentsController::class, 'create'])->name('departments.create');

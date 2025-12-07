@@ -199,6 +199,15 @@
         </div>
         @break
 
+    @case('integrations')
+        <div class="menu-item">
+            <a href="{{ route('admin.integrations.index') }}" class="menu-link {{ request()->routeIs('admin.integrations.*') ? 'active' : '' }}">
+                <i class="menu-icon fas {{ $icon }}"></i>
+                <span class="menu-text">{{ $label }}</span>
+            </a>
+        </div>
+        @break
+
     @default
         {{-- Unknown menu key - render as simple link if route exists --}}
         @if($isAdmin || \App\Models\RoleMenuVisibility::isVisible($userRole, 'admin', $menuKey))
