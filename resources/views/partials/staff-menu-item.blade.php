@@ -122,9 +122,20 @@
         </div>
         @break
 
+    @case('schedule')
+        <div class="nav-item">
+            <a href="{{ route('staff.schedule.index') }}"
+               class="nav-link {{ request()->routeIs('staff.schedule.*') ? 'active' : '' }} {{ $isForced2FASetup ? 'disabled' : '' }}"
+               @if($isForced2FASetup) onclick="event.preventDefault(); alert('Navigation is locked. Please complete 2FA setup first.'); return false;" style="opacity: 0.5; cursor: not-allowed; pointer-events: none;" @endif>
+                <i class="nav-icon fas {{ $icon }}"></i>
+                <span class="nav-text">{{ $label }}</span>
+            </a>
+        </div>
+        @break
+
     @case('doctor-services')
         <div class="nav-item">
-            <a href="{{ route('staff.doctor-services.index') }}" 
+            <a href="{{ route('staff.doctor-services.index') }}"
                class="nav-link {{ request()->routeIs('staff.doctor-services.*') ? 'active' : '' }} {{ $isForced2FASetup ? 'disabled' : '' }}"
                @if($isForced2FASetup) onclick="event.preventDefault(); alert('Navigation is locked. Please complete 2FA setup first.'); return false;" style="opacity: 0.5; cursor: not-allowed; pointer-events: none;" @endif>
                 <i class="nav-icon fas {{ $icon }}"></i>
