@@ -1,22 +1,17 @@
-@extends('layouts.staff')
+@extends('layouts.doctor')
 
 @section('title', 'Create Service')
+@section('page-title', 'Create New Service')
+@section('page-subtitle', 'Add a new service to your practice')
 
 @section('content')
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h2 class="mb-1 fw-bold">Create New Service</h2>
-                    <p class="text-muted mb-0">Add a new service to your practice</p>
-                </div>
-                <div>
-                    <a href="{{ route('staff.doctor-services.index') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Services
-                    </a>
-                </div>
-            </div>
+<div class="fade-in-up">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div></div>
+        <div>
+            <a href="{{ route('staff.doctor-services.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Services
+            </a>
         </div>
     </div>
 
@@ -29,12 +24,14 @@
 
     <div class="row">
         <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-semibold">Service Details</h5>
+            <div class="doctor-card">
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>Service Details
+                    </h5>
                 </div>
-                
-                <div class="card-body">
+
+                <div class="doctor-card-body">
                     <form action="{{ route('staff.doctor-services.store') }}" method="POST">
                         @csrf
 
@@ -42,11 +39,11 @@
                             <div class="col-md-8">
                                 <div class="mb-3">
                                     <label for="name" class="form-label fw-semibold">Service Name <span class="text-danger">*</span></label>
-                                    <input type="text" 
-                                           class="form-control @error('name') is-invalid @enderror" 
-                                           id="name" 
-                                           name="name" 
-                                           value="{{ old('name') }}" 
+                                    <input type="text"
+                                           class="form-control @error('name') is-invalid @enderror"
+                                           id="name"
+                                           name="name"
+                                           value="{{ old('name') }}"
                                            required>
                                     @error('name')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -55,9 +52,9 @@
 
                                 <div class="mb-3">
                                     <label for="description" class="form-label fw-semibold">Description</label>
-                                    <textarea class="form-control @error('description') is-invalid @enderror" 
-                                              id="description" 
-                                              name="description" 
+                                    <textarea class="form-control @error('description') is-invalid @enderror"
+                                              id="description"
+                                              name="description"
                                               rows="4">{{ old('description') }}</textarea>
                                     @error('description')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -68,13 +65,13 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="default_duration_minutes" class="form-label fw-semibold">Duration (minutes) <span class="text-danger">*</span></label>
-                                            <input type="number" 
-                                                   class="form-control @error('default_duration_minutes') is-invalid @enderror" 
-                                                   id="default_duration_minutes" 
-                                                   name="default_duration_minutes" 
-                                                   value="{{ old('default_duration_minutes', 30) }}" 
-                                                   min="5" 
-                                                   max="480" 
+                                            <input type="number"
+                                                   class="form-control @error('default_duration_minutes') is-invalid @enderror"
+                                                   id="default_duration_minutes"
+                                                   name="default_duration_minutes"
+                                                   value="{{ old('default_duration_minutes', 30) }}"
+                                                   min="5"
+                                                   max="480"
                                                    required>
                                             @error('default_duration_minutes')
                                             <div class="invalid-feedback">{{ $message }}</div>
@@ -87,12 +84,12 @@
                                             <label for="default_price" class="form-label fw-semibold">Price</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">£</span>
-                                                <input type="number" 
-                                                       class="form-control @error('default_price') is-invalid @enderror" 
-                                                       id="default_price" 
-                                                       name="default_price" 
-                                                       value="{{ old('default_price') }}" 
-                                                       step="0.01" 
+                                                <input type="number"
+                                                       class="form-control @error('default_price') is-invalid @enderror"
+                                                       id="default_price"
+                                                       name="default_price"
+                                                       value="{{ old('default_price') }}"
+                                                       step="0.01"
                                                        min="0">
                                             </div>
                                             @error('default_price')
@@ -105,10 +102,10 @@
 
                                 <div class="mb-3">
                                     <label for="tags_input" class="form-label fw-semibold">Tags</label>
-                                    <input type="text" 
-                                           class="form-control @error('tags_input') is-invalid @enderror" 
-                                           id="tags_input" 
-                                           name="tags_input" 
+                                    <input type="text"
+                                           class="form-control @error('tags_input') is-invalid @enderror"
+                                           id="tags_input"
+                                           name="tags_input"
                                            value="{{ old('tags_input') }}"
                                            placeholder="e.g., online, face_to_face, consultation">
                                     @error('tags_input')
@@ -119,10 +116,10 @@
 
                                 <div class="mb-3">
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input" 
-                                               type="checkbox" 
-                                               id="is_active" 
-                                               name="is_active" 
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="is_active"
+                                               name="is_active"
                                                value="1"
                                                {{ old('is_active', true) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="is_active">
@@ -148,4 +145,3 @@
     </div>
 </div>
 @endsection
-

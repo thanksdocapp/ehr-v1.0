@@ -1,25 +1,20 @@
-@extends('layouts.staff')
+@extends('layouts.doctor')
 
 @section('title', 'My Services')
+@section('page-title', 'My Services')
+@section('page-subtitle', 'Manage your service pricing and availability')
 
 @section('content')
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h2 class="mb-1 fw-bold">My Services</h2>
-                    <p class="text-muted mb-0">Manage your service pricing and availability</p>
-                </div>
-                <div>
-                    <a href="{{ route('staff.doctor-services.create') }}" class="btn btn-primary me-2">
-                        <i class="fas fa-plus me-2"></i>Add Service
-                    </a>
-                    <a href="{{ route('staff.dashboard') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                    </a>
-                </div>
-            </div>
+<div class="fade-in-up">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div></div>
+        <div>
+            <a href="{{ route('staff.doctor-services.create') }}" class="btn btn-primary me-2">
+                <i class="fas fa-plus me-2"></i>Add Service
+            </a>
+            <a href="{{ route('staff.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
         </div>
     </div>
 
@@ -39,12 +34,14 @@
 
     <div class="row">
         <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-semibold">Available Services</h5>
+            <div class="doctor-card">
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0">
+                        <i class="fas fa-briefcase-medical me-2"></i>Available Services
+                    </h5>
                     <small class="text-muted">Customize pricing and duration for each service, or use global defaults</small>
                 </div>
-                <div class="card-body p-0">
+                <div class="doctor-card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">

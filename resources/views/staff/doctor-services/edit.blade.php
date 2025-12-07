@@ -1,32 +1,29 @@
-@extends('layouts.staff')
+@extends('layouts.doctor')
 
 @section('title', 'Edit Service Settings')
+@section('page-title', 'Edit Service Settings')
+@section('page-subtitle', 'Customize pricing and duration for: {{ $bookingService->name }}')
 
 @section('content')
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h2 class="mb-1 fw-bold">Edit Service Settings</h2>
-                    <p class="text-muted mb-0">Customize pricing and duration for: {{ $bookingService->name }}</p>
-                </div>
-                <div>
-                    <a href="{{ route('staff.doctor-services.index') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Services
-                    </a>
-                </div>
-            </div>
+<div class="fade-in-up">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div></div>
+        <div>
+            <a href="{{ route('staff.doctor-services.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Services
+            </a>
         </div>
     </div>
 
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-semibold">Service Information</h5>
+            <div class="doctor-card">
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>Service Information
+                    </h5>
                 </div>
-                <div class="card-body">
+                <div class="doctor-card-body">
                     <!-- Service Details (Read-only) -->
                     <div class="mb-4 p-3 bg-light rounded">
                         <h6 class="fw-semibold mb-3">Global Service Details</h6>
@@ -74,12 +71,12 @@
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text">£</span>
-                                    <input type="number" 
-                                           class="form-control @error('custom_price') is-invalid @enderror" 
-                                           id="custom_price" 
-                                           name="custom_price" 
-                                           value="{{ old('custom_price', $override->custom_price) }}" 
-                                           step="0.01" 
+                                    <input type="number"
+                                           class="form-control @error('custom_price') is-invalid @enderror"
+                                           id="custom_price"
+                                           name="custom_price"
+                                           value="{{ old('custom_price', $override->custom_price) }}"
+                                           step="0.01"
                                            min="0"
                                            placeholder="{{ number_format($bookingService->default_price ?? 0, 2) }}">
                                 </div>
@@ -94,11 +91,11 @@
                                     Custom Duration <span class="text-muted">(optional)</span>
                                 </label>
                                 <div class="input-group">
-                                    <input type="number" 
-                                           class="form-control @error('custom_duration_minutes') is-invalid @enderror" 
-                                           id="custom_duration_minutes" 
-                                           name="custom_duration_minutes" 
-                                           value="{{ old('custom_duration_minutes', $override->custom_duration_minutes) }}" 
+                                    <input type="number"
+                                           class="form-control @error('custom_duration_minutes') is-invalid @enderror"
+                                           id="custom_duration_minutes"
+                                           name="custom_duration_minutes"
+                                           value="{{ old('custom_duration_minutes', $override->custom_duration_minutes) }}"
                                            min="1"
                                            placeholder="{{ $bookingService->default_duration_minutes ?? 60 }}">
                                     <span class="input-group-text">minutes</span>
@@ -112,10 +109,10 @@
 
                         <div class="mb-3">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" 
-                                       type="checkbox" 
-                                       id="is_active" 
-                                       name="is_active" 
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="is_active"
+                                       name="is_active"
                                        value="1"
                                        {{ old('is_active', $override->is_active ?? $bookingService->is_active) ? 'checked' : '' }}>
                                 <label class="form-check-label" for="is_active">
@@ -140,4 +137,3 @@
     </div>
 </div>
 @endsection
-
