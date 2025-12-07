@@ -169,10 +169,19 @@
 
     @case('document-templates')
         <div class="menu-item">
-            <a href="{{ route('admin.document-templates.index') }}" class="menu-link {{ request()->routeIs('admin.document-templates.*') || request()->routeIs('admin.patients.documents.*') ? 'active' : '' }}">
-                <i class="menu-icon fas {{ $icon }}"></i>
-                <span class="menu-text">{{ $label }}</span>
-            </a>
+            <div class="dropdown">
+                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.document-templates.*') || request()->routeIs('admin.document-settings.*') || request()->routeIs('admin.patients.documents.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                    <i class="menu-icon fas {{ $icon }}"></i>
+                    <span class="menu-text">{{ $label }}</span>
+                </a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item {{ request()->routeIs('admin.document-templates.index') ? 'active' : '' }}" href="{{ route('admin.document-templates.index') }}">All Templates</a>
+                    <a class="dropdown-item {{ request()->routeIs('admin.document-templates.create') ? 'active' : '' }}" href="{{ route('admin.document-templates.create') }}">Create Template</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item {{ request()->routeIs('admin.document-settings.categories') ? 'active' : '' }}" href="{{ route('admin.document-settings.categories') }}">Categories</a>
+                    <a class="dropdown-item {{ request()->routeIs('admin.document-settings.index') ? 'active' : '' }}" href="{{ route('admin.document-settings.index') }}">Settings</a>
+                </div>
+            </div>
         </div>
         @break
 

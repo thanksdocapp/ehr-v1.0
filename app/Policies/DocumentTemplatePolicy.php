@@ -9,6 +9,7 @@ class DocumentTemplatePolicy
 {
     /**
      * Determine whether the user can view any models.
+     * Note: Actual filtering by ownership happens at query level via scopeOwnedBy().
      */
     public function viewAny(User $user): bool
     {
@@ -17,7 +18,7 @@ class DocumentTemplatePolicy
             return true;
         }
 
-        // Doctor, nurse, staff can view active templates
+        // Doctor, nurse, staff can view templates (filtered by ownership at query level)
         if (in_array($user->role, ['doctor', 'nurse', 'staff'])) {
             return true;
         }
@@ -28,6 +29,7 @@ class DocumentTemplatePolicy
 
     /**
      * Determine whether the user can view the model.
+     * Doctors can only view their own templates or system templates created by admin.
      */
     public function view(User $user, DocumentTemplate $documentTemplate): bool
     {
@@ -36,9 +38,22 @@ class DocumentTemplatePolicy
             return true;
         }
 
-        // Doctor, nurse, staff can view active templates
-        if (in_array($user->role, ['doctor', 'nurse', 'staff'])) {
-            return $documentTemplate->is_active;
+        // Doctor can view their own templates or system templates (if active)
+        if ($user->role === 'doctor') {
+            // Check ownership - can view own templates regardless of active status
+            if ($documentTemplate->created_by === $user->id) {
+                return true;
+            }
+            // Can view system templates only if active
+            if ($documentTemplate->isSystemTemplate() && $documentTemplate->is_active) {
+                return true;
+            }
+            return false;
+        }
+
+        // Nurse/Staff can view system templates if active
+        if (in_array($user->role, ['nurse', 'staff'])) {
+            return $documentTemplate->is_active && $documentTemplate->isSystemTemplate();
         }
 
         // Patient has no access to templates
@@ -55,19 +70,18 @@ class DocumentTemplatePolicy
             return true;
         }
 
-        // Doctor can create clinical templates if allowed by configuration
-        // For now, allow doctors to create templates
+        // Doctor can create their own templates
         if ($user->role === 'doctor') {
             return true;
         }
 
-        // Nurses/staff may not modify templates unless explicitly allowed
-        // For now, restrict to admin/doctor
+        // Nurses/staff cannot create templates
         return false;
     }
 
     /**
      * Determine whether the user can update the model.
+     * Doctors can only update their own templates.
      */
     public function update(User $user, DocumentTemplate $documentTemplate): bool
     {
@@ -76,23 +90,32 @@ class DocumentTemplatePolicy
             return true;
         }
 
-        // Doctor can update clinical templates if allowed
+        // Doctor can only update their own templates
         if ($user->role === 'doctor') {
-            return true;
+            return $documentTemplate->created_by === $user->id;
         }
 
-        // Nurses/staff may not modify templates unless explicitly allowed
+        // Nurses/staff cannot update templates
         return false;
     }
 
     /**
      * Determine whether the user can delete the model.
+     * Admin can delete any template. Doctors can only delete their own.
      */
     public function delete(User $user, DocumentTemplate $documentTemplate): bool
     {
-        // Only admin can delete templates
-        // In practice, we'll use deactivation instead
-        return $user->is_admin || $user->role === 'admin';
+        // Admin can delete any template
+        if ($user->is_admin || $user->role === 'admin') {
+            return true;
+        }
+
+        // Doctor can delete their own templates only
+        if ($user->role === 'doctor') {
+            return $documentTemplate->created_by === $user->id;
+        }
+
+        return false;
     }
 
     /**

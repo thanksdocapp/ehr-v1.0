@@ -1173,38 +1173,181 @@ $(document).ready(function() {
     // Update preview
     function updatePreview() {
         const type = typeSelect.val();
-        if (type !== 'letter') {
-            previewPanel.html('<p class="text-muted">Form preview coming soon...</p>');
-            return;
-        }
-        
-        // Simple preview - in production, this would call the TemplateRenderer
-        let previewHtml = '<div style="font-family: Times New Roman, serif; padding: 20px;">';
-        
-        builderBlocks.forEach(block => {
-            if (block.type === 'heading') {
-                previewHtml += `<${block.props.level || 'h2'}>${block.props.text || 'Heading'}</${block.props.level || 'h2'}>`;
-            } else if (block.type === 'paragraph') {
-                previewHtml += block.props.html || '<p>Paragraph text...</p>';
-            } else if (block.type === 'patient_field') {
-                previewHtml += `<p><strong>Patient ${block.props.field}:</strong> [Sample Value]</p>`;
-            } else if (block.type === 'doctor_field') {
-                previewHtml += `<p><strong>Doctor ${block.props.field}:</strong> [Sample Value]</p>`;
-            } else if (block.type === 'date_block') {
-                previewHtml += `<p>${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>`;
-            } else if (block.type === 'divider') {
-                previewHtml += '<hr>';
-            } else if (block.type === 'logo_block') {
-                previewHtml += '<p style="text-align: center;"><strong>[LOGO]</strong></p>';
-            } else if (block.type === 'signature_block') {
-                previewHtml += '<p><strong>Signature:</strong> [Doctor Name]</p>';
-            } else if (block.type === 'text_placeholder') {
-                previewHtml += `<p><strong>${block.props.label}:</strong> ${block.props.value || '[Value]'}</p>`;
+
+        if (type === 'letter') {
+            // Letter preview
+            let previewHtml = '<div style="font-family: Times New Roman, serif; padding: 20px;">';
+
+            builderBlocks.forEach(block => {
+                if (block.type === 'heading') {
+                    const align = block.props.align || 'left';
+                    previewHtml += `<${block.props.level || 'h2'} style="text-align: ${align};">${block.props.text || 'Heading'}</${block.props.level || 'h2'}>`;
+                } else if (block.type === 'paragraph') {
+                    const align = block.props.align || 'left';
+                    const content = block.props.content || block.props.html || 'Paragraph text...';
+                    previewHtml += `<p style="text-align: ${align};">${content}</p>`;
+                } else if (block.type === 'patient_field') {
+                    const label = block.props.label || `Patient ${block.props.field}`;
+                    previewHtml += `<p><strong>${label}:</strong> [Sample Value]</p>`;
+                } else if (block.type === 'doctor_field') {
+                    const label = block.props.label || `Doctor ${block.props.field}`;
+                    previewHtml += `<p><strong>${label}:</strong> [Sample Value]</p>`;
+                } else if (block.type === 'date_block') {
+                    const label = block.props.label ? `<strong>${block.props.label}:</strong> ` : '';
+                    previewHtml += `<p>${label}${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>`;
+                } else if (block.type === 'divider') {
+                    const style = block.props.style || 'solid';
+                    const margin = block.props.margin || 10;
+                    previewHtml += `<hr style="border-style: ${style}; margin: ${margin}px 0;">`;
+                } else if (block.type === 'logo_block') {
+                    const position = block.props.position || 'center';
+                    previewHtml += `<p style="text-align: ${position};"><strong>[CLINIC LOGO]</strong></p>`;
+                } else if (block.type === 'signature_block') {
+                    const label = block.props.label || 'Signature';
+                    const showDate = block.props.showDate !== false;
+                    previewHtml += `<div style="margin-top: 30px;"><p><strong>${label}:</strong></p><p style="border-top: 1px solid #000; width: 200px; padding-top: 5px;">[Doctor Name]</p>${showDate ? '<p style="font-size: 12px; color: #666;">Date: ' + new Date().toLocaleDateString() + '</p>' : ''}</div>`;
+                } else if (block.type === 'text_placeholder') {
+                    const label = block.props.label || block.props.key || 'Field';
+                    const value = block.props.defaultValue || block.props.value || '[Value]';
+                    previewHtml += `<p><strong>${label}:</strong> ${value}</p>`;
+                }
+            });
+
+            previewHtml += '</div>';
+            previewPanel.html(previewHtml);
+        } else {
+            // Form preview
+            let previewHtml = '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; padding: 20px;">';
+
+            if (builderBlocks.length === 0) {
+                previewHtml += '<p class="text-muted text-center">Add form fields to see preview</p>';
+            } else {
+                builderBlocks.forEach(block => {
+                    if (block.type === 'section') {
+                        previewHtml += `<div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #0d6efd;">`;
+                        previewHtml += `<h5 style="margin-bottom: 10px; color: #333;">${block.props.title || 'Section'}</h5>`;
+                        if (block.props.description) {
+                            previewHtml += `<p style="color: #666; font-size: 14px; margin-bottom: 15px;">${block.props.description}</p>`;
+                        }
+
+                        // Render section children
+                        if (block.children && block.children.length > 0) {
+                            block.children.forEach(child => {
+                                previewHtml += renderFormFieldPreview(child);
+                            });
+                        } else {
+                            previewHtml += '<p class="text-muted small">Drag form fields here</p>';
+                        }
+
+                        previewHtml += '</div>';
+                    } else if (block.type === 'info_text') {
+                        const styleColors = {
+                            'info': { bg: '#cfe2ff', border: '#0d6efd', text: '#084298' },
+                            'warning': { bg: '#fff3cd', border: '#ffc107', text: '#664d03' },
+                            'success': { bg: '#d1e7dd', border: '#198754', text: '#0f5132' },
+                            'danger': { bg: '#f8d7da', border: '#dc3545', text: '#842029' }
+                        };
+                        const style = styleColors[block.props.style] || styleColors['info'];
+                        previewHtml += `<div style="padding: 12px 15px; background: ${style.bg}; border-left: 4px solid ${style.border}; color: ${style.text}; border-radius: 4px; margin-bottom: 15px;">${block.props.content || 'Information text'}</div>`;
+                    } else {
+                        // Standalone form field (not in a section)
+                        previewHtml += renderFormFieldPreview(block);
+                    }
+                });
             }
-        });
-        
-        previewHtml += '</div>';
-        previewPanel.html(previewHtml);
+
+            previewHtml += '</div>';
+            previewPanel.html(previewHtml);
+        }
+    }
+
+    // Helper function to render form field preview
+    function renderFormFieldPreview(field) {
+        let html = '<div style="margin-bottom: 15px;">';
+        const label = field.props.label || field.props.name || 'Field';
+        const required = field.props.required ? '<span style="color: red;">*</span>' : '';
+        const placeholder = field.props.placeholder || '';
+
+        switch(field.type) {
+            case 'text':
+                html += `<label style="display: block; margin-bottom: 5px; font-weight: 500;">${label} ${required}</label>`;
+                html += `<input type="text" style="width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px;" placeholder="${placeholder}" disabled>`;
+                break;
+            case 'textarea':
+                const rows = field.props.rows || 3;
+                html += `<label style="display: block; margin-bottom: 5px; font-weight: 500;">${label} ${required}</label>`;
+                html += `<textarea style="width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; resize: vertical;" rows="${rows}" placeholder="${placeholder}" disabled></textarea>`;
+                break;
+            case 'select':
+                html += `<label style="display: block; margin-bottom: 5px; font-weight: 500;">${label} ${required}</label>`;
+                html += `<select style="width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; background: #fff;" disabled>`;
+                html += `<option>${placeholder || 'Select an option...'}</option>`;
+                if (field.props.options && field.props.options.length > 0) {
+                    field.props.options.forEach(opt => {
+                        html += `<option>${opt}</option>`;
+                    });
+                }
+                html += `</select>`;
+                break;
+            case 'checkbox':
+                html += `<div style="display: flex; align-items: center; gap: 8px;">`;
+                html += `<input type="checkbox" style="width: 18px; height: 18px;" disabled>`;
+                html += `<label style="font-weight: 500;">${label} ${required}</label>`;
+                html += `</div>`;
+                break;
+            case 'checkbox_group':
+                html += `<label style="display: block; margin-bottom: 8px; font-weight: 500;">${label} ${required}</label>`;
+                if (field.props.options && field.props.options.length > 0) {
+                    field.props.options.forEach(opt => {
+                        html += `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">`;
+                        html += `<input type="checkbox" style="width: 16px; height: 16px;" disabled>`;
+                        html += `<span>${opt}</span>`;
+                        html += `</div>`;
+                    });
+                } else {
+                    html += '<p class="text-muted small">No options defined</p>';
+                }
+                break;
+            case 'radio_group':
+                html += `<label style="display: block; margin-bottom: 8px; font-weight: 500;">${label} ${required}</label>`;
+                if (field.props.options && field.props.options.length > 0) {
+                    field.props.options.forEach(opt => {
+                        html += `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">`;
+                        html += `<input type="radio" name="preview_${field.props.name}" style="width: 16px; height: 16px;" disabled>`;
+                        html += `<span>${opt}</span>`;
+                        html += `</div>`;
+                    });
+                } else {
+                    html += '<p class="text-muted small">No options defined</p>';
+                }
+                break;
+            case 'date':
+                html += `<label style="display: block; margin-bottom: 5px; font-weight: 500;">${label} ${required}</label>`;
+                html += `<input type="date" style="width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px;" disabled>`;
+                break;
+            case 'number':
+                html += `<label style="display: block; margin-bottom: 5px; font-weight: 500;">${label} ${required}</label>`;
+                let numberAttrs = '';
+                if (field.props.min !== null && field.props.min !== undefined) numberAttrs += ` min="${field.props.min}"`;
+                if (field.props.max !== null && field.props.max !== undefined) numberAttrs += ` max="${field.props.max}"`;
+                html += `<input type="number" style="width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px;" placeholder="${placeholder}"${numberAttrs} disabled>`;
+                break;
+            case 'info_text':
+                const styleColors = {
+                    'info': { bg: '#cfe2ff', border: '#0d6efd', text: '#084298' },
+                    'warning': { bg: '#fff3cd', border: '#ffc107', text: '#664d03' },
+                    'success': { bg: '#d1e7dd', border: '#198754', text: '#0f5132' },
+                    'danger': { bg: '#f8d7da', border: '#dc3545', text: '#842029' }
+                };
+                const style = styleColors[field.props.style] || styleColors['info'];
+                html = `<div style="padding: 10px 12px; background: ${style.bg}; border-left: 3px solid ${style.border}; color: ${style.text}; border-radius: 4px; margin-bottom: 15px; font-size: 14px;">${field.props.content || 'Information'}</div>`;
+                return html;
+            default:
+                html += `<p class="text-muted">[${field.type}] ${label}</p>`;
+        }
+
+        html += '</div>';
+        return html;
     }
     
     // Edit block
@@ -1247,10 +1390,9 @@ $(document).ready(function() {
     
     // Get block config HTML
     function getBlockConfigHtml(block) {
-        // This would generate configuration forms based on block type
-        // For brevity, showing a simplified version
+        // Generate configuration forms based on block type
         let html = '';
-        
+
         switch(block.type) {
             case 'heading':
                 html = `
@@ -1277,6 +1419,24 @@ $(document).ready(function() {
                     </div>
                 `;
                 break;
+            case 'paragraph':
+                html = `
+                    <div class="mb-3">
+                        <label class="form-label">Paragraph Content</label>
+                        <textarea class="form-control" id="config_content" rows="6" placeholder="Enter paragraph text...">${block.props.content || ''}</textarea>
+                        <small class="text-muted">You can use placeholders like {patient_name}, {doctor_name}, {date}</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alignment</label>
+                        <select class="form-control" id="config_align">
+                            <option value="left" ${block.props.align === 'left' ? 'selected' : ''}>Left</option>
+                            <option value="center" ${block.props.align === 'center' ? 'selected' : ''}>Center</option>
+                            <option value="right" ${block.props.align === 'right' ? 'selected' : ''}>Right</option>
+                            <option value="justify" ${block.props.align === 'justify' ? 'selected' : ''}>Justify</option>
+                        </select>
+                    </div>
+                `;
+                break;
             case 'patient_field':
                 html = `
                     <div class="mb-3">
@@ -1290,6 +1450,162 @@ $(document).ready(function() {
                             <option value="email" ${block.props.field === 'email' ? 'selected' : ''}>Email</option>
                             <option value="phone" ${block.props.field === 'phone' ? 'selected' : ''}>Phone</option>
                             <option value="address" ${block.props.field === 'address' ? 'selected' : ''}>Address</option>
+                            <option value="nhs_number" ${block.props.field === 'nhs_number' ? 'selected' : ''}>NHS Number</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Display Label (optional)</label>
+                        <input type="text" class="form-control" id="config_label" value="${block.props.label || ''}" placeholder="e.g., Patient Name:">
+                    </div>
+                `;
+                break;
+            case 'doctor_field':
+                html = `
+                    <div class="mb-3">
+                        <label class="form-label">Doctor Field</label>
+                        <select class="form-control" id="config_field">
+                            <option value="full_name" ${block.props.field === 'full_name' ? 'selected' : ''}>Full Name</option>
+                            <option value="title" ${block.props.field === 'title' ? 'selected' : ''}>Title</option>
+                            <option value="specialization" ${block.props.field === 'specialization' ? 'selected' : ''}>Specialization</option>
+                            <option value="qualification" ${block.props.field === 'qualification' ? 'selected' : ''}>Qualification</option>
+                            <option value="license_number" ${block.props.field === 'license_number' ? 'selected' : ''}>License Number</option>
+                            <option value="email" ${block.props.field === 'email' ? 'selected' : ''}>Email</option>
+                            <option value="phone" ${block.props.field === 'phone' ? 'selected' : ''}>Phone</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Display Label (optional)</label>
+                        <input type="text" class="form-control" id="config_label" value="${block.props.label || ''}" placeholder="e.g., Doctor:">
+                    </div>
+                `;
+                break;
+            case 'date_block':
+                html = `
+                    <div class="mb-3">
+                        <label class="form-label">Date Format</label>
+                        <select class="form-control" id="config_format">
+                            <option value="d/m/Y" ${block.props.format === 'd/m/Y' ? 'selected' : ''}>DD/MM/YYYY</option>
+                            <option value="m/d/Y" ${block.props.format === 'm/d/Y' ? 'selected' : ''}>MM/DD/YYYY</option>
+                            <option value="Y-m-d" ${block.props.format === 'Y-m-d' ? 'selected' : ''}>YYYY-MM-DD</option>
+                            <option value="d M Y" ${block.props.format === 'd M Y' ? 'selected' : ''}>DD Mon YYYY</option>
+                            <option value="F d, Y" ${block.props.format === 'F d, Y' ? 'selected' : ''}>Month DD, YYYY</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Display Label (optional)</label>
+                        <input type="text" class="form-control" id="config_label" value="${block.props.label || ''}" placeholder="e.g., Date:">
+                    </div>
+                `;
+                break;
+            case 'divider':
+                html = `
+                    <div class="mb-3">
+                        <label class="form-label">Divider Style</label>
+                        <select class="form-control" id="config_style">
+                            <option value="solid" ${block.props.style === 'solid' ? 'selected' : ''}>Solid Line</option>
+                            <option value="dashed" ${block.props.style === 'dashed' ? 'selected' : ''}>Dashed Line</option>
+                            <option value="dotted" ${block.props.style === 'dotted' ? 'selected' : ''}>Dotted Line</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Margin (px)</label>
+                        <input type="number" class="form-control" id="config_margin" value="${block.props.margin || 20}" min="0" max="100">
+                    </div>
+                `;
+                break;
+            case 'logo_block':
+                html = `
+                    <div class="mb-3">
+                        <label class="form-label">Logo Source</label>
+                        <select class="form-control" id="config_source">
+                            <option value="clinic" ${block.props.source === 'clinic' ? 'selected' : ''}>Clinic Logo</option>
+                            <option value="doctor" ${block.props.source === 'doctor' ? 'selected' : ''}>Doctor Logo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Position</label>
+                        <select class="form-control" id="config_position">
+                            <option value="left" ${block.props.position === 'left' ? 'selected' : ''}>Left</option>
+                            <option value="center" ${block.props.position === 'center' ? 'selected' : ''}>Center</option>
+                            <option value="right" ${block.props.position === 'right' ? 'selected' : ''}>Right</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Max Width (px)</label>
+                        <input type="number" class="form-control" id="config_maxWidth" value="${block.props.maxWidth || 200}" min="50" max="500">
+                    </div>
+                `;
+                break;
+            case 'signature_block':
+                html = `
+                    <div class="mb-3">
+                        <label class="form-label">Signature Type</label>
+                        <select class="form-control" id="config_signatureType">
+                            <option value="doctor" ${block.props.signatureType === 'doctor' ? 'selected' : ''}>Doctor Signature</option>
+                            <option value="patient" ${block.props.signatureType === 'patient' ? 'selected' : ''}>Patient Signature</option>
+                            <option value="witness" ${block.props.signatureType === 'witness' ? 'selected' : ''}>Witness Signature</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Label Text</label>
+                        <input type="text" class="form-control" id="config_label" value="${block.props.label || 'Signature'}" placeholder="e.g., Doctor's Signature">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="config_showDate" ${block.props.showDate ? 'checked' : ''}>
+                            <label class="form-check-label" for="config_showDate">Show Date Line</label>
+                        </div>
+                    </div>
+                `;
+                break;
+            case 'text_placeholder':
+                html = `
+                    <div class="mb-3">
+                        <label class="form-label">Placeholder Key</label>
+                        <input type="text" class="form-control" id="config_key" value="${block.props.key || ''}" placeholder="e.g., diagnosis">
+                        <small class="text-muted">This will be used as {key} in the document</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Display Label</label>
+                        <input type="text" class="form-control" id="config_label" value="${block.props.label || ''}" placeholder="e.g., Diagnosis:">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Default Value (optional)</label>
+                        <input type="text" class="form-control" id="config_defaultValue" value="${block.props.defaultValue || ''}" placeholder="Optional default text">
+                    </div>
+                `;
+                break;
+            case 'section':
+                html = `
+                    <div class="mb-3">
+                        <label class="form-label">Section Title</label>
+                        <input type="text" class="form-control" id="config_title" value="${block.props.title || ''}" placeholder="e.g., Patient Information">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description (optional)</label>
+                        <textarea class="form-control" id="config_description" rows="2" placeholder="Brief description...">${block.props.description || ''}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="config_collapsible" ${block.props.collapsible ? 'checked' : ''}>
+                            <label class="form-check-label" for="config_collapsible">Make section collapsible</label>
+                        </div>
+                    </div>
+                `;
+                break;
+            case 'info_text':
+                html = `
+                    <div class="mb-3">
+                        <label class="form-label">Information Text</label>
+                        <textarea class="form-control" id="config_content" rows="3" placeholder="Enter informational text...">${block.props.content || ''}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Style</label>
+                        <select class="form-control" id="config_style">
+                            <option value="info" ${block.props.style === 'info' ? 'selected' : ''}>Info (Blue)</option>
+                            <option value="warning" ${block.props.style === 'warning' ? 'selected' : ''}>Warning (Yellow)</option>
+                            <option value="success" ${block.props.style === 'success' ? 'selected' : ''}>Success (Green)</option>
+                            <option value="danger" ${block.props.style === 'danger' ? 'selected' : ''}>Danger (Red)</option>
                         </select>
                     </div>
                 `;
@@ -1305,15 +1621,20 @@ $(document).ready(function() {
                     <div class="mb-3">
                         <label class="form-label">Field Name</label>
                         <input type="text" class="form-control" id="config_name" value="${block.props.name || ''}" placeholder="e.g., patient_complaint">
+                        <small class="text-muted">Use lowercase with underscores, no spaces</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Field Label</label>
                         <input type="text" class="form-control" id="config_label" value="${block.props.label || ''}" placeholder="e.g., Patient Complaint">
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Placeholder Text (optional)</label>
+                        <input type="text" class="form-control" id="config_placeholder" value="${block.props.placeholder || ''}" placeholder="Placeholder text...">
+                    </div>
+                    <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="config_required" ${block.props.required ? 'checked' : ''}>
-                            <label class="form-check-label" for="config_required">Required</label>
+                            <label class="form-check-label" for="config_required">Required Field</label>
                         </div>
                     </div>
                 `;
@@ -1321,7 +1642,33 @@ $(document).ready(function() {
                     html += `
                         <div class="mb-3">
                             <label class="form-label">Options (one per line)</label>
-                            <textarea class="form-control" id="config_options" rows="4">${(block.props.options || []).join('\n')}</textarea>
+                            <textarea class="form-control" id="config_options" rows="4" placeholder="Option 1&#10;Option 2&#10;Option 3">${(block.props.options || []).join('\n')}</textarea>
+                        </div>
+                    `;
+                }
+                if (block.type === 'number') {
+                    html += `
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Min Value</label>
+                                    <input type="number" class="form-control" id="config_min" value="${block.props.min || ''}">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Max Value</label>
+                                    <input type="number" class="form-control" id="config_max" value="${block.props.max || ''}">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                if (block.type === 'textarea') {
+                    html += `
+                        <div class="mb-3">
+                            <label class="form-label">Rows</label>
+                            <input type="number" class="form-control" id="config_rows" value="${block.props.rows || 3}" min="2" max="20">
                         </div>
                     `;
                 }
@@ -1329,25 +1676,62 @@ $(document).ready(function() {
             default:
                 html = '<p class="text-muted">No configuration options available for this block type.</p>';
         }
-        
+
         return html;
     }
     
     // Save block config
     $('#saveBlockConfig').on('click', function() {
         if (!currentEditingBlock) return;
-        
+
         const block = currentEditingBlock;
-        
+
         switch(block.type) {
             case 'heading':
                 block.props.level = $('#config_level').val();
                 block.props.text = $('#config_text').val();
                 block.props.align = $('#config_align').val();
                 break;
+            case 'paragraph':
+                block.props.content = $('#config_content').val();
+                block.props.align = $('#config_align').val();
+                break;
             case 'patient_field':
             case 'doctor_field':
                 block.props.field = $('#config_field').val();
+                block.props.label = $('#config_label').val();
+                break;
+            case 'date_block':
+                block.props.format = $('#config_format').val();
+                block.props.label = $('#config_label').val();
+                break;
+            case 'divider':
+                block.props.style = $('#config_style').val();
+                block.props.margin = parseInt($('#config_margin').val()) || 20;
+                break;
+            case 'logo_block':
+                block.props.source = $('#config_source').val();
+                block.props.position = $('#config_position').val();
+                block.props.maxWidth = parseInt($('#config_maxWidth').val()) || 200;
+                break;
+            case 'signature_block':
+                block.props.signatureType = $('#config_signatureType').val();
+                block.props.label = $('#config_label').val();
+                block.props.showDate = $('#config_showDate').is(':checked');
+                break;
+            case 'text_placeholder':
+                block.props.key = $('#config_key').val();
+                block.props.label = $('#config_label').val();
+                block.props.defaultValue = $('#config_defaultValue').val();
+                break;
+            case 'section':
+                block.props.title = $('#config_title').val();
+                block.props.description = $('#config_description').val();
+                block.props.collapsible = $('#config_collapsible').is(':checked');
+                break;
+            case 'info_text':
+                block.props.content = $('#config_content').val();
+                block.props.style = $('#config_style').val();
                 break;
             case 'text':
             case 'textarea':
@@ -1358,23 +1742,31 @@ $(document).ready(function() {
             case 'number':
                 block.props.name = $('#config_name').val();
                 block.props.label = $('#config_label').val();
+                block.props.placeholder = $('#config_placeholder').val();
                 block.props.required = $('#config_required').is(':checked');
                 if ($('#config_options').length) {
                     block.props.options = $('#config_options').val().split('\n').filter(o => o.trim());
                 }
+                if (block.type === 'number') {
+                    block.props.min = $('#config_min').val() ? parseInt($('#config_min').val()) : null;
+                    block.props.max = $('#config_max').val() ? parseInt($('#config_max').val()) : null;
+                }
+                if (block.type === 'textarea') {
+                    block.props.rows = parseInt($('#config_rows').val()) || 3;
+                }
                 break;
         }
-        
+
         // Re-render block
         $(`#${block.id}`).replaceWith(getBlockHtml(block));
-        
+
         // Re-initialize Quill if needed
         if (block.type === 'paragraph') {
             setTimeout(() => {
                 initQuillEditor(block.id);
             }, 100);
         }
-        
+
         updateBuilderConfig();
         updatePreview();
         $('#blockConfigModal').modal('hide');

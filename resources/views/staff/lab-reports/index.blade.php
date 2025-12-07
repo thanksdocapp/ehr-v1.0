@@ -357,59 +357,69 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    // Initialize DataTable
-    $('#labReportsTable').DataTable({
-        "paging": false,
-        "info": false,
-        "searching": false,
-        "ordering": true,
-        "order": [[ 4, "desc" ]],
-        "columnDefs": [
-            { "orderable": false, "targets": [6] }
-        ]
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable (if jQuery and DataTable are available)
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.DataTable !== 'undefined') {
+        var table = document.getElementById('labReportsTable');
+        if (table) {
+            jQuery('#labReportsTable').DataTable({
+                "paging": false,
+                "info": false,
+                "searching": false,
+                "ordering": true,
+                "order": [[ 4, "desc" ]],
+                "columnDefs": [
+                    { "orderable": false, "targets": [6] }
+                ]
+            });
+        }
+    }
 });
 
 @if(auth()->user()->role === 'technician')
-let currentReportId = null;
+var currentReportId = null;
 
-function updateStatus(reportId, status = null) {
+function updateStatus(reportId, status) {
     currentReportId = reportId;
-    
-    if (status) {
-        $('#status_select').val(status);
+
+    if (typeof jQuery !== 'undefined') {
+        if (status) {
+            jQuery('#status_select').val(status);
+        }
+        jQuery('#statusModal').modal('show');
     }
-    
-    $('#statusModal').modal('show');
 }
 
-$('#statusForm').on('submit', function(e) {
-    e.preventDefault();
-    
-    const status = $('#status_select').val();
-    const notes = $('#technician_notes').val();
-    
-    $.ajax({
-        url: `/staff/lab-reports/${currentReportId}/status`,
-        method: 'PATCH',
-        data: {
-            status: status,
-            notes: notes,
-            _token: '{{ csrf_token() }}'
-        },
-        success: function(response) {
-            if (response.success) {
-                location.reload();
-            } else {
-                alert('Error updating status: ' + response.message);
-            }
-        },
-        error: function() {
-            alert('Error updating lab report status. Please try again.');
-        }
+if (typeof jQuery !== 'undefined') {
+    jQuery(document).ready(function($) {
+        $('#statusForm').on('submit', function(e) {
+            e.preventDefault();
+
+            var status = $('#status_select').val();
+            var notes = $('#technician_notes').val();
+
+            $.ajax({
+                url: '/staff/lab-reports/' + currentReportId + '/status',
+                method: 'PATCH',
+                data: {
+                    status: status,
+                    notes: notes,
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert('Error updating status: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error updating lab report status. Please try again.');
+                }
+            });
+        });
     });
-});
+}
 @endif
 </script>
 @endpush

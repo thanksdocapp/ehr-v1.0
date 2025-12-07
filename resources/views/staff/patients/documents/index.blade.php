@@ -360,68 +360,80 @@
                 </div>
                 
                 @push('scripts')
-                <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
                 <script>
-                $(document).ready(function() {
-                    const selectAll = $('#selectAll');
-                    const documentCheckboxes = $('.document-checkbox');
-                    const bulkActionsToolbar = $('#bulkActionsToolbar');
-                    const selectedCount = $('#selectedCount');
-                    const bulkDocumentIds = $('#bulkDocumentIds');
-                    
+                document.addEventListener('DOMContentLoaded', function() {
+                    var selectAll = document.getElementById('selectAll');
+                    var documentCheckboxes = document.querySelectorAll('.document-checkbox');
+                    var bulkActionsToolbar = document.getElementById('bulkActionsToolbar');
+                    var selectedCountEl = document.getElementById('selectedCount');
+                    var bulkDocumentIds = document.getElementById('bulkDocumentIds');
+                    var clearSelectionBtn = document.getElementById('clearSelection');
+
                     // Select all checkbox
-                    selectAll.on('change', function() {
-                        documentCheckboxes.prop('checked', $(this).is(':checked'));
-                        updateBulkActions();
-                    });
-                    
+                    if (selectAll) {
+                        selectAll.addEventListener('change', function() {
+                            documentCheckboxes.forEach(function(cb) {
+                                cb.checked = selectAll.checked;
+                            });
+                            updateBulkActions();
+                        });
+                    }
+
                     // Individual checkbox
-                    documentCheckboxes.on('change', function() {
-                        updateBulkActions();
-                        selectAll.prop('checked', documentCheckboxes.length === $('.document-checkbox:checked').length);
+                    documentCheckboxes.forEach(function(cb) {
+                        cb.addEventListener('change', function() {
+                            updateBulkActions();
+                            var allChecked = document.querySelectorAll('.document-checkbox:checked').length;
+                            selectAll.checked = documentCheckboxes.length === allChecked;
+                        });
                     });
-                    
+
                     // Update bulk actions toolbar
                     function updateBulkActions() {
-                        const checked = $('.document-checkbox:checked');
-                        const count = checked.length;
-                        
+                        var checked = document.querySelectorAll('.document-checkbox:checked');
+                        var count = checked.length;
+
                         if (count > 0) {
-                            bulkActionsToolbar.show();
-                            selectedCount.text(count);
-                            
-                            const ids = checked.map(function() {
-                                return $(this).val();
-                            }).get();
-                            bulkDocumentIds.val(JSON.stringify(ids));
+                            bulkActionsToolbar.style.display = 'block';
+                            selectedCountEl.textContent = count;
+
+                            var ids = [];
+                            checked.forEach(function(cb) {
+                                ids.push(cb.value);
+                            });
+                            bulkDocumentIds.value = JSON.stringify(ids);
                         } else {
-                            bulkActionsToolbar.hide();
-                            bulkDocumentIds.val('');
+                            bulkActionsToolbar.style.display = 'none';
+                            bulkDocumentIds.value = '';
                         }
                     }
-                    
+
                     // Clear selection
-                    $('#clearSelection').on('click', function() {
-                        documentCheckboxes.prop('checked', false);
-                        selectAll.prop('checked', false);
-                        updateBulkActions();
-                    });
-                    
+                    if (clearSelectionBtn) {
+                        clearSelectionBtn.addEventListener('click', function() {
+                            documentCheckboxes.forEach(function(cb) {
+                                cb.checked = false;
+                            });
+                            selectAll.checked = false;
+                            updateBulkActions();
+                        });
+                    }
+
                     // Confirm bulk action
                     window.confirmBulkAction = function() {
-                        const action = $('#bulkAction').val();
+                        var action = document.getElementById('bulkAction').value;
                         if (!action) {
                             alert('Please select an action.');
                             return false;
                         }
-                        
-                        const count = $('.document-checkbox:checked').length;
-                        let message = `Are you sure you want to ${action} ${count} document(s)?`;
-                        
+
+                        var count = document.querySelectorAll('.document-checkbox:checked').length;
+                        var message = 'Are you sure you want to ' + action + ' ' + count + ' document(s)?';
+
                         if (action === 'delete') {
                             message += '\n\nThis action cannot be undone!';
                         }
-                        
+
                         return confirm(message);
                     };
                 });
@@ -455,20 +467,29 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    // Auto-dismiss alerts
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-dismiss alerts after 5 seconds
     setTimeout(function() {
-        $('.alert').fadeOut();
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(function() { alert.remove(); }, 500);
+        });
     }, 5000);
-    
-    // Debounce search
-    let searchTimeout;
-    $('input[name="search"]').on('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(function() {
-            $('#filterForm').submit();
-        }, 500);
-    });
+
+    // Debounced search - vanilla JS
+    var searchInput = document.querySelector('input[name="search"]');
+    var searchTimeout;
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                document.getElementById('filterForm').submit();
+            }, 500);
+        });
+    }
 });
 </script>
 @endpush

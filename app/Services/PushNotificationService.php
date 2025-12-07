@@ -217,6 +217,27 @@ class PushNotificationService
     }
 
     /**
+     * Send appointment notification to a patient with custom title and message
+     */
+    public function sendAppointmentNotification(Patient $patient, string $title, string $message, array $data = []): array
+    {
+        return $this->sendToPatient($patient, $title, $message, array_merge([
+            'type' => 'appointment'
+        ], $data));
+    }
+
+    /**
+     * Send lab result notification to a patient
+     */
+    public function sendLabResultNotification(Patient $patient, string $testName): array
+    {
+        return $this->sendToPatient($patient, 'Lab Results Available', "Your lab results for '{$testName}' are now available.", [
+            'type' => 'lab_result',
+            'test_name' => $testName
+        ]);
+    }
+
+    /**
      * Send via OneSignal
      */
     protected function sendViaOneSignal(array $tokens, string $title, string $message, array $data = []): array

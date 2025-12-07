@@ -25,12 +25,16 @@ class PatientDocumentsController extends Controller
 
     /**
      * Display a listing of documents for a patient.
+     * Doctors/staff only see documents they created.
      */
     public function index(Patient $patient, Request $request)
     {
         $this->authorize('viewAny', [PatientDocument::class, $patient]);
 
-        $query = $patient->documents();
+        $user = Auth::user();
+
+        // Start query filtered by ownership
+        $query = $patient->documents()->ownedBy($user);
 
         // Filter by type
         if ($request->filled('type')) {
@@ -56,18 +60,21 @@ class PatientDocumentsController extends Controller
 
     /**
      * Show the form for creating a new document.
+     * Only show templates the doctor has access to (own + system templates).
      */
     public function create(Patient $patient, Request $request)
     {
         $this->authorize('create', [PatientDocument::class, $patient]);
 
+        $user = Auth::user();
         $templateId = $request->get('template_id');
         $template = $templateId ? DocumentTemplate::findOrFail($templateId) : null;
-        
-        $templates = DocumentTemplate::active()->orderBy('name')->get();
+
+        // Only show templates visible to this user (own + system templates)
+        $templates = DocumentTemplate::visibleTo($user)->active()->orderBy('name')->get();
 
         // Get branding for logos/signatures
-        $branding = $this->getBranding(Auth::user());
+        $branding = $this->getBranding($user);
 
         return view('staff.patients.documents.create', compact('patient', 'template', 'templates', 'branding'));
     }

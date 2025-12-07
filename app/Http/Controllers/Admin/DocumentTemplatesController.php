@@ -30,6 +30,11 @@ class DocumentTemplatesController extends Controller
             $query->where('is_active', $request->is_active === '1');
         }
 
+        // Filter by category
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
         // Search
         if ($request->filled('search')) {
             $search = $request->search;
@@ -39,7 +44,7 @@ class DocumentTemplatesController extends Controller
             });
         }
 
-        $templates = $query->with(['creator', 'updater'])
+        $templates = $query->with(['creator', 'updater', 'category'])
             ->latest()
             ->paginate(20)->appends($request->query());
 
@@ -331,6 +336,102 @@ class DocumentTemplatesController extends Controller
         return redirect()
             ->route('admin.document-templates.index')
             ->with('success', 'Document template deleted successfully.');
+    }
+
+    /**
+     * Toggle favorite status for a template.
+     */
+    public function toggleFavorite(DocumentTemplate $documentTemplate)
+    {
+        $this->authorize('view', $documentTemplate);
+
+        $isFavorited = $documentTemplate->toggleFavorite();
+
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'is_favorited' => $isFavorited,
+                'message' => $isFavorited ? 'Template added to favorites.' : 'Template removed from favorites.',
+            ]);
+        }
+
+        return back()->with('success', $isFavorited ? 'Template added to favorites.' : 'Template removed from favorites.');
+    }
+
+    /**
+     * Create a new version of the template.
+     */
+    public function createVersion(Request $request, DocumentTemplate $documentTemplate)
+    {
+        $this->authorize('update', $documentTemplate);
+
+        $validated = $request->validate([
+            'version_notes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $newVersion = $documentTemplate->createVersion([
+                'version_notes' => $validated['version_notes'] ?? null,
+            ]);
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'version' => $newVersion->version,
+                    'message' => "Version {$newVersion->version} created successfully.",
+                ]);
+            }
+
+            return redirect()
+                ->route('admin.document-templates.edit', $newVersion)
+                ->with('success', "Version {$newVersion->version} created successfully.");
+        } catch (\Exception $e) {
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create version: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', 'Failed to create version: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show all versions of a template.
+     */
+    public function versions(DocumentTemplate $documentTemplate)
+    {
+        $this->authorize('view', $documentTemplate);
+
+        // Get the parent template or current if it's the parent
+        $parentTemplate = $documentTemplate->parent_template_id
+            ? DocumentTemplate::find($documentTemplate->parent_template_id)
+            : $documentTemplate;
+
+        $versions = $parentTemplate->getAllVersions();
+
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'current_id' => $documentTemplate->id,
+                'versions' => $versions->map(function ($version) {
+                    return [
+                        'id' => $version->id,
+                        'version' => $version->version,
+                        'is_latest' => $version->is_latest,
+                        'created_at' => $version->created_at->format('M j, Y H:i'),
+                        'creator' => $version->creator?->name ?? 'System',
+                    ];
+                }),
+            ]);
+        }
+
+        return view('admin.document-templates.versions', [
+            'template' => $documentTemplate,
+            'parentTemplate' => $parentTemplate,
+            'versions' => $versions,
+        ]);
     }
 
     /**

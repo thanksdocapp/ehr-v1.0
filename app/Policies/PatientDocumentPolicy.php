@@ -10,6 +10,7 @@ class PatientDocumentPolicy
 {
     /**
      * Determine whether the user can view any documents for a patient.
+     * Note: Actual filtering by ownership happens at query level via scopeOwnedBy().
      */
     public function viewAny(User $user, Patient $patient): bool
     {
@@ -18,20 +19,18 @@ class PatientDocumentPolicy
             return true;
         }
 
-        // Doctor can view documents for accessible patients
+        // Doctor can view documents (filtered by ownership at query level)
         if ($user->role === 'doctor') {
-            // Use Patient visibility scope if available
-            return true; // Will be enforced at query level
+            return true;
         }
 
-        // Nurse/Staff can view documents
+        // Nurse/Staff can view documents (filtered at query level)
         if (in_array($user->role, ['nurse', 'staff'])) {
-            return true; // Will be enforced at query level
+            return true;
         }
 
         // Patient can view their own final documents if exposed via portal
         if ($user->role === 'patient') {
-            // Check if patient record matches authenticated patient
             return false; // For now, handled separately in controller
         }
 
@@ -40,6 +39,7 @@ class PatientDocumentPolicy
 
     /**
      * Determine whether the user can view the document.
+     * Doctors can only view documents they created.
      */
     public function view(User $user, PatientDocument $patientDocument): bool
     {
@@ -48,21 +48,18 @@ class PatientDocumentPolicy
             return true;
         }
 
-        // Doctor can view documents for accessible patients
+        // Doctor can only view documents they created
         if ($user->role === 'doctor') {
-            // Check patient visibility will be done at query level
-            return true;
+            return $patientDocument->created_by === $user->id;
         }
 
-        // Nurse/Staff can view documents
+        // Nurse/Staff can only view documents they created
         if (in_array($user->role, ['nurse', 'staff'])) {
-            return true;
+            return $patientDocument->created_by === $user->id;
         }
 
         // Patient can view their own final documents
         if ($user->role === 'patient') {
-            // Check if this is the patient's own document and it's final
-            // This will need to be checked against authenticated patient
             return $patientDocument->status === 'final';
         }
 
@@ -95,6 +92,7 @@ class PatientDocumentPolicy
 
     /**
      * Determine whether the user can update the document.
+     * Doctors can only update documents they created.
      */
     public function update(User $user, PatientDocument $patientDocument): bool
     {
@@ -108,14 +106,13 @@ class PatientDocumentPolicy
             return true;
         }
 
-        // Doctor can update documents for accessible patients
+        // Doctor can only update documents they created
         if ($user->role === 'doctor') {
-            return true;
+            return $patientDocument->created_by === $user->id;
         }
 
-        // Nurse/Staff can update certain forms (if they created them)
+        // Nurse/Staff can only update their own documents
         if (in_array($user->role, ['nurse', 'staff'])) {
-            // Only allow updates to their own documents
             return $patientDocument->created_by === $user->id;
         }
 
@@ -125,6 +122,7 @@ class PatientDocumentPolicy
 
     /**
      * Determine whether the user can finalise the document.
+     * Doctors can only finalise documents they created.
      */
     public function finalise(User $user, PatientDocument $patientDocument): bool
     {
@@ -133,21 +131,41 @@ class PatientDocumentPolicy
             return false;
         }
 
-        // Only Admin and Doctor can finalise
-        return ($user->is_admin || $user->role === 'admin' || $user->role === 'doctor');
+        // Admin can finalise any document
+        if ($user->is_admin || $user->role === 'admin') {
+            return true;
+        }
+
+        // Doctor can only finalise documents they created
+        if ($user->role === 'doctor') {
+            return $patientDocument->created_by === $user->id;
+        }
+
+        return false;
     }
 
     /**
      * Determine whether the user can void the document.
+     * Doctors can only void documents they created.
      */
     public function void(User $user, PatientDocument $patientDocument): bool
     {
-        // Admin and Doctor can void documents
-        return ($user->is_admin || $user->role === 'admin' || $user->role === 'doctor');
+        // Admin can void any document
+        if ($user->is_admin || $user->role === 'admin') {
+            return true;
+        }
+
+        // Doctor can only void documents they created
+        if ($user->role === 'doctor') {
+            return $patientDocument->created_by === $user->id;
+        }
+
+        return false;
     }
 
     /**
      * Determine whether the user can send the document.
+     * Doctors can only send documents they created.
      */
     public function send(User $user, PatientDocument $patientDocument): bool
     {
@@ -156,28 +174,37 @@ class PatientDocumentPolicy
             return false;
         }
 
-        // Admin and Doctor can send documents
-        if ($user->is_admin || $user->role === 'admin' || $user->role === 'doctor') {
+        // Admin can send any document
+        if ($user->is_admin || $user->role === 'admin') {
             return true;
         }
 
-        // Nurse/Staff can send certain documents if allowed (configurable)
-        if (in_array($user->role, ['nurse', 'staff'])) {
-            // For now, restrict to admin/doctor
-            return false;
+        // Doctor can only send documents they created
+        if ($user->role === 'doctor') {
+            return $patientDocument->created_by === $user->id;
         }
 
+        // Nurse/Staff cannot send documents
         return false;
     }
 
     /**
      * Determine whether the user can delete the document.
+     * Admin can delete any, doctors can delete their own.
      */
     public function delete(User $user, PatientDocument $patientDocument): bool
     {
-        // Only admin can delete documents
-        // In practice, use void instead
-        return $user->is_admin || $user->role === 'admin';
+        // Admin can delete any document
+        if ($user->is_admin || $user->role === 'admin') {
+            return true;
+        }
+
+        // Doctor can delete their own draft documents
+        if ($user->role === 'doctor') {
+            return $patientDocument->created_by === $user->id && $patientDocument->isDraft();
+        }
+
+        return false;
     }
 
     /**

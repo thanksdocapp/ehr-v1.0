@@ -545,126 +545,123 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    // Initialize DataTable
-    $('#prescriptionsTable').DataTable({
-        "paging": false,
-        "info": false,
-        "searching": false,
-        "ordering": true,
-        "order": [[ 4, "desc" ]],
-        "columnDefs": [
-            { "orderable": false, "targets": [6] }
-        ]
-    });
-    
-    // Modal event handlers for prescription actions
-    let currentPrescriptionId = null;
-    
-    // Approve prescription modal
-    $('#approvePrescriptionModal').on('show.bs.modal', function (event) {
-        const button = $(event.relatedTarget);
-        currentPrescriptionId = button.data('prescription-id');
-        const patientName = button.data('patient-name');
-        
-        // Update modal content
-        $('#approve-patient-name').text(patientName);
-        $('#approve-prescription-id').text(currentPrescriptionId);
-    });
-    
-    // Dispense prescription modal
-    $('#dispensePrescriptionModal').on('show.bs.modal', function (event) {
-        const button = $(event.relatedTarget);
-        currentPrescriptionId = button.data('prescription-id');
-        const patientName = button.data('patient-name');
-        const doctorName = button.data('doctor-name');
-        
-        // Update modal content
-        $('#dispense-patient-name').text(patientName);
-        $('#dispense-doctor-name').text(doctorName);
-        $('#dispense-prescription-id').text(currentPrescriptionId);
-    });
-    
-    // Cancel prescription modal
-    $('#cancelPrescriptionModal').on('show.bs.modal', function (event) {
-        const button = $(event.relatedTarget);
-        currentPrescriptionId = button.data('prescription-id');
-        const patientName = button.data('patient-name');
-        
-        // Update modal content
-        $('#cancel-patient-name').text(patientName);
-        $('#cancel-prescription-id').text(currentPrescriptionId);
-    });
-    
-    // Confirm approve prescription
-    $('#confirmApprove').on('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (currentPrescriptionId) {
-            updatePrescriptionStatus(currentPrescriptionId, 'approved');
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable (if jQuery and DataTable are available)
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.DataTable !== 'undefined') {
+        var table = document.getElementById('prescriptionsTable');
+        if (table) {
+            jQuery('#prescriptionsTable').DataTable({
+                "paging": false,
+                "info": false,
+                "searching": false,
+                "ordering": true,
+                "order": [[ 4, "desc" ]],
+                "columnDefs": [
+                    { "orderable": false, "targets": [6] }
+                ]
+            });
         }
-        return false;
-    });
-    
-    // Confirm dispense prescription
-    $('#confirmDispense').on('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (currentPrescriptionId) {
-            updatePrescriptionStatus(currentPrescriptionId, 'dispensed');
-        }
-        return false;
-    });
-    
-    // Confirm cancel prescription
-    $('#confirmCancel').on('click', function() {
-        if (currentPrescriptionId) {
-            updatePrescriptionStatus(currentPrescriptionId, 'cancelled');
-        }
-    });
-    
-    // Modal animations
-    $('.modal').on('show.bs.modal', function() {
-        $(this).find('.modal-content').addClass('animate__animated animate__fadeInDown animate__faster');
-    });
-    
-    $('.modal').on('hide.bs.modal', function() {
-        $(this).find('.modal-content').removeClass('animate__animated animate__fadeInDown animate__faster');
-    });
+    }
 });
 
-// Print prescription
+// Modal event handlers - works with or without jQuery
+var prescriptionCurrentId = null;
+
+// Print prescription - vanilla JS
 function printPrescription(prescriptionId) {
-    window.open(`/staff/prescriptions/${prescriptionId}/print`, '_blank');
+    window.open('/staff/prescriptions/' + prescriptionId + '/print', '_blank');
 }
 
-// Update prescription status via AJAX
+// Initialize modal handlers only if jQuery is available
+if (typeof jQuery !== 'undefined') {
+    jQuery(document).ready(function($) {
+        // Approve prescription modal
+        $('#approvePrescriptionModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            prescriptionCurrentId = button.data('prescription-id');
+            var patientName = button.data('patient-name');
+
+            $('#approve-patient-name').text(patientName);
+            $('#approve-prescription-id').text(prescriptionCurrentId);
+        });
+
+        // Dispense prescription modal
+        $('#dispensePrescriptionModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            prescriptionCurrentId = button.data('prescription-id');
+            var patientName = button.data('patient-name');
+            var doctorName = button.data('doctor-name');
+
+            $('#dispense-patient-name').text(patientName);
+            $('#dispense-doctor-name').text(doctorName);
+            $('#dispense-prescription-id').text(prescriptionCurrentId);
+        });
+
+        // Cancel prescription modal
+        $('#cancelPrescriptionModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            prescriptionCurrentId = button.data('prescription-id');
+            var patientName = button.data('patient-name');
+
+            $('#cancel-patient-name').text(patientName);
+            $('#cancel-prescription-id').text(prescriptionCurrentId);
+        });
+
+        // Confirm approve prescription
+        $('#confirmApprove').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (prescriptionCurrentId) {
+                updatePrescriptionStatus(prescriptionCurrentId, 'approved');
+            }
+            return false;
+        });
+
+        // Confirm dispense prescription
+        $('#confirmDispense').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (prescriptionCurrentId) {
+                updatePrescriptionStatus(prescriptionCurrentId, 'dispensed');
+            }
+            return false;
+        });
+
+        // Confirm cancel prescription
+        $('#confirmCancel').on('click', function() {
+            if (prescriptionCurrentId) {
+                updatePrescriptionStatus(prescriptionCurrentId, 'cancelled');
+            }
+        });
+    });
+}
+
+// Update prescription status via AJAX (requires jQuery)
 function updatePrescriptionStatus(prescriptionId, status) {
-    // Show loading state
-    const loadingText = {
+    if (typeof jQuery === 'undefined') {
+        alert('jQuery is required for this action');
+        return;
+    }
+
+    var loadingText = {
         'approved': 'Approving...',
         'dispensed': 'Marking as Dispensed...',
         'cancelled': 'Cancelling...'
     };
-    
-    const originalButtonText = {
-        'approved': $('#confirmApprove').html(),
-        'dispensed': $('#confirmDispense').html(),
-        'cancelled': $('#confirmCancel').html()
-    };
-    
-    const buttonSelector = {
+
+    var buttonSelector = {
         'approved': '#confirmApprove',
-        'dispensed': '#confirmDispense', 
+        'dispensed': '#confirmDispense',
         'cancelled': '#confirmCancel'
     };
-    
-    $(buttonSelector[status]).prop('disabled', true).html(
-        `<i class="fas fa-spinner fa-spin me-1"></i>${loadingText[status]}`
+
+    var originalButtonText = jQuery(buttonSelector[status]).html();
+    jQuery(buttonSelector[status]).prop('disabled', true).html(
+        '<i class="fas fa-spinner fa-spin me-1"></i>' + loadingText[status]
     );
-    
-    $.ajax({
-        url: `/staff/prescriptions/${prescriptionId}/status`,
+
+    jQuery.ajax({
+        url: '/staff/prescriptions/' + prescriptionId + '/status',
         method: 'PATCH',
         data: {
             status: status,
@@ -672,133 +669,129 @@ function updatePrescriptionStatus(prescriptionId, status) {
         },
         success: function(response) {
             if (response.success) {
-                // Show success message with animation
-                const successMessages = {
+                var successMessages = {
                     'approved': 'Prescription approved successfully!',
                     'dispensed': 'Prescription marked as dispensed successfully!',
                     'cancelled': 'Prescription cancelled successfully!'
                 };
-                
-                // Hide modal first
-                $('.modal').modal('hide');
-                
-                // Show success toast or alert
+                jQuery('.modal').modal('hide');
                 showSuccessMessage(successMessages[status]);
-                
-                // Reload page after short delay
-                setTimeout(() => {
+                setTimeout(function() {
                     location.reload();
                 }, 1500);
             } else {
                 showErrorMessage('Error updating status: ' + (response.message || 'Unknown error'));
-                // Reset button
-                $(buttonSelector[status]).prop('disabled', false).html(originalButtonText[status]);
+                jQuery(buttonSelector[status]).prop('disabled', false).html(originalButtonText);
             }
         },
         error: function(xhr) {
-            let errorMessage = 'Error updating prescription status. Please try again.';
+            var errorMessage = 'Error updating prescription status. Please try again.';
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 errorMessage = xhr.responseJSON.message;
             }
             showErrorMessage(errorMessage);
-            // Reset button
-            $(buttonSelector[status]).prop('disabled', false).html(originalButtonText[status]);
+            jQuery(buttonSelector[status]).prop('disabled', false).html(originalButtonText);
         }
     });
 }
 
-// Success message function
+// Success message function - vanilla JS with jQuery fallback
 function showSuccessMessage(message) {
-    // Create a Bootstrap alert
-    const alertHtml = `
-        <div class="alert alert-success alert-dismissible fade show position-fixed" 
-             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;"
-             role="alert">
-            <i class="fas fa-check-circle me-2"></i>${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-    $('body').append(alertHtml);
-    
-    // Auto-dismiss after 30 seconds
-    setTimeout(() => {
-        $('.alert-success').fadeOut(() => {
-            $('.alert-success').remove();
-        });
-    }, 30000);
-}
+    var alertHtml = '<div class="alert alert-success alert-dismissible fade show position-fixed" ' +
+        'style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">' +
+        '<i class="fas fa-check-circle me-2"></i>' + message +
+        '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
 
-// Error message function
-function showErrorMessage(message) {
-    // Create a Bootstrap alert
-    const alertHtml = `
-        <div class="alert alert-danger alert-dismissible fade show position-fixed" 
-             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;"
-             role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-    $('body').append(alertHtml);
-    
-    // Auto-dismiss after 30 seconds
-    setTimeout(() => {
-        $('.alert-danger').fadeOut(() => {
-            $('.alert-danger').remove();
-        });
-    }, 30000);
-}
-
-// Legacy function for pharmacist status updates (keeping for compatibility)
-let currentPrescriptionId = null;
-
-function updateStatus(prescriptionId, status = null) {
-    currentPrescriptionId = prescriptionId;
-    
-    // For pharmacist modal-based updates only
-    @if(auth()->user()->role === 'pharmacist')
-    if (status) {
-        $('#status_select').val(status);
+    if (typeof jQuery !== 'undefined') {
+        jQuery('body').append(alertHtml);
+        setTimeout(function() {
+            jQuery('.alert-success').fadeOut(function() {
+                jQuery(this).remove();
+            });
+        }, 5000);
+    } else {
+        document.body.insertAdjacentHTML('beforeend', alertHtml);
+        setTimeout(function() {
+            var alert = document.querySelector('.alert-success');
+            if (alert) alert.remove();
+        }, 5000);
     }
-    $('#statusModal').modal('show');
+}
+
+// Error message function - vanilla JS with jQuery fallback
+function showErrorMessage(message) {
+    var alertHtml = '<div class="alert alert-danger alert-dismissible fade show position-fixed" ' +
+        'style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">' +
+        '<i class="fas fa-exclamation-triangle me-2"></i>' + message +
+        '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+
+    if (typeof jQuery !== 'undefined') {
+        jQuery('body').append(alertHtml);
+        setTimeout(function() {
+            jQuery('.alert-danger').fadeOut(function() {
+                jQuery(this).remove();
+            });
+        }, 5000);
+    } else {
+        document.body.insertAdjacentHTML('beforeend', alertHtml);
+        setTimeout(function() {
+            var alert = document.querySelector('.alert-danger');
+            if (alert) alert.remove();
+        }, 5000);
+    }
+}
+
+// Legacy function for pharmacist status updates
+function updateStatus(prescriptionId, status) {
+    prescriptionCurrentId = prescriptionId;
+    @if(auth()->user()->role === 'pharmacist')
+    if (typeof jQuery !== 'undefined') {
+        if (status) {
+            jQuery('#status_select').val(status);
+        }
+        jQuery('#statusModal').modal('show');
+    }
     @endif
 }
 
 @if(auth()->user()->role === 'pharmacist')
-$('#statusForm').on('submit', function(e) {
-    e.preventDefault();
-    
-    const status = $('#status_select').val();
-    const notes = $('#pharmacist_notes').val();
-    
-    $.ajax({
-        url: `/staff/prescriptions/${currentPrescriptionId}/status`,
-        method: 'PATCH',
-        data: {
-            status: status,
-            notes: notes,
-            _token: '{{ csrf_token() }}'
-        },
-        success: function(response) {
-            if (response.success) {
-                $('#statusModal').modal('hide');
-                showSuccessMessage('Prescription status updated successfully!');
-                setTimeout(() => {
-                    location.reload();
-                }, 1500);
-            } else {
-                showErrorMessage('Error updating status: ' + (response.message || 'Unknown error'));
-            }
-        },
-        error: function(xhr) {
-            let errorMessage = 'Error updating prescription status. Please try again.';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMessage = xhr.responseJSON.message;
-            }
-            showErrorMessage(errorMessage);
-        }
+if (typeof jQuery !== 'undefined') {
+    jQuery(document).ready(function($) {
+        $('#statusForm').on('submit', function(e) {
+            e.preventDefault();
+            var status = $('#status_select').val();
+            var notes = $('#pharmacist_notes').val();
+
+            $.ajax({
+                url: '/staff/prescriptions/' + prescriptionCurrentId + '/status',
+                method: 'PATCH',
+                data: {
+                    status: status,
+                    notes: notes,
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#statusModal').modal('hide');
+                        showSuccessMessage('Prescription status updated successfully!');
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showErrorMessage('Error updating status: ' + (response.message || 'Unknown error'));
+                    }
+                },
+                error: function(xhr) {
+                    var errorMessage = 'Error updating prescription status. Please try again.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    showErrorMessage(errorMessage);
+                }
+            });
+        });
     });
-});
+}
 @endif
 </script>
 @endpush

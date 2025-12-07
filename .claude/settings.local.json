@@ -11,7 +11,9 @@
       "Bash(php artisan:*)",
       "Bash(php artisan route:list:*)",
       "Bash(findstr:*)",
-      "Bash(php -r:*)"
+      "Bash(php -r:*)",
+      "Bash(curl:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

@@ -622,6 +622,21 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/document-templates/{documentTemplate}/activate', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'activate'])->name('document-templates.activate');
         Route::get('/document-templates/{documentTemplate}/clone', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'clone'])->name('document-templates.clone');
         Route::get('/document-templates/{template}/schema', [\App\Http\Controllers\Admin\PatientDocumentsController::class, 'getTemplateSchema'])->name('document-templates.schema');
+        Route::post('/document-templates/{documentTemplate}/favorite', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'toggleFavorite'])->name('document-templates.favorite');
+        Route::post('/document-templates/{documentTemplate}/version', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'createVersion'])->name('document-templates.version');
+        Route::get('/document-templates/{documentTemplate}/versions', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'versions'])->name('document-templates.versions');
+
+        // Document Settings & Categories
+        Route::prefix('document-settings')->name('document-settings.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\DocumentSettingsController::class, 'index'])->name('index');
+            Route::put('/', [\App\Http\Controllers\Admin\DocumentSettingsController::class, 'update'])->name('update');
+            Route::get('/categories', [\App\Http\Controllers\Admin\DocumentSettingsController::class, 'categories'])->name('categories');
+            Route::post('/categories', [\App\Http\Controllers\Admin\DocumentSettingsController::class, 'storeCategory'])->name('categories.store');
+            Route::get('/categories/{category}/edit', [\App\Http\Controllers\Admin\DocumentSettingsController::class, 'editCategory'])->name('categories.edit');
+            Route::put('/categories/{category}', [\App\Http\Controllers\Admin\DocumentSettingsController::class, 'updateCategory'])->name('categories.update');
+            Route::delete('/categories/{category}', [\App\Http\Controllers\Admin\DocumentSettingsController::class, 'destroyCategory'])->name('categories.destroy');
+            Route::post('/categories/reorder', [\App\Http\Controllers\Admin\DocumentSettingsController::class, 'reorderCategories'])->name('categories.reorder');
+        });
 
         // Patient Documents
         Route::get('/patients/{patient}/documents', [\App\Http\Controllers\Admin\PatientDocumentsController::class, 'index'])->name('patients.documents.index');

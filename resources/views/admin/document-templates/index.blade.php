@@ -142,6 +142,15 @@
         font-size: 0.7rem;
         padding: 0.35rem 0.6rem;
     }
+    .favorite-btn {
+        transition: all 0.2s;
+    }
+    .favorite-btn:hover {
+        transform: scale(1.2);
+    }
+    .favorite-btn.text-warning {
+        text-shadow: 0 0 3px rgba(255, 193, 7, 0.5);
+    }
 </style>
 @endpush
 
@@ -156,6 +165,12 @@
             <p class="text-muted mb-0">Create and manage letter and form templates for patient documents</p>
         </div>
         <div class="d-flex gap-2">
+            <a href="{{ route('admin.document-settings.categories') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-folder-tree me-2"></i>Categories
+            </a>
+            <a href="{{ route('admin.document-settings.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-cog me-2"></i>Settings
+            </a>
             @can('create', \App\Models\DocumentTemplate::class)
             <div class="dropdown">
                 <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -231,6 +246,15 @@
                 <div class="text-muted small">Active Templates</div>
             </div>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(255, 193, 7, 0.15); color: #ffc107;">
+                <i class="fas fa-star"></i>
+            </div>
+            <div>
+                <div class="h4 mb-0">{{ \App\Models\DocumentTemplate::favoritedBy(auth()->user())->count() }}</div>
+                <div class="text-muted small">Favorites</div>
+            </div>
+        </div>
     </div>
 
     <!-- Filters -->
@@ -262,7 +286,7 @@
                             </option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label fw-semibold">
                             <i class="fas fa-toggle-on me-1 text-muted"></i>Status
                         </label>
@@ -273,11 +297,24 @@
                         </select>
                     </div>
                     <div class="col-md-2">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-folder me-1 text-muted"></i>Category
+                        </label>
+                        <select name="category" class="form-select">
+                            <option value="">All Categories</option>
+                            @foreach(\App\Models\DocumentCategory::active()->orderBy('name')->get() as $category)
+                                <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-1">
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary flex-grow-1">
                                 <i class="fas fa-search"></i>
                             </button>
-                            @if(request()->anyFilled(['search', 'type', 'is_active']))
+                            @if(request()->anyFilled(['search', 'type', 'is_active', 'category']))
                             <a href="{{ route('admin.document-templates.index') }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-times"></i>
                             </a>
@@ -319,9 +356,21 @@
                                     </div>
                                     <div>
                                         <h6 class="mb-1 fw-bold">{{ $template->name }}</h6>
-                                        <code class="small text-muted">{{ $template->slug }}</code>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <code class="small text-muted">{{ $template->slug }}</code>
+                                            @if($template->version > 1)
+                                                <span class="badge bg-info-subtle text-info" style="font-size: 0.65rem;">v{{ $template->version }}</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <form action="{{ route('admin.document-templates.favorite', $template) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-link p-0 favorite-btn {{ $template->isFavorited() ? 'text-warning' : 'text-muted' }}" title="{{ $template->isFavorited() ? 'Remove from favorites' : 'Add to favorites' }}">
+                                            <i class="fas fa-star"></i>
+                                        </button>
+                                    </form>
                                 <div class="dropdown action-dropdown">
                                     <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown">
                                         <i class="fas fa-ellipsis-v"></i>
@@ -381,10 +430,11 @@
                                         @endcan
                                     </ul>
                                 </div>
+                                </div>
                             </div>
                         </div>
                         <div class="template-card-body">
-                            <div class="d-flex gap-2 mb-3">
+                            <div class="d-flex gap-2 mb-3 flex-wrap">
                                 <span class="badge bg-{{ $template->type === 'letter' ? 'primary' : 'success' }}">
                                     {{ ucfirst($template->type) }}
                                 </span>
@@ -392,6 +442,11 @@
                                     <span class="badge bg-success-subtle text-success">Active</span>
                                 @else
                                     <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                                @endif
+                                @if($template->category)
+                                    <span class="badge" style="background: {{ $template->category->color }}20; color: {{ $template->category->color }};">
+                                        <i class="fas {{ $template->category->icon }} me-1"></i>{{ $template->category->name }}
+                                    </span>
                                 @endif
                             </div>
 

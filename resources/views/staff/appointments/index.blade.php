@@ -119,46 +119,63 @@
     <!-- Quick Search Bar -->
     <div class="doctor-card mb-3">
         <div class="doctor-card-body">
-            <div class="d-flex gap-2 align-items-end">
-                <div class="flex-grow-1">
-                    <label class="form-label fw-semibold">Quick Search</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" 
-                               id="quickSearch" 
-                               name="search" 
-                               class="form-control form-control-lg" 
-                               placeholder="Search by appointment #, patient name, email, phone, or doctor..." 
-                               value="{{ request('search') }}">
+            <form method="GET" action="{{ route('staff.appointments.index') }}" id="quickSearchForm">
+                {{-- Preserve existing filters --}}
+                @foreach(request()->except(['search', 'page']) as $key => $value)
+                    @if(is_array($value))
+                        @foreach($value as $v)
+                            <input type="hidden" name="{{ $key }}[]" value="{{ $v }}">
+                        @endforeach
+                    @else
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endif
+                @endforeach
+
+                <div class="d-flex gap-2 align-items-end flex-wrap">
+                    <div class="flex-grow-1">
+                        <label class="form-label fw-semibold">Quick Search</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text"
+                                   id="quickSearch"
+                                   name="search"
+                                   class="form-control form-control-lg"
+                                   placeholder="Search by appointment #, patient name, email, phone, or doctor..."
+                                   value="{{ request('search') }}"
+                                   autocomplete="off">
+                            <button type="submit" class="btn btn-doctor-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-doctor-primary" onclick="toggleFilters()">
+                            <i class="fas fa-filter me-1"></i>Filters
+                            @php
+                                $activeFiltersCount = count(array_filter(request()->except(['page', 'search'])));
+                            @endphp
+                            @if($activeFiltersCount > 0)
+                                <span class="badge bg-primary ms-1">{{ $activeFiltersCount }}</span>
+                            @endif
+                        </button>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-info">
+                            <i class="fas fa-calendar-alt me-1"></i>Calendar View
+                        </a>
+                        <a href="{{ route('staff.appointments.create') }}" class="btn btn-doctor-primary">
+                            <i class="fas fa-plus me-1"></i>New Appointment
+                        </a>
+                    </div>
+                    <div>
+                        @if(request()->hasAny(['search', 'status', 'appointment_type', 'is_online', 'date_from', 'date_to', 'doctor_id', 'department_id']))
+                            <a href="{{ route('staff.appointments.index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Clear All
+                            </a>
+                        @endif
                     </div>
                 </div>
-                <div>
-                    <button type="button" class="btn btn-doctor-primary" onclick="toggleFilters()">
-                        <i class="fas fa-filter me-1"></i>Filters
-                        @php
-                            $activeFiltersCount = count(array_filter(request()->except(['page', 'search'])));
-                        @endphp
-                        @if($activeFiltersCount > 0)
-                            <span class="badge bg-primary ms-1">{{ $activeFiltersCount }}</span>
-                        @endif
-                    </button>
-                </div>
-                <div class="d-flex gap-2">
-                    <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-info">
-                        <i class="fas fa-calendar-alt me-1"></i>Calendar View
-                    </a>
-                    <a href="{{ route('staff.appointments.create') }}" class="btn btn-doctor-primary">
-                        <i class="fas fa-plus me-1"></i>New Appointment
-                    </a>
-                </div>
-                <div>
-                    @if(request()->hasAny(['search', 'status', 'appointment_type', 'is_online', 'date_from', 'date_to', 'doctor_id', 'department_id']))
-                        <a href="{{ route('staff.appointments.index') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-times me-1"></i>Clear All
-                        </a>
-                    @endif
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -645,55 +662,69 @@
 
 @push('scripts')
 <script>
-// Debounced Quick Search
-let searchTimeout;
-$(document).ready(function() {
-    $('#quickSearch').on('input', function() {
-        clearTimeout(searchTimeout);
-        const searchValue = $(this).val();
-        
-        searchTimeout = setTimeout(function() {
-            const url = new URL(window.location.href);
-            if (searchValue) {
-                url.searchParams.set('search', searchValue);
-            } else {
-                url.searchParams.delete('search');
-            }
-            url.searchParams.delete('page'); // Reset to first page
-            window.location.href = url.toString();
-        }, 400); // 400ms debounce
-    });
+// Toggle filter panel - vanilla JS (works without jQuery)
+function toggleFilters() {
+    var panel = document.getElementById('filterPanel');
+    if (panel.style.display === 'none' || !panel.style.display) {
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
 
-    // Toggle filter panel
-    window.toggleFilters = function() {
-        const panel = document.getElementById('filterPanel');
-        if (panel.style.display === 'none' || !panel.style.display) {
-            panel.style.display = 'block';
-        } else {
-            panel.style.display = 'none';
-        }
-    };
+// Remove individual filter - vanilla JS
+function removeFilter(filterKey) {
+    var url = new URL(window.location.href);
+    url.searchParams.delete(filterKey);
+    url.searchParams.delete('page');
+    window.location.href = url.toString();
+}
 
-    // Remove individual filter
-    window.removeFilter = function(filterKey) {
-        const url = new URL(window.location.href);
-        url.searchParams.delete(filterKey);
-        url.searchParams.delete('page'); // Reset to first page
-        window.location.href = url.toString();
-    };
+// Debounced Quick Search - vanilla JS
+document.addEventListener('DOMContentLoaded', function() {
+    var searchInput = document.getElementById('quickSearch');
+    var searchTimeout;
 
-    // Initialize DataTable
-    if ($('#appointmentsTable').length) {
-        $('#appointmentsTable').DataTable({
-            "paging": false,
-            "info": false,
-            "searching": false,
-            "ordering": true,
-            "order": [[ 4, "desc" ]],
-            "columnDefs": [
-                { "orderable": false, "targets": [6] }
-            ]
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            var searchValue = this.value;
+
+            searchTimeout = setTimeout(function() {
+                var url = new URL(window.location.href);
+                if (searchValue) {
+                    url.searchParams.set('search', searchValue);
+                } else {
+                    url.searchParams.delete('search');
+                }
+                url.searchParams.delete('page');
+                window.location.href = url.toString();
+            }, 500);
         });
+
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                document.getElementById('quickSearchForm').submit();
+            }
+        });
+    }
+
+    // Initialize DataTable (if jQuery and DataTable are available)
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.DataTable !== 'undefined') {
+        var table = document.getElementById('appointmentsTable');
+        if (table) {
+            jQuery('#appointmentsTable').DataTable({
+                "paging": false,
+                "info": false,
+                "searching": false,
+                "ordering": true,
+                "order": [[ 4, "desc" ]],
+                "columnDefs": [
+                    { "orderable": false, "targets": [6] }
+                ]
+            });
+        }
     }
 });
 

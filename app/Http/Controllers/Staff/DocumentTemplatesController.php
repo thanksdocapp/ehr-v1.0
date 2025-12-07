@@ -12,12 +12,16 @@ class DocumentTemplatesController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * Doctors see their own templates plus system templates created by admin.
      */
     public function index(Request $request)
     {
         $this->authorize('viewAny', DocumentTemplate::class);
 
-        $query = DocumentTemplate::active();
+        $user = Auth::user();
+
+        // Start with templates visible to the user (own + system templates)
+        $query = DocumentTemplate::visibleTo($user)->active();
 
         // Filter by type
         if ($request->filled('type')) {

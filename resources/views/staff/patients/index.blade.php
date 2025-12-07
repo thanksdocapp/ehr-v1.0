@@ -98,38 +98,55 @@
     <!-- Quick Search Bar -->
     <div class="doctor-card mb-3">
         <div class="doctor-card-body">
-            <div class="d-flex gap-2 align-items-end">
-                <div class="flex-grow-1">
-                    <label class="form-label fw-semibold">Quick Search</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" 
-                               id="quickSearch" 
-                               name="search" 
-                               class="form-control form-control-lg" 
-                               placeholder="Search by name, ID, phone, or email..." 
-                               value="{{ request('search') }}">
+            <form method="GET" action="{{ route('staff.patients.index') }}" id="quickSearchForm">
+                {{-- Preserve existing filters --}}
+                @foreach(request()->except(['search', 'page']) as $key => $value)
+                    @if(is_array($value))
+                        @foreach($value as $v)
+                            <input type="hidden" name="{{ $key }}[]" value="{{ $v }}">
+                        @endforeach
+                    @else
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endif
+                @endforeach
+
+                <div class="d-flex gap-2 align-items-end">
+                    <div class="flex-grow-1">
+                        <label class="form-label fw-semibold">Quick Search</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text"
+                                   id="quickSearch"
+                                   name="search"
+                                   class="form-control form-control-lg"
+                                   placeholder="Search by name, ID, phone, or email..."
+                                   value="{{ request('search') }}"
+                                   autocomplete="off">
+                            <button type="submit" class="btn btn-doctor-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-doctor-primary" onclick="toggleFilters()">
+                            <i class="fas fa-filter me-1"></i>Filters
+                            @php
+                                $activeFiltersCount = count(array_filter(request()->except(['page', 'search'])));
+                            @endphp
+                            @if($activeFiltersCount > 0)
+                                <span class="badge bg-primary ms-1">{{ $activeFiltersCount }}</span>
+                            @endif
+                        </button>
+                    </div>
+                    <div>
+                        @if(request()->hasAny(['search', 'first_name', 'last_name', 'gender', 'age_min', 'age_max', 'status', 'has_alert', 'department_id', 'assigned_doctor_id']))
+                            <a href="{{ route('staff.patients.index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Clear All
+                            </a>
+                        @endif
                     </div>
                 </div>
-                <div>
-                    <button type="button" class="btn btn-doctor-primary" onclick="toggleFilters()">
-                        <i class="fas fa-filter me-1"></i>Filters
-                        @php
-                            $activeFiltersCount = count(array_filter(request()->except(['page', 'search'])));
-                        @endphp
-                        @if($activeFiltersCount > 0)
-                            <span class="badge bg-primary ms-1">{{ $activeFiltersCount }}</span>
-                        @endif
-                    </button>
-                </div>
-                <div>
-                    @if(request()->hasAny(['search', 'first_name', 'last_name', 'gender', 'age_min', 'age_max', 'status', 'has_alert', 'department_id', 'assigned_doctor_id']))
-                        <a href="{{ route('staff.patients.index') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-times me-1"></i>Clear All
-                        </a>
-                    @endif
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -988,80 +1005,105 @@
 
 @push('scripts')
 <script>
-// Debounced Quick Search
-let searchTimeout;
-$(document).ready(function() {
-    $('#quickSearch').on('input', function() {
-        clearTimeout(searchTimeout);
-        const searchValue = $(this).val();
-        
-        searchTimeout = setTimeout(function() {
-            const url = new URL(window.location.href);
-            if (searchValue) {
-                url.searchParams.set('search', searchValue);
-            } else {
-                url.searchParams.delete('search');
+// Toggle filter panel - vanilla JS (works without jQuery)
+function toggleFilters() {
+    var panel = document.getElementById('filterPanel');
+    if (panel.style.display === 'none' || !panel.style.display) {
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// Remove individual filter - vanilla JS
+function removeFilter(filterKey) {
+    var url = new URL(window.location.href);
+    url.searchParams.delete(filterKey);
+    url.searchParams.delete('page'); // Reset to first page
+    window.location.href = url.toString();
+}
+
+// Debounced Quick Search - vanilla JS with jQuery fallback
+document.addEventListener('DOMContentLoaded', function() {
+    var searchInput = document.getElementById('quickSearch');
+    var searchTimeout;
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            var searchValue = this.value;
+
+            searchTimeout = setTimeout(function() {
+                var url = new URL(window.location.href);
+                if (searchValue) {
+                    url.searchParams.set('search', searchValue);
+                } else {
+                    url.searchParams.delete('search');
+                }
+                url.searchParams.delete('page'); // Reset to first page
+                window.location.href = url.toString();
+            }, 500); // 500ms debounce
+        });
+
+        // Also handle Enter key to submit immediately
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                document.getElementById('quickSearchForm').submit();
             }
-            url.searchParams.delete('page'); // Reset to first page
-            window.location.href = url.toString();
-        }, 400); // 400ms debounce
-    });
-
-    // Toggle filter panel
-    window.toggleFilters = function() {
-        const panel = document.getElementById('filterPanel');
-        if (panel.style.display === 'none' || !panel.style.display) {
-            panel.style.display = 'block';
-        } else {
-            panel.style.display = 'none';
-        }
-    };
-
-    // Remove individual filter
-    window.removeFilter = function(filterKey) {
-        const url = new URL(window.location.href);
-        url.searchParams.delete(filterKey);
-        url.searchParams.delete('page'); // Reset to first page
-        window.location.href = url.toString();
-    };
-
-    // Initialize DataTable (if table exists) - only on desktop
-    if ($('#patientsTable').length && window.innerWidth >= 768) {
-        $('#patientsTable').DataTable({
-            "paging": false,
-            "info": false,
-            "searching": false,
-            "ordering": true,
-            "order": [[ 7, "desc" ]],
-            "columnDefs": [
-                { "orderable": false, "targets": [8] }
-            ],
-            "responsive": false
         });
     }
 
-    // Handle accordion icon rotation
-    $('[data-bs-toggle="collapse"]').on('click', function() {
-        const icon = $(this).find('i');
-        const isExpanded = $(this).attr('aria-expanded') === 'true';
-        if (isExpanded) {
-            icon.css('transform', 'rotate(0deg)');
-        } else {
-            icon.css('transform', 'rotate(180deg)');
+    // Initialize DataTable (if jQuery and DataTable are available)
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.DataTable !== 'undefined') {
+        var patientsTable = document.getElementById('patientsTable');
+        if (patientsTable && window.innerWidth >= 768) {
+            jQuery('#patientsTable').DataTable({
+                "paging": false,
+                "info": false,
+                "searching": false,
+                "ordering": true,
+                "order": [[ 7, "desc" ]],
+                "columnDefs": [
+                    { "orderable": false, "targets": [8] }
+                ],
+                "responsive": false
+            });
         }
+    }
+
+    // Handle accordion icon rotation - vanilla JS
+    var collapseButtons = document.querySelectorAll('[data-bs-toggle="collapse"]');
+    collapseButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var icon = this.querySelector('i');
+            var isExpanded = this.getAttribute('aria-expanded') === 'true';
+            if (icon) {
+                icon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+        });
     });
 
-    // Update icon on collapse/expand
-    $('.collapse').on('show.bs.collapse', function() {
-        const button = $('[data-bs-target="#' + $(this).attr('id') + '"]');
-        button.attr('aria-expanded', 'true');
-        button.find('i').css('transform', 'rotate(180deg)');
-    });
+    // Update icon on collapse/expand - vanilla JS with Bootstrap events
+    var collapseElements = document.querySelectorAll('.collapse');
+    collapseElements.forEach(function(collapseEl) {
+        collapseEl.addEventListener('show.bs.collapse', function() {
+            var button = document.querySelector('[data-bs-target="#' + this.id + '"]');
+            if (button) {
+                button.setAttribute('aria-expanded', 'true');
+                var icon = button.querySelector('i');
+                if (icon) icon.style.transform = 'rotate(180deg)';
+            }
+        });
 
-    $('.collapse').on('hide.bs.collapse', function() {
-        const button = $('[data-bs-target="#' + $(this).attr('id') + '"]');
-        button.attr('aria-expanded', 'false');
-        button.find('i').css('transform', 'rotate(0deg)');
+        collapseEl.addEventListener('hide.bs.collapse', function() {
+            var button = document.querySelector('[data-bs-target="#' + this.id + '"]');
+            if (button) {
+                button.setAttribute('aria-expanded', 'false');
+                var icon = button.querySelector('i');
+                if (icon) icon.style.transform = 'rotate(0deg)';
+            }
+        });
     });
 });
 </script>

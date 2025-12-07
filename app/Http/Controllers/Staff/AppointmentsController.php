@@ -599,7 +599,19 @@ class AppointmentsController extends Controller
             ]);
 
             $newStatus = $request->input('status');
-            
+
+            // If status is already the target, return success (no change needed)
+            if ($appointment->status === $newStatus) {
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Appointment is already ' . ucfirst($newStatus) . '.',
+                        'status' => $newStatus
+                    ]);
+                }
+                return redirect()->back()->with('info', 'Appointment is already ' . ucfirst($newStatus) . '.');
+            }
+
             // Role-based restrictions
             if ($newStatus === 'completed' && $user->role !== 'doctor') {
                 $message = 'Only doctors can mark appointments as completed.';
