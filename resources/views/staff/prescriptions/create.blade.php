@@ -406,9 +406,17 @@
                 <div class="col-md-6">
                     <div class="form-group mb-3">
                         <label class="form-label">Medication Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control medication-name" 
-                               name="medications[INDEX][name]" 
-                               placeholder="Enter medication name..." required>
+                        <div class="input-group">
+                            <input type="text" class="form-control medication-name"
+                                   name="medications[INDEX][name]"
+                                   placeholder="Type to search..." required
+                                   autocomplete="off">
+                            <button type="button" class="btn btn-outline-primary quincy-search-btn" title="Search Quincy drug database">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <input type="hidden" class="medication-drug-id" name="medications[INDEX][drug_id]" value="">
+                        <small class="text-muted quincy-drug-info" style="display: none;"></small>
                     </div>
                     
                     <div class="form-group mb-3">
@@ -454,9 +462,17 @@
                     
                     <div class="form-group mb-3">
                         <label class="form-label">Duration <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control medication-duration" 
-                               name="medications[INDEX][duration]" 
+                        <input type="text" class="form-control medication-duration"
+                               name="medications[INDEX][duration]"
                                placeholder="e.g., 7 days, 2 weeks..." required>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control medication-quantity"
+                               name="medications[INDEX][quantity]"
+                               placeholder="e.g., 28" min="1" value="1">
+                        <small class="text-muted">Number of units to dispense (for Quincy orders)</small>
                     </div>
                 </div>
                 
@@ -952,8 +968,148 @@ $(document).ready(function() {
             }
         });
     }
+    // ============================================
+    // Quincy Drug Search Integration
+    // ============================================
+    let currentMedicationField = null;
+
+    // Quincy search button click
+    $(document).on('click', '.quincy-search-btn', function() {
+        currentMedicationField = $(this).closest('.form-group').find('.medication-name');
+        const currentValue = currentMedicationField.val();
+        $('#quincyDrugSearchInput').val(currentValue);
+        $('#quincyDrugSearchModal').modal('show');
+
+        if (currentValue && currentValue.length >= 3) {
+            searchQuincyDrugs(currentValue);
+        }
+    });
+
+    // Search input in modal
+    let quincySearchTimeout;
+    $('#quincyDrugSearchInput').on('input', function() {
+        const query = $(this).val().trim();
+        clearTimeout(quincySearchTimeout);
+
+        if (query.length < 3) {
+            $('#quincyDrugResults').html('<p class="text-muted text-center py-4">Type at least 3 characters to search...</p>');
+            return;
+        }
+
+        quincySearchTimeout = setTimeout(function() {
+            searchQuincyDrugs(query);
+        }, 300);
+    });
+
+    function searchQuincyDrugs(query) {
+        $('#quincyDrugResults').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-primary"></i><p class="text-muted mt-2">Searching Quincy database...</p></div>');
+
+        $.ajax({
+            url: '{{ route("staff.quincy.medicines.search") }}',
+            method: 'GET',
+            data: { query: query, limit: 20 },
+            success: function(response) {
+                if (response.success && response.data && response.data.length > 0) {
+                    let html = '<div class="list-group">';
+                    response.data.forEach(function(drug) {
+                        html += `
+                            <a href="#" class="list-group-item list-group-item-action quincy-drug-item"
+                               data-drug-id="${drug.id || ''}"
+                               data-drug-name="${(drug.name || drug.drug_name || '').replace(/"/g, '&quot;')}"
+                               data-drug-form="${drug.form || ''}"
+                               data-drug-strength="${drug.strength || ''}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">${drug.name || drug.drug_name || 'Unknown'}</h6>
+                                        <small class="text-muted">
+                                            ${drug.form ? drug.form + ' - ' : ''}
+                                            ${drug.strength || ''}
+                                            ${drug.manufacturer ? ' | ' + drug.manufacturer : ''}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-primary">Select</span>
+                                </div>
+                            </a>
+                        `;
+                    });
+                    html += '</div>';
+                    $('#quincyDrugResults').html(html);
+                } else {
+                    $('#quincyDrugResults').html('<p class="text-muted text-center py-4"><i class="fas fa-search me-2"></i>No drugs found matching "' + query + '"</p>');
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 400 || (xhr.responseJSON && !xhr.responseJSON.success)) {
+                    $('#quincyDrugResults').html('<div class="text-center py-4"><i class="fas fa-exclamation-triangle fa-2x text-warning mb-3"></i><p class="text-muted">Quincy integration is not configured. You can still enter medications manually.</p></div>');
+                } else {
+                    $('#quincyDrugResults').html('<p class="text-danger text-center py-4">Error searching Quincy database. Please try again.</p>');
+                }
+            }
+        });
+    }
+
+    // Select drug from Quincy results
+    $(document).on('click', '.quincy-drug-item', function(e) {
+        e.preventDefault();
+        const drugId = $(this).data('drug-id');
+        const drugName = $(this).data('drug-name');
+        const drugForm = $(this).data('drug-form');
+        const drugStrength = $(this).data('drug-strength');
+
+        if (currentMedicationField) {
+            const medicationItem = currentMedicationField.closest('.medication-item');
+            currentMedicationField.val(drugName);
+            medicationItem.find('.medication-drug-id').val(drugId);
+
+            if (drugStrength) {
+                medicationItem.find('.medication-dosage').val(drugStrength);
+            }
+            if (drugForm) {
+                const formSelect = medicationItem.find('.medication-form');
+                const formValue = drugForm.toLowerCase();
+                if (formSelect.find(`option[value="${formValue}"]`).length) {
+                    formSelect.val(formValue);
+                }
+            }
+
+            // Show Quincy drug info
+            const infoEl = medicationItem.find('.quincy-drug-info');
+            infoEl.html(`<i class="fas fa-check-circle text-success me-1"></i>Quincy Drug ID: ${drugId}`).show();
+        }
+
+        $('#quincyDrugSearchModal').modal('hide');
+    });
 });
 </script>
+
+{{-- Quincy Drug Search Modal --}}
+<div class="modal fade" id="quincyDrugSearchModal" tabindex="-1" aria-labelledby="quincyDrugSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="quincyDrugSearchModalLabel">
+                    <i class="fas fa-pills me-2"></i>Search Quincy Drug Database
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="quincyDrugSearchInput" class="form-label">Search Medications</label>
+                    <input type="text" class="form-control form-control-lg" id="quincyDrugSearchInput"
+                           placeholder="Type medication name (e.g., Amoxicillin, Paracetamol)..." autocomplete="off">
+                    <small class="text-muted">Search by medication name or PIP code</small>
+                </div>
+                <div id="quincyDrugResults" style="max-height: 400px; overflow-y: auto;">
+                    <p class="text-muted text-center py-4">Type at least 3 characters to search...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .autocomplete-suggestion-item.highlighted {
     background: #f8f9fa !important;
@@ -963,6 +1119,16 @@ $(document).ready(function() {
 }
 .autocomplete-suggestion-item:hover {
     background: #f8f9fa !important;
+}
+.quincy-drug-item:hover {
+    background: #f8f9fa;
+}
+.quincy-drug-item .badge {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.quincy-drug-item:hover .badge {
+    opacity: 1;
 }
 </style>
 @endpush

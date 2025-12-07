@@ -7,11 +7,24 @@ use App\Models\PrescriptionOrder;
 use App\Models\Prescription;
 use App\Models\Patient;
 use App\Models\Doctor;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class QuincyService extends BaseIntegrationService
 {
     /**
-     * Test connection to Quincy API
+     * Get the API base URL based on environment
+     */
+    protected function getBaseUrl(): string
+    {
+        if ($this->module->environment === 'production') {
+            return $this->config['production_url'] ?? 'https://app.quincy.health/api';
+        }
+        return $this->config['sandbox_url'] ?? 'https://app.quincy.health/api';
+    }
+
+    /**
+     * Test connection to Quincy API using whoami endpoint
      */
     public function testConnection(): array
     {
@@ -25,11 +38,22 @@ class QuincyService extends BaseIntegrationService
                 ];
             }
 
-            // Simulated test - replace with actual API call
+            // Call the whoami endpoint to verify connection
+            $response = Http::withToken($apiKey)
+                ->timeout(15)
+                ->get($this->getBaseUrl() . '/v1/user/whoami');
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'message' => 'Connection successful - Authenticated as ' . ($response->json('email') ?? 'Unknown'),
+                    'environment' => $this->module->environment,
+                ];
+            }
+
             return [
-                'success' => true,
-                'message' => 'Connection successful',
-                'environment' => $this->module->environment,
+                'success' => false,
+                'message' => 'Authentication failed: ' . ($response->json('message') ?? 'Invalid API key'),
             ];
         } catch (\Exception $e) {
             return [
@@ -40,40 +64,121 @@ class QuincyService extends BaseIntegrationService
     }
 
     /**
-     * Get available pharmacies
+     * Search medicines by name or PIP code
      */
-    public function getAvailableServices(): array
+    public function searchMedicines(string $query, int $limit = 100, bool $expandPacks = false): array
     {
-        // In production, fetch from Quincy API based on location
-        return [
-            ['id' => 'BOOTS001', 'name' => 'Boots Pharmacy - High Street', 'distance' => '0.2 miles'],
-            ['id' => 'LLOYDS001', 'name' => 'Lloyds Pharmacy - Market Square', 'distance' => '0.4 miles'],
-            ['id' => 'WELL001', 'name' => 'Well Pharmacy - Station Road', 'distance' => '0.6 miles'],
-            ['id' => 'SUPERDRUG001', 'name' => 'Superdrug Pharmacy - Shopping Centre', 'distance' => '0.8 miles'],
-        ];
-    }
-
-    /**
-     * Search pharmacies by location
-     */
-    public function searchPharmacies(string $postcode, int $radius = 5): array
-    {
-        if (!$this->isReady()) {
+        if (!$this->isReady() || strlen($query) < 3) {
             return [];
         }
 
         try {
-            // In production, call Quincy API
-            // $response = $this->makeRequest('get', '/api/pharmacies', [
-            //     'postcode' => $postcode,
-            //     'radius' => $radius,
-            // ]);
+            $response = Http::withToken($this->getApiKey())
+                ->timeout(15)
+                ->get($this->getBaseUrl() . '/v1/medicines', [
+                    'query' => $query,
+                    'limit' => min($limit, 100),
+                    'expand_packs' => $expandPacks ? 1 : 0,
+                ]);
 
-            return $this->getAvailableServices();
+            if ($response->successful()) {
+                return $response->json('data') ?? [];
+            }
+
+            $this->logError("Medicine search failed: " . $response->body());
+            return [];
         } catch (\Exception $e) {
-            $this->logError("Failed to search pharmacies: {$e->getMessage()}");
+            $this->logError("Medicine search exception: {$e->getMessage()}");
             return [];
         }
+    }
+
+    /**
+     * Get available pharmacies - Quincy doesn't have pharmacy search, prescriptions are fulfilled by partner pharmacies
+     */
+    public function getAvailableServices(): array
+    {
+        return [
+            ['id' => 'quincy_network', 'name' => 'Quincy Pharmacy Network', 'type' => 'deliver_customer'],
+            ['id' => 'clinic_delivery', 'name' => 'Deliver to Clinic', 'type' => 'deliver_clinic'],
+            ['id' => 'token_issue', 'name' => 'Issue Token (Patient Chooses Pharmacy)', 'type' => 'issue_token'],
+        ];
+    }
+
+    /**
+     * Create or find patient in Quincy
+     */
+    public function createOrUpdatePatient(Patient $patient): ?string
+    {
+        if (!$this->isReady()) {
+            return null;
+        }
+
+        try {
+            // Check if patient exists by source_id
+            $sourceId = 'EHR-' . $patient->id;
+
+            $searchResponse = Http::withToken($this->getApiKey())
+                ->timeout(15)
+                ->get($this->getBaseUrl() . '/v1/patients', [
+                    'query' => $patient->email,
+                    'limit' => 10,
+                ]);
+
+            if ($searchResponse->successful()) {
+                $patients = $searchResponse->json('data') ?? [];
+                foreach ($patients as $p) {
+                    if (($p['source_id'] ?? '') === $sourceId) {
+                        return $p['id'];
+                    }
+                }
+            }
+
+            // Create new patient
+            $patientData = [
+                'source_id' => $sourceId,
+                'firstname' => $patient->first_name,
+                'lastname' => $patient->last_name,
+                'dob' => $patient->date_of_birth->format('Y-m-d'),
+                'sex' => $this->mapGender($patient->gender),
+                'email' => $patient->email,
+                'phone' => $patient->phone ?? '',
+                'address_line1' => $patient->address ?? '',
+                'city' => $patient->city ?? 'London',
+                'postcode' => $patient->postal_code ?? '',
+                'country' => 'United Kingdom',
+            ];
+
+            if ($patient->nhs_number) {
+                $patientData['nhs_number'] = $patient->nhs_number;
+            }
+
+            $response = Http::withToken($this->getApiKey())
+                ->timeout(15)
+                ->post($this->getBaseUrl() . '/v1/patients', $patientData);
+
+            if ($response->successful()) {
+                return $response->json('id');
+            }
+
+            $this->logError("Failed to create patient: " . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            $this->logError("Patient creation exception: {$e->getMessage()}");
+            return null;
+        }
+    }
+
+    /**
+     * Map gender to Quincy format
+     */
+    protected function mapGender(?string $gender): string
+    {
+        return match (strtolower($gender ?? '')) {
+            'male', 'm' => 'Male',
+            'female', 'f' => 'Female',
+            default => 'Other',
+        };
     }
 
     /**
@@ -83,19 +188,26 @@ class QuincyService extends BaseIntegrationService
         Patient $patient,
         Doctor $doctor,
         array $medications,
-        ?string $pharmacyId = null,
-        ?string $pharmacyName = null,
-        string $deliveryMethod = 'collection',
-        ?string $deliveryAddress = null,
+        string $deliveryOption = 'deliver_customer',
+        string $payee = 'patient',
         ?int $prescriptionId = null,
-        ?string $clinicalNotes = null
+        ?string $clinicalNotes = null,
+        array $repeatOptions = []
     ): PrescriptionOrder {
         // Create integration request
-        $request = $this->createRequest('order', [
+        $request = $this->createRequest('create_prescription', [
             'patient_id' => $patient->id,
             'medications' => $medications,
-            'pharmacy_id' => $pharmacyId,
+            'delivery_option' => $deliveryOption,
         ], $patient->id, $doctor->id);
+
+        // Map delivery option to method
+        $deliveryMethod = match ($deliveryOption) {
+            'deliver_customer' => 'delivery',
+            'deliver_clinic' => 'collection',
+            'issue_token' => 'collection',
+            default => 'collection',
+        };
 
         // Create prescription order
         $order = PrescriptionOrder::create([
@@ -103,12 +215,9 @@ class QuincyService extends BaseIntegrationService
             'patient_id' => $patient->id,
             'doctor_id' => $doctor->id,
             'prescription_id' => $prescriptionId,
-            'pharmacy_id' => $pharmacyId,
-            'pharmacy_name' => $pharmacyName,
             'medications' => $medications,
             'delivery_method' => $deliveryMethod,
-            'delivery_address' => $deliveryAddress,
-            'clinical_notes' => $clinicalNotes,
+            'delivery_address' => $deliveryOption === 'deliver_customer' ? $patient->address : null,
             'status' => PrescriptionOrder::STATUS_DRAFT,
         ]);
 
@@ -116,9 +225,9 @@ class QuincyService extends BaseIntegrationService
     }
 
     /**
-     * Submit prescription to Quincy/Pharmacy
+     * Submit prescription to Quincy
      */
-    public function submitOrder(PrescriptionOrder $order): array
+    public function submitOrder(PrescriptionOrder $order, string $deliveryOption = 'deliver_customer', string $payee = 'patient'): array
     {
         if (!$this->isReady()) {
             return [
@@ -131,51 +240,103 @@ class QuincyService extends BaseIntegrationService
             $patient = $order->patient;
             $doctor = $order->doctor;
 
-            // Prepare prescription data
+            // Build prescription lines from medications
+            $lines = [];
+            foreach ($order->medications as $medication) {
+                $line = [
+                    'quantity' => $medication['quantity'] ?? 1,
+                    'instructions' => $medication['instructions'] ?? $medication['dosage'] ?? 'As directed',
+                ];
+
+                // Use drug_id if available, otherwise custom_drug_name
+                if (!empty($medication['drug_id'])) {
+                    $line['drug_id'] = $medication['drug_id'];
+                } else {
+                    $line['custom_drug_name'] = $medication['name'] ?? $medication['medication_name'] ?? 'Unknown medication';
+                }
+
+                if (!empty($medication['notes'])) {
+                    $line['notes_to_pharmacist'] = $medication['notes'];
+                }
+
+                $lines[] = $line;
+            }
+
+            // Build prescription data according to Quincy API
             $prescriptionData = [
                 'patient' => [
-                    'first_name' => $patient->first_name,
-                    'last_name' => $patient->last_name,
-                    'date_of_birth' => $patient->date_of_birth->format('Y-m-d'),
-                    'nhs_number' => $patient->nhs_number ?? null,
-                    'address' => $patient->address,
-                    'phone' => $patient->phone,
+                    'source_id' => 'EHR-' . $patient->id,
+                    'firstname' => $patient->first_name,
+                    'lastname' => $patient->last_name,
+                    'dob' => $patient->date_of_birth->format('Y-m-d'),
+                    'sex' => $this->mapGender($patient->gender),
+                    'email' => $patient->email,
+                    'phone' => $patient->phone ?? '',
+                    'address_line1' => $patient->address ?? '',
+                    'city' => $patient->city ?? 'London',
+                    'postcode' => $patient->postal_code ?? '',
+                    'country' => 'United Kingdom',
                 ],
-                'prescriber' => [
-                    'name' => $doctor->full_name,
-                    'gmc_number' => $doctor->gmc_number ?? null,
-                    'prescriber_type' => 'doctor',
-                ],
-                'pharmacy_id' => $order->pharmacy_id,
-                'medications' => $order->medications,
-                'delivery_method' => $order->delivery_method,
-                'delivery_address' => $order->delivery_address,
-                'reference' => $order->order_number,
+                'lines' => $lines,
+                'delivery_option' => $deliveryOption,
+                'payee' => $payee,
+                'repeat_option' => 'no_repeats',
             ];
 
-            // In production, send to Quincy API
-            // $response = $this->makeRequest('post', '/api/prescriptions', $prescriptionData);
+            // Add NHS number if available
+            if ($patient->nhs_number) {
+                $prescriptionData['patient']['nhs_number'] = $patient->nhs_number;
+            }
 
-            // Simulated response
-            $externalOrderId = 'QNC-' . strtoupper(substr(md5(uniqid()), 0, 8));
+            // Add prescriber fee if configured
+            if (!empty($this->config['prescriber_fee'])) {
+                $prescriptionData['prescriber_fee'] = (float) $this->config['prescriber_fee'];
+            }
 
-            // Update order
-            $order->markSubmitted($externalOrderId);
+            // Submit to Quincy API
+            $response = Http::withToken($this->getApiKey())
+                ->timeout(30)
+                ->post($this->getBaseUrl() . '/v1/prescriptions', $prescriptionData);
 
-            // Update integration request
-            $order->integrationRequest->markSubmitted($externalOrderId);
+            if ($response->successful()) {
+                $data = $response->json();
+                $externalId = $data['id'] ?? null;
+                $token = $data['token'] ?? null;
 
-            $this->logInfo("Prescription submitted: {$order->order_number}", [
-                'external_id' => $externalOrderId,
-            ]);
+                // Update order with external reference
+                $order->external_order_id = $externalId;
+                $order->status = PrescriptionOrder::STATUS_SUBMITTED;
+                $order->save();
+
+                // Update integration request
+                $order->integrationRequest->markSubmitted($externalId);
+
+                $this->logInfo("Prescription submitted: {$order->id}", [
+                    'external_id' => $externalId,
+                    'token' => $token,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Prescription submitted successfully',
+                    'external_id' => $externalId,
+                    'token' => $token,
+                    'status' => $data['status'] ?? 'Submitted',
+                ];
+            }
+
+            $errorMessage = $response->json('message') ?? $response->body();
+            $order->integrationRequest->markFailed($errorMessage);
+
+            $this->logError("Prescription submission failed: " . $errorMessage);
 
             return [
-                'success' => true,
-                'message' => 'Prescription submitted to pharmacy',
-                'external_order_id' => $externalOrderId,
+                'success' => false,
+                'message' => 'Failed to submit prescription: ' . $errorMessage,
             ];
         } catch (\Exception $e) {
             $order->integrationRequest->markFailed($e->getMessage());
+            $this->logError("Prescription submission exception: {$e->getMessage()}");
 
             return [
                 'success' => false,
@@ -185,25 +346,44 @@ class QuincyService extends BaseIntegrationService
     }
 
     /**
-     * Check order status
+     * Check prescription status
      */
     public function checkOrderStatus(PrescriptionOrder $order): array
     {
-        if (!$this->isReady()) {
+        if (!$this->isReady() || !$order->external_order_id) {
             return [
                 'success' => false,
-                'message' => 'Quincy integration is not configured or active',
+                'message' => 'Cannot check status - integration not ready or no external ID',
             ];
         }
 
         try {
-            // In production, call Quincy API
-            // $response = $this->makeRequest('get', "/api/prescriptions/{$order->external_order_id}");
+            $response = Http::withToken($this->getApiKey())
+                ->timeout(15)
+                ->get($this->getBaseUrl() . '/v1/prescriptions/' . $order->external_order_id);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $status = $data['status'] ?? 'Unknown';
+
+                // Map Quincy status to our status
+                $mappedStatus = $this->mapQuincyStatus($status);
+                if ($mappedStatus !== $order->status) {
+                    $order->status = $mappedStatus;
+                    $order->save();
+                }
+
+                return [
+                    'success' => true,
+                    'status' => $status,
+                    'mapped_status' => $mappedStatus,
+                    'data' => $data,
+                ];
+            }
 
             return [
-                'success' => true,
-                'status' => $order->status,
-                'message' => 'Status retrieved',
+                'success' => false,
+                'message' => 'Failed to retrieve status: ' . $response->body(),
             ];
         } catch (\Exception $e) {
             return [
@@ -211,6 +391,25 @@ class QuincyService extends BaseIntegrationService
                 'message' => 'Failed to check status: ' . $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Map Quincy status to our internal status
+     */
+    protected function mapQuincyStatus(string $quincyStatus): string
+    {
+        return match (strtolower($quincyStatus)) {
+            'awaiting payment', 'pending' => PrescriptionOrder::STATUS_SUBMITTED,
+            'paid', 'accepted', 'processing' => PrescriptionOrder::STATUS_ACCEPTED,
+            'dispensing' => PrescriptionOrder::STATUS_DISPENSING,
+            'ready', 'ready for collection' => PrescriptionOrder::STATUS_READY,
+            'dispatched', 'shipped' => PrescriptionOrder::STATUS_READY,
+            'collected' => PrescriptionOrder::STATUS_COLLECTED,
+            'delivered' => PrescriptionOrder::STATUS_DELIVERED,
+            'cancelled' => PrescriptionOrder::STATUS_CANCELLED,
+            'rejected' => PrescriptionOrder::STATUS_REJECTED,
+            default => $quincyStatus,
+        };
     }
 
     /**
@@ -226,11 +425,8 @@ class QuincyService extends BaseIntegrationService
         }
 
         try {
-            // In production, cancel via Quincy API
-            if ($order->external_order_id) {
-                // $response = $this->makeRequest('post', "/api/prescriptions/{$order->external_order_id}/cancel");
-            }
-
+            // Note: Quincy API may not support cancellation - check their docs
+            // For now, just update local status
             $order->markCancelled();
             $order->integrationRequest->markCancelled($reason);
 
@@ -251,78 +447,30 @@ class QuincyService extends BaseIntegrationService
      */
     public function processWebhook(array $payload): array
     {
-        $eventType = $payload['event'] ?? 'unknown';
+        $eventType = $payload['event'] ?? $payload['type'] ?? 'unknown';
+        $prescriptionId = $payload['prescription_id'] ?? $payload['id'] ?? null;
 
-        switch ($eventType) {
-            case 'prescription_accepted':
-                return $this->handleAcceptedWebhook($payload);
+        $this->logInfo("Quincy webhook received: {$eventType}", ['prescription_id' => $prescriptionId]);
 
-            case 'prescription_dispensed':
-                return $this->handleDispensedWebhook($payload);
-
-            case 'prescription_ready':
-                return $this->handleReadyWebhook($payload);
-
-            case 'prescription_collected':
-                return $this->handleCollectedWebhook($payload);
-
-            case 'prescription_rejected':
-                return $this->handleRejectedWebhook($payload);
-
-            default:
-                $this->logInfo("Unknown webhook event: {$eventType}");
-                return ['success' => true, 'message' => 'Event ignored'];
+        $order = $this->findOrderByExternalId($prescriptionId);
+        if (!$order) {
+            $this->logWarning("Webhook received for unknown prescription: {$prescriptionId}");
+            return ['success' => true, 'message' => 'Prescription not found locally'];
         }
-    }
 
-    protected function handleAcceptedWebhook(array $payload): array
-    {
-        $order = $this->findOrderByExternalId($payload['prescription_id'] ?? null);
-        if ($order) {
-            $order->markAccepted();
-            $this->logInfo("Prescription accepted: {$order->order_number}");
-        }
-        return ['success' => true, 'message' => 'Status updated'];
-    }
+        // Get status from payload
+        $status = $payload['status'] ?? null;
+        if ($status) {
+            $mappedStatus = $this->mapQuincyStatus($status);
+            $order->status = $mappedStatus;
+            $order->save();
 
-    protected function handleDispensedWebhook(array $payload): array
-    {
-        $order = $this->findOrderByExternalId($payload['prescription_id'] ?? null);
-        if ($order) {
-            $order->markDispensing();
+            // Mark integration request as completed if final status
+            if (in_array($mappedStatus, [PrescriptionOrder::STATUS_COLLECTED, PrescriptionOrder::STATUS_DELIVERED])) {
+                $order->integrationRequest->markCompleted();
+            }
         }
-        return ['success' => true, 'message' => 'Status updated'];
-    }
 
-    protected function handleReadyWebhook(array $payload): array
-    {
-        $order = $this->findOrderByExternalId($payload['prescription_id'] ?? null);
-        if ($order) {
-            $order->markReady();
-            // TODO: Notify patient prescription is ready
-        }
-        return ['success' => true, 'message' => 'Status updated'];
-    }
-
-    protected function handleCollectedWebhook(array $payload): array
-    {
-        $order = $this->findOrderByExternalId($payload['prescription_id'] ?? null);
-        if ($order) {
-            $order->markCollected();
-            $order->integrationRequest->markCompleted();
-        }
-        return ['success' => true, 'message' => 'Status updated'];
-    }
-
-    protected function handleRejectedWebhook(array $payload): array
-    {
-        $order = $this->findOrderByExternalId($payload['prescription_id'] ?? null);
-        if ($order) {
-            $reason = $payload['reason'] ?? 'Unknown reason';
-            $order->markRejected($reason);
-            $order->integrationRequest->markFailed($reason);
-            // TODO: Notify doctor of rejection
-        }
         return ['success' => true, 'message' => 'Status updated'];
     }
 
@@ -339,7 +487,6 @@ class QuincyService extends BaseIntegrationService
     {
         return [
             'api_key' => 'API Key',
-            'organisation_id' => 'Organisation ID',
         ];
     }
 
@@ -350,48 +497,57 @@ class QuincyService extends BaseIntegrationService
     {
         return [
             [
-                'name' => 'organisation_id',
-                'label' => 'Organisation ID',
-                'type' => 'text',
-                'required' => true,
-                'help' => 'Your Quincy organisation identifier',
-            ],
-            [
                 'name' => 'api_key',
-                'label' => 'API Key',
+                'label' => 'API Key (Bearer Token)',
                 'type' => 'password',
                 'required' => true,
-                'help' => 'Your Quincy API key',
+                'help' => 'Your Quincy API key from the API Keys page in your Quincy dashboard',
             ],
             [
-                'name' => 'prescriber_id',
-                'label' => 'Default Prescriber ID',
-                'type' => 'text',
+                'name' => 'prescriber_fee',
+                'label' => 'Prescriber Fee (£)',
+                'type' => 'number',
                 'required' => false,
-                'help' => 'Default prescriber identifier (optional)',
+                'help' => 'Optional fee to add to prescriptions',
+            ],
+            [
+                'name' => 'default_delivery_option',
+                'label' => 'Default Delivery Option',
+                'type' => 'select',
+                'required' => false,
+                'options' => [
+                    'deliver_customer' => 'Deliver to Patient',
+                    'deliver_clinic' => 'Deliver to Clinic',
+                    'issue_token' => 'Issue Token (Patient Chooses)',
+                ],
+                'help' => 'Default delivery method for prescriptions',
+            ],
+            [
+                'name' => 'default_payee',
+                'label' => 'Default Payee',
+                'type' => 'select',
+                'required' => false,
+                'options' => [
+                    'patient' => 'Patient Pays',
+                    'clinic' => 'Clinic Pays',
+                ],
+                'help' => 'Who pays for the prescription by default',
             ],
             [
                 'name' => 'sandbox_url',
-                'label' => 'Sandbox URL',
+                'label' => 'API URL (Sandbox)',
                 'type' => 'url',
                 'required' => false,
-                'default' => 'https://sandbox.quincy.co.uk/api',
-                'help' => 'Quincy sandbox API URL',
+                'placeholder' => 'https://app.quincy.health/api',
+                'help' => 'Quincy API URL for sandbox testing',
             ],
             [
                 'name' => 'production_url',
-                'label' => 'Production URL',
+                'label' => 'API URL (Production)',
                 'type' => 'url',
                 'required' => false,
-                'default' => 'https://api.quincy.co.uk',
-                'help' => 'Quincy production API URL',
-            ],
-            [
-                'name' => 'webhook_secret',
-                'label' => 'Webhook Secret',
-                'type' => 'password',
-                'required' => false,
-                'help' => 'Secret for validating Quincy webhooks',
+                'placeholder' => 'https://app.quincy.health/api',
+                'help' => 'Quincy API URL for production',
             ],
         ];
     }

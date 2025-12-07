@@ -287,6 +287,13 @@
                             </button>
                         @endif
 
+                        {{-- Quincy Integration Button - Show when prescription is approved --}}
+                        @if(in_array($prescription->status, ['approved', 'dispensed']))
+                            <button type="button" class="btn btn-primary w-100" id="sendToQuincyBtn" data-bs-toggle="modal" data-bs-target="#quincyModal">
+                                <i class="fas fa-prescription me-1"></i>Send to Quincy
+                            </button>
+                        @endif
+
                         <button type="button" class="btn btn-info" onclick="window.print()">
                             <i class="fas fa-print me-1"></i>Print Prescription
                         </button>
@@ -541,6 +548,122 @@
 </div>
 @endif
 
+{{-- Quincy Send Modal --}}
+@if(in_array($prescription->status, ['approved', 'dispensed']))
+<div class="modal fade" id="quincyModal" tabindex="-1" aria-labelledby="quincyModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="z-index: 1055;">
+        <div class="modal-content" style="position: relative; z-index: 1056;">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="quincyModalLabel">
+                    <i class="fas fa-prescription me-2"></i>Send to Quincy Pharmacy
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {{-- Loading State --}}
+                <div id="quincyLoading" class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i>
+                    <p class="text-muted">Loading Quincy integration...</p>
+                </div>
+
+                {{-- Integration Not Available --}}
+                <div id="quincyNotAvailable" class="text-center py-4" style="display: none;">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h5 class="text-dark">Quincy Integration Not Available</h5>
+                    <p class="text-muted">The Quincy pharmacy integration is not configured or active. Please contact your administrator.</p>
+                </div>
+
+                {{-- Existing Order Warning --}}
+                <div id="quincyExistingOrder" class="alert alert-warning" style="display: none;">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Existing Order Found:</strong>
+                    <span id="existingOrderDetails"></span>
+                </div>
+
+                {{-- Send Form --}}
+                <div id="quincySendForm" style="display: none;">
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Prescription Details:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Patient: <strong>{{ $prescription->patient->full_name }}</strong></li>
+                            <li>Total Medications: <strong>{{ count($medications) }}</strong></li>
+                        </ul>
+                    </div>
+
+                    <form id="quincyForm">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="delivery_option" class="form-label fw-bold">
+                                    <i class="fas fa-truck me-1"></i>Delivery Option
+                                </label>
+                                <select class="form-select" id="delivery_option" name="delivery_option" required>
+                                    <option value="deliver_customer">Deliver to Patient</option>
+                                    <option value="deliver_clinic">Deliver to Clinic</option>
+                                    <option value="issue_token">Issue Token (Patient Chooses Pharmacy)</option>
+                                </select>
+                                <small class="text-muted">How the prescription will be fulfilled</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="payee" class="form-label fw-bold">
+                                    <i class="fas fa-credit-card me-1"></i>Who Pays?
+                                </label>
+                                <select class="form-select" id="payee" name="payee" required>
+                                    <option value="patient">Patient Pays</option>
+                                    <option value="clinic">Clinic Pays</option>
+                                </select>
+                                <small class="text-muted">Who is responsible for payment</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <h6 class="fw-bold"><i class="fas fa-pills me-2"></i>Medications to Send:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Medication</th>
+                                            <th>Dosage</th>
+                                            <th>Frequency</th>
+                                            <th>Duration</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($medications as $medication)
+                                        <tr>
+                                            <td>{{ $medication['name'] ?? 'Unknown' }}</td>
+                                            <td>{{ $medication['dosage'] ?? '-' }}</td>
+                                            <td>{{ ucfirst(str_replace('_', ' ', $medication['frequency'] ?? '-')) }}</td>
+                                            <td>{{ $medication['duration'] ?? '-' }}</td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                {{-- Quincy Orders List --}}
+                <div id="quincyOrdersList" class="mt-4" style="display: none;">
+                    <h6 class="fw-bold border-top pt-3"><i class="fas fa-history me-2"></i>Previous Quincy Orders:</h6>
+                    <div id="quincyOrdersContainer"></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="position: relative; z-index: 1050;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Close
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmQuincySendBtn" style="display: none;">
+                    <i class="fas fa-paper-plane me-1"></i>Send to Quincy
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 @endsection
 
 @push('scripts')
@@ -660,7 +783,7 @@ function showSuccessMessage(message) {
 // Error message function
 function showErrorMessage(message) {
     const alertHtml = `
-        <div class="alert alert-danger alert-dismissible fade show position-fixed" 
+        <div class="alert alert-danger alert-dismissible fade show position-fixed"
              style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;"
              role="alert">
             <i class="fas fa-exclamation-triangle me-2"></i>${message}
@@ -668,7 +791,7 @@ function showErrorMessage(message) {
         </div>
     `;
     $('body').append(alertHtml);
-    
+
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
         $('.alert-danger').fadeOut(() => {
@@ -676,5 +799,183 @@ function showErrorMessage(message) {
         });
     }, 5000);
 }
+
+// ============================================
+// Quincy Integration
+// ============================================
+@if(in_array($prescription->status, ['approved', 'dispensed']))
+let quincyLoaded = false;
+
+// Load Quincy data when modal opens
+$('#quincyModal').on('show.bs.modal', function() {
+    if (!quincyLoaded) {
+        loadQuincyData();
+    }
+});
+
+function loadQuincyData() {
+    $('#quincyLoading').show();
+    $('#quincyNotAvailable').hide();
+    $('#quincySendForm').hide();
+    $('#quincyExistingOrder').hide();
+    $('#quincyOrdersList').hide();
+    $('#confirmQuincySendBtn').hide();
+
+    $.ajax({
+        url: '{{ route("staff.quincy.prescriptions.send-form", $prescription->id) }}',
+        method: 'GET',
+        success: function(response) {
+            $('#quincyLoading').hide();
+
+            if (response.success) {
+                quincyLoaded = true;
+
+                // Set default values
+                if (response.defaults) {
+                    $('#delivery_option').val(response.defaults.delivery_option);
+                    $('#payee').val(response.defaults.payee);
+                }
+
+                // Show existing order warning if exists
+                if (response.existing_order) {
+                    $('#existingOrderDetails').html(
+                        `Order #${response.existing_order.id} (${response.existing_order.status}) - Created ${response.existing_order.created_at}`
+                    );
+                    $('#quincyExistingOrder').show();
+                }
+
+                // Show the form
+                $('#quincySendForm').show();
+                $('#confirmQuincySendBtn').show();
+
+                // Load existing orders
+                loadQuincyOrders();
+            } else {
+                $('#quincyNotAvailable').show();
+            }
+        },
+        error: function(xhr) {
+            $('#quincyLoading').hide();
+            $('#quincyNotAvailable').show();
+            console.error('Failed to load Quincy data:', xhr.responseJSON);
+        }
+    });
+}
+
+function loadQuincyOrders() {
+    $.ajax({
+        url: '{{ route("staff.quincy.prescriptions.orders", $prescription->id) }}',
+        method: 'GET',
+        success: function(response) {
+            if (response.success && response.orders && response.orders.length > 0) {
+                let ordersHtml = '<div class="list-group">';
+                response.orders.forEach(function(order) {
+                    let statusBadge = getStatusBadge(order.status);
+                    ordersHtml += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${order.order_number}</strong>
+                                <br><small class="text-muted">${order.created_at} - ${order.delivery_method}</small>
+                            </div>
+                            <div>
+                                ${statusBadge}
+                                ${order.can_cancel ? `<button class="btn btn-sm btn-outline-danger ms-2" onclick="cancelQuincyOrder(${order.id})"><i class="fas fa-times"></i></button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                ordersHtml += '</div>';
+
+                $('#quincyOrdersContainer').html(ordersHtml);
+                $('#quincyOrdersList').show();
+            }
+        }
+    });
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'draft': 'bg-secondary',
+        'submitted': 'bg-info',
+        'accepted': 'bg-primary',
+        'dispensing': 'bg-warning',
+        'ready': 'bg-success',
+        'collected': 'bg-success',
+        'delivered': 'bg-success',
+        'cancelled': 'bg-danger',
+        'rejected': 'bg-danger'
+    };
+    const badgeClass = badges[status] || 'bg-secondary';
+    return `<span class="badge ${badgeClass}">${status.replace('_', ' ').toUpperCase()}</span>`;
+}
+
+// Send to Quincy
+$('#confirmQuincySendBtn').on('click', function(e) {
+    e.preventDefault();
+
+    const $btn = $(this);
+    const originalHtml = $btn.html();
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Sending...');
+
+    $.ajax({
+        url: '{{ route("staff.quincy.prescriptions.send", $prescription->id) }}',
+        method: 'POST',
+        data: {
+            _token: '{{ csrf_token() }}',
+            delivery_option: $('#delivery_option').val(),
+            payee: $('#payee').val()
+        },
+        success: function(response) {
+            if (response.success) {
+                showSuccessMessage(response.message || 'Prescription sent to Quincy successfully!');
+                $('#quincyModal').modal('hide');
+
+                // Reload orders list
+                setTimeout(() => {
+                    quincyLoaded = false;
+                    loadQuincyData();
+                }, 1500);
+            } else {
+                showErrorMessage(response.message || 'Failed to send prescription to Quincy');
+                $btn.prop('disabled', false).html(originalHtml);
+            }
+        },
+        error: function(xhr) {
+            let errorMessage = 'Failed to send prescription to Quincy';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            showErrorMessage(errorMessage);
+            $btn.prop('disabled', false).html(originalHtml);
+        }
+    });
+});
+
+function cancelQuincyOrder(orderId) {
+    if (!confirm('Are you sure you want to cancel this Quincy order?')) {
+        return;
+    }
+
+    $.ajax({
+        url: `/staff/quincy/orders/${orderId}/cancel`,
+        method: 'POST',
+        data: {
+            _token: '{{ csrf_token() }}',
+            reason: 'Cancelled by user'
+        },
+        success: function(response) {
+            if (response.success) {
+                showSuccessMessage('Order cancelled successfully');
+                loadQuincyOrders();
+            } else {
+                showErrorMessage(response.message || 'Failed to cancel order');
+            }
+        },
+        error: function(xhr) {
+            showErrorMessage('Failed to cancel order');
+        }
+    });
+}
+@endif
 </script>
 @endpush

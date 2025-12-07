@@ -307,7 +307,17 @@ Route::group(['middleware' => 'installed'], function () {
         Route::patch('/prescriptions/{prescription}/status', [\App\Http\Controllers\Staff\PrescriptionsController::class, 'updateStatus'])->name('prescriptions.update-status');
         Route::get('/prescriptions/{prescription}/print', [\App\Http\Controllers\Staff\PrescriptionsController::class, 'print'])->name('prescriptions.print');
         // Note: Doctors can create/edit prescriptions, pharmacists can update status
-        
+
+        // Quincy Integration Routes for Prescriptions
+        Route::prefix('quincy')->name('quincy.')->group(function () {
+            Route::get('/prescriptions/{prescription}/send-form', [\App\Http\Controllers\Staff\QuincyPrescriptionController::class, 'showSendForm'])->name('prescriptions.send-form');
+            Route::post('/prescriptions/{prescription}/send', [\App\Http\Controllers\Staff\QuincyPrescriptionController::class, 'send'])->name('prescriptions.send');
+            Route::get('/prescriptions/{prescription}/orders', [\App\Http\Controllers\Staff\QuincyPrescriptionController::class, 'getOrders'])->name('prescriptions.orders');
+            Route::get('/orders/{order}/status', [\App\Http\Controllers\Staff\QuincyPrescriptionController::class, 'checkStatus'])->name('orders.status');
+            Route::post('/orders/{order}/cancel', [\App\Http\Controllers\Staff\QuincyPrescriptionController::class, 'cancel'])->name('orders.cancel');
+            Route::get('/medicines/search', [\App\Http\Controllers\Staff\QuincyPrescriptionController::class, 'searchMedicines'])->name('medicines.search');
+        });
+
         // Lab Reports - Role-based Access (doctors and technicians can create/edit, others view only)
         Route::get('/lab-reports', [\App\Http\Controllers\Staff\LabReportsController::class, 'index'])->name('lab-reports.index');
         Route::get('/lab-reports/create', [\App\Http\Controllers\Staff\LabReportsController::class, 'create'])->name('lab-reports.create');
