@@ -597,6 +597,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/patients/import', [\App\Http\Controllers\Admin\PatientsController::class, 'showImport'])->name('patients.import');
         Route::post('/patients/import/csv', [\App\Http\Controllers\Admin\PatientsController::class, 'importCsv'])->name('patients.import.csv');
         Route::resource('patients', \App\Http\Controllers\Admin\PatientsController::class);
+        Route::get('/patients/search', [\App\Http\Controllers\Admin\PatientsController::class, 'search'])->name('patients.search');
         Route::get('/patients/{patient}/download-document/{type}', [\App\Http\Controllers\Admin\PatientsController::class, 'downloadDocument'])->name('patients.download-document');
         Route::get('/patients/{patient}/gp-email', [\App\Http\Controllers\Admin\PatientsController::class, 'showGpEmailForm'])->name('patients.gp-email');
         Route::post('/patients/{patient}/gp-email', [\App\Http\Controllers\Admin\PatientsController::class, 'sendGpEmail'])->name('patients.gp-email.send');
@@ -625,6 +626,23 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/document-templates/{documentTemplate}/favorite', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'toggleFavorite'])->name('document-templates.favorite');
         Route::post('/document-templates/{documentTemplate}/version', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'createVersion'])->name('document-templates.version');
         Route::get('/document-templates/{documentTemplate}/versions', [\App\Http\Controllers\Admin\DocumentTemplatesController::class, 'versions'])->name('document-templates.versions');
+
+        // Letters & Forms Module - Templates
+        Route::resource('templates', \App\Http\Controllers\Admin\TemplatesController::class);
+        Route::post('/templates/{template}/duplicate', [\App\Http\Controllers\Admin\TemplatesController::class, 'duplicate'])->name('templates.duplicate');
+        Route::patch('/templates/{template}/toggle-active', [\App\Http\Controllers\Admin\TemplatesController::class, 'toggleActive'])->name('templates.toggle-active');
+        Route::get('/templates/{template}/preview', [\App\Http\Controllers\Admin\TemplatesController::class, 'preview'])->name('templates.preview');
+
+        // Letters & Forms Module - Generated Documents
+        Route::resource('generated-documents', \App\Http\Controllers\Admin\GeneratedDocumentsController::class)->except(['edit', 'update']);
+        Route::get('/generated-documents/{generatedDocument}/download', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'download'])->name('generated-documents.download');
+        Route::post('/generated-documents/preview', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'preview'])->name('generated-documents.preview');
+        Route::patch('/generated-documents/{generatedDocument}/finalize', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'finalize'])->name('generated-documents.finalize');
+        Route::patch('/generated-documents/{generatedDocument}/void', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'void'])->name('generated-documents.void');
+        Route::patch('/generated-documents/{generatedDocument}/regenerate', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'regenerate'])->name('generated-documents.regenerate');
+        Route::get('/generated-documents/{generatedDocument}/send', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'sendForm'])->name('generated-documents.send-form');
+        Route::post('/generated-documents/{generatedDocument}/send', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'send'])->name('generated-documents.send');
+        Route::get('/patients/{patient}/generated-documents', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'patientDocuments'])->name('patients.generated-documents');
 
         // Document Settings & Categories
         Route::prefix('document-settings')->name('document-settings.')->group(function () {

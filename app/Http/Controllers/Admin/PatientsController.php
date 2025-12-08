@@ -1530,5 +1530,35 @@ class PatientsController extends Controller
             return back()->with('error', 'Failed to convert patient: ' . $e->getMessage())->withInput();
         }
     }
+
+    /**
+     * Search patients (AJAX endpoint for Select2).
+     */
+    public function search(Request $request)
+    {
+        $query = $request->get('q', '');
+        $page = $request->get('page', 1);
+        $perPage = 15;
+
+        $patients = Patient::where(function ($q) use ($query) {
+            $q->where('first_name', 'like', "%{$query}%")
+              ->orWhere('last_name', 'like', "%{$query}%")
+              ->orWhere('email', 'like', "%{$query}%")
+              ->orWhere('phone', 'like', "%{$query}%")
+              ->orWhere('patient_id', 'like', "%{$query}%")
+              ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$query}%"]);
+        })
+        ->where('is_active', true)
+        ->orderBy('first_name')
+        ->paginate($perPage, ['*'], 'page', $page);
+
+        // Add full_name attribute
+        $patients->getCollection()->transform(function ($patient) {
+            $patient->full_name = $patient->first_name . ' ' . $patient->last_name;
+            return $patient;
+        });
+
+        return response()->json($patients);
+    }
 }
 

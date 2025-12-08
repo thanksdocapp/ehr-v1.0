@@ -18,6 +18,8 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\DocumentTemplate::class => \App\Policies\DocumentTemplatePolicy::class,
         \App\Models\PatientDocument::class => \App\Policies\PatientDocumentPolicy::class,
         \App\Models\DocumentDelivery::class => \App\Policies\DocumentDeliveryPolicy::class,
+        \App\Models\Template::class => \App\Policies\TemplatePolicy::class,
+        \App\Models\GeneratedDocument::class => \App\Policies\GeneratedDocumentPolicy::class,
     ];
 
     /**
