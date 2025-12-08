@@ -28,6 +28,10 @@ Route::get('/css/dynamic-theme.css', [\App\Http\Controllers\ThemeController::cla
 Route::get('/track/document/open/{token}', [\App\Http\Controllers\DocumentTrackingController::class, 'trackOpen'])->name('document.track.open');
 Route::get('/track/document/click/{token}', [\App\Http\Controllers\DocumentTrackingController::class, 'trackClick'])->name('document.track.click');
 
+// Public form routes (no auth required - patients fill forms via link)
+Route::get('/forms/{token}', [\App\Http\Controllers\PublicFormController::class, 'show'])->name('forms.fill');
+Route::post('/forms/{token}', [\App\Http\Controllers\PublicFormController::class, 'submit'])->name('forms.submit');
+
 // Root Route Handler - Patient Booking Page
 Route::get('/', function () {
     if (!File::exists(storage_path('installed'))) {
@@ -397,6 +401,11 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/generated-documents/{generatedDocument}/send', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'send'])->name('generated-documents.send');
         Route::delete('/generated-documents/{generatedDocument}', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'destroy'])->name('generated-documents.destroy');
 
+        // Form Requests (Submitted Forms)
+        Route::get('/form-requests', [\App\Http\Controllers\Staff\FormRequestsController::class, 'index'])->name('form-requests.index');
+        Route::get('/form-requests/{formRequest}', [\App\Http\Controllers\Staff\FormRequestsController::class, 'show'])->name('form-requests.show');
+        Route::post('/form-requests/{formRequest}/resend', [\App\Http\Controllers\Staff\FormRequestsController::class, 'resend'])->name('form-requests.resend');
+
         // Patient Documents
         Route::get('/patients/{patient}/documents', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'index'])->name('patients.documents.index');
         Route::get('/patients/{patient}/documents/create', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'create'])->name('patients.documents.create');
@@ -665,6 +674,12 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/generated-documents/{generatedDocument}/send', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'sendForm'])->name('generated-documents.send-form');
         Route::post('/generated-documents/{generatedDocument}/send', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'send'])->name('generated-documents.send');
         Route::get('/patients/{patient}/generated-documents', [\App\Http\Controllers\Admin\GeneratedDocumentsController::class, 'patientDocuments'])->name('patients.generated-documents');
+
+        // Form Requests (Submitted Forms)
+        Route::get('/form-requests', [\App\Http\Controllers\Admin\FormRequestsController::class, 'index'])->name('form-requests.index');
+        Route::get('/form-requests/{formRequest}', [\App\Http\Controllers\Admin\FormRequestsController::class, 'show'])->name('form-requests.show');
+        Route::post('/form-requests/{formRequest}/resend', [\App\Http\Controllers\Admin\FormRequestsController::class, 'resend'])->name('form-requests.resend');
+        Route::delete('/form-requests/{formRequest}', [\App\Http\Controllers\Admin\FormRequestsController::class, 'destroy'])->name('form-requests.destroy');
 
         // Document Settings & Categories
         Route::prefix('document-settings')->name('document-settings.')->group(function () {

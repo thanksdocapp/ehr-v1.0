@@ -2090,10 +2090,22 @@ use Illuminate\Support\Facades\Storage;
     <div class="admin-sidebar" id="adminSidebar">
         <div class="sidebar-header">
             <a href="{{ route('admin.dashboard') }}" class="sidebar-logo">
-                @if(isset($site_settings) && ($site_settings['site_logo_dark'] ?? false))
-                    <img src="{{ asset($site_settings['site_logo_dark']) }}" alt="{{ getAppName() }}" class="logo-img">
-                @elseif(isset($site_settings) && ($site_settings['site_logo'] ?? false))
-                    <img src="{{ asset($site_settings['site_logo']) }}" alt="{{ getAppName() }}" class="logo-img">
+                @php
+                    $adminLogoPath = $site_settings['site_logo_dark'] ?? $site_settings['site_logo'] ?? null;
+                    $adminLogoUrl = null;
+                    if ($adminLogoPath) {
+                        if (str_starts_with($adminLogoPath, 'http')) {
+                            $adminLogoUrl = $adminLogoPath;
+                        } elseif (str_starts_with($adminLogoPath, 'logos/') || str_starts_with($adminLogoPath, 'settings/')) {
+                            $adminLogoUrl = asset('storage/' . $adminLogoPath);
+                        } else {
+                            $adminLogoUrl = asset($adminLogoPath);
+                        }
+                    }
+                @endphp
+                @if($adminLogoUrl)
+                    <img src="{{ $adminLogoUrl }}" alt="{{ getAppName() }}" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                    <span class="logo-text" style="display: none;"><i class="fas fa-wave-square me-2"></i>{{ getAppName() }} Admin</span>
                 @else
                     <i class="fas fa-wave-square"></i>
                     <span class="logo-text">{{ getAppName() }} Admin</span>

@@ -226,6 +226,8 @@ class GeneratedDocumentsController extends Controller
 
     /**
      * Send document via email.
+     * For forms: sends a fillable link
+     * For letters: sends PDF attachment
      */
     public function send(Request $request, GeneratedDocument $generatedDocument)
     {
@@ -238,34 +240,84 @@ class GeneratedDocumentsController extends Controller
         ]);
 
         try {
-            // Get PDF content
-            $pdfContent = $this->pdfService->getPdfContent($generatedDocument);
+            $generatedDocument->load('template');
 
-            if (!$pdfContent) {
-                return back()->with('error', 'PDF file not found.');
+            // Check if this is a form template - send as fillable link
+            if ($generatedDocument->template && $generatedDocument->template->type === 'form') {
+                return $this->sendFormAsLink($generatedDocument, $validated);
             }
 
-            // Send email with attachment
-            Mail::send('emails.documents.generated-document', [
-                'document' => $generatedDocument,
-                'customMessage' => $validated['message'] ?? null,
-            ], function ($mail) use ($validated, $generatedDocument, $pdfContent) {
-                $mail->to($validated['email'])
-                    ->subject($validated['subject'] ?? 'Document: ' . $generatedDocument->title)
-                    ->attachData($pdfContent, $generatedDocument->file_name, [
-                        'mime' => 'application/pdf',
-                    ]);
-            });
-
-            // Mark as sent
-            $generatedDocument->markAsSent($validated['email']);
-
-            return redirect()
-                ->route('admin.generated-documents.show', $generatedDocument)
-                ->with('success', 'Document sent successfully to ' . $validated['email']);
+            // For letters - send as PDF attachment
+            return $this->sendLetterAsPdf($generatedDocument, $validated);
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to send document: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Send form as a fillable link.
+     */
+    protected function sendFormAsLink(GeneratedDocument $generatedDocument, array $validated)
+    {
+        // Create a form request record
+        $formRequest = \App\Models\FormRequest::create([
+            'generated_document_id' => $generatedDocument->id,
+            'template_id' => $generatedDocument->template_id,
+            'patient_id' => $generatedDocument->patient_id,
+            'requested_by' => Auth::id(),
+            'recipient_email' => $validated['email'],
+            'rendered_content' => $generatedDocument->rendered_content,
+            'sent_at' => now(),
+            'notes' => $validated['message'] ?? null,
+        ]);
+
+        // Send email with form link
+        Mail::send('emails.forms.form-request', [
+            'formRequest' => $formRequest,
+            'customMessage' => $validated['message'] ?? null,
+        ], function ($mail) use ($validated, $generatedDocument, $formRequest) {
+            $mail->to($validated['email'])
+                ->subject($validated['subject'] ?? 'Please Complete: ' . $generatedDocument->title);
+        });
+
+        // Mark document as sent
+        $generatedDocument->markAsSent($validated['email']);
+
+        return redirect()
+            ->route('admin.generated-documents.show', $generatedDocument)
+            ->with('success', 'Form link sent successfully to ' . $validated['email'] . '. The patient can now fill out the form online.');
+    }
+
+    /**
+     * Send letter as PDF attachment.
+     */
+    protected function sendLetterAsPdf(GeneratedDocument $generatedDocument, array $validated)
+    {
+        // Get PDF content
+        $pdfContent = $this->pdfService->getPdfContent($generatedDocument);
+
+        if (!$pdfContent) {
+            return back()->with('error', 'PDF file not found.');
+        }
+
+        // Send email with attachment
+        Mail::send('emails.documents.generated-document', [
+            'document' => $generatedDocument,
+            'customMessage' => $validated['message'] ?? null,
+        ], function ($mail) use ($validated, $generatedDocument, $pdfContent) {
+            $mail->to($validated['email'])
+                ->subject($validated['subject'] ?? 'Document: ' . $generatedDocument->title)
+                ->attachData($pdfContent, $generatedDocument->file_name, [
+                    'mime' => 'application/pdf',
+                ]);
+        });
+
+        // Mark as sent
+        $generatedDocument->markAsSent($validated['email']);
+
+        return redirect()
+            ->route('admin.generated-documents.show', $generatedDocument)
+            ->with('success', 'Document sent successfully to ' . $validated['email']);
     }
 
     /**

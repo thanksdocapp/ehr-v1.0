@@ -2094,10 +2094,22 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                @if(isset($site_settings) && ($site_settings['site_logo_dark'] ?? false))
-                    <img src="{{ asset($site_settings['site_logo_dark']) }}" alt="{{ getAppName() }}" style="max-width: 100%; max-height: 50px; object-fit: contain;">
-                @elseif(isset($site_settings) && ($site_settings['site_logo'] ?? false))
-                    <img src="{{ asset($site_settings['site_logo']) }}" alt="{{ getAppName() }}" style="max-width: 100%; max-height: 50px; object-fit: contain;">
+                @php
+                    $staffLogoPath = $site_settings['site_logo_dark'] ?? $site_settings['site_logo'] ?? null;
+                    $staffLogoUrl = null;
+                    if ($staffLogoPath) {
+                        if (str_starts_with($staffLogoPath, 'http')) {
+                            $staffLogoUrl = $staffLogoPath;
+                        } elseif (str_starts_with($staffLogoPath, 'logos/') || str_starts_with($staffLogoPath, 'settings/')) {
+                            $staffLogoUrl = asset('storage/' . $staffLogoPath);
+                        } else {
+                            $staffLogoUrl = asset($staffLogoPath);
+                        }
+                    }
+                @endphp
+                @if($staffLogoUrl)
+                    <img src="{{ $staffLogoUrl }}" alt="{{ getAppName() }}" style="max-width: 100%; max-height: 50px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div style="color: #1a202c; font-weight: 600; font-size: 1.1rem; display: none;">{{ getAppName() }}</div>
                 @else
                     <div style="color: #1a202c; font-weight: 600; font-size: 1.1rem;">{{ getAppName() }}</div>
                 @endif
