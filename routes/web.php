@@ -234,6 +234,7 @@ Route::group(['middleware' => 'installed'], function () {
         
         // Patients Management (limited functionality)
         Route::get('/patients', [\App\Http\Controllers\Staff\PatientsController::class, 'index'])->name('patients.index');
+        Route::get('/patients/search', [\App\Http\Controllers\Staff\TemplatesController::class, 'searchPatients'])->name('patients.search');
         Route::get('/patients/create', [\App\Http\Controllers\Staff\PatientsController::class, 'create'])->name('patients.create');
         Route::post('/patients', [\App\Http\Controllers\Staff\PatientsController::class, 'store'])->name('patients.store');
         Route::get('/patients/{patient}', [\App\Http\Controllers\Staff\PatientsController::class, 'show'])->name('patients.show');
@@ -395,8 +396,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/generated-documents/{generatedDocument}/send', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'sendForm'])->name('generated-documents.send-form');
         Route::post('/generated-documents/{generatedDocument}/send', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'send'])->name('generated-documents.send');
         Route::delete('/generated-documents/{generatedDocument}', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'destroy'])->name('generated-documents.destroy');
-        Route::get('/patients/search', [\App\Http\Controllers\Staff\TemplatesController::class, 'searchPatients'])->name('patients.search');
-        
+
         // Patient Documents
         Route::get('/patients/{patient}/documents', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'index'])->name('patients.documents.index');
         Route::get('/patients/{patient}/documents/create', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'create'])->name('patients.documents.create');
