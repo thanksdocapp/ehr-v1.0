@@ -169,11 +169,13 @@
 </div>
 @endsection
 
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+@push('styles')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+@endpush
 
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
     // Initialize Select2 for patient search
@@ -181,29 +183,21 @@ $(document).ready(function() {
         theme: 'bootstrap-5',
         placeholder: 'Search for a patient...',
         allowClear: true,
+        width: '100%',
         ajax: {
             url: '{{ route("admin.patients.search") }}',
             dataType: 'json',
-            delay: 250,
+            delay: 300,
             data: function(params) {
                 return {
                     q: params.term,
                     page: params.page || 1
                 };
             },
-            processResults: function(data, params) {
-                params.page = params.page || 1;
+            processResults: function(data) {
                 return {
-                    results: data.data.map(function(patient) {
-                        return {
-                            id: patient.id,
-                            text: (patient.full_name || patient.first_name + ' ' + patient.last_name) +
-                                  ' (' + (patient.patient_id || 'ID: ' + patient.id) + ')'
-                        };
-                    }),
-                    pagination: {
-                        more: data.current_page < data.last_page
-                    }
+                    results: data.results || [],
+                    pagination: data.pagination || { more: false }
                 };
             },
             cache: true

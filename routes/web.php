@@ -371,9 +371,31 @@ Route::group(['middleware' => 'installed'], function () {
             Route::delete('/{notification}', [\App\Http\Controllers\Staff\NotificationController::class, 'destroy'])->name('destroy');
         });
         
-        // Document Templates
+        // Document Templates (Old System)
         Route::resource('document-templates', \App\Http\Controllers\Staff\DocumentTemplatesController::class);
         Route::post('/document-templates/{documentTemplate}/deactivate', [\App\Http\Controllers\Staff\DocumentTemplatesController::class, 'deactivate'])->name('document-templates.deactivate');
+
+        // Templates (Letters & Forms - New System)
+        Route::get('/templates', [\App\Http\Controllers\Staff\TemplatesController::class, 'index'])->name('templates.index');
+        Route::get('/templates/create', [\App\Http\Controllers\Staff\TemplatesController::class, 'create'])->name('templates.create');
+        Route::post('/templates', [\App\Http\Controllers\Staff\TemplatesController::class, 'store'])->name('templates.store');
+        Route::get('/templates/{template}', [\App\Http\Controllers\Staff\TemplatesController::class, 'show'])->name('templates.show');
+        Route::get('/templates/{template}/edit', [\App\Http\Controllers\Staff\TemplatesController::class, 'edit'])->name('templates.edit');
+        Route::put('/templates/{template}', [\App\Http\Controllers\Staff\TemplatesController::class, 'update'])->name('templates.update');
+        Route::delete('/templates/{template}', [\App\Http\Controllers\Staff\TemplatesController::class, 'destroy'])->name('templates.destroy');
+        Route::post('/templates/{template}/duplicate', [\App\Http\Controllers\Staff\TemplatesController::class, 'duplicate'])->name('templates.duplicate');
+
+        // Generated Documents (Letters & Forms - New System)
+        Route::get('/generated-documents', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'index'])->name('generated-documents.index');
+        Route::get('/generated-documents/create', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'create'])->name('generated-documents.create');
+        Route::post('/generated-documents', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'store'])->name('generated-documents.store');
+        Route::get('/generated-documents/{generatedDocument}', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'show'])->name('generated-documents.show');
+        Route::get('/generated-documents/{generatedDocument}/download', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'download'])->name('generated-documents.download');
+        Route::patch('/generated-documents/{generatedDocument}/finalize', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'finalize'])->name('generated-documents.finalize');
+        Route::get('/generated-documents/{generatedDocument}/send', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'sendForm'])->name('generated-documents.send-form');
+        Route::post('/generated-documents/{generatedDocument}/send', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'send'])->name('generated-documents.send');
+        Route::delete('/generated-documents/{generatedDocument}', [\App\Http\Controllers\Staff\GeneratedDocumentsController::class, 'destroy'])->name('generated-documents.destroy');
+        Route::get('/patients/search', [\App\Http\Controllers\Staff\TemplatesController::class, 'searchPatients'])->name('patients.search');
         
         // Patient Documents
         Route::get('/patients/{patient}/documents', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'index'])->name('patients.documents.index');
@@ -593,11 +615,11 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/booking-services/{bookingService}/assign-doctor', [\App\Http\Controllers\Admin\BookingServicesController::class, 'storeDoctorAssignment'])->name('booking-services.store-doctor-assignment');
         
         // Patients Management
+        Route::get('/patients/search', [\App\Http\Controllers\Admin\PatientsController::class, 'search'])->name('patients.search');
         Route::get('/patients/export/csv', [\App\Http\Controllers\Admin\PatientsController::class, 'exportCsv'])->name('patients.export.csv');
         Route::get('/patients/import', [\App\Http\Controllers\Admin\PatientsController::class, 'showImport'])->name('patients.import');
         Route::post('/patients/import/csv', [\App\Http\Controllers\Admin\PatientsController::class, 'importCsv'])->name('patients.import.csv');
         Route::resource('patients', \App\Http\Controllers\Admin\PatientsController::class);
-        Route::get('/patients/search', [\App\Http\Controllers\Admin\PatientsController::class, 'search'])->name('patients.search');
         Route::get('/patients/{patient}/download-document/{type}', [\App\Http\Controllers\Admin\PatientsController::class, 'downloadDocument'])->name('patients.download-document');
         Route::get('/patients/{patient}/gp-email', [\App\Http\Controllers\Admin\PatientsController::class, 'showGpEmailForm'])->name('patients.gp-email');
         Route::post('/patients/{patient}/gp-email', [\App\Http\Controllers\Admin\PatientsController::class, 'sendGpEmail'])->name('patients.gp-email.send');
