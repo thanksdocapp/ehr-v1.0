@@ -56,17 +56,17 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="patient_id" class="form-label">Select Patient <span class="text-danger">*</span></label>
-                            <select class="form-control @error('patient_id') is-invalid @enderror"
-                                    id="patient_id" name="patient_id" required>
-                                @if($selectedPatient)
-                                    <option value="{{ $selectedPatient->id }}" selected>
-                                        {{ $selectedPatient->full_name }} ({{ $selectedPatient->date_of_birth?->format('d/m/Y') ?? 'No DOB' }})
-                                    </option>
-                                @endif
-                            </select>
+                            <label for="patient_search" class="form-label">Select Patient <span class="text-danger">*</span></label>
+                            <input type="hidden" name="patient_id" id="patient_id" value="{{ $selectedPatient->id ?? '' }}" required>
+                            <input type="text"
+                                   class="form-control @error('patient_id') is-invalid @enderror"
+                                   id="patient_search"
+                                   placeholder="Type to search for a patient..."
+                                   value="{{ $selectedPatient ? $selectedPatient->full_name . ' (' . ($selectedPatient->date_of_birth?->format('d/m/Y') ?? 'No DOB') . ')' : '' }}"
+                                   autocomplete="off">
+                            <div id="patient_results" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1000; display: none; max-height: 300px; overflow-y: auto;"></div>
                             @error('patient_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                             <small class="text-muted">Start typing to search for a patient</small>
                         </div>
@@ -126,56 +126,96 @@
 @endsection
 
 @push('styles')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 <style>
-    .select2-container--bootstrap-5 .select2-selection {
-        min-height: 38px;
-        padding: 0.375rem 0.75rem;
-        font-size: 1rem;
-        border: 1px solid #ced4da;
-        border-radius: 0.375rem;
+    #patient_results .list-group-item {
+        cursor: pointer;
+        border-left: none;
+        border-right: none;
     }
-    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-        padding: 0;
-        line-height: 1.5;
+    #patient_results .list-group-item:hover,
+    #patient_results .list-group-item.active {
+        background-color: #0d6efd;
+        color: white;
     }
-    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
-        height: 36px;
+    #patient_results .list-group-item:first-child {
+        border-top: none;
     }
-    .select2-container {
-        width: 100% !important;
+    .patient-search-wrapper {
+        position: relative;
     }
 </style>
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-$(document).ready(function() {
-    // Destroy any existing Select2 instance first
-    if ($('#patient_id').hasClass('select2-hidden-accessible')) {
-        $('#patient_id').select2('destroy');
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('patient_search');
+    const patientIdInput = document.getElementById('patient_id');
+    const resultsContainer = document.getElementById('patient_results');
+    let debounceTimer;
 
-    $('#patient_id').select2({
-        theme: 'bootstrap-5',
-        placeholder: 'Search for a patient...',
-        allowClear: true,
-        minimumInputLength: 2,
-        width: '100%',
-        dropdownParent: $('#patient_id').parent(),
-        ajax: {
-            url: '{{ route("staff.patients.search") }}',
-            dataType: 'json',
-            delay: 250,
-            data: function(params) {
-                return { q: params.term };
-            },
-            processResults: function(data) {
-                return { results: data };
-            },
-            cache: true
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+
+        // Clear previous timer
+        clearTimeout(debounceTimer);
+
+        // Clear patient ID when user types (they need to select again)
+        patientIdInput.value = '';
+
+        if (query.length < 2) {
+            resultsContainer.style.display = 'none';
+            return;
+        }
+
+        // Debounce the search
+        debounceTimer = setTimeout(function() {
+            fetch('{{ route("staff.patients.search") }}?q=' + encodeURIComponent(query))
+                .then(response => response.json())
+                .then(data => {
+                    resultsContainer.innerHTML = '';
+
+                    if (data.length === 0) {
+                        resultsContainer.innerHTML = '<div class="list-group-item text-muted">No patients found</div>';
+                    } else {
+                        data.forEach(function(patient) {
+                            const item = document.createElement('div');
+                            item.className = 'list-group-item list-group-item-action';
+                            item.textContent = patient.text;
+                            item.dataset.id = patient.id;
+                            item.dataset.email = patient.email || '';
+
+                            item.addEventListener('click', function() {
+                                patientIdInput.value = this.dataset.id;
+                                searchInput.value = this.textContent;
+                                resultsContainer.style.display = 'none';
+                            });
+
+                            resultsContainer.appendChild(item);
+                        });
+                    }
+
+                    resultsContainer.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    resultsContainer.innerHTML = '<div class="list-group-item text-danger">Error searching patients</div>';
+                    resultsContainer.style.display = 'block';
+                });
+        }, 300);
+    });
+
+    // Hide results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+            resultsContainer.style.display = 'none';
+        }
+    });
+
+    // Show results when focusing on input (if there are results)
+    searchInput.addEventListener('focus', function() {
+        if (resultsContainer.children.length > 0 && !patientIdInput.value) {
+            resultsContainer.style.display = 'block';
         }
     });
 });
