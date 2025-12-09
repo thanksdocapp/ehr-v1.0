@@ -38,29 +38,30 @@
     <!-- Filters -->
     <div class="doctor-card mb-4">
         <div class="doctor-card-body">
-            <form method="GET" action="{{ route('staff.templates.index') }}">
+            <form method="GET" action="{{ route('staff.templates.index') }}" id="templateSearchForm">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-5">
                         <label class="form-label">Search Templates</label>
-                        <input type="text" name="search" class="form-control"
-                               placeholder="Search by name..." value="{{ request('search') }}">
+                        <input type="text" name="search" id="templateSearchInput" class="form-control"
+                               placeholder="Search by name..." value="{{ request('search') }}"
+                               autocomplete="off">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Type</label>
-                        <select name="type" class="form-control">
+                        <select name="type" id="templateTypeSelect" class="form-control">
                             <option value="">All Types</option>
                             <option value="letter" {{ request('type') == 'letter' ? 'selected' : '' }}>Letters</option>
                             <option value="form" {{ request('type') == 'form' ? 'selected' : '' }}>Forms</option>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <button type="submit" class="btn btn-doctor-primary w-100">
+                        <button type="submit" class="btn btn-doctor-primary w-100" id="searchButton">
                             <i class="fas fa-search me-1"></i>Search
                         </button>
                     </div>
                     @if(request()->anyFilled(['search', 'type']))
                     <div class="col-md-2">
-                        <a href="{{ route('staff.templates.index') }}" class="btn btn-outline-secondary w-100">
+                        <a href="{{ route('staff.templates.index') }}" class="btn btn-outline-secondary w-100" id="clearButton">
                             <i class="fas fa-times me-1"></i>Clear
                         </a>
                     </div>
@@ -131,4 +132,132 @@
     </div>
     @endif
 </div>
+
+@push('scripts')
+<script>
+(function() {
+    'use strict';
+    
+    // Wait for DOM to be ready
+    function initTemplateSearch() {
+        // Get form elements
+        const searchForm = document.getElementById('templateSearchForm');
+        const searchInput = document.getElementById('templateSearchInput');
+        const typeSelect = document.getElementById('templateTypeSelect');
+        const searchButton = document.getElementById('searchButton');
+        const clearButton = document.getElementById('clearButton');
+        
+        if (!searchForm) {
+            return; // Exit if form doesn't exist
+        }
+        
+        // Debounce function to delay search execution
+        let searchTimeout = null;
+        
+        function debounce(func, wait) {
+            return function executedFunction(...args) {
+                const later = function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = null;
+                    func(...args);
+                };
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Function to submit the search form
+        function performSearch() {
+            if (searchForm) {
+                // Add loading state
+                if (searchButton) {
+                    const originalHtml = searchButton.innerHTML;
+                    searchButton.disabled = true;
+                    searchButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Searching...';
+                    
+                    // Submit the form
+                    searchForm.submit();
+                    
+                    // Restore button after a delay (in case form doesn't submit)
+                    setTimeout(function() {
+                        searchButton.disabled = false;
+                        searchButton.innerHTML = originalHtml;
+                    }, 2000);
+                } else {
+                    searchForm.submit();
+                }
+            }
+        }
+        
+        // Debounced search function (wait 500ms after user stops typing)
+        const debouncedSearch = debounce(performSearch, 500);
+        
+        // Event listener for search input (real-time search as user types)
+        if (searchInput) {
+            // Track if user has interacted with the input
+            let hasUserInteracted = false;
+            
+            searchInput.addEventListener('focus', function() {
+                hasUserInteracted = true;
+            });
+            
+            searchInput.addEventListener('input', function(e) {
+                if (hasUserInteracted) {
+                    // Trigger debounced search
+                    debouncedSearch();
+                }
+            });
+            
+            // Also trigger search on Enter key
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    searchTimeout = null;
+                    performSearch();
+                }
+            });
+        }
+        
+        // Event listener for type select change
+        if (typeSelect) {
+            typeSelect.addEventListener('change', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = null;
+                performSearch();
+            });
+        }
+        
+        // Event listener for clear button (if it exists)
+        if (clearButton) {
+            clearButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Navigate to clean URL (no need to clear inputs since we're navigating)
+                window.location.href = clearButton.href;
+            });
+        }
+        
+        // Handle form submission (manual button click)
+        if (searchForm) {
+            searchForm.addEventListener('submit', function(e) {
+                // Clear any pending debounced search
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = null;
+                }
+                // Let the form submit normally
+            });
+        }
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTemplateSearch);
+    } else {
+        // DOM is already ready
+        initTemplateSearch();
+    }
+})();
+</script>
+@endpush
 @endsection
