@@ -134,11 +134,18 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
+    // Destroy any existing Select2 instance first
+    if ($('#patient_id').hasClass('select2-hidden-accessible')) {
+        $('#patient_id').select2('destroy');
+    }
+
     $('#patient_id').select2({
         theme: 'bootstrap-5',
         placeholder: 'Search for a patient...',
         allowClear: true,
         minimumInputLength: 2,
+        width: '100%',
+        dropdownParent: $('#patient_id').parent(),
         ajax: {
             url: '{{ route("staff.patients.search") }}',
             dataType: 'json',
