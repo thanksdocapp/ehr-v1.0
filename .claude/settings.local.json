@@ -13,7 +13,22 @@
       "Bash(findstr:*)",
       "Bash(php -r:*)",
       "Bash(curl:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(more:*)",
+      "Bash(powershell -Command \"Get-Content ''c:\\Users\\chukw\\Documents\\ehr-v1.0\\storage\\logs\\laravel.log'' -Tail 100\")",
+      "Bash(composer require:*)",
+      "Bash(where:*)",
+      "Bash(composer:*)",
+      "Bash(php:*)",
+      "Bash(dir c:UserschukwDocumentsehr-v1.0resourcesviewsstaff /b)",
+      "Bash(mysql:*)",
+      "Bash(powershell -Command \"Get-Content ''storage\\logs\\laravel.log'' -Tail 100\")",
+      "Bash(powershell -Command \"Get-Content ''storage\\logs\\laravel.log'' -Tail 30\")",
+      "Bash(dir:*)",
+      "Bash(powershell -Command \"(Get-Content ''app\\Http\\Controllers\\Admin\\SettingsController.php'' | Measure-Object -Line).Lines\")",
+      "Bash(powershell -Command \"(Get-Content ''app\\Helpers\\LogoHelper.php'' | Measure-Object -Line).Lines\")",
+      "Bash(del \"c:\\Users\\chukw\\Documents\\ehr-v1.0\\check_form.php\")",
+      "Bash(cd:*)"
     ],
     "deny": [],
     "ask": []

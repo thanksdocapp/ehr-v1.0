@@ -103,7 +103,7 @@ if (!function_exists('getPrimaryColor')) {
 if (!function_exists('getSecondaryColor')) {
     /**
      * Get the secondary color from settings
-     * 
+     *
      * @param string $fallback Default secondary color if none is set
      * @return string
      */
@@ -112,7 +112,33 @@ if (!function_exists('getSecondaryColor')) {
         // Get secondary color from appearance settings group
         $appearanceSettings = \App\Models\Setting::getGroup('appearance');
         $secondaryColor = $appearanceSettings['secondary_color'] ?? null;
-        
+
         return $secondaryColor ?: ($fallback ?: '#6c757d');
+    }
+}
+
+if (!function_exists('getTinyMceApiKey')) {
+    /**
+     * Get TinyMCE API key from settings
+     *
+     * @return string
+     */
+    function getTinyMceApiKey()
+    {
+        $settings = \App\Models\Setting::getGroup('integrations');
+        return $settings['tinymce_api_key'] ?? 'no-api-key';
+    }
+}
+
+if (!function_exists('getTinyMceCdnUrl')) {
+    /**
+     * Get full TinyMCE CDN URL with API key
+     *
+     * @return string
+     */
+    function getTinyMceCdnUrl()
+    {
+        $apiKey = getTinyMceApiKey();
+        return "https://cdn.tiny.cloud/1/{$apiKey}/tinymce/6/tinymce.min.js";
     }
 }

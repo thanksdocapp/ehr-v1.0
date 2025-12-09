@@ -30,9 +30,16 @@
                     <!-- Document Info -->
                     <div class="alert alert-info mb-4">
                         <div class="d-flex align-items-center">
-                            <i class="fas fa-file-pdf fa-2x me-3 text-danger"></i>
+                            @if($generatedDocument->template && $generatedDocument->template->type === 'form')
+                                <i class="fas fa-edit fa-2x me-3 text-success"></i>
+                            @else
+                                <i class="fas fa-file-pdf fa-2x me-3 text-danger"></i>
+                            @endif
                             <div>
                                 <strong>{{ $generatedDocument->title }}</strong>
+                                @if($generatedDocument->template && $generatedDocument->template->type === 'form')
+                                    <span class="badge bg-success ms-2">Fillable Form</span>
+                                @endif
                                 <br>
                                 <small>
                                     Patient: {{ $generatedDocument->patient->full_name ?? 'Unknown' }}
@@ -41,6 +48,13 @@
                             </div>
                         </div>
                     </div>
+
+                    @if($generatedDocument->template && $generatedDocument->template->type === 'form')
+                    <div class="alert alert-success mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Fillable Form:</strong> This form will be sent as a link. The recipient can fill it out online and submit it back to you.
+                    </div>
+                    @endif
 
                     <form action="{{ route('staff.generated-documents.send', $generatedDocument) }}" method="POST">
                         @csrf
@@ -86,6 +100,15 @@
                         <div class="mb-4">
                             <div class="card bg-light">
                                 <div class="card-body">
+                                    @if($generatedDocument->template && $generatedDocument->template->type === 'form')
+                                    <h6 class="card-title">
+                                        <i class="fas fa-link me-2"></i>What Will Be Sent
+                                    </h6>
+                                    <p class="mb-0">
+                                        <i class="fas fa-edit text-success me-2"></i>
+                                        A secure link to fill out the form online
+                                    </p>
+                                    @else
                                     <h6 class="card-title">
                                         <i class="fas fa-paperclip me-2"></i>Attachment
                                     </h6>
@@ -93,6 +116,7 @@
                                         <i class="fas fa-file-pdf text-danger me-2"></i>
                                         {{ $generatedDocument->file_name }}
                                     </p>
+                                    @endif
                                 </div>
                             </div>
                         </div>

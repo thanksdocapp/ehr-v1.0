@@ -108,7 +108,7 @@ class Setting extends Model
      */
     public static function clearCache()
     {
-        $groups = ['general', 'email', 'sms', 'security', 'maintenance', 'backup', 'appearance', 'alerts'];
+        $groups = ['general', 'email', 'sms', 'security', 'maintenance', 'backup', 'appearance', 'alerts', 'integrations'];
         
         foreach ($groups as $group) {
             Cache::forget('settings_group_' . $group);

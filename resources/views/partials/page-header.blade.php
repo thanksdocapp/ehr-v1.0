@@ -246,8 +246,24 @@
     <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}">
-                @if($site_settings['site_logo'] ?? false)
-                    <img src="{{ asset($site_settings['site_logo']) }}" alt="{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}" height="50">
+                @php
+                    $logoPath = $site_settings['site_logo'] ?? null;
+                    $logoUrl = null;
+                    if ($logoPath) {
+                        // Check if it's an external URL
+                        if (str_starts_with($logoPath, 'http')) {
+                            $logoUrl = $logoPath;
+                        // Check if it's a storage path
+                        } elseif (str_starts_with($logoPath, 'logos/') || str_starts_with($logoPath, 'settings/')) {
+                            $logoUrl = asset('storage/' . $logoPath);
+                        // Otherwise use asset helper
+                        } else {
+                            $logoUrl = asset($logoPath);
+                        }
+                    }
+                @endphp
+                @if($logoUrl)
+                    <img src="{{ $logoUrl }}" alt="{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}" height="50" onerror="this.onerror=null; this.src='{{ asset('assets/images/hospital-logo.svg') }}';">
                 @else
                     <img src="{{ asset('assets/images/hospital-logo.svg') }}" alt="{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}" height="50">
                 @endif

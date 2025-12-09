@@ -1,4 +1,4 @@
-@extends('layouts.staff')
+@extends('layouts.doctor')
 
 @section('title', 'Form Submission Details')
 
@@ -36,7 +36,7 @@
                     <table class="table table-borderless mb-0">
                         <tr>
                             <td class="text-muted" style="width: 120px;">Form:</td>
-                            <td class="fw-semibold">{{ $formRequest->template->name ?? 'Unknown' }}</td>
+                            <td class="fw-semibold">{{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form') }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Patient:</td>

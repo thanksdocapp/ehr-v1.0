@@ -1533,6 +1533,7 @@ class PatientsController extends Controller
 
     /**
      * Search patients (AJAX endpoint for Select2).
+     * Returns Select2-compatible format with pagination support.
      */
     public function search(Request $request)
     {
@@ -1540,25 +1541,39 @@ class PatientsController extends Controller
         $page = $request->get('page', 1);
         $perPage = 15;
 
+        // Use cross-database compatible query (no CONCAT)
         $patients = Patient::where(function ($q) use ($query) {
             $q->where('first_name', 'like', "%{$query}%")
               ->orWhere('last_name', 'like', "%{$query}%")
               ->orWhere('email', 'like', "%{$query}%")
               ->orWhere('phone', 'like', "%{$query}%")
-              ->orWhere('patient_id', 'like', "%{$query}%")
-              ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$query}%"]);
+              ->orWhere('patient_id', 'like', "%{$query}%");
         })
         ->where('is_active', true)
         ->orderBy('first_name')
         ->paginate($perPage, ['*'], 'page', $page);
 
-        // Add full_name attribute
-        $patients->getCollection()->transform(function ($patient) {
-            $patient->full_name = $patient->first_name . ' ' . $patient->last_name;
-            return $patient;
+        // Transform to Select2-compatible format
+        $results = $patients->getCollection()->map(function ($patient) {
+            $fullName = trim($patient->first_name . ' ' . $patient->last_name);
+            $identifier = $patient->patient_id ?? ('ID: ' . $patient->id);
+            $dob = $patient->date_of_birth ? $patient->date_of_birth->format('d/m/Y') : 'No DOB';
+
+            return [
+                'id' => $patient->id,
+                'text' => "{$fullName} ({$identifier}) - {$dob}",
+                'full_name' => $fullName,
+                'patient_id' => $patient->patient_id,
+                'email' => $patient->email,
+            ];
         });
 
-        return response()->json($patients);
+        return response()->json([
+            'results' => $results,
+            'pagination' => [
+                'more' => $patients->hasMorePages()
+            ]
+        ]);
     }
 }
 

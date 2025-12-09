@@ -465,12 +465,12 @@
                     @endcan
 
                     @can('send', $document)
-                    @if($document->isFinal())
+                    @if($document->isFinal() || $document->type === 'form')
                         <a href="#" class="action-btn send" data-bs-toggle="modal" data-bs-target="#sendDocumentModal">
                             <i class="fas fa-paper-plane"></i>
                             <div>
-                                <div class="fw-semibold">Send Document</div>
-                                <small class="text-muted">Email to patient or third party</small>
+                                <div class="fw-semibold">{{ $document->type === 'form' ? 'Send as Fillable Form' : 'Send Document' }}</div>
+                                <small class="text-muted">{{ $document->type === 'form' ? 'Send link to fill out online' : 'Email to patient or third party' }}</small>
                             </div>
                         </a>
                     @endif
@@ -598,19 +598,26 @@
 
 <!-- Send Document Modal -->
 @can('send', $document)
-@if($document->isFinal())
+@if($document->isFinal() || $document->type === 'form')
 <div class="modal fade" id="sendDocumentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" style="border-radius: 16px;">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title">
-                    <i class="fas fa-paper-plane me-2 text-primary"></i>Send Document
+                    <i class="fas fa-paper-plane me-2 text-primary"></i>{{ $document->type === 'form' ? 'Send Fillable Form' : 'Send Document' }}
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ route('admin.patients.documents.deliveries.store', [$patient, $document]) }}" method="POST">
                 @csrf
                 <div class="modal-body">
+                    @if($document->type === 'form')
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Fillable Form:</strong> This form will be sent as a link that the recipient can fill out online.
+                        Once completed, you will be notified and can view the submitted data.
+                    </div>
+                    @endif
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Recipient Type <span class="text-danger">*</span></label>

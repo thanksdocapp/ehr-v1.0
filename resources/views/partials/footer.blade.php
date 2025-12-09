@@ -5,10 +5,22 @@
             <div class="col-lg-3">
                 <div class="footer-brand mb-4">
                 <a class="navbar-brand d-flex align-items-center text-white" href="{{ url('/') }}">
-                        @if(isset($site_settings) && ($site_settings['site_logo_dark'] ?? false))
-                            <img src="{{ asset($site_settings['site_logo_dark']) }}" alt="{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}" height="50">
-                        @elseif(isset($site_settings) && ($site_settings['site_logo'] ?? false))
-                            <img src="{{ asset($site_settings['site_logo']) }}" alt="{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}" height="50">
+                        @php
+                            $footerLogoPath = $site_settings['site_logo_dark'] ?? $site_settings['site_logo'] ?? null;
+                            $footerLogoUrl = null;
+                            if ($footerLogoPath) {
+                                if (str_starts_with($footerLogoPath, 'http')) {
+                                    $footerLogoUrl = $footerLogoPath;
+                                } elseif (str_starts_with($footerLogoPath, 'logos/') || str_starts_with($footerLogoPath, 'settings/')) {
+                                    $footerLogoUrl = asset('storage/' . $footerLogoPath);
+                                } else {
+                                    $footerLogoUrl = asset($footerLogoPath);
+                                }
+                            }
+                        @endphp
+                        @if($footerLogoUrl)
+                            <img src="{{ $footerLogoUrl }}" alt="{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}" height="50" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div style="color: white; font-weight: 600; font-size: 1.5rem; display: none;">{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}</div>
                         @else
                             <div style="color: white; font-weight: 600; font-size: 1.5rem;">{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}</div>
                         @endif

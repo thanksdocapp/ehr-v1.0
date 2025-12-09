@@ -102,8 +102,8 @@
 
     @case('document-templates')
         <div class="nav-item">
-            <a href="{{ route('staff.document-templates.index') }}" 
-               class="nav-link {{ request()->routeIs('staff.document-templates.*') || request()->routeIs('staff.patients.documents.*') ? 'active' : '' }} {{ $isForced2FASetup ? 'disabled' : '' }}"
+            <a href="{{ route('staff.templates.index') }}"
+               class="nav-link {{ request()->routeIs('staff.templates.*') || request()->routeIs('staff.generated-documents.*') || request()->routeIs('staff.document-templates.*') || request()->routeIs('staff.patients.documents.*') ? 'active' : '' }} {{ $isForced2FASetup ? 'disabled' : '' }}"
                @if($isForced2FASetup) onclick="event.preventDefault(); alert('Navigation is locked. Please complete 2FA setup first.'); return false;" style="opacity: 0.5; cursor: not-allowed; pointer-events: none;" @endif>
                 <i class="nav-icon fas {{ $icon }}"></i>
                 <span class="nav-text">{{ $label }}</span>

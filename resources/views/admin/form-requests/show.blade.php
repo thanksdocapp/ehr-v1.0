@@ -5,7 +5,7 @@
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('admin.generated-documents.index') }}">Documents</a></li>
     <li class="breadcrumb-item"><a href="{{ route('admin.form-requests.index') }}">Form Submissions</a></li>
-    <li class="breadcrumb-item active">{{ $formRequest->template->name ?? 'Details' }}</li>
+    <li class="breadcrumb-item active">{{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Details') }}</li>
 @endsection
 
 @section('content')
@@ -42,7 +42,7 @@
                     <table class="table table-borderless mb-0">
                         <tr>
                             <td class="text-muted" style="width: 120px;">Form:</td>
-                            <td class="fw-semibold">{{ $formRequest->template->name ?? 'Unknown' }}</td>
+                            <td class="fw-semibold">{{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form') }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Patient:</td>

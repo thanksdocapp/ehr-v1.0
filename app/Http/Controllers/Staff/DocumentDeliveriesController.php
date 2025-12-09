@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Patient;
 use App\Models\PatientDocument;
 use App\Models\DocumentDelivery;
+use App\Models\FormRequest;
+use App\Mail\FormSubmissionNotification;
 use App\Services\HospitalEmailNotificationService;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -46,8 +49,8 @@ class DocumentDeliveriesController extends Controller
     {
         $this->authorize('create', [DocumentDelivery::class, $document]);
 
-        // Check document is final
-        if (!$document->isFinal()) {
+        // Check document is final (forms can be sent without finalization as fillable links)
+        if (!$document->isFinal() && $document->type !== 'form') {
             return back()->with('error', 'Only final documents can be sent.');
         }
 
@@ -84,8 +87,22 @@ class DocumentDeliveriesController extends Controller
         // Send via email
         if ($validated['channel'] === 'email') {
             try {
+                // Check if this is a form - send as fillable link instead of PDF
+                if ($document->type === 'form') {
+                    $formRequest = $this->sendFormAsLink($document, $delivery, $patient);
+
+                    $delivery->markAsSent([
+                        'sent_at' => now()->toDateTimeString(),
+                        'channel' => 'email',
+                        'form_request_id' => $formRequest->id,
+                    ]);
+
+                    return back()->with('success', 'Form sent successfully as a fillable link. The patient can fill it out online.');
+                }
+
+                // For letters - send as PDF attachment
                 $this->sendDocumentEmail($document, $delivery, $patient);
-                
+
                 $delivery->markAsSent([
                     'sent_at' => now()->toDateTimeString(),
                     'channel' => 'email',
@@ -103,6 +120,51 @@ class DocumentDeliveriesController extends Controller
 
         // For portal/print, mark as pending (manual handling)
         return back()->with('success', 'Delivery created. Document will be available via portal/print.');
+    }
+
+    /**
+     * Send form as a fillable link instead of PDF.
+     */
+    protected function sendFormAsLink(PatientDocument $document, DocumentDelivery $delivery, Patient $patient): FormRequest
+    {
+        // Create a form request record
+        $formRequest = FormRequest::create([
+            'patient_document_id' => $document->id,
+            'template_id' => $document->template_id,
+            'patient_id' => $patient->id,
+            'requested_by' => Auth::id(),
+            'recipient_email' => $delivery->recipient_email,
+            'rendered_content' => $document->content,
+            'sent_at' => now(),
+            'notes' => null,
+        ]);
+
+        // Configure SMTP settings from database before sending
+        $settings = \App\Models\SiteSetting::getSettings();
+        if (isset($settings['smtp_host']) && $settings['smtp_host']) {
+            \Illuminate\Support\Facades\Config::set('mail.default', 'smtp');
+            \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.host', $settings['smtp_host']);
+            \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.port', $settings['smtp_port'] ?? 587);
+            \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.username', $settings['smtp_username'] ?? '');
+            \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.password', $settings['smtp_password'] ?? '');
+            $encryption = $settings['smtp_encryption'] ?? 'tls';
+            \Illuminate\Support\Facades\Config::set('mail.mailers.smtp.encryption', $encryption === 'none' ? null : $encryption);
+            if (isset($settings['from_email']) && $settings['from_email']) {
+                \Illuminate\Support\Facades\Config::set('mail.from.address', $settings['from_email']);
+                \Illuminate\Support\Facades\Config::set('mail.from.name', $settings['from_name'] ?? $settings['hospital_name'] ?? config('app.name'));
+            }
+        }
+
+        // Send email with form link
+        Mail::send('emails.forms.form-request', [
+            'formRequest' => $formRequest,
+            'customMessage' => null,
+        ], function ($mail) use ($delivery, $document) {
+            $mail->to($delivery->recipient_email, $delivery->recipient_name)
+                ->subject('Please Complete: ' . $document->title);
+        });
+
+        return $formRequest;
     }
 
     /**

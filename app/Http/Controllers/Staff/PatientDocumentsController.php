@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Patient;
 use App\Models\PatientDocument;
 use App\Models\DocumentTemplate;
+use App\Models\Template;
 use App\Services\TemplateRenderer;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
@@ -68,10 +69,16 @@ class PatientDocumentsController extends Controller
 
         $user = Auth::user();
         $templateId = $request->get('template_id');
-        $template = $templateId ? DocumentTemplate::findOrFail($templateId) : null;
+        $template = $templateId ? Template::findOrFail($templateId) : null;
 
-        // Only show templates visible to this user (own + system templates)
-        $templates = DocumentTemplate::visibleTo($user)->active()->orderBy('name')->get();
+        // Only show templates visible to this user (own + system templates) from both models
+        // First try Template model (Letters & Forms module)
+        $templates = Template::visibleTo($user)->active()->orderBy('name')->get();
+
+        // If no templates found in Template, fall back to DocumentTemplate
+        if ($templates->isEmpty()) {
+            $templates = DocumentTemplate::visibleTo($user)->active()->orderBy('name')->get();
+        }
 
         // Get branding for logos/signatures
         $branding = $this->getBranding($user);
@@ -87,7 +94,7 @@ class PatientDocumentsController extends Controller
         $this->authorize('create', [PatientDocument::class, $patient]);
 
         $validated = $request->validate([
-            'template_id' => 'required|exists:document_templates,id',
+            'template_id' => 'required|integer',
             'title' => 'nullable|string|max:255',
             'type' => 'required|in:letter,form',
             'content' => 'nullable|string',
@@ -95,7 +102,11 @@ class PatientDocumentsController extends Controller
             'extra_placeholders' => 'nullable|array',
         ]);
 
-        $template = DocumentTemplate::findOrFail($validated['template_id']);
+        // Try to find template in Template model first, then fall back to DocumentTemplate
+        $template = Template::find($validated['template_id']);
+        if (!$template) {
+            $template = DocumentTemplate::findOrFail($validated['template_id']);
+        }
 
         // Ensure type matches template
         if ($template->type !== $validated['type']) {
@@ -107,8 +118,16 @@ class PatientDocumentsController extends Controller
         // Render letter if type is letter
         if ($validated['type'] === 'letter') {
             $branding = $this->getBranding(Auth::user());
-            $extra = $validated['extra_placeholders'] ?? [];
-            
+
+            // Transform extra_placeholders from [{name: 'x', value: 'y'}] to ['x' => 'y']
+            $extra = [];
+            $rawPlaceholders = $validated['extra_placeholders'] ?? [];
+            foreach ($rawPlaceholders as $placeholder) {
+                if (!empty($placeholder['name'])) {
+                    $extra[$placeholder['name']] = $placeholder['value'] ?? '';
+                }
+            }
+
             $content = $this->templateRenderer->renderLetter(
                 $template,
                 $patient,
@@ -184,11 +203,22 @@ class PatientDocumentsController extends Controller
             'extra_placeholders' => 'nullable|array',
         ]);
 
-        // Re-render letter if type is letter and template exists
-        if ($document->type === 'letter' && $document->template) {
+        // Only re-render letter if extra_placeholders are provided (user wants to re-generate)
+        // Otherwise, keep the user's manually edited content from the form
+        $rawPlaceholders = $validated['extra_placeholders'] ?? [];
+        $hasPlaceholders = !empty(array_filter($rawPlaceholders, fn($p) => !empty($p['name'])));
+
+        if ($document->type === 'letter' && $document->template && $hasPlaceholders) {
             $branding = $this->getBranding(Auth::user());
-            $extra = $validated['extra_placeholders'] ?? [];
-            
+
+            // Transform extra_placeholders from [{name: 'x', value: 'y'}] to ['x' => 'y']
+            $extra = [];
+            foreach ($rawPlaceholders as $placeholder) {
+                if (!empty($placeholder['name'])) {
+                    $extra[$placeholder['name']] = $placeholder['value'] ?? '';
+                }
+            }
+
             $content = $this->templateRenderer->renderLetter(
                 $document->template,
                 $patient,
@@ -199,6 +229,10 @@ class PatientDocumentsController extends Controller
 
             $validated['content'] = $content;
         }
+        // If no placeholders provided, the content from the form (validated['content']) is used as-is
+
+        // Remove extra_placeholders from validated data as it's not a model field
+        unset($validated['extra_placeholders']);
 
         $validated['updated_by'] = Auth::id();
 

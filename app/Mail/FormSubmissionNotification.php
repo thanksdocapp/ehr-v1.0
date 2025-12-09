@@ -28,8 +28,12 @@ class FormSubmissionNotification extends Mailable
      */
     public function envelope(): Envelope
     {
+        $formName = $this->formRequest->template->name
+            ?? $this->formRequest->patientDocument->title
+            ?? 'Form';
+
         return new Envelope(
-            subject: 'Form Completed: ' . $this->formRequest->template->name,
+            subject: 'Form Completed: ' . $formName,
         );
     }
 

@@ -11,8 +11,21 @@ use Illuminate\Support\Facades\Storage;
     @endif
     <div class="container">
         <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}">
-            @if($site_settings['site_logo'] ?? false)
-                <img src="{{ asset($site_settings['site_logo']) }}" alt="{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}" class="me-2" height="50">
+            @php
+                $navLogoPath = $site_settings['site_logo'] ?? null;
+                $navLogoUrl = null;
+                if ($navLogoPath) {
+                    if (str_starts_with($navLogoPath, 'http')) {
+                        $navLogoUrl = $navLogoPath;
+                    } elseif (str_starts_with($navLogoPath, 'logos/') || str_starts_with($navLogoPath, 'settings/')) {
+                        $navLogoUrl = asset('storage/' . $navLogoPath);
+                    } else {
+                        $navLogoUrl = asset($navLogoPath);
+                    }
+                }
+            @endphp
+            @if($navLogoUrl)
+                <img src="{{ $navLogoUrl }}" alt="{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}" class="me-2" height="50" onerror="this.onerror=null; this.src='{{ asset('assets/images/hospital-logo.svg') }}';">
             @else
                 <img src="{{ asset('assets/images/hospital-logo.svg') }}" alt="{{ $site_settings['hospital_name'] ?? 'ThanksDoc EHR' }}" class="me-2" height="50">
             @endif

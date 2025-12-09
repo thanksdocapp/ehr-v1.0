@@ -2175,5 +2175,59 @@ class SettingsController extends Controller
         // All characters must be valid hex digits
         return ctype_xdigit($hex);
     }
+
+    /**
+     * Display external integrations settings.
+     */
+    public function integrations()
+    {
+        $settings = Setting::getGroup('integrations');
+        return view('admin.settings.integrations', compact('settings'));
+    }
+
+    /**
+     * Update external integrations settings.
+     */
+    public function updateIntegrations(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'tinymce_api_key' => 'nullable|string|max:255',
+                'google_maps_api_key' => 'nullable|string|max:255',
+                'recaptcha_site_key' => 'nullable|string|max:255',
+                'recaptcha_secret_key' => 'nullable|string|max:255',
+                'onesignal_app_id' => 'nullable|string|max:255',
+                'onesignal_rest_api_key' => 'nullable|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return back()->withErrors($validator)->withInput();
+            }
+
+            $integrationSettings = [
+                'tinymce_api_key' => $request->input('tinymce_api_key'),
+                'google_maps_api_key' => $request->input('google_maps_api_key'),
+                'recaptcha_site_key' => $request->input('recaptcha_site_key'),
+                'recaptcha_secret_key' => $request->input('recaptcha_secret_key'),
+                'onesignal_app_id' => $request->input('onesignal_app_id'),
+                'onesignal_rest_api_key' => $request->input('onesignal_rest_api_key'),
+            ];
+
+            foreach ($integrationSettings as $key => $value) {
+                Setting::set($key, $value, 'string', 'integrations');
+            }
+
+            // Clear cache for integrations
+            Cache::forget('settings_group_integrations');
+            foreach (array_keys($integrationSettings) as $key) {
+                Cache::forget('setting_' . $key);
+            }
+
+            return back()->with('success', 'Integration settings updated successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Failed to update integration settings: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update settings: ' . $e->getMessage())->withInput();
+        }
+    }
 }
 

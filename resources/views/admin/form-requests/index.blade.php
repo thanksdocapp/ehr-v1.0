@@ -82,7 +82,7 @@
                             @foreach($formRequests as $formRequest)
                                 <tr>
                                     <td>
-                                        <div class="fw-semibold">{{ $formRequest->template->name ?? 'Unknown Template' }}</div>
+                                        <div class="fw-semibold">{{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form') }}</div>
                                     </td>
                                     <td>
                                         @if($formRequest->patient)

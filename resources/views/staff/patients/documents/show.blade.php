@@ -51,9 +51,9 @@
                     @endif
                     @endcan
                     @can('send', $document)
-                    @if($document->isFinal())
+                    @if($document->isFinal() || $document->type === 'form')
                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sendDocumentModal">
-                            <i class="fas fa-paper-plane me-2"></i>Send
+                            <i class="fas fa-paper-plane me-2"></i>{{ $document->type === 'form' ? 'Send as Fillable Form' : 'Send' }}
                         </button>
                     @endif
                     @endcan
@@ -300,13 +300,13 @@
                         @endcan
                         
                         @can('send', $document)
-                        @if($document->isFinal())
+                        @if($document->isFinal() || $document->type === 'form')
                             <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#sendDocumentModal">
-                                <i class="fas fa-paper-plane me-2"></i>Send Document
+                                <i class="fas fa-paper-plane me-2"></i>{{ $document->type === 'form' ? 'Send as Fillable Form' : 'Send Document' }}
                             </button>
                         @endif
                         @endcan
-                        
+
                         @can('void', $document)
                         @if(!$document->isVoid())
                             <form action="{{ route('staff.patients.documents.void', [$patient, $document]) }}" 
@@ -393,19 +393,26 @@
 
 <!-- Send Document Modal -->
 @can('send', $document)
-@if($document->isFinal())
+@if($document->isFinal() || $document->type === 'form')
 <div class="modal fade" id="sendDocumentModal" tabindex="-1" aria-labelledby="sendDocumentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sendDocumentModalLabel">
-                    <i class="fas fa-paper-plane me-2"></i>Send Document
+                    <i class="fas fa-paper-plane me-2"></i>{{ $document->type === 'form' ? 'Send Fillable Form' : 'Send Document' }}
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('staff.patients.documents.deliveries.store', [$patient, $document]) }}" method="POST">
                 @csrf
                 <div class="modal-body">
+                    @if($document->type === 'form')
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Fillable Form:</strong> This form will be sent as a link that the recipient can fill out online.
+                        Once completed, you will be notified and can view the submitted data.
+                    </div>
+                    @endif
                     <div class="mb-3">
                         <label for="recipient_type" class="form-label">Recipient Type <span class="text-danger">*</span></label>
                         <select class="form-control" id="recipient_type" name="recipient_type" required>

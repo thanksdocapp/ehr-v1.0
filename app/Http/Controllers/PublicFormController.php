@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FormRequest;
 use App\Mail\FormSubmissionNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class PublicFormController extends Controller
@@ -15,7 +16,7 @@ class PublicFormController extends Controller
     public function show(string $token)
     {
         $formRequest = FormRequest::where('token', $token)
-            ->with(['template', 'patient', 'requester'])
+            ->with(['template', 'patient', 'requester', 'patientDocument'])
             ->firstOrFail();
 
         // Check if form can be filled
@@ -33,8 +34,14 @@ class PublicFormController extends Controller
             $formRequest->markAsOpened();
         }
 
+        // Get the content to parse - use rendered_content if available, otherwise from template
+        $content = $formRequest->rendered_content;
+        if (empty($content) && $formRequest->template) {
+            $content = $formRequest->template->content ?? '';
+        }
+
         // Parse the template content to extract form fields
-        $formFields = $this->extractFormFields($formRequest->template->content);
+        $formFields = $this->extractFormFields($content);
 
         return view('forms.fill', compact('formRequest', 'formFields'));
     }
@@ -54,8 +61,14 @@ class PublicFormController extends Controller
                 ->with('error', 'This form can no longer be submitted.');
         }
 
+        // Get the content to parse - use rendered_content if available, otherwise from template
+        $content = $formRequest->rendered_content;
+        if (empty($content) && $formRequest->template) {
+            $content = $formRequest->template->content ?? '';
+        }
+
         // Validate the submitted data
-        $formFields = $this->extractFormFields($formRequest->template->content);
+        $formFields = $this->extractFormFields($content);
         $rules = $this->buildValidationRules($formFields);
 
         $validated = $request->validate($rules);
@@ -69,7 +82,7 @@ class PublicFormController extends Controller
                 ->send(new FormSubmissionNotification($formRequest));
         } catch (\Exception $e) {
             // Log but don't fail if email fails
-            \Log::error('Failed to send form submission notification: ' . $e->getMessage());
+            Log::error('Failed to send form submission notification: ' . $e->getMessage());
         }
 
         return view('forms.thank-you', compact('formRequest'));

@@ -3,14 +3,14 @@
     // Try multiple sources and keys for compatibility
     $lightLogo = null;
     $darkLogo = null;
-    
+
     try {
         // Try SiteSetting first (newer system)
         if (class_exists('\App\Models\SiteSetting')) {
             $lightLogo = \App\Models\SiteSetting::get('site_logo') ?: \App\Models\SiteSetting::get('logo_light');
             $darkLogo = \App\Models\SiteSetting::get('site_logo_dark') ?: \App\Models\SiteSetting::get('logo_dark');
         }
-        
+
         // Fallback to Setting model if SiteSetting didn't work
         if (!$lightLogo && class_exists('\App\Models\Setting')) {
             $lightLogo = \App\Models\Setting::get('logo_light') ?: \App\Models\Setting::get('site_logo');
@@ -21,15 +21,27 @@
         $lightLogo = null;
         $darkLogo = null;
     }
-    
+
     $siteName = function_exists('getAppName') ? getAppName() : config('app.name', 'ThanksDoc EHR');
-    
-    // Determine which logo to use (you can add theme detection logic here later)
+
+    // Determine which logo to use
     $logoPath = $lightLogo ?: $darkLogo;
+
+    // Build logo URL - handle storage paths correctly
+    $logoUrl = null;
+    if ($logoPath) {
+        if (str_starts_with($logoPath, 'http')) {
+            $logoUrl = $logoPath;
+        } elseif (str_starts_with($logoPath, 'logos/') || str_starts_with($logoPath, 'settings/')) {
+            $logoUrl = asset('storage/' . $logoPath);
+        } else {
+            $logoUrl = asset($logoPath);
+        }
+    }
 @endphp
 
-@if($logoPath && file_exists(public_path($logoPath)))
-    <img src="{{ asset($logoPath) }}" alt="{{ $siteName }} Logo" {{ $attributes->merge(['class' => 'h-8 w-auto']) }}>
+@if($logoUrl)
+    <img src="{{ $logoUrl }}" alt="{{ $siteName }} Logo" {{ $attributes->merge(['class' => 'h-8 w-auto']) }}>
 @else
     {{-- Fallback to original SVG if no logo is uploaded --}}
     <svg viewBox="0 0 316 316" xmlns="http://www.w3.org/2000/svg" {{ $attributes }}>

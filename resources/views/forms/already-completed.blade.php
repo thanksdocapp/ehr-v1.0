@@ -69,7 +69,7 @@
 
         @if($formRequest->completed_at)
         <div class="details">
-            <p><strong>Form:</strong> {{ $formRequest->template->name }}</p>
+            <p><strong>Form:</strong> {{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form') }}</p>
             <p><strong>Completed:</strong> {{ $formRequest->completed_at->format('F d, Y \a\t H:i') }}</p>
         </div>
         @endif

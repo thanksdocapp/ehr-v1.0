@@ -466,11 +466,22 @@
         <div class="sidebar-header">
             @php
                 $hospitalName = getAppName();
-                $siteLogo = \App\Models\SiteSetting::get('site_logo_dark') ?: \App\Models\SiteSetting::get('site_logo');
+                $patientLogoPath = \App\Models\SiteSetting::get('site_logo_dark') ?: \App\Models\SiteSetting::get('site_logo');
+                $patientLogoUrl = null;
+                if ($patientLogoPath) {
+                    if (str_starts_with($patientLogoPath, 'http')) {
+                        $patientLogoUrl = $patientLogoPath;
+                    } elseif (str_starts_with($patientLogoPath, 'logos/') || str_starts_with($patientLogoPath, 'settings/')) {
+                        $patientLogoUrl = asset('storage/' . $patientLogoPath);
+                    } else {
+                        $patientLogoUrl = asset($patientLogoPath);
+                    }
+                }
             @endphp
-            
-            @if($siteLogo)
-                <img src="{{ asset($siteLogo) }}" alt="{{ $hospitalName }}" class="sidebar-logo">
+
+            @if($patientLogoUrl)
+                <img src="{{ $patientLogoUrl }}" alt="{{ $hospitalName }}" class="sidebar-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="sidebar-title" style="display: none;">{{ $hospitalName }}</div>
             @else
                 <div class="sidebar-title">{{ $hospitalName }}</div>
             @endif

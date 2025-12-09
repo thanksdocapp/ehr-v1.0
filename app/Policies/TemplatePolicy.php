@@ -12,11 +12,11 @@ class TemplatePolicy
 
     /**
      * Determine whether the user can view any templates.
-     * All authenticated doctors and admins can view the template list.
+     * All authenticated staff can view the template list.
      */
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, ['admin', 'doctor']) || $user->is_admin;
+        return in_array($user->role, ['admin', 'doctor', 'nurse', 'staff', 'receptionist']) || $user->is_admin;
     }
 
     /**
@@ -30,7 +30,7 @@ class TemplatePolicy
             return true;
         }
 
-        // Doctors can view their own templates or system templates
+        // Staff can view their own templates or system templates
         return $template->created_by === $user->id || $template->is_system;
     }
 
@@ -87,7 +87,7 @@ class TemplatePolicy
             return false;
         }
 
-        // Doctors can use their own templates or system templates
+        // Staff can use their own templates or system templates
         return $template->created_by === $user->id || $template->is_system;
     }
 

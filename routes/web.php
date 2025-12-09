@@ -889,7 +889,11 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/settings/security-logs', [\App\Http\Controllers\Admin\SettingsController::class, 'securityLogs'])->name('settings.security-logs');
         Route::get('/settings/system-info', [\App\Http\Controllers\Admin\SettingsController::class, 'systemInfo'])->name('settings.system-info'); // Route name: admin.settings.system-info
         Route::get('/settings/php-info', [\App\Http\Controllers\Admin\SettingsController::class, 'phpInfo'])->name('settings.php-info');
-        
+
+        // External Integrations
+        Route::get('/settings/integrations', [\App\Http\Controllers\Admin\SettingsController::class, 'integrations'])->name('settings.integrations');
+        Route::post('/settings/integrations', [\App\Http\Controllers\Admin\SettingsController::class, 'updateIntegrations'])->name('settings.integrations.update');
+
         // Role-Based Menu Visibility
         Route::get('/settings/role-menu-visibility', [\App\Http\Controllers\Admin\RoleMenuVisibilityController::class, 'index'])->name('role-menu-visibility.index');
         Route::post('/settings/role-menu-visibility', [\App\Http\Controllers\Admin\RoleMenuVisibilityController::class, 'store'])->name('role-menu-visibility.store');

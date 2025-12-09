@@ -78,7 +78,7 @@
         <p class="text-muted">The healthcare provider has been notified and will review your submission.</p>
 
         <div class="details">
-            <p><strong>Form:</strong> {{ $formRequest->template->name }}</p>
+            <p><strong>Form:</strong> {{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form') }}</p>
             <p><strong>Submitted:</strong> {{ $formRequest->completed_at->format('F d, Y \a\t H:i') }}</p>
             <p><strong>Reference:</strong> #{{ $formRequest->id }}</p>
         </div>

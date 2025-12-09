@@ -109,7 +109,7 @@
             <table>
                 <tr>
                     <td>Form:</td>
-                    <td>{{ $template->name }}</td>
+                    <td>{{ $template->name ?? ($formRequest->patientDocument->title ?? 'Form') }}</td>
                 </tr>
                 <tr>
                     <td>Patient:</td>

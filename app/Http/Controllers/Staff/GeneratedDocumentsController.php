@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\GeneratedDocument;
 use App\Models\Template;
 use App\Models\Patient;
+use App\Models\SiteSetting;
 use App\Services\DocumentPdfService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
@@ -170,6 +172,22 @@ class GeneratedDocumentsController extends Controller
             'notes' => $validated['message'] ?? null,
         ]);
 
+        // Configure SMTP settings from database before sending
+        $settings = SiteSetting::getSettings();
+        if (isset($settings['smtp_host']) && $settings['smtp_host']) {
+            Config::set('mail.default', 'smtp');
+            Config::set('mail.mailers.smtp.host', $settings['smtp_host']);
+            Config::set('mail.mailers.smtp.port', $settings['smtp_port'] ?? 587);
+            Config::set('mail.mailers.smtp.username', $settings['smtp_username'] ?? '');
+            Config::set('mail.mailers.smtp.password', $settings['smtp_password'] ?? '');
+            $encryption = $settings['smtp_encryption'] ?? 'tls';
+            Config::set('mail.mailers.smtp.encryption', $encryption === 'none' ? null : $encryption);
+            if (isset($settings['from_email']) && $settings['from_email']) {
+                Config::set('mail.from.address', $settings['from_email']);
+                Config::set('mail.from.name', $settings['from_name'] ?? $settings['hospital_name'] ?? config('app.name'));
+            }
+        }
+
         // Send email with form link
         Mail::send('emails.forms.form-request', [
             'formRequest' => $formRequest,
@@ -200,6 +218,22 @@ class GeneratedDocumentsController extends Controller
         }
 
         $pdfPath = Storage::disk('private')->path($generatedDocument->file_path);
+
+        // Configure SMTP settings from database before sending
+        $settings = SiteSetting::getSettings();
+        if (isset($settings['smtp_host']) && $settings['smtp_host']) {
+            Config::set('mail.default', 'smtp');
+            Config::set('mail.mailers.smtp.host', $settings['smtp_host']);
+            Config::set('mail.mailers.smtp.port', $settings['smtp_port'] ?? 587);
+            Config::set('mail.mailers.smtp.username', $settings['smtp_username'] ?? '');
+            Config::set('mail.mailers.smtp.password', $settings['smtp_password'] ?? '');
+            $encryption = $settings['smtp_encryption'] ?? 'tls';
+            Config::set('mail.mailers.smtp.encryption', $encryption === 'none' ? null : $encryption);
+            if (isset($settings['from_email']) && $settings['from_email']) {
+                Config::set('mail.from.address', $settings['from_email']);
+                Config::set('mail.from.name', $settings['from_name'] ?? $settings['hospital_name'] ?? config('app.name'));
+            }
+        }
 
         Mail::send('emails.documents.generated-document', [
             'document' => $generatedDocument,

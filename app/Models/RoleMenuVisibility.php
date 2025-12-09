@@ -186,8 +186,9 @@ class RoleMenuVisibility extends Model
                 'prescriptions' => ['label' => 'Prescriptions', 'icon' => 'fa-prescription-bottle-alt', 'order' => 6],
                 'lab-reports' => ['label' => 'Lab Reports', 'icon' => 'fa-vial', 'order' => 7],
                 'document-templates' => ['label' => 'Letters & Forms', 'icon' => 'fa-file-alt', 'order' => 8],
-                'alerts' => ['label' => 'Patient Alerts', 'icon' => 'fa-exclamation-triangle', 'order' => 9],
-                'billing' => ['label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'order' => 10],
+                'form-submissions' => ['label' => 'Form Submissions', 'icon' => 'fa-clipboard-check', 'order' => 9],
+                'alerts' => ['label' => 'Patient Alerts', 'icon' => 'fa-exclamation-triangle', 'order' => 10],
+                'billing' => ['label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'order' => 11],
             ];
         } else {
             // Admin menu items
@@ -263,6 +264,7 @@ class RoleMenuVisibility extends Model
                 'prescriptions' => true,
                 'lab-reports' => true,
                 'document-templates' => true,
+                'form-submissions' => true,
                 'alerts' => true,
                 'billing' => false, // Doctors typically don't manage billing
             ],
@@ -274,6 +276,7 @@ class RoleMenuVisibility extends Model
                 'prescriptions' => false,
                 'lab-reports' => true,
                 'document-templates' => true,
+                'form-submissions' => true,
                 'alerts' => true,
                 'billing' => false,
             ],
@@ -285,6 +288,7 @@ class RoleMenuVisibility extends Model
                 'prescriptions' => false,
                 'lab-reports' => false,
                 'document-templates' => true,
+                'form-submissions' => true,
                 'alerts' => true,
                 'billing' => true,
             ],

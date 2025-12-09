@@ -111,7 +111,7 @@ class Template extends Model
 
     /**
      * Scope: Templates visible to a user.
-     * Doctors see their own templates + system templates (created by admin).
+     * Staff see their own templates + system templates (created by admin).
      * Admins see all templates.
      */
     public function scopeVisibleTo($query, User $user)
@@ -120,10 +120,11 @@ class Template extends Model
             return $query;
         }
 
+        // Staff roles see their own templates + system templates
         return $query->where(function ($q) use ($user) {
             $q->where('created_by', $user->id)
               ->orWhere('is_system', true);
-        });
+        })->where('is_active', true);
     }
 
     /**

@@ -88,7 +88,7 @@ class FormRequestsController extends Controller
                 'customMessage' => null,
             ], function ($mail) use ($formRequest) {
                 $mail->to($formRequest->recipient_email)
-                    ->subject('Please Complete: ' . $formRequest->template->name);
+                    ->subject('Please Complete: ' . ($formRequest->template->name ?? $formRequest->patientDocument->title ?? 'Form'));
             });
 
             return back()->with('success', 'Form request resent successfully.');

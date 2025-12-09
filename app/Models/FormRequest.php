@@ -13,6 +13,7 @@ class FormRequest extends Model
 
     protected $fillable = [
         'generated_document_id',
+        'patient_document_id',
         'template_id',
         'patient_id',
         'requested_by',
@@ -65,11 +66,24 @@ class FormRequest extends Model
     }
 
     /**
-     * Get the template.
+     * Get the patient document.
+     */
+    public function patientDocument(): BelongsTo
+    {
+        return $this->belongsTo(PatientDocument::class);
+    }
+
+    /**
+     * Get the template (supports both Template and DocumentTemplate).
      */
     public function template(): BelongsTo
     {
-        return $this->belongsTo(Template::class);
+        // For GeneratedDocument forms (has generated_document_id), use Template model
+        if ($this->generated_document_id) {
+            return $this->belongsTo(Template::class, 'template_id');
+        }
+        // For PatientDocument forms (has patient_document_id), use DocumentTemplate model
+        return $this->belongsTo(DocumentTemplate::class, 'template_id');
     }
 
     /**

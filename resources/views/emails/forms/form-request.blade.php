@@ -97,7 +97,7 @@
             <table>
                 <tr>
                     <td>Form:</td>
-                    <td>{{ $formRequest->template->name }}</td>
+                    <td>{{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form') }}</td>
                 </tr>
                 <tr>
                     <td>From:</td>

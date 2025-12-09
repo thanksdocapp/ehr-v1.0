@@ -101,8 +101,16 @@ class PatientDocumentsController extends Controller
         // Render letter if type is letter
         if ($validated['type'] === 'letter') {
             $branding = $this->getBranding(Auth::user());
-            $extra = $validated['extra_placeholders'] ?? [];
-            
+
+            // Transform extra_placeholders from [{name: 'x', value: 'y'}] to ['x' => 'y']
+            $extra = [];
+            $rawPlaceholders = $validated['extra_placeholders'] ?? [];
+            foreach ($rawPlaceholders as $placeholder) {
+                if (!empty($placeholder['name'])) {
+                    $extra[$placeholder['name']] = $placeholder['value'] ?? '';
+                }
+            }
+
             $content = $this->templateRenderer->renderLetter(
                 $template,
                 $patient,
@@ -179,11 +187,22 @@ class PatientDocumentsController extends Controller
             'extra_placeholders' => 'nullable|array',
         ]);
 
-        // Re-render letter if type is letter and template exists
-        if ($document->type === 'letter' && $document->template) {
+        // Only re-render letter if extra_placeholders are provided (user wants to re-generate)
+        // Otherwise, keep the user's manually edited content from the form
+        $rawPlaceholders = $validated['extra_placeholders'] ?? [];
+        $hasPlaceholders = !empty(array_filter($rawPlaceholders, fn($p) => !empty($p['name'])));
+
+        if ($document->type === 'letter' && $document->template && $hasPlaceholders) {
             $branding = $this->getBranding(Auth::user());
-            $extra = $validated['extra_placeholders'] ?? [];
-            
+
+            // Transform extra_placeholders from [{name: 'x', value: 'y'}] to ['x' => 'y']
+            $extra = [];
+            foreach ($rawPlaceholders as $placeholder) {
+                if (!empty($placeholder['name'])) {
+                    $extra[$placeholder['name']] = $placeholder['value'] ?? '';
+                }
+            }
+
             $content = $this->templateRenderer->renderLetter(
                 $document->template,
                 $patient,
@@ -194,6 +213,10 @@ class PatientDocumentsController extends Controller
 
             $validated['content'] = $content;
         }
+        // If no placeholders provided, the content from the form (validated['content']) is used as-is
+
+        // Remove extra_placeholders from validated data as it's not a model field
+        unset($validated['extra_placeholders']);
 
         $validated['updated_by'] = Auth::id();
 

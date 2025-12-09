@@ -246,6 +246,23 @@
                 </div>
             </a>
         </div>
+
+        <!-- External Integrations -->
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.settings.integrations') }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-11" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); width: 60px; height: 60px;">
+                            <i class="fas fa-plug"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">Integrations</h5>
+                            <p class="text-muted mb-0 small">API keys and external service configuration</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
     <!-- Modern Quick Actions -->
