@@ -6,16 +6,19 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form') }} - {{ config('app.name') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #667eea;
-            --primary-dark: #5a6fd6;
+            --primary-color: #0d6efd;
+            --primary-dark: #0b5ed7;
+            --success-color: #198754;
+            --border-color: #dee2e6;
+            --bg-light: #f8f9fa;
         }
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #f5f5f5;
             min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
         }
         .form-container {
             max-width: 800px;
@@ -24,77 +27,78 @@
         }
         .form-card {
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             overflow: hidden;
         }
         .form-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 24px 30px;
         }
         .form-header h1 {
             margin: 0;
             font-size: 1.5rem;
             font-weight: 600;
+            color: #212529;
         }
         .form-header p {
-            margin: 10px 0 0;
-            opacity: 0.9;
+            margin: 8px 0 0;
+            color: #6c757d;
         }
         .form-body {
             padding: 30px;
         }
         .patient-info {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 25px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 24px;
         }
         .patient-info h6 {
-            color: #666;
-            margin-bottom: 10px;
+            color: #495057;
+            margin-bottom: 12px;
+            font-weight: 600;
         }
         .form-group {
             margin-bottom: 20px;
         }
         .form-label {
             font-weight: 500;
-            color: #333;
+            color: #212529;
             margin-bottom: 8px;
         }
         .form-control, .form-select {
-            border-radius: 8px;
-            border: 2px solid #e0e0e0;
-            padding: 12px 15px;
-            transition: all 0.3s ease;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
         }
         .form-control:focus, .form-select:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
         }
         .required-star {
             color: #dc3545;
         }
         .btn-submit {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-color);
             border: none;
-            padding: 15px 40px;
-            font-size: 1.1rem;
-            border-radius: 8px;
+            padding: 12px 32px;
+            font-size: 1rem;
+            border-radius: 6px;
             color: white;
-            font-weight: 600;
-            transition: all 0.3s ease;
+            font-weight: 500;
+            transition: background-color 0.15s ease-in-out;
         }
         .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            background: var(--primary-dark);
             color: white;
         }
         .signature-pad {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
             background: #fafafa;
         }
         .signature-pad canvas {
@@ -108,27 +112,47 @@
         }
         .expires-notice {
             background: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 8px;
-            padding: 10px 15px;
+            border: 1px solid #ffecb5;
+            border-radius: 6px;
+            padding: 12px 16px;
             margin-bottom: 20px;
             font-size: 0.9rem;
+            color: #664d03;
         }
         .clinic-branding {
             text-align: center;
-            padding: 15px;
-            border-top: 1px solid #eee;
-            color: #666;
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+            color: #6c757d;
             font-size: 0.85rem;
+            background: var(--bg-light);
+        }
+        .logo-section {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .logo-section img {
+            max-height: 60px;
+            max-width: 200px;
+        }
+        .section-divider {
+            border-top: 1px solid var(--border-color);
+            margin: 24px 0;
         }
     </style>
 </head>
 <body>
     <div class="form-container py-4">
         <div class="form-card">
+            @if(config('app.logo'))
+            <div class="logo-section">
+                <img src="{{ asset('storage/' . config('app.logo')) }}" alt="{{ config('app.name') }}">
+            </div>
+            @endif
+
             <div class="form-header">
-                <h1><i class="fas fa-file-alt me-2"></i>{{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form') }}</h1>
-                <p>Please complete the form below</p>
+                <h1><i class="fas fa-file-alt me-2 text-primary"></i>{{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form') }}</h1>
+                <p>Please complete all required fields below</p>
             </div>
 
             <div class="form-body">
@@ -266,7 +290,8 @@
                     @endforelse
 
                     @if(count($formFields) > 0)
-                        <div class="d-grid gap-2 mt-4">
+                        <div class="section-divider"></div>
+                        <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-submit">
                                 <i class="fas fa-paper-plane me-2"></i>Submit Form
                             </button>

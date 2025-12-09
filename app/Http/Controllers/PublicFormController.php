@@ -73,6 +73,14 @@ class PublicFormController extends Controller
 
         $validated = $request->validate($rules);
 
+        // Convert checkbox values to Yes/No for better readability
+        foreach ($formFields as $field) {
+            if ($field['type'] === 'checkbox') {
+                $fieldName = $field['name'];
+                $validated[$fieldName] = !empty($validated[$fieldName]) ? 'Yes' : 'No';
+            }
+        }
+
         // Store the form data
         $formRequest->markAsCompleted($validated);
 

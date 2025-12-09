@@ -170,7 +170,7 @@
     @case('document-templates')
         <div class="menu-item">
             <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.document-templates.*') || request()->routeIs('admin.document-settings.*') || request()->routeIs('admin.patients.documents.*') || request()->routeIs('admin.templates.*') || request()->routeIs('admin.generated-documents.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.document-templates.*') || request()->routeIs('admin.document-settings.*') || request()->routeIs('admin.patients.documents.*') || request()->routeIs('admin.templates.*') || request()->routeIs('admin.generated-documents.*') || request()->routeIs('admin.form-requests.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                     <i class="menu-icon fas {{ $icon }}"></i>
                     <span class="menu-text">{{ $label }}</span>
                 </a>
@@ -182,6 +182,11 @@
                     <h6 class="dropdown-header">Generated Documents</h6>
                     <a class="dropdown-item {{ request()->routeIs('admin.generated-documents.index') ? 'active' : '' }}" href="{{ route('admin.generated-documents.index') }}">All Documents</a>
                     <a class="dropdown-item {{ request()->routeIs('admin.generated-documents.create') ? 'active' : '' }}" href="{{ route('admin.generated-documents.create') }}">Generate Document</a>
+                    <div class="dropdown-divider"></div>
+                    <h6 class="dropdown-header">Form Submissions</h6>
+                    <a class="dropdown-item {{ request()->routeIs('admin.form-requests.*') ? 'active' : '' }}" href="{{ route('admin.form-requests.index') }}">
+                        <i class="fas fa-clipboard-check me-2"></i>View Submissions
+                    </a>
                     <div class="dropdown-divider"></div>
                     <h6 class="dropdown-header">Patient Documents</h6>
                     <a class="dropdown-item {{ request()->routeIs('admin.document-templates.index') ? 'active' : '' }}" href="{{ route('admin.document-templates.index') }}">Document Templates</a>

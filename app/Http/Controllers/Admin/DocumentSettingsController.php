@@ -8,6 +8,7 @@ use App\Models\DocumentSetting;
 use App\Models\DocumentTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class DocumentSettingsController extends Controller
@@ -17,18 +18,55 @@ class DocumentSettingsController extends Controller
      */
     public function index()
     {
-        $settings = DocumentSetting::getAllGrouped();
-        $groups = DocumentSetting::getGroups();
-        $categories = DocumentCategory::with('children')->roots()->orderBy('sort_order')->get();
+        try {
+            $settings = DocumentSetting::getAllGrouped();
+            $groups = DocumentSetting::getGroups();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Table doesn't exist - show migration warning
+            \Log::error('DocumentSettings table not found: ' . $e->getMessage());
+            
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'Document settings table not found. Please run migrations: php artisan migrate');
+        }
+
+        try {
+            $categories = DocumentCategory::with('children')->roots()->orderBy('sort_order')->get();
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::warning('DocumentCategory table not found: ' . $e->getMessage());
+            $categories = collect([]);
+        } catch (\Exception $e) {
+            \Log::warning('Error loading document categories: ' . $e->getMessage());
+            $categories = collect([]);
+        }
 
         // Get statistics
-        $stats = [
-            'total_templates' => DocumentTemplate::count(),
-            'active_templates' => DocumentTemplate::where('is_active', true)->count(),
-            'letter_templates' => DocumentTemplate::where('type', 'letter')->count(),
-            'form_templates' => DocumentTemplate::where('type', 'form')->count(),
-            'categories' => DocumentCategory::count(),
-        ];
+        try {
+            $stats = [
+                'total_templates' => DocumentTemplate::count(),
+                'active_templates' => DocumentTemplate::where('is_active', true)->count(),
+                'letter_templates' => DocumentTemplate::where('type', 'letter')->count(),
+                'form_templates' => DocumentTemplate::where('type', 'form')->count(),
+                'categories' => DocumentCategory::count(),
+            ];
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::warning('Error fetching document statistics - table missing: ' . $e->getMessage());
+            $stats = [
+                'total_templates' => 0,
+                'active_templates' => 0,
+                'letter_templates' => 0,
+                'form_templates' => 0,
+                'categories' => 0,
+            ];
+        } catch (\Exception $e) {
+            \Log::warning('Error fetching document statistics: ' . $e->getMessage());
+            $stats = [
+                'total_templates' => 0,
+                'active_templates' => 0,
+                'letter_templates' => 0,
+                'form_templates' => 0,
+                'categories' => 0,
+            ];
+        }
 
         return view('admin.document-settings.index', compact('settings', 'groups', 'categories', 'stats'));
     }

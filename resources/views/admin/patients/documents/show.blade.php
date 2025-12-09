@@ -13,14 +13,21 @@
 @push('styles')
 <style>
     .document-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 20px;
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
         padding: 2rem;
-        color: white;
+        color: #333;
         margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     .document-header.form-type {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+    }
+    .document-header h2 {
+        color: #2c3e50;
+        font-weight: 600;
     }
     .status-badge {
         display: inline-flex;
@@ -300,6 +307,10 @@
                                                             @if(is_bool($value))
                                                                 <i class="fas fa-{{ $value ? 'check-circle text-success' : 'times-circle text-danger' }}"></i>
                                                                 {{ $value ? 'Yes' : 'No' }}
+                                                            @elseif($value === '1' || $value === 1)
+                                                                <span class="badge bg-success">Yes</span>
+                                                            @elseif($value === '0' || $value === 0 || $value === '')
+                                                                <span class="badge bg-secondary">No</span>
                                                             @elseif(is_array($value))
                                                                 {{ implode(', ', $value) }}
                                                             @else

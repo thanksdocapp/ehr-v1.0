@@ -14,11 +14,17 @@
             padding: 20px;
         }
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
+            background: #ffffff;
+            color: #333;
+            padding: 30px 20px;
             text-align: center;
-            border-radius: 8px 8px 0 0;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .header h1 {
+            color: #2c3e50;
+            font-weight: 600;
+            margin: 0;
+            font-size: 24px;
         }
         .content {
             background: #ffffff;
@@ -60,14 +66,20 @@
         }
         .btn {
             display: inline-block;
-            padding: 15px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 14px 32px;
+            background: #2c3e50;
             color: white;
             text-decoration: none;
-            border-radius: 8px;
+            border-radius: 6px;
             margin: 20px 0;
-            font-weight: bold;
+            font-weight: 500;
             font-size: 16px;
+            border: none;
+            transition: background-color 0.2s ease;
+        }
+        .btn:hover {
+            background: #34495e;
+            color: white;
         }
         .btn-container {
             text-align: center;

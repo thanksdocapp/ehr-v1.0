@@ -176,7 +176,19 @@
                                         @foreach($document->form_data as $field => $value)
                                         <tr>
                                             <td class="fw-bold">{{ ucwords(str_replace('_', ' ', $field)) }}</td>
-                                            <td>{{ is_bool($value) ? ($value ? 'Yes' : 'No') : $value }}</td>
+                                            <td>
+                                                @if(is_bool($value))
+                                                    {{ $value ? 'Yes' : 'No' }}
+                                                @elseif($value === '1' || $value === 1)
+                                                    <span class="badge bg-success">Yes</span>
+                                                @elseif($value === '0' || $value === 0 || $value === '')
+                                                    <span class="badge bg-secondary">No</span>
+                                                @elseif(is_array($value))
+                                                    {{ implode(', ', $value) }}
+                                                @else
+                                                    {{ $value ?: '-' }}
+                                                @endif
+                                            </td>
                                         </tr>
                                         @endforeach
                                     </tbody>

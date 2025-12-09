@@ -184,6 +184,10 @@
                                                         <img src="{{ $value }}" alt="Signature" class="img-fluid" style="max-height: 100px; border: 1px solid #ddd; padding: 5px;">
                                                     @elseif(strlen($value) > 200)
                                                         <div class="text-wrap" style="white-space: pre-wrap;">{{ $value }}</div>
+                                                    @elseif($value === '1' || $value === 1)
+                                                        <span class="badge bg-success">Yes</span>
+                                                    @elseif($value === '0' || $value === 0 || $value === '')
+                                                        <span class="badge bg-secondary">No</span>
                                                     @else
                                                         {{ $value ?: '-' }}
                                                     @endif

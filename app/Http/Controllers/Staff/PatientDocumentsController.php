@@ -440,7 +440,12 @@ class PatientDocumentsController extends Controller
                 $html .= '<strong>' . e($fieldLabel) . ':</strong> ';
                 
                 if ($field['type'] === 'checkbox') {
-                    $html .= $value ? 'Yes' : 'No';
+                    // Handle checkbox values - convert 1/'1'/true to Yes, 0/'0'/false/empty to No
+                    if ($value === '1' || $value === 1 || $value === true || (is_string($value) && strtolower($value) === 'yes')) {
+                        $html .= 'Yes';
+                    } else {
+                        $html .= 'No';
+                    }
                 } else {
                     $html .= e($value);
                 }
