@@ -62,19 +62,17 @@
 
                         <!-- Patient Selection -->
                         <div class="mb-4">
-                            <label for="patient_id" class="form-label">Select Patient <span class="text-danger">*</span></label>
-                            <select class="form-select @error('patient_id') is-invalid @enderror"
-                                    id="patient_id" name="patient_id" required>
-                                <option value="">Search for a patient...</option>
-                                @if($patient)
-                                    <option value="{{ $patient->id }}" selected>
-                                        {{ $patient->full_name ?? $patient->first_name . ' ' . $patient->last_name }}
-                                        ({{ $patient->patient_id ?? 'ID: ' . $patient->id }})
-                                    </option>
-                                @endif
-                            </select>
+                            <label for="patient_search" class="form-label">Select Patient <span class="text-danger">*</span></label>
+                            <input type="hidden" name="patient_id" id="patient_id" value="{{ $patient->id ?? '' }}" required>
+                            <input type="text"
+                                   class="form-control @error('patient_id') is-invalid @enderror"
+                                   id="patient_search"
+                                   placeholder="Type to search for a patient..."
+                                   value="{{ $patient ? ($patient->full_name ?? $patient->first_name . ' ' . $patient->last_name) . ' (' . ($patient->patient_id ?? 'ID: ' . $patient->id) . ')' : '' }}"
+                                   autocomplete="off">
+                            <div id="patient_results" class="list-group position-absolute w-100 shadow-sm bg-white" style="z-index: 1000; display: none; max-height: 300px; overflow-y: auto;"></div>
                             @error('patient_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                             <small class="text-muted">Start typing to search for patients</small>
                         </div>
@@ -170,85 +168,144 @@
 @endsection
 
 @push('styles')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    #patient_results .list-group-item {
+        cursor: pointer;
+        border-left: none;
+        border-right: none;
+    }
+    #patient_results .list-group-item:hover,
+    #patient_results .list-group-item.active {
+        background-color: #0d6efd;
+        color: white;
+    }
+    #patient_results .list-group-item:first-child {
+        border-top: none;
+    }
+</style>
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-$(document).ready(function() {
-    // Initialize Select2 for patient search
-    $('#patient_id').select2({
-        theme: 'bootstrap-5',
-        placeholder: 'Search for a patient...',
-        allowClear: true,
-        width: '100%',
-        ajax: {
-            url: '{{ route("admin.patients.search") }}',
-            dataType: 'json',
-            delay: 300,
-            data: function(params) {
-                return {
-                    q: params.term,
-                    page: params.page || 1
-                };
-            },
-            processResults: function(data) {
-                return {
-                    results: data.results || [],
-                    pagination: data.pagination || { more: false }
-                };
-            },
-            cache: true
-        },
-        minimumInputLength: 2
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('patient_search');
+    const patientIdInput = document.getElementById('patient_id');
+    const resultsContainer = document.getElementById('patient_results');
+    const templateSelect = document.getElementById('template_id');
+    const previewBtn = document.getElementById('previewBtn');
+    const previewSection = document.getElementById('previewSection');
+    const documentPreview = document.getElementById('documentPreview');
+    let debounceTimer;
+
+    // Patient search functionality
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        clearTimeout(debounceTimer);
+        patientIdInput.value = '';
+        checkPreviewReady();
+
+        if (query.length < 2) {
+            resultsContainer.style.display = 'none';
+            return;
+        }
+
+        debounceTimer = setTimeout(function() {
+            fetch('{{ route("admin.patients.search") }}?q=' + encodeURIComponent(query))
+                .then(response => response.json())
+                .then(data => {
+                    resultsContainer.innerHTML = '';
+                    const results = data.results || data;
+
+                    if (results.length === 0) {
+                        resultsContainer.innerHTML = '<div class="list-group-item text-muted">No patients found</div>';
+                    } else {
+                        results.forEach(function(patient) {
+                            const item = document.createElement('div');
+                            item.className = 'list-group-item list-group-item-action';
+                            item.textContent = patient.text;
+                            item.dataset.id = patient.id;
+
+                            item.addEventListener('click', function() {
+                                patientIdInput.value = this.dataset.id;
+                                searchInput.value = this.textContent;
+                                resultsContainer.style.display = 'none';
+                                checkPreviewReady();
+                            });
+
+                            resultsContainer.appendChild(item);
+                        });
+                    }
+
+                    resultsContainer.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    resultsContainer.innerHTML = '<div class="list-group-item text-danger">Error searching patients</div>';
+                    resultsContainer.style.display = 'block';
+                });
+        }, 300);
+    });
+
+    // Hide results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+            resultsContainer.style.display = 'none';
+        }
+    });
+
+    // Show results when focusing on input
+    searchInput.addEventListener('focus', function() {
+        if (resultsContainer.children.length > 0 && !patientIdInput.value) {
+            resultsContainer.style.display = 'block';
+        }
     });
 
     // Enable preview button when both template and patient are selected
     function checkPreviewReady() {
-        const templateId = $('#template_id').val();
-        const patientId = $('#patient_id').val();
-        $('#previewBtn').prop('disabled', !(templateId && patientId));
+        const templateId = templateSelect.value;
+        const patientId = patientIdInput.value;
+        previewBtn.disabled = !(templateId && patientId);
     }
 
-    $('#template_id, #patient_id').on('change', function() {
+    templateSelect.addEventListener('change', function() {
         checkPreviewReady();
-        $('#previewSection').hide();
+        previewSection.style.display = 'none';
     });
 
     // Preview functionality
-    $('#previewBtn').on('click', function() {
-        const templateId = $('#template_id').val();
-        const patientId = $('#patient_id').val();
+    previewBtn.addEventListener('click', function() {
+        const templateId = templateSelect.value;
+        const patientId = patientIdInput.value;
 
         if (!templateId || !patientId) {
             return;
         }
 
-        $('#documentPreview').html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Loading preview...</p></div>');
-        $('#previewSection').show();
+        documentPreview.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Loading preview...</p></div>';
+        previewSection.style.display = 'block';
 
-        $.ajax({
-            url: '{{ route("admin.generated-documents.preview") }}',
+        fetch('{{ route("admin.generated-documents.preview") }}', {
             method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
                 template_id: templateId,
                 patient_id: patientId
-            },
-            success: function(response) {
-                $('#documentPreview').html(
-                    '<div class="bg-white p-3 border">' +
-                    '<div class="text-center mb-3"><strong>' + response.template_name + '</strong><br><small class="text-muted">For: ' + response.patient_name + '</small></div>' +
-                    '<hr>' +
-                    response.content +
-                    '</div>'
-                );
-            },
-            error: function(xhr) {
-                $('#documentPreview').html('<div class="alert alert-danger">Failed to load preview. Please try again.</div>');
-            }
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            documentPreview.innerHTML =
+                '<div class="bg-white p-3 border">' +
+                '<div class="text-center mb-3"><strong>' + data.template_name + '</strong><br><small class="text-muted">For: ' + data.patient_name + '</small></div>' +
+                '<hr>' +
+                data.content +
+                '</div>';
+        })
+        .catch(error => {
+            documentPreview.innerHTML = '<div class="alert alert-danger">Failed to load preview. Please try again.</div>';
         });
     });
 
