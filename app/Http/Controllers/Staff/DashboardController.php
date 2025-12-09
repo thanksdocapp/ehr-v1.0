@@ -136,8 +136,11 @@ class DashboardController extends Controller
         }
         $todayAppointments = $todayAppointmentsQuery->orderBy('appointment_time', 'asc')->get();
 
-        // Check Quincy integration status
-        $quincyStatus = $this->getQuincyIntegrationStatus();
+        // Check Quincy integration status (only for non-doctor staff)
+        $quincyStatus = null;
+        if ($user->role !== 'doctor') {
+            $quincyStatus = $this->getQuincyIntegrationStatus();
+        }
 
         // Use doctor-specific layout for doctors
         if ($user->role === 'doctor') {
@@ -146,7 +149,10 @@ class DashboardController extends Controller
                 ->with(['departments', 'department'])
                 ->first();
             
-            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'quincyStatus'));
+            // Get Quincy prescription delivery status for this doctor
+            $quincyDeliveryStatus = $this->getDoctorQuincyDeliveryStatus($doctor ? $doctor->id : null);
+            
+            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'quincyDeliveryStatus'));
         }
 
         return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus'));
@@ -298,6 +304,86 @@ class DashboardController extends Controller
                 'active' => false,
                 'successful' => false,
                 'message' => 'Error checking status: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get Quincy prescription delivery status for a doctor
+     */
+    private function getDoctorQuincyDeliveryStatus(?int $doctorId): array
+    {
+        if (!$doctorId) {
+            return [
+                'success' => false,
+                'available' => false,
+                'message' => 'Doctor not found',
+                'stats' => [
+                    'total' => 0,
+                    'successful' => 0,
+                    'failed' => 0,
+                    'pending' => 0,
+                    'success_rate' => 0,
+                ],
+                'recent_failed' => [],
+                'has_failures' => false,
+            ];
+        }
+
+        try {
+            $module = IntegrationModule::where('slug', 'quincy')->first();
+            
+            if (!$module || !$module->isReady()) {
+                return [
+                    'success' => false,
+                    'available' => false,
+                    'message' => 'Quincy integration is not configured or active',
+                    'stats' => [
+                        'total' => 0,
+                        'successful' => 0,
+                        'failed' => 0,
+                        'pending' => 0,
+                        'success_rate' => 0,
+                    ],
+                    'recent_failed' => [],
+                    'has_failures' => false,
+                ];
+            }
+
+            $service = $module->getService();
+            if ($service instanceof QuincyService) {
+                return $service->getDoctorPrescriptionDeliveryStatus($doctorId);
+            }
+
+            return [
+                'success' => false,
+                'available' => false,
+                'message' => 'Quincy service not available',
+                'stats' => [
+                    'total' => 0,
+                    'successful' => 0,
+                    'failed' => 0,
+                    'pending' => 0,
+                    'success_rate' => 0,
+                ],
+                'recent_failed' => [],
+                'has_failures' => false,
+            ];
+        } catch (\Exception $e) {
+            \Log::error('Error getting doctor Quincy delivery status: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'available' => false,
+                'message' => 'Error checking delivery status',
+                'stats' => [
+                    'total' => 0,
+                    'successful' => 0,
+                    'failed' => 0,
+                    'pending' => 0,
+                    'success_rate' => 0,
+                ],
+                'recent_failed' => [],
+                'has_failures' => false,
             ];
         }
     }

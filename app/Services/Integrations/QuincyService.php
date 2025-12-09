@@ -3,6 +3,7 @@
 namespace App\Services\Integrations;
 
 use App\Models\IntegrationRequest;
+use App\Models\IntegrationModule;
 use App\Models\PrescriptionOrder;
 use App\Models\Prescription;
 use App\Models\Patient;
@@ -82,6 +83,119 @@ class QuincyService extends BaseIntegrationService
             // Log error but don't throw - return false instead
             $this->logError("Quincy integration check failed: {$e->getMessage()}");
             return false;
+        }
+    }
+
+    /**
+     * Get prescription delivery status for a doctor
+     * Returns statistics about successful and failed prescription deliveries to Quincy
+     * 
+     * @param int $doctorId
+     * @return array Contains success status, counts, and recent orders
+     */
+    public function getDoctorPrescriptionDeliveryStatus(int $doctorId): array
+    {
+        try {
+            if (!$this->isReady()) {
+                return [
+                    'success' => false,
+                    'available' => false,
+                    'message' => 'Quincy integration is not configured or active',
+                    'stats' => [
+                        'total' => 0,
+                        'successful' => 0,
+                        'failed' => 0,
+                        'pending' => 0,
+                    ],
+                    'recent_failed' => [],
+                ];
+            }
+
+            // Use the module instance from this service
+            $quincyModule = $this->module;
+
+            // Get all prescription orders for this doctor through Quincy
+            $orders = PrescriptionOrder::where('doctor_id', $doctorId)
+                ->whereHas('integrationRequest', function ($q) use ($quincyModule) {
+                    $q->where('integration_module_id', $quincyModule->id);
+                })
+                ->with(['patient', 'prescription', 'integrationRequest'])
+                ->latest()
+                ->get();
+
+            // Count by status
+            $total = $orders->count();
+            $successful = $orders->whereIn('status', [
+                PrescriptionOrder::STATUS_SUBMITTED,
+                PrescriptionOrder::STATUS_ACCEPTED,
+                PrescriptionOrder::STATUS_DISPENSING,
+                PrescriptionOrder::STATUS_READY,
+                PrescriptionOrder::STATUS_COLLECTED,
+                PrescriptionOrder::STATUS_DELIVERED,
+            ])->count();
+
+            // Failed: rejected orders or integration requests that failed
+            $failed = $orders->filter(function ($order) {
+                return $order->status === PrescriptionOrder::STATUS_REJECTED ||
+                       ($order->integrationRequest && $order->integrationRequest->status === IntegrationRequest::STATUS_FAILED);
+            })->count();
+
+            $pending = $orders->whereIn('status', [
+                PrescriptionOrder::STATUS_DRAFT,
+            ])->count();
+
+            // Get recent failed orders (last 5)
+            $recentFailed = $orders->filter(function ($order) {
+                return $order->status === PrescriptionOrder::STATUS_REJECTED ||
+                       ($order->integrationRequest && $order->integrationRequest->status === IntegrationRequest::STATUS_FAILED);
+            })
+            ->take(5)
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'patient_name' => $order->patient ? $order->patient->full_name : 'Unknown',
+                    'status' => $order->status,
+                    'rejection_reason' => $order->rejection_reason ?? ($order->integrationRequest->notes ?? 'Unknown error'),
+                    'created_at' => $order->created_at->format('M d, Y H:i'),
+                    'prescription_id' => $order->prescription_id,
+                ];
+            })
+            ->values();
+
+            // Overall success rate
+            $successRate = $total > 0 ? round(($successful / $total) * 100, 1) : 0;
+
+            return [
+                'success' => true,
+                'available' => true,
+                'message' => $total > 0 ? "{$successful} of {$total} prescriptions delivered successfully" : 'No prescriptions sent to Quincy yet',
+                'stats' => [
+                    'total' => $total,
+                    'successful' => $successful,
+                    'failed' => $failed,
+                    'pending' => $pending,
+                    'success_rate' => $successRate,
+                ],
+                'recent_failed' => $recentFailed,
+                'has_failures' => $failed > 0,
+            ];
+        } catch (\Exception $e) {
+            $this->logError("Failed to get doctor prescription delivery status: {$e->getMessage()}");
+            return [
+                'success' => false,
+                'available' => false,
+                'message' => 'Error checking delivery status: ' . $e->getMessage(),
+                'stats' => [
+                    'total' => 0,
+                    'successful' => 0,
+                    'failed' => 0,
+                    'pending' => 0,
+                    'success_rate' => 0,
+                ],
+                'recent_failed' => [],
+                'has_failures' => false,
+            ];
         }
     }
 

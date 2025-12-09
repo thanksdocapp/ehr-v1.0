@@ -128,58 +128,129 @@
         </div>
     </div>
 
-    <!-- Quincy Integration Status -->
-    @if(isset($quincyStatus))
+    <!-- Quincy Prescription Delivery Status -->
+    @if(isset($quincyDeliveryStatus) && ($quincyDeliveryStatus['available'] ?? false))
     <div class="row g-3 mb-4">
         <div class="col-12">
             <div class="doctor-card">
                 <div class="doctor-card-header">
                     <h5 class="doctor-card-title mb-0">
                         <i class="fas fa-prescription-bottle-alt me-2"></i>
-                        Quincy Prescription Integration
+                        Quincy Prescription Delivery Status
                     </h5>
-                    @if($quincyStatus['successful'] ?? false)
-                        <span class="badge bg-success ms-2">
-                            <i class="fas fa-check-circle me-1"></i>Connected
-                        </span>
-                    @elseif($quincyStatus['configured'] ?? false)
-                        <span class="badge bg-warning ms-2">
-                            <i class="fas fa-exclamation-triangle me-1"></i>Not Connected
-                        </span>
-                    @else
-                        <span class="badge bg-secondary ms-2">
-                            <i class="fas fa-times-circle me-1"></i>Not Configured
-                        </span>
+                    @if(($quincyDeliveryStatus['stats']['total'] ?? 0) > 0)
+                        @php
+                            $successRate = $quincyDeliveryStatus['stats']['success_rate'] ?? 0;
+                            $hasFailures = $quincyDeliveryStatus['has_failures'] ?? false;
+                        @endphp
+                        @if($successRate >= 90)
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-check-circle me-1"></i>Excellent
+                            </span>
+                        @elseif($successRate >= 70)
+                            <span class="badge bg-warning ms-2">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Good
+                            </span>
+                        @else
+                            <span class="badge bg-danger ms-2">
+                                <i class="fas fa-times-circle me-1"></i>Needs Attention
+                            </span>
+                        @endif
                     @endif
                 </div>
                 <div class="doctor-card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <div class="mb-2">
-                                <strong>Status:</strong> {{ $quincyStatus['message'] ?? 'Unknown' }}
+                    @if(($quincyDeliveryStatus['stats']['total'] ?? 0) > 0)
+                        <!-- Statistics Row -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3 col-6">
+                                <div class="text-center p-3" style="background: #f8f9fa; border-radius: 8px;">
+                                    <div class="fw-bold text-primary" style="font-size: 1.75rem;">{{ $quincyDeliveryStatus['stats']['total'] ?? 0 }}</div>
+                                    <small class="text-muted d-block">Total Sent</small>
+                                </div>
                             </div>
-                            @if(isset($quincyStatus['environment']))
-                            <small class="text-muted">
-                                <i class="fas fa-server me-1"></i>Environment: {{ ucfirst($quincyStatus['environment']) }}
-                            </small>
-                            @endif
+                            <div class="col-md-3 col-6">
+                                <div class="text-center p-3" style="background: #d4edda; border-radius: 8px;">
+                                    <div class="fw-bold text-success" style="font-size: 1.75rem;">{{ $quincyDeliveryStatus['stats']['successful'] ?? 0 }}</div>
+                                    <small class="text-muted d-block">Successful</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="text-center p-3" style="background: #f8d7da; border-radius: 8px;">
+                                    <div class="fw-bold text-danger" style="font-size: 1.75rem;">{{ $quincyDeliveryStatus['stats']['failed'] ?? 0 }}</div>
+                                    <small class="text-muted d-block">Failed</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="text-center p-3" style="background: #fff3cd; border-radius: 8px;">
+                                    <div class="fw-bold text-warning" style="font-size: 1.75rem;">{{ $quincyDeliveryStatus['stats']['pending'] ?? 0 }}</div>
+                                    <small class="text-muted d-block">Pending</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4 text-end">
-                            @if($quincyStatus['successful'] ?? false)
-                                <i class="fas fa-check-circle text-success" style="font-size: 2.5rem;"></i>
-                            @elseif($quincyStatus['configured'] ?? false)
-                                <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2.5rem;"></i>
-                            @else
-                                <i class="fas fa-times-circle text-secondary" style="font-size: 2.5rem;"></i>
-                            @endif
+
+                        <!-- Success Rate -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold">Success Rate</span>
+                                <span class="fw-bold {{ ($quincyDeliveryStatus['stats']['success_rate'] ?? 0) >= 90 ? 'text-success' : (($quincyDeliveryStatus['stats']['success_rate'] ?? 0) >= 70 ? 'text-warning' : 'text-danger') }}">
+                                    {{ $quincyDeliveryStatus['stats']['success_rate'] ?? 0 }}%
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 8px; border-radius: 4px;">
+                                <div class="progress-bar {{ ($quincyDeliveryStatus['stats']['success_rate'] ?? 0) >= 90 ? 'bg-success' : (($quincyDeliveryStatus['stats']['success_rate'] ?? 0) >= 70 ? 'bg-warning' : 'bg-danger') }}" 
+                                     role="progressbar" 
+                                     style="width: {{ $quincyDeliveryStatus['stats']['success_rate'] ?? 0 }}%"
+                                     aria-valuenow="{{ $quincyDeliveryStatus['stats']['success_rate'] ?? 0 }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    @if(!($quincyStatus['successful'] ?? false))
-                    <div class="mt-3">
-                        <a href="{{ route('admin.integrations.index') }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-cog me-1"></i>Configure Integration
-                        </a>
-                    </div>
+
+                        <!-- Recent Failed Deliveries -->
+                        @if(($quincyDeliveryStatus['has_failures'] ?? false) && count($quincyDeliveryStatus['recent_failed'] ?? []) > 0)
+                        <div class="alert alert-warning mb-0">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong><i class="fas fa-exclamation-triangle me-2"></i>Recent Failed Deliveries:</strong>
+                                <a href="{{ route('staff.prescriptions.index') }}" class="btn btn-sm btn-outline-warning">
+                                    View All Prescriptions
+                                </a>
+                            </div>
+                            <ul class="mb-0 mt-2">
+                                @foreach($quincyDeliveryStatus['recent_failed'] as $failed)
+                                <li class="mb-2">
+                                    <strong>{{ $failed['patient_name'] }}</strong> - 
+                                    Order #<code>{{ $failed['order_number'] }}</code>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>{{ $failed['rejection_reason'] }}
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>{{ $failed['created_at'] }}
+                                    </small>
+                                    @if($failed['prescription_id'])
+                                    <br>
+                                    <a href="{{ route('staff.prescriptions.show', $failed['prescription_id']) }}" class="btn btn-xs btn-outline-primary btn-sm mt-1">
+                                        View Prescription
+                                    </a>
+                                    @endif
+                                </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        @elseif(($quincyDeliveryStatus['stats']['successful'] ?? 0) > 0)
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>All clear!</strong> All recent prescription deliveries to Quincy were successful.
+                        </div>
+                        @endif
+                    @else
+                        <div class="text-center py-4">
+                            <i class="fas fa-prescription-bottle-alt fa-3x text-muted mb-3" style="opacity: 0.3;"></i>
+                            <p class="text-muted mb-0">No prescriptions have been sent to Quincy yet.</p>
+                            <small class="text-muted">Prescriptions sent to Quincy will appear here once submitted.</small>
+                        </div>
                     @endif
                 </div>
             </div>
