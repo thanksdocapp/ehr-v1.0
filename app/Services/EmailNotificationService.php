@@ -746,4 +746,83 @@ class EmailNotificationService
             )
         );
     }
+
+    /**
+     * Log an email that was sent directly (without using email template).
+     * Useful for form requests, document deliveries, etc.
+     *
+     * @param string $subject
+     * @param string $body HTML content
+     * @param string $recipientEmail
+     * @param string|null $recipientName
+     * @param array $options Additional options (patient_id, email_type, event, etc.)
+     * @return EmailLog|null
+     */
+    public function logRawEmail(string $subject, string $body, string $recipientEmail, ?string $recipientName = null, array $options = []): ?EmailLog
+    {
+        try {
+            // Check column existence safely
+            $columnChecks = [];
+            $columnsToCheck = ['email_type', 'event', 'patient_id', 'billing_id', 'invoice_id', 'payment_id'];
+            
+            foreach ($columnsToCheck as $column) {
+                try {
+                    $columnChecks[$column] = \Illuminate\Support\Facades\Schema::hasColumn('email_logs', $column);
+                } catch (\Exception $e) {
+                    $columnChecks[$column] = false;
+                }
+            }
+            
+            // Prepare log data
+            $logData = [
+                'email_template_id' => null, // No template used
+                'recipient_email' => $recipientEmail,
+                'recipient_name' => $recipientName,
+                'subject' => $subject,
+                'body' => $body,
+                'variables' => [],
+                'status' => 'sent',
+                'sent_at' => now(),
+            ];
+            
+            // Only add optional columns if they exist in the database
+            if ($columnChecks['email_type']) {
+                $logData['email_type'] = $options['email_type'] ?? 'general';
+            }
+            if ($columnChecks['event']) {
+                $logData['event'] = $options['event'] ?? null;
+            }
+            if ($columnChecks['patient_id']) {
+                $logData['patient_id'] = $options['patient_id'] ?? null;
+            }
+            if ($columnChecks['billing_id']) {
+                $logData['billing_id'] = $options['billing_id'] ?? null;
+            }
+            if ($columnChecks['invoice_id']) {
+                $logData['invoice_id'] = $options['invoice_id'] ?? null;
+            }
+            if ($columnChecks['payment_id']) {
+                $logData['payment_id'] = $options['payment_id'] ?? null;
+            }
+            
+            $log = EmailLog::create($logData);
+            
+            Log::info('Raw email logged successfully', [
+                'log_id' => $log->id,
+                'recipient' => $recipientEmail,
+                'subject' => $subject,
+                'email_type' => $options['email_type'] ?? 'general'
+            ]);
+            
+            return $log;
+        } catch (\Exception $e) {
+            Log::error('Failed to log raw email', [
+                'recipient' => $recipientEmail,
+                'subject' => $subject,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
+    }
 }

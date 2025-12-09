@@ -271,14 +271,41 @@ class GeneratedDocumentsController extends Controller
             'notes' => $validated['message'] ?? null,
         ]);
 
+        // Prepare email data
+        $subject = $validated['subject'] ?? 'Please Complete: ' . $generatedDocument->title;
+        $emailBody = view('emails.forms.form-request', [
+            'formRequest' => $formRequest,
+            'customMessage' => $validated['message'] ?? null,
+        ])->render();
+
         // Send email with form link
         Mail::send('emails.forms.form-request', [
             'formRequest' => $formRequest,
             'customMessage' => $validated['message'] ?? null,
-        ], function ($mail) use ($validated, $generatedDocument, $formRequest) {
+        ], function ($mail) use ($validated, $subject) {
             $mail->to($validated['email'])
-                ->subject($validated['subject'] ?? 'Please Complete: ' . $generatedDocument->title);
+                ->subject($subject);
         });
+
+        // Log email to email logs
+        try {
+            $emailService = app(\App\Services\EmailNotificationService::class);
+            $emailService->logRawEmail(
+                $subject,
+                $emailBody,
+                $validated['email'],
+                $generatedDocument->patient->full_name ?? null,
+                [
+                    'email_type' => 'form_request',
+                    'event' => 'form_request_sent',
+                    'patient_id' => $generatedDocument->patient_id,
+                ]
+            );
+        } catch (\Exception $e) {
+            \Log::error('Failed to log form request email', [
+                'error' => $e->getMessage()
+            ]);
+        }
 
         // Mark document as sent
         $generatedDocument->markAsSent($validated['email']);

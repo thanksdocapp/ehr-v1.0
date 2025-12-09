@@ -19,7 +19,13 @@ class PublicFormController extends Controller
             ->with(['template', 'patient', 'requester', 'patientDocument'])
             ->firstOrFail();
 
-        // Check if form can be filled
+        // Mark as opened if pending (but don't prevent filling if already opened)
+        if ($formRequest->isPending()) {
+            $formRequest->markAsOpened();
+        }
+
+        // Check if form can be filled (after marking as opened if needed)
+        // Forms can be filled if status is PENDING or OPENED (not COMPLETED or EXPIRED)
         if (!$formRequest->canBeFilled()) {
             if ($formRequest->isCompleted()) {
                 return view('forms.already-completed', compact('formRequest'));
@@ -27,11 +33,6 @@ class PublicFormController extends Controller
             if ($formRequest->isExpired()) {
                 return view('forms.expired', compact('formRequest'));
             }
-        }
-
-        // Mark as opened if pending
-        if ($formRequest->isPending()) {
-            $formRequest->markAsOpened();
         }
 
         // Get the content to parse - use rendered_content if available, otherwise from template

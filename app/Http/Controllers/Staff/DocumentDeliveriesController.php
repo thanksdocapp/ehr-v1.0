@@ -9,6 +9,7 @@ use App\Models\DocumentDelivery;
 use App\Models\FormRequest;
 use App\Mail\FormSubmissionNotification;
 use App\Services\HospitalEmailNotificationService;
+use App\Services\EmailNotificationService;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,11 +20,13 @@ use Illuminate\Support\Str;
 class DocumentDeliveriesController extends Controller
 {
     protected $emailService;
+    protected $emailNotificationService;
     protected $pdfService;
 
-    public function __construct(HospitalEmailNotificationService $emailService, PdfService $pdfService)
+    public function __construct(HospitalEmailNotificationService $emailService, EmailNotificationService $emailNotificationService, PdfService $pdfService)
     {
         $this->emailService = $emailService;
+        $this->emailNotificationService = $emailNotificationService;
         $this->pdfService = $pdfService;
     }
 
@@ -155,14 +158,34 @@ class DocumentDeliveriesController extends Controller
             }
         }
 
+        // Prepare email data
+        $subject = 'Please Complete: ' . $document->title;
+        $emailBody = view('emails.forms.form-request', [
+            'formRequest' => $formRequest,
+            'customMessage' => null,
+        ])->render();
+
         // Send email with form link
         Mail::send('emails.forms.form-request', [
             'formRequest' => $formRequest,
             'customMessage' => null,
-        ], function ($mail) use ($delivery, $document) {
+        ], function ($mail) use ($delivery, $subject) {
             $mail->to($delivery->recipient_email, $delivery->recipient_name)
-                ->subject('Please Complete: ' . $document->title);
+                ->subject($subject);
         });
+
+        // Log email to email logs
+        $this->emailNotificationService->logRawEmail(
+            $subject,
+            $emailBody,
+            $delivery->recipient_email,
+            $delivery->recipient_name,
+            [
+                'email_type' => 'form_request',
+                'event' => 'form_request_sent',
+                'patient_id' => $patient->id,
+            ]
+        );
 
         return $formRequest;
     }
@@ -186,11 +209,15 @@ class DocumentDeliveriesController extends Controller
         $clinicName = config('app.name', 'Clinic');
         $subject = "New document from {$clinicName}: {$document->title}";
 
+        // Generate tracking token for email open tracking
+        $trackingToken = $delivery->getTrackingToken();
+
         $emailBody = view('emails.documents.send', [
             'document' => $document,
             'patient' => $patient,
             'recipientName' => $recipientName,
             'clinicName' => $clinicName,
+            'trackingToken' => $trackingToken,
         ])->render();
 
         // Configure SMTP settings from database before sending
@@ -224,6 +251,19 @@ class DocumentDeliveriesController extends Controller
                         'mime' => 'application/pdf',
                     ]);
             });
+
+            // Log email to email logs
+            $this->emailNotificationService->logRawEmail(
+                $subject,
+                $emailBody,
+                $recipientEmail,
+                $recipientName,
+                [
+                    'email_type' => 'document_delivery',
+                    'event' => 'document_sent',
+                    'patient_id' => $patient->id,
+                ]
+            );
         } catch (\Symfony\Component\Mailer\Exception\TransportExceptionInterface $e) {
             \Log::error('SMTP connection error when sending document delivery email: ' . $e->getMessage());
             throw new \Exception('SMTP connection failed. Please check SMTP settings in Admin > Settings > Email Configuration.');

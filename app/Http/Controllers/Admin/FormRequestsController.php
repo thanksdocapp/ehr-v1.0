@@ -4,11 +4,20 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FormRequest;
+use App\Models\SiteSetting;
+use App\Services\EmailNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 
 class FormRequestsController extends Controller
 {
+    protected $emailService;
+
+    public function __construct(EmailNotificationService $emailService)
+    {
+        $this->emailService = $emailService;
+    }
     /**
      * Display a listing of form requests.
      */
@@ -75,19 +84,64 @@ class FormRequestsController extends Controller
             'opened_at' => null,
         ]);
 
+        // Reload relationships after update
+        $formRequest->load(['template', 'patientDocument']);
+
+        // Configure SMTP settings from database before sending
+        $settings = SiteSetting::getSettings();
+        if (isset($settings['smtp_host']) && $settings['smtp_host']) {
+            Config::set('mail.default', 'smtp');
+            Config::set('mail.mailers.smtp.host', $settings['smtp_host']);
+            Config::set('mail.mailers.smtp.port', $settings['smtp_port'] ?? 587);
+            Config::set('mail.mailers.smtp.username', $settings['smtp_username'] ?? '');
+            Config::set('mail.mailers.smtp.password', $settings['smtp_password'] ?? '');
+            $encryption = $settings['smtp_encryption'] ?? 'tls';
+            Config::set('mail.mailers.smtp.encryption', $encryption === 'none' ? null : $encryption);
+            if (isset($settings['from_email']) && $settings['from_email']) {
+                Config::set('mail.from.address', $settings['from_email']);
+                Config::set('mail.from.name', $settings['from_name'] ?? $settings['hospital_name'] ?? config('app.name'));
+            }
+        }
+
+        // Force synchronous sending
+        $originalQueueConnection = config('queue.default');
+        Config::set('queue.default', 'sync');
+
         // Send email
         try {
+            $subject = 'Please Complete: ' . ($formRequest->template->name ?? $formRequest->patientDocument->title ?? 'Form');
+            $emailBody = view('emails.forms.form-request', [
+                'formRequest' => $formRequest,
+                'customMessage' => null,
+            ])->render();
+
             \Mail::send('emails.forms.form-request', [
                 'formRequest' => $formRequest,
                 'customMessage' => null,
-            ], function ($mail) use ($formRequest) {
+            ], function ($mail) use ($formRequest, $subject) {
                 $mail->to($formRequest->recipient_email)
-                    ->subject('Please Complete: ' . ($formRequest->template->name ?? $formRequest->patientDocument->title ?? 'Form'));
+                    ->subject($subject);
             });
+
+            // Log email to email logs
+            $this->emailService->logRawEmail(
+                $subject,
+                $emailBody,
+                $formRequest->recipient_email,
+                $formRequest->patient->full_name ?? null,
+                [
+                    'email_type' => 'form_request',
+                    'event' => 'form_request_resend',
+                    'patient_id' => $formRequest->patient_id,
+                ]
+            );
 
             return back()->with('success', 'Form request resent successfully.');
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to resend form: ' . $e->getMessage());
+        } finally {
+            // Restore original queue connection
+            Config::set('queue.default', $originalQueueConnection);
         }
     }
 

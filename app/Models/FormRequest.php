@@ -172,9 +172,13 @@ class FormRequest extends Model
 
     /**
      * Check if form can be filled.
+     * Forms can be filled if they are not completed and not expired.
+     * Opening a form (status = OPENED) does not prevent it from being filled.
      */
     public function canBeFilled(): bool
     {
+        // Can be filled if not completed and not expired
+        // Status can be PENDING or OPENED - both are fillable
         return !$this->isCompleted() && !$this->isExpired();
     }
 
