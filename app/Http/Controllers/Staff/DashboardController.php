@@ -7,6 +7,8 @@ use App\Models\Patient;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Department;
+use App\Models\IntegrationModule;
+use App\Services\Integrations\QuincyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -134,6 +136,9 @@ class DashboardController extends Controller
         }
         $todayAppointments = $todayAppointmentsQuery->orderBy('appointment_time', 'asc')->get();
 
+        // Check Quincy integration status
+        $quincyStatus = $this->getQuincyIntegrationStatus();
+
         // Use doctor-specific layout for doctors
         if ($user->role === 'doctor') {
             // Get doctor model with department relationship for booking link
@@ -141,10 +146,10 @@ class DashboardController extends Controller
                 ->with(['departments', 'department'])
                 ->first();
             
-            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor'));
+            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'quincyStatus'));
         }
 
-        return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments'));
+        return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus'));
     }
 
     public function getStats()
@@ -234,6 +239,66 @@ class DashboardController extends Controller
                 'success' => false,
                 'message' => 'Failed to update order. Please try again.'
             ], 500);
+        }
+    }
+
+    /**
+     * Get Quincy integration status
+     */
+    private function getQuincyIntegrationStatus(): array
+    {
+        try {
+            $module = IntegrationModule::where('slug', 'quincy')->first();
+            
+            if (!$module) {
+                return [
+                    'available' => false,
+                    'configured' => false,
+                    'active' => false,
+                    'successful' => false,
+                    'message' => 'Quincy integration module not found',
+                ];
+            }
+
+            $isConfigured = $module->is_configured;
+            $isActive = $module->is_active;
+            $isSuccessful = false;
+            $message = 'Not configured';
+
+            if ($isConfigured && $isActive) {
+                try {
+                    $service = $module->getService();
+                    if ($service instanceof QuincyService) {
+                        $isSuccessful = $service->isQuincyIntegrationSuccessful();
+                        $message = $isSuccessful ? 'Connection successful' : 'Connection test failed';
+                    } else {
+                        $message = 'Service not available';
+                    }
+                } catch (\Exception $e) {
+                    $message = 'Error checking connection: ' . $e->getMessage();
+                }
+            } elseif (!$isConfigured) {
+                $message = 'Not configured';
+            } elseif (!$isActive) {
+                $message = 'Integration disabled';
+            }
+
+            return [
+                'available' => true,
+                'configured' => $isConfigured,
+                'active' => $isActive,
+                'successful' => $isSuccessful,
+                'message' => $message,
+                'environment' => $module->environment ?? 'sandbox',
+            ];
+        } catch (\Exception $e) {
+            return [
+                'available' => false,
+                'configured' => false,
+                'active' => false,
+                'successful' => false,
+                'message' => 'Error checking status: ' . $e->getMessage(),
+            ];
         }
     }
 }

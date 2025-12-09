@@ -64,6 +64,28 @@ class QuincyService extends BaseIntegrationService
     }
 
     /**
+     * Check if Quincy integration is successfully configured and connected
+     * Returns true if integration is active, configured, and connection test passes
+     */
+    public function isQuincyIntegrationSuccessful(): bool
+    {
+        try {
+            // Check if module is ready (active and configured)
+            if (!$this->isReady()) {
+                return false;
+            }
+
+            // Test connection - if successful, return true
+            $testResult = $this->testConnection();
+            return $testResult['success'] === true;
+        } catch (\Exception $e) {
+            // Log error but don't throw - return false instead
+            $this->logError("Quincy integration check failed: {$e->getMessage()}");
+            return false;
+        }
+    }
+
+    /**
      * Search medicines by name or PIP code
      */
     public function searchMedicines(string $query, int $limit = 100, bool $expandPacks = false): array

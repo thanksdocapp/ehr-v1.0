@@ -757,6 +757,57 @@
 
         <!-- Quick Actions & Today's Summary -->
         <div class="col-lg-4">
+            <!-- Quincy Integration Status -->
+            @if(isset($quincyStatus))
+            <div class="quick-action-card fade-in-up mb-4">
+                <div class="table-header-modern">
+                    <h5 class="chart-title-modern mb-0">
+                        <i class="fas fa-prescription-bottle-alt me-2 text-primary"></i>Quincy Integration
+                    </h5>
+                    @if($quincyStatus['successful'] ?? false)
+                        <span class="badge bg-success" style="padding: 0.5rem 0.75rem; border-radius: 8px;">
+                            <i class="fas fa-check-circle me-1"></i>Connected
+                        </span>
+                    @elseif($quincyStatus['configured'] ?? false)
+                        <span class="badge bg-warning" style="padding: 0.5rem 0.75rem; border-radius: 8px;">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Not Connected
+                        </span>
+                    @else
+                        <span class="badge bg-secondary" style="padding: 0.5rem 0.75rem; border-radius: 8px;">
+                            <i class="fas fa-times-circle me-1"></i>Not Configured
+                        </span>
+                    @endif
+                </div>
+                <div class="px-3 pb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-grow-1">
+                            <small class="text-muted d-block mb-1">Status</small>
+                            <div class="fw-bold">{{ $quincyStatus['message'] ?? 'Unknown' }}</div>
+                        </div>
+                        @if($quincyStatus['successful'] ?? false)
+                            <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                        @elseif($quincyStatus['configured'] ?? false)
+                            <i class="fas fa-exclamation-triangle text-warning" style="font-size: 1.5rem;"></i>
+                        @else
+                            <i class="fas fa-times-circle text-secondary" style="font-size: 1.5rem;"></i>
+                        @endif
+                    </div>
+                    @if(isset($quincyStatus['environment']))
+                    <small class="text-muted">
+                        <i class="fas fa-server me-1"></i>Environment: {{ ucfirst($quincyStatus['environment']) }}
+                    </small>
+                    @endif
+                    @if(!($quincyStatus['successful'] ?? false))
+                    <div class="mt-2">
+                        <a href="{{ route('admin.integrations.index') }}" class="btn btn-sm btn-outline-primary w-100" style="border-radius: 8px;">
+                            <i class="fas fa-cog me-1"></i>Configure Integration
+                        </a>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             <!-- Pending Appointments -->
             <div class="quick-action-card fade-in-up mb-4">
                 <div class="table-header-modern">
