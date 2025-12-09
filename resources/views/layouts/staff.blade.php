@@ -2255,7 +2255,28 @@
                     </div>
                     <div class="user-info">
                         <div class="user-name">{{ auth()->user()->name ?? 'Staff User' }}</div>
-                        <div class="user-role">{{ ucfirst(auth()->user()->role ?? 'Staff') }}</div>
+                        <div class="user-role">
+                            @php
+                                $user = auth()->user();
+                                // Always use the role field from the database, not specialization
+                                $role = $user->role ?? 'staff';
+                                // Map common roles to display names (including variations)
+                                $roleMap = [
+                                    'doctor' => 'Doctor',
+                                    'nurse' => 'Nurse',
+                                    'receptionist' => 'Receptionist',
+                                    'pharmacist' => 'Pharmacist',
+                                    'technician' => 'Technician',
+                                    'admin' => 'Administrator',
+                                    'staff' => 'Staff',
+                                    'medical director' => 'Doctor', // Map Medical Director to Doctor
+                                    'medical_director' => 'Doctor',
+                                ];
+                                // Get display name from map, or format the role value
+                                $roleDisplay = $roleMap[strtolower($role)] ?? ucwords(str_replace(['_', '-'], ' ', strtolower($role)));
+                            @endphp
+                            {{ $roleDisplay }}
+                        </div>
                     </div>
                     <i class="fas fa-chevron-down ms-2"></i>
                 </div>
