@@ -110,29 +110,31 @@ class TemplatesController extends Controller
     /**
      * Search patients (AJAX endpoint for Select2).
      * Returns Select2-compatible format.
-     * Only returns patients belonging to the logged-in doctor.
+     * Only returns patients belonging to the logged-in user's clinic/department.
      */
     public function searchPatients(Request $request)
     {
         $search = $request->get('q', '');
-        $doctorId = auth()->id();
+        $departmentId = auth()->user()->department_id;
 
         // Use cross-database compatible query (no CONCAT)
-        // Filter to only show patients created by or assigned to the logged-in doctor
-        $patients = Patient::where(function ($query) use ($search) {
-            $query->where('first_name', 'like', "%{$search}%")
+        // Filter to only show patients in the same clinic/department as the logged-in user
+        $query = Patient::where(function ($q) use ($search) {
+            $q->where('first_name', 'like', "%{$search}%")
                 ->orWhere('last_name', 'like', "%{$search}%")
                 ->orWhere('email', 'like', "%{$search}%")
                 ->orWhere('phone', 'like', "%{$search}%")
                 ->orWhere('patient_id', 'like', "%{$search}%");
         })
-        ->where('is_active', true)
-        ->where(function ($query) use ($doctorId) {
-            $query->where('created_by_doctor_id', $doctorId)
-                ->orWhere('assigned_doctor_id', $doctorId);
-        })
-        ->limit(20)
-        ->get(['id', 'first_name', 'last_name', 'email', 'date_of_birth', 'patient_id']);
+        ->where('is_active', true);
+
+        // Filter by department if the user has one assigned
+        if ($departmentId) {
+            $query->where('department_id', $departmentId);
+        }
+
+        $patients = $query->limit(20)
+            ->get(['id', 'first_name', 'last_name', 'email', 'date_of_birth', 'patient_id']);
 
         return response()->json($patients->map(function ($patient) {
             $fullName = trim($patient->first_name . ' ' . $patient->last_name);
