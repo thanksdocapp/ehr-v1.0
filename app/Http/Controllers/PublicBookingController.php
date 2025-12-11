@@ -440,12 +440,20 @@ class PublicBookingController extends Controller
         } catch (\Exception $e) {
             \Log::error('Public booking failed', [
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
                 'data' => $request->all()
             ]);
 
+            // Show detailed error message for debugging
+            $errorMsg = 'Failed to create appointment: ' . $e->getMessage();
+            if (config('app.debug')) {
+                $errorMsg .= ' (Line ' . $e->getLine() . ' in ' . basename($e->getFile()) . ')';
+            }
+
             return redirect()->back()
-                ->with('error', 'Failed to create appointment. Please try again.')
+                ->with('error', $errorMsg)
                 ->withInput();
         }
     }
