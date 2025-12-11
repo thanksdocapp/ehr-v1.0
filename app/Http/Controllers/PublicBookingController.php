@@ -204,8 +204,10 @@ class PublicBookingController extends Controller
             }
         }
 
-        // No valid session data - redirect to booking page
-        return redirect('/')->with('info', 'Your booking session has expired. Please start a new booking.');
+        // No valid session data - show error page instead of redirecting
+        return response()->view('public-booking.session-expired', [
+            'message' => 'Your booking session has expired. Please start a new booking.'
+        ]);
     }
 
     /**
@@ -241,8 +243,10 @@ class PublicBookingController extends Controller
             }
         }
 
-        // No valid session data - redirect to booking page
-        return redirect('/')->with('info', 'Your booking session has expired. Please start a new booking.');
+        // No valid session data - show error page instead of redirecting
+        return response()->view('public-booking.session-expired', [
+            'message' => 'Your booking session has expired. Please start a new booking.'
+        ]);
     }
 
     /**
@@ -338,7 +342,10 @@ class PublicBookingController extends Controller
             $this->checkBookingEnabled();
         } catch (\Exception $e) {
             \Log::error('Public booking check failed', ['error' => $e->getMessage()]);
-            return redirect('/')->with('error', 'Online booking is currently unavailable.');
+            // Stay on page with error popup instead of redirecting
+            return redirect()->back()
+                ->with('error', 'Online booking is currently unavailable.')
+                ->withInput();
         }
 
         // Log incoming request for debugging
