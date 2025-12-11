@@ -386,9 +386,23 @@ class PublicBookingController extends Controller
         }
 
         try {
+            \Log::info('Starting public booking', [
+                'doctor_id' => $request->doctor_id,
+                'service_id' => $request->service_id,
+                'date' => $request->appointment_date,
+                'time' => $request->appointment_time,
+                'email' => $request->email,
+            ]);
+
             $result = $this->bookingService->createFromPublicBooking($request->all());
             $appointment = $result['appointment'];
             $invoice = $result['invoice'] ?? null;
+
+            \Log::info('Booking created successfully', [
+                'appointment_id' => $appointment->id,
+                'appointment_number' => $appointment->appointment_number,
+                'has_invoice' => !is_null($invoice),
+            ]);
 
             // Store appointment number in session for recovery
             session(['booking_appointment_number' => $appointment->appointment_number]);
