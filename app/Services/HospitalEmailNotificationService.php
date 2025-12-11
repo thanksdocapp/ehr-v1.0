@@ -96,6 +96,80 @@ class HospitalEmailNotificationService
     }
 
     /**
+     * Send new appointment notification email to doctor.
+     *
+     * @param Appointment $appointment
+     * @return EmailLog|null
+     */
+    public function sendNewAppointmentToDoctor(Appointment $appointment)
+    {
+        $doctor = $appointment->doctor;
+        if (!$doctor) {
+            Log::warning('Cannot send new appointment to doctor: Doctor not found', [
+                'appointment_id' => $appointment->id
+            ]);
+            return null;
+        }
+
+        // Get doctor's email (prefer user email, fall back to doctor email)
+        $doctorEmail = $doctor->user ? $doctor->user->email : $doctor->email;
+        if (!$doctorEmail) {
+            Log::warning('Cannot send new appointment to doctor: Doctor email not found', [
+                'appointment_id' => $appointment->id,
+                'doctor_id' => $doctor->id
+            ]);
+            return null;
+        }
+
+        $patient = $appointment->patient;
+
+        // Format appointment time properly
+        $appointmentTime = $appointment->appointment_time;
+        if ($appointmentTime) {
+            try {
+                $appointmentTime = \Carbon\Carbon::parse($appointmentTime)->format('g:i A');
+            } catch (\Exception $e) {
+                // Keep original value if parsing fails
+            }
+        }
+
+        $variables = [
+            'doctor_name' => $doctor->name,
+            'doctor_title' => $doctor->title ?? 'Dr.',
+            'patient_name' => $patient ? $patient->full_name : 'N/A',
+            'patient_phone' => $patient ? ($patient->phone ?? 'N/A') : 'N/A',
+            'patient_email' => $patient ? ($patient->email ?? 'N/A') : 'N/A',
+            'appointment_date' => $appointment->appointment_date->format('F d, Y'),
+            'appointment_time' => $appointmentTime,
+            'appointment_type' => $appointment->type ?? 'Consultation',
+            'department' => $appointment->department ? $appointment->department->name : 'General',
+            'hospital_name' => config('app.name', 'Hospital'),
+            'appointment_id' => $appointment->id,
+            'notes' => $appointment->notes ?? '',
+            'reason' => $appointment->reason ?? 'Not specified',
+            'is_online' => $appointment->is_online ?? false,
+            'meeting_link' => $appointment->meeting_link ?? null,
+            'meeting_platform' => $appointment->meeting_platform_name ?? null,
+            'appointment_url' => url('/staff/appointments/' . $appointment->id),
+        ];
+
+        return $this->emailService->sendTemplateEmail(
+            'doctor_new_appointment',
+            [$doctorEmail => $doctor->name],
+            $variables,
+            [
+                'event' => 'appointment.new_doctor_notification',
+                'doctor_id' => $doctor->id,
+                'email_type' => 'appointment',
+                'metadata' => [
+                    'appointment_id' => $appointment->id,
+                    'patient_id' => $patient ? $patient->id : null,
+                ]
+            ]
+        );
+    }
+
+    /**
      * Send appointment reminder email to patient.
      *
      * @param Appointment $appointment

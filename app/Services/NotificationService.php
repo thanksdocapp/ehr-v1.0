@@ -11,6 +11,7 @@ use App\Models\LabReport;
 use App\Models\UserNotification;
 use App\Models\PatientNotification;
 use App\Services\EmailNotificationService;
+use App\Services\HospitalEmailNotificationService;
 use App\Services\SmsNotificationService;
 use App\Services\PushNotificationService;
 use Illuminate\Support\Facades\Log;
@@ -19,15 +20,18 @@ use Illuminate\Support\Facades\URL;
 class NotificationService
 {
     protected $emailNotificationService;
+    protected $hospitalEmailService;
     protected $smsNotificationService;
     protected $pushNotificationService;
 
     public function __construct(
         EmailNotificationService $emailNotificationService,
         SmsNotificationService $smsNotificationService = null,
-        PushNotificationService $pushNotificationService = null
+        PushNotificationService $pushNotificationService = null,
+        HospitalEmailNotificationService $hospitalEmailService = null
     ) {
         $this->emailNotificationService = $emailNotificationService;
+        $this->hospitalEmailService = $hospitalEmailService ?? app(HospitalEmailNotificationService::class);
         $this->smsNotificationService = $smsNotificationService ?? app(SmsNotificationService::class);
         $this->pushNotificationService = $pushNotificationService ?? app(PushNotificationService::class);
     }
@@ -61,6 +65,9 @@ class NotificationService
                 ]));
             }
         }
+
+        // Send Email notification to patient and doctor
+        $this->sendAppointmentEmail($appointment, $eventType);
 
         // Send SMS notification if patient has SMS preferences enabled
         $this->sendAppointmentSms($appointment, $eventType);
@@ -548,6 +555,94 @@ class NotificationService
     {
         $preferences = $user->notification_preferences ?? [];
         return $preferences['push_enabled'] ?? true;
+    }
+
+    /**
+     * Send Email notification for appointment events.
+     *
+     * @param Appointment $appointment
+     * @param string $eventType
+     * @return void
+     */
+    protected function sendAppointmentEmail(Appointment $appointment, string $eventType): void
+    {
+        try {
+            // Check if patient has email
+            if (empty($appointment->patient->email)) {
+                Log::info('Skipping appointment email: Patient has no email', [
+                    'appointment_id' => $appointment->id,
+                    'event_type' => $eventType
+                ]);
+                return;
+            }
+
+            switch ($eventType) {
+                case 'created':
+                    // Send confirmation email to patient
+                    $this->hospitalEmailService->sendAppointmentConfirmation($appointment);
+                    Log::info('Appointment confirmation email sent to patient', [
+                        'appointment_id' => $appointment->id,
+                        'patient_email' => $appointment->patient->email
+                    ]);
+                    break;
+
+                case 'confirmed':
+                    // Send confirmation email to patient when appointment is confirmed
+                    $this->hospitalEmailService->sendAppointmentConfirmation($appointment);
+                    Log::info('Appointment confirmed email sent to patient', [
+                        'appointment_id' => $appointment->id,
+                        'patient_email' => $appointment->patient->email
+                    ]);
+                    break;
+
+                case 'cancelled':
+                    // Send cancellation email to patient
+                    $this->hospitalEmailService->sendAppointmentCancellation($appointment);
+                    Log::info('Appointment cancellation email sent to patient', [
+                        'appointment_id' => $appointment->id,
+                        'patient_email' => $appointment->patient->email
+                    ]);
+                    break;
+
+                case 'completed':
+                    // Send completion email to patient
+                    $this->hospitalEmailService->sendAppointmentCompletion($appointment);
+                    Log::info('Appointment completion email sent to patient', [
+                        'appointment_id' => $appointment->id,
+                        'patient_email' => $appointment->patient->email
+                    ]);
+                    break;
+
+                case 'updated':
+                case 'rescheduled':
+                    // For rescheduled appointments, we need old date/time which we don't have here
+                    // The controller should handle this case directly
+                    Log::info('Appointment reschedule email should be handled by controller', [
+                        'appointment_id' => $appointment->id
+                    ]);
+                    break;
+            }
+
+            // Also notify doctor via email for new appointments
+            if ($eventType === 'created' && $appointment->doctor && $appointment->doctor->user) {
+                $doctorEmail = $appointment->doctor->user->email ?? $appointment->doctor->email;
+                if ($doctorEmail) {
+                    $this->hospitalEmailService->sendNewAppointmentToDoctor($appointment);
+                    Log::info('New appointment email sent to doctor', [
+                        'appointment_id' => $appointment->id,
+                        'doctor_email' => $doctorEmail
+                    ]);
+                }
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to send appointment email', [
+                'appointment_id' => $appointment->id,
+                'event_type' => $eventType,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 
     /**
