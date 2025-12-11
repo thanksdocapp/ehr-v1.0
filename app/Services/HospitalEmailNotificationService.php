@@ -55,6 +55,13 @@ class HospitalEmailNotificationService
             }
         }
 
+        // Build online consultation section if applicable
+        $onlineConsultationSection = '';
+        if ($appointment->is_online && $appointment->meeting_link) {
+            $platformName = $appointment->meeting_platform_name ?? 'Video Call';
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nJoin Meeting: {$appointment->meeting_link}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
+        }
+
         $variables = [
             'patient_name' => $patient->full_name,
             'patient_email' => $patient->email,
@@ -77,6 +84,7 @@ class HospitalEmailNotificationService
             'meeting_link' => $appointment->meeting_link ?? null,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
             'join_meeting_url' => $appointment->meeting_link ?? null,
+            'online_consultation_section' => $onlineConsultationSection,
         ];
 
         return $this->emailService->sendTemplateEmail(
@@ -133,6 +141,15 @@ class HospitalEmailNotificationService
             }
         }
 
+        // Build online consultation section if applicable
+        $onlineConsultationSection = '';
+        if ($appointment->is_online && $appointment->meeting_link) {
+            $platformName = $appointment->meeting_platform_name ?? 'Video Call';
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nMeeting Link: {$appointment->meeting_link}\n";
+        } elseif ($appointment->is_online) {
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation. Meeting link will be generated.\n";
+        }
+
         $variables = [
             'doctor_name' => $doctor->name,
             'doctor_title' => $doctor->title ?? 'Dr.',
@@ -151,6 +168,7 @@ class HospitalEmailNotificationService
             'meeting_link' => $appointment->meeting_link ?? null,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
             'appointment_url' => url('/staff/appointments/' . $appointment->id),
+            'online_consultation_section' => $onlineConsultationSection,
         ];
 
         return $this->emailService->sendTemplateEmail(
@@ -195,6 +213,13 @@ class HospitalEmailNotificationService
             }
         }
 
+        // Build online consultation section if applicable
+        $onlineConsultationSection = '';
+        if ($appointment->is_online && $appointment->meeting_link) {
+            $platformName = $appointment->meeting_platform_name ?? 'Video Call';
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nJoin Meeting: {$appointment->meeting_link}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
+        }
+
         $variables = [
             'patient_name' => $patient->full_name,
             'doctor_name' => $doctor ? $doctor->name : 'TBD',
@@ -208,6 +233,7 @@ class HospitalEmailNotificationService
             'department_email' => $appointment->department ? ($appointment->department->email ?? '') : '',
             'hospital_name' => config('app.name', 'Hospital'),
             'hospital_phone' => config('hospital.phone', ''),
+            'hospital_address' => config('hospital.address', ''),
             'appointment_id' => $appointment->id,
             'reschedule_url' => url('/patient/appointments/' . $appointment->id . '/reschedule'),
             'cancel_url' => url('/patient/appointments/' . $appointment->id . '/cancel'),
@@ -215,6 +241,7 @@ class HospitalEmailNotificationService
             'meeting_link' => $appointment->meeting_link ?? null,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
             'join_meeting_url' => $appointment->meeting_link ?? null,
+            'online_consultation_section' => $onlineConsultationSection,
         ];
 
         return $this->emailService->sendTemplateEmail(

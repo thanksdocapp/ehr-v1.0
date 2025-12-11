@@ -19,7 +19,7 @@ class EmailTemplateSeeder extends Seeder
                 'category' => 'appointment',
                 'status' => 'active',
                 'description' => 'Sent to patients when their appointment is confirmed',
-                'body' => 'Dear {{patient_name}},\n\nYour appointment has been confirmed with the following details:\n\nDoctor: {{doctor_name}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nDepartment: {{department}}\nLocation: {{hospital_address}}\n\nAdditional Notes:\n{{notes}}\n\nPlease arrive 15 minutes early for check-in.\n\nImportant reminders:\n- Bring your ID and insurance card\n- Bring a list of current medications\n- Inform us of any changes to your health status\n\nIf you need to cancel or reschedule, please contact us at {{hospital_phone}} at least 24 hours in advance.\n\nThank you for choosing {{hospital_name}} for your healthcare needs.\n\nBest regards,\n{{hospital_name}} Team',
+                'body' => 'Dear {{patient_name}},\n\nYour appointment has been confirmed with the following details:\n\nDoctor: {{doctor_name}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nDepartment: {{department}}\n{{online_consultation_section}}\nLocation: {{hospital_address}}\n\nAdditional Notes:\n{{notes}}\n\nPlease arrive 15 minutes early for check-in.\n\nImportant reminders:\n- Bring your ID and insurance card\n- Bring a list of current medications\n- Inform us of any changes to your health status\n\nIf you need to cancel or reschedule, please contact us at {{hospital_phone}} at least 24 hours in advance.\n\nThank you for choosing {{hospital_name}} for your healthcare needs.\n\nBest regards,\n{{hospital_name}} Team',
                 'variables' => [
                     'patient_name' => 'Patient\'s full name',
                     'doctor_name' => 'Doctor\'s name',
@@ -29,7 +29,8 @@ class EmailTemplateSeeder extends Seeder
                     'notes' => 'Additional appointment notes',
                     'hospital_name' => 'Hospital name',
                     'hospital_address' => 'Hospital address',
-                    'hospital_phone' => 'Hospital phone number'
+                    'hospital_phone' => 'Hospital phone number',
+                    'online_consultation_section' => 'Online consultation details (if applicable)'
                 ],
                 'sender_name' => 'Hospital Appointments',
                 'sender_email' => 'appointments@hospital.com'
@@ -40,7 +41,7 @@ class EmailTemplateSeeder extends Seeder
                 'category' => 'reminder',
                 'status' => 'active',
                 'description' => 'Sent to patients 24 hours before their appointment',
-                'body' => 'Dear {{patient_name}},\n\nThis is a friendly reminder about your upcoming appointment:\n\nDoctor: {{doctor_name}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nDepartment: {{department}}\n\nLocation: {{hospital_name}}\n{{hospital_address}}\n\nPlease remember to:\n✓ Arrive 15 minutes early\n✓ Bring your ID and insurance card\n✓ Bring your current medications list\n\nIf you need to cancel or reschedule, please call us at {{hospital_phone}} as soon as possible.\n\nThank you,\n{{hospital_name}} Team',
+                'body' => 'Dear {{patient_name}},\n\nThis is a friendly reminder about your upcoming appointment:\n\nDoctor: {{doctor_name}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nDepartment: {{department}}\n{{online_consultation_section}}\nLocation: {{hospital_name}}\n{{hospital_address}}\n\nPlease remember to:\n✓ Arrive 15 minutes early\n✓ Bring your ID and insurance card\n✓ Bring your current medications list\n\nIf you need to cancel or reschedule, please call us at {{hospital_phone}} as soon as possible.\n\nThank you,\n{{hospital_name}} Team',
                 'variables' => [
                     'patient_name' => 'Patient\'s full name',
                     'doctor_name' => 'Doctor\'s name',
@@ -49,7 +50,8 @@ class EmailTemplateSeeder extends Seeder
                     'department' => 'Department name',
                     'hospital_name' => 'Hospital name',
                     'hospital_address' => 'Hospital address',
-                    'hospital_phone' => 'Hospital phone number'
+                    'hospital_phone' => 'Hospital phone number',
+                    'online_consultation_section' => 'Online consultation details (if applicable)'
                 ],
                 'sender_name' => 'Hospital Appointments',
                 'sender_email' => 'appointments@hospital.com'
@@ -270,8 +272,8 @@ class EmailTemplateSeeder extends Seeder
                 'category' => 'notification',
                 'status' => 'active',
                 'description' => 'Sent to doctor when a new appointment is assigned',
-                'body' => 'Dear Dr. {{doctor_name}},\n\nA new appointment has been assigned to you:\n\n- Patient: {{patient_name}}\n- Phone: {{patient_phone}}\n- Date: {{appointment_date}}\n- Time: {{appointment_time}}\n- Type: {{appointment_type}}\n\nNotes: {{notes}}\n\nView details: {{appointment_url}}\n\nRegards,\n{{hospital_name}}',
-                'variables' => ['doctor_name','patient_name','patient_phone','appointment_date','appointment_time','appointment_type','notes','appointment_url','hospital_name'],
+                'body' => 'Dear Dr. {{doctor_name}},\n\nA new appointment has been assigned to you:\n\n- Patient: {{patient_name}}\n- Phone: {{patient_phone}}\n- Date: {{appointment_date}}\n- Time: {{appointment_time}}\n- Type: {{appointment_type}}\n{{online_consultation_section}}\nNotes: {{notes}}\n\nView details: {{appointment_url}}\n\nRegards,\n{{hospital_name}}',
+                'variables' => ['doctor_name','patient_name','patient_phone','appointment_date','appointment_time','appointment_type','online_consultation_section','notes','appointment_url','hospital_name'],
                 'sender_name' => 'Hospital Notifications',
                 'sender_email' => 'no-reply@hospital.com'
             ],
