@@ -272,7 +272,7 @@ class EmailTemplateSeeder extends Seeder
                 'category' => 'notification',
                 'status' => 'active',
                 'description' => 'Sent to doctor when a new appointment is assigned',
-                'body' => 'Dear Dr. {{doctor_name}},\n\nA new appointment has been assigned to you:\n\n- Patient: {{patient_name}}\n- Phone: {{patient_phone}}\n- Date: {{appointment_date}}\n- Time: {{appointment_time}}\n- Type: {{appointment_type}}\n{{online_consultation_section}}\nNotes: {{notes}}\n\nView details: {{appointment_url}}\n\nRegards,\n{{hospital_name}}',
+                'body' => 'Dear Dr. {{doctor_name}},\n\nA new appointment has been assigned to you:\n\nPatient: {{patient_name}}\nPhone: {{patient_phone}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nType: {{appointment_type}}\n{{online_consultation_section}}\nNotes: {{notes}}\n\nView Appointment Details:\n{{appointment_url}}\n\nRegards,\n{{hospital_name}}',
                 'variables' => ['doctor_name','patient_name','patient_phone','appointment_date','appointment_time','appointment_type','online_consultation_section','notes','appointment_url','hospital_name'],
                 'sender_name' => 'Hospital Notifications',
                 'sender_email' => 'no-reply@hospital.com'
