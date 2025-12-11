@@ -416,48 +416,55 @@ class PublicBookingController extends Controller
             ]);
 
             $result = $this->bookingService->createFromPublicBooking($request->all());
-            $appointment = $result['appointment'];
+            $appointment = $result['appointment'] ?? null;
             $invoice = $result['invoice'] ?? null;
+            $pendingBooking = $result['pending_booking'] ?? null;
 
-            \Log::info('Booking created successfully', [
-                'appointment_id' => $appointment->id,
-                'appointment_number' => $appointment->appointment_number,
-                'has_invoice' => !is_null($invoice),
-            ]);
-
-            // Store appointment number in session for recovery
-            session(['booking_appointment_number' => $appointment->appointment_number]);
-
-            // Clear booking data from session (booking completed)
+            // Clear booking data from session
             session()->forget('booking_data');
 
-            // If invoice exists and has payment token, redirect to payment
-            if ($invoice) {
-                // Refresh invoice to ensure we have the latest payment_token
+            // If this is a paid booking (pending payment), redirect to payment page
+            // Patient and appointment will be created after payment
+            if ($pendingBooking && $invoice) {
                 $invoice->refresh();
 
                 if ($invoice->payment_token) {
-                    \Log::info('Redirecting to payment page', [
+                    \Log::info('Redirecting to payment page (patient not created yet)', [
+                        'pending_booking_id' => $pendingBooking->id,
                         'invoice_id' => $invoice->id,
-                        'appointment_id' => $appointment->id,
                         'token_preview' => substr($invoice->payment_token, 0, 10) . '...'
                     ]);
 
-                    $paymentUrl = route('public.billing.pay', ['token' => $invoice->payment_token]);
+                    // Store pending booking token in session for payment callback
+                    session(['pending_booking_token' => $pendingBooking->booking_token]);
 
+                    $paymentUrl = route('public.billing.pay', ['token' => $invoice->payment_token]);
                     return redirect($paymentUrl);
                 } else {
                     \Log::warning('Invoice created but payment token is missing', [
-                        'invoice_id' => $invoice->id,
-                        'appointment_id' => $appointment->id
+                        'pending_booking_id' => $pendingBooking->id,
+                        'invoice_id' => $invoice->id
                     ]);
                 }
             }
 
-            // Otherwise, go directly to success
-            return redirect()->route('public.booking.success', [
-                'appointmentNumber' => $appointment->appointment_number
-            ]);
+            // For free services, appointment is created immediately
+            if ($appointment) {
+                \Log::info('Free booking created successfully', [
+                    'appointment_id' => $appointment->id,
+                    'appointment_number' => $appointment->appointment_number,
+                ]);
+
+                // Store appointment number in session for recovery
+                session(['booking_appointment_number' => $appointment->appointment_number]);
+
+                return redirect()->route('public.booking.success', [
+                    'appointmentNumber' => $appointment->appointment_number
+                ]);
+            }
+
+            // Fallback - something went wrong
+            throw new \Exception('Booking could not be processed');
         } catch (\Exception $e) {
             \Log::error('Public booking failed', [
                 'error' => $e->getMessage(),

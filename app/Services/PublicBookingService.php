@@ -8,6 +8,7 @@ use App\Models\Doctor;
 use App\Models\Billing;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\PendingBooking;
 use App\Models\BookingService as BookingServiceModel;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -15,6 +16,7 @@ use App\Services\GuestPatientService;
 use App\Services\HospitalEmailNotificationService;
 use App\Services\WherebyService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class PublicBookingService
@@ -32,9 +34,11 @@ class PublicBookingService
 
     /**
      * Create an appointment from public booking.
+     * For paid services: Creates a pending booking and invoice, patient is created after payment.
+     * For free services: Creates patient and appointment immediately.
      *
      * @param array $data
-     * @return Appointment
+     * @return array
      */
     public function createFromPublicBooking(array $data)
     {
@@ -42,147 +46,283 @@ class PublicBookingService
             // Get doctor and service first to determine department
             $doctor = Doctor::findOrFail($data['doctor_id']);
             $service = BookingServiceModel::find($data['service_id'] ?? null);
-            
+
             // Determine the department/clinic for this booking
-            // Priority: 1) Explicit department_id from booking link, 2) Doctor's department
             $departmentId = $data['department_id'] ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
-            
-            // Find or create patient (guest if needed)
-            $patient = $this->guestPatientService->findOrCreateGuest([
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => $data['email'],
-                'phone' => $data['phone'],
-                'date_of_birth' => $data['date_of_birth'] ?? null,
-                'gender' => $data['gender'] ?? null,
-                'address' => $data['address'] ?? null,
-            ]);
-            
-            // Prepare patient update data
-            $patientUpdateData = [];
-            
-            // Update date of birth and gender if provided
-            if (isset($data['date_of_birth']) && !empty($data['date_of_birth'])) {
-                $patientUpdateData['date_of_birth'] = $data['date_of_birth'];
-            }
-            if (isset($data['gender']) && !empty($data['gender'])) {
-                $patientUpdateData['gender'] = $data['gender'];
-            }
-            
-            // Handle GP consent and details
-            if (isset($data['consent_share_with_gp']) && $data['consent_share_with_gp']) {
-                $patientUpdateData['consent_share_with_gp'] = true;
-                if (isset($data['gp_name']) && !empty($data['gp_name'])) {
-                    $patientUpdateData['gp_name'] = $data['gp_name'];
-                }
-                if (isset($data['gp_email']) && !empty($data['gp_email'])) {
-                    $patientUpdateData['gp_email'] = $data['gp_email'];
-                }
-                if (isset($data['gp_phone']) && !empty($data['gp_phone'])) {
-                    $patientUpdateData['gp_phone'] = $data['gp_phone'];
-                }
-                if (isset($data['gp_address']) && !empty($data['gp_address'])) {
-                    $patientUpdateData['gp_address'] = $data['gp_address'];
-                }
-            } else {
-                // Only set to false if explicitly not provided (don't overwrite existing consent)
-                if (isset($data['consent_share_with_gp'])) {
-                    $patientUpdateData['consent_share_with_gp'] = false;
-                }
-            }
-            
-            // Assign patient to the clinic/department from the booking link
-            if ($departmentId) {
-                // Set legacy department_id if not already set
-                if (!$patient->department_id) {
-                    $patientUpdateData['department_id'] = $departmentId;
-                }
-            }
-            
-            // Update patient with all changes at once
-            if (!empty($patientUpdateData)) {
-                $patient->update($patientUpdateData);
-            }
-            
-            // Also attach to departments pivot table (many-to-many relationship) if department exists
-            if ($departmentId) {
-                // Check if already attached to avoid duplicates
-                if (!$patient->departments()->where('departments.id', $departmentId)->exists()) {
-                    // Check if patient has any primary department
-                    $hasPrimary = $patient->departments()->wherePivot('is_primary', true)->exists();
-                    
-                    // Attach with is_primary = true if this is the first department, or false if others exist
-                    $patient->departments()->attach($departmentId, [
-                        'is_primary' => !$hasPrimary, // Set as primary if no primary exists
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
 
             // Calculate fee
-            $fee = null;
+            $fee = 0;
             if ($service) {
-                $fee = $service->getPriceForDoctor($doctor->id);
+                $fee = $service->getPriceForDoctor($doctor->id) ?? 0;
             }
+
+            // If fee is 0, create patient and appointment immediately (no payment needed)
+            if ($fee <= 0) {
+                return $this->createImmediateBooking($data, $doctor, $service, $departmentId);
+            }
+
+            // For paid services, create pending booking and invoice only
+            // Patient and appointment will be created after payment
+            return $this->createPendingBooking($data, $doctor, $service, $departmentId, $fee);
+        });
+    }
+
+    /**
+     * Create immediate booking (for free services).
+     * Creates patient, appointment, and billing immediately.
+     */
+    private function createImmediateBooking(array $data, Doctor $doctor, ?BookingServiceModel $service, ?int $departmentId)
+    {
+        // Find or create patient
+        $patient = $this->guestPatientService->findOrCreateGuest([
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'gender' => $data['gender'] ?? null,
+            'address' => $data['address'] ?? null,
+        ]);
+
+        // Update patient with additional data
+        $this->updatePatientData($patient, $data, $departmentId);
+
+        // Generate appointment number
+        $appointmentNumber = $this->generateAppointmentNumber();
+
+        // Create appointment
+        $appointmentData = [
+            'appointment_number' => $appointmentNumber,
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'department_id' => $departmentId,
+            'appointment_date' => $data['appointment_date'],
+            'appointment_time' => $data['appointment_time'],
+            'type' => $data['type'] ?? 'consultation',
+            'status' => 'pending',
+            'reason' => $data['reason'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'fee' => 0,
+            'is_online' => isset($data['consultation_type']) && $data['consultation_type'] === 'online',
+        ];
+
+        if (Schema::hasColumn('appointments', 'service_id')) {
+            $appointmentData['service_id'] = $service?->id;
+        }
+        if (Schema::hasColumn('appointments', 'created_from')) {
+            $appointmentData['created_from'] = 'Public Booking Link';
+        }
+
+        $appointment = Appointment::create($appointmentData);
+
+        // Create Whereby meeting if online
+        if ($appointment->is_online && $this->wherebyService->isEnabled()) {
+            try {
+                $this->wherebyService->createMeetingForAppointment($appointment);
+            } catch (\Exception $e) {
+                \Log::error('Failed to create Whereby meeting', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // Create billing (zero amount, marked as paid)
+        $createdBy = User::where('role', 'admin')->orWhere('is_admin', true)->first()?->id ?? 1;
+
+        $billing = Billing::create([
+            'bill_number' => Billing::generateBillNumber(),
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'appointment_id' => $appointment->id,
+            'billing_date' => now(),
+            'due_date' => now()->addDays(7),
+            'type' => 'consultation',
+            'description' => $service ? $service->name : 'Appointment Consultation',
+            'subtotal' => 0,
+            'discount' => 0,
+            'tax' => 0,
+            'total_amount' => 0,
+            'paid_amount' => 0,
+            'balance' => 0,
+            'status' => 'paid',
+            'created_by' => $createdBy,
+        ]);
+
+        // Send notifications
+        $this->sendBookingNotifications($appointment, $patient, $doctor);
+
+        return [
+            'appointment' => $appointment,
+            'invoice' => null,
+            'billing' => $billing,
+            'pending_booking' => null,
+        ];
+    }
+
+    /**
+     * Create pending booking (for paid services).
+     * Creates pending booking record and invoice, but NO patient/appointment yet.
+     */
+    private function createPendingBooking(array $data, Doctor $doctor, ?BookingServiceModel $service, ?int $departmentId, float $fee)
+    {
+        // Store patient data for later creation
+        $patientData = [
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'gender' => $data['gender'] ?? null,
+            'address' => $data['address'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'consultation_type' => $data['consultation_type'] ?? 'in_person',
+            'consent_share_with_gp' => $data['consent_share_with_gp'] ?? false,
+            'gp_name' => $data['gp_name'] ?? null,
+            'gp_email' => $data['gp_email'] ?? null,
+            'gp_phone' => $data['gp_phone'] ?? null,
+            'gp_address' => $data['gp_address'] ?? null,
+        ];
+
+        // Create pending booking
+        $pendingBooking = PendingBooking::create([
+            'booking_token' => PendingBooking::generateBookingToken(),
+            'doctor_id' => $doctor->id,
+            'service_id' => $service?->id,
+            'department_id' => $departmentId,
+            'appointment_date' => $data['appointment_date'],
+            'appointment_time' => $data['appointment_time'],
+            'is_online' => isset($data['consultation_type']) && $data['consultation_type'] === 'online',
+            'notes' => $data['notes'] ?? null,
+            'patient_data' => $patientData,
+            'fee' => $fee,
+            'status' => 'pending_payment',
+            'expires_at' => now()->addHours(24), // Booking expires in 24 hours
+        ]);
+
+        // Create invoice for payment (without patient_id yet)
+        $invoice = Invoice::create([
+            'billing_id' => null, // No billing yet
+            'patient_id' => null, // No patient yet
+            'appointment_id' => null, // No appointment yet
+            'invoice_number' => Invoice::generateInvoiceNumber(),
+            'invoice_date' => now(),
+            'due_date' => now()->addDays(7),
+            'subtotal' => $fee,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'total_amount' => $fee,
+            'status' => 'pending',
+            'description' => $service ? $service->name : 'Appointment Consultation',
+        ]);
+
+        // Create invoice item
+        $serviceName = $service ? $service->name : 'Appointment Consultation';
+        InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'item_type' => 'consultation',
+            'item_name' => $serviceName,
+            'description' => $serviceName,
+            'quantity' => 1,
+            'unit_price' => $fee,
+            'total_price' => $fee,
+        ]);
+
+        // Link invoice to pending booking
+        $pendingBooking->update(['invoice_id' => $invoice->id]);
+
+        // Generate payment token
+        $this->ensurePaymentToken($invoice);
+
+        \Log::info('Pending booking created - awaiting payment', [
+            'pending_booking_id' => $pendingBooking->id,
+            'invoice_id' => $invoice->id,
+            'fee' => $fee,
+            'patient_email' => $patientData['email'],
+        ]);
+
+        return [
+            'appointment' => null, // No appointment yet
+            'invoice' => $invoice,
+            'billing' => null, // No billing yet
+            'pending_booking' => $pendingBooking,
+        ];
+    }
+
+    /**
+     * Finalize booking after payment is completed.
+     * Creates patient, appointment, billing from pending booking data.
+     *
+     * @param PendingBooking $pendingBooking
+     * @return array
+     */
+    public function finalizeBookingAfterPayment(PendingBooking $pendingBooking)
+    {
+        if ($pendingBooking->status !== 'pending_payment') {
+            throw new \Exception('Booking is not in pending payment status');
+        }
+
+        if ($pendingBooking->isExpired()) {
+            $pendingBooking->markExpired();
+            throw new \Exception('Booking has expired');
+        }
+
+        return DB::transaction(function () use ($pendingBooking) {
+            $patientData = $pendingBooking->patient_data;
+            $doctor = $pendingBooking->doctor;
+            $service = $pendingBooking->service;
+            $invoice = $pendingBooking->invoice;
+
+            // Create patient
+            $patient = $this->guestPatientService->findOrCreateGuest([
+                'first_name' => $patientData['first_name'],
+                'last_name' => $patientData['last_name'],
+                'email' => $patientData['email'],
+                'phone' => $patientData['phone'],
+                'date_of_birth' => $patientData['date_of_birth'] ?? null,
+                'gender' => $patientData['gender'] ?? null,
+                'address' => $patientData['address'] ?? null,
+            ]);
+
+            // Update patient with additional data
+            $this->updatePatientData($patient, $patientData, $pendingBooking->department_id);
 
             // Generate appointment number
             $appointmentNumber = $this->generateAppointmentNumber();
 
-            // Create appointment data
-            // Use department_id from booking link (clinic) if provided, otherwise use doctor's department
-            $appointmentDepartmentId = $departmentId ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
-            
+            // Create appointment
             $appointmentData = [
                 'appointment_number' => $appointmentNumber,
                 'patient_id' => $patient->id,
                 'doctor_id' => $doctor->id,
-                'department_id' => $appointmentDepartmentId,
-                'appointment_date' => $data['appointment_date'],
-                'appointment_time' => $data['appointment_time'],
-                'type' => $data['type'] ?? 'consultation',
-                'status' => 'pending',
-                'reason' => $data['reason'] ?? null,
-                'notes' => $data['notes'] ?? null,
-                'fee' => $fee,
-                'is_online' => isset($data['consultation_type']) && $data['consultation_type'] === 'online',
+                'department_id' => $pendingBooking->department_id,
+                'appointment_date' => $pendingBooking->appointment_date,
+                'appointment_time' => $pendingBooking->appointment_time,
+                'type' => 'consultation',
+                'status' => 'confirmed', // Auto-confirm since payment is done
+                'notes' => $pendingBooking->notes,
+                'fee' => $pendingBooking->fee,
+                'is_online' => $pendingBooking->is_online,
             ];
-            
-            // Only add service_id and created_from if columns exist
-            if (\Illuminate\Support\Facades\Schema::hasColumn('appointments', 'service_id')) {
+
+            if (Schema::hasColumn('appointments', 'service_id')) {
                 $appointmentData['service_id'] = $service?->id;
             }
-            if (\Illuminate\Support\Facades\Schema::hasColumn('appointments', 'created_from')) {
+            if (Schema::hasColumn('appointments', 'created_from')) {
                 $appointmentData['created_from'] = 'Public Booking Link';
             }
-            
+
             $appointment = Appointment::create($appointmentData);
 
-            // If this is an online appointment, create Whereby meeting room
+            // Create Whereby meeting if online
             if ($appointment->is_online && $this->wherebyService->isEnabled()) {
                 try {
                     $this->wherebyService->createMeetingForAppointment($appointment);
-                    \Log::info('Whereby meeting created for appointment', [
-                        'appointment_id' => $appointment->id,
-                        'meeting_link' => $appointment->meeting_link,
-                    ]);
                 } catch (\Exception $e) {
-                    // Log error but don't fail the booking - appointment will have is_online=true
-                    // but no meeting link yet, which can be added later manually
-                    \Log::error('Failed to create Whereby meeting for appointment', [
-                        'appointment_id' => $appointment->id,
-                        'error' => $e->getMessage()
-                    ]);
+                    \Log::error('Failed to create Whereby meeting', ['error' => $e->getMessage()]);
                 }
             }
 
-            // Always create billing for the appointment (even if fee is 0)
-            // Get first admin user for created_by, or use 1 as fallback
-            $createdBy = \App\Models\User::where('role', 'admin')->orWhere('is_admin', true)->first()?->id ?? 1;
-            
-            $billingFee = $fee ?? 0;
-            
             // Create billing
+            $createdBy = User::where('role', 'admin')->orWhere('is_admin', true)->first()?->id ?? 1;
+
             $billing = Billing::create([
                 'bill_number' => Billing::generateBillNumber(),
                 'patient_id' => $patient->id,
@@ -192,128 +332,154 @@ class PublicBookingService
                 'due_date' => now()->addDays(7),
                 'type' => 'consultation',
                 'description' => $service ? $service->name : 'Appointment Consultation',
-                'subtotal' => $billingFee,
+                'subtotal' => $pendingBooking->fee,
                 'discount' => 0,
                 'tax' => 0,
-                'total_amount' => $billingFee,
-                'paid_amount' => 0,
-                'balance' => $billingFee,
-                'status' => $billingFee > 0 ? 'pending' : 'paid', // If no fee, mark as paid
+                'total_amount' => $pendingBooking->fee,
+                'paid_amount' => $pendingBooking->fee,
+                'balance' => 0,
+                'status' => 'paid',
                 'created_by' => $createdBy,
+                'payment_method' => 'card',
+                'payment_reference' => 'ONLINE_PAYMENT',
+                'paid_at' => now(),
             ]);
 
-            // Create invoice only if fee exists and > 0
-            $invoice = null;
-            if ($billingFee > 0) {
-                // Create invoice
-                $invoice = Invoice::create([
-                    'billing_id' => $billing->id,
+            // Update invoice with patient and appointment IDs
+            if ($invoice) {
+                $invoice->update([
                     'patient_id' => $patient->id,
                     'appointment_id' => $appointment->id,
-                    'invoice_number' => Invoice::generateInvoiceNumber(),
-                    'invoice_date' => now(),
-                    'due_date' => now()->addDays(7),
-                    'subtotal' => $billingFee,
-                    'tax_amount' => 0,
-                    'discount_amount' => 0,
-                    'total_amount' => $billingFee,
-                    'status' => 'pending',
-                    'description' => $service ? $service->name : 'Appointment Consultation',
-                ]);
-
-                // Create invoice item
-                $serviceName = $service ? $service->name : 'Appointment Consultation';
-                InvoiceItem::create([
-                    'invoice_id' => $invoice->id,
-                    'item_type' => 'consultation', // consultation, medication, lab_test, procedure, etc.
-                    'item_name' => $serviceName,
-                    'description' => $serviceName,
-                    'quantity' => 1,
-                    'unit_price' => $billingFee,
-                    'total_price' => $billingFee,
-                ]);
-
-                // Generate payment token
-                $paymentToken = $invoice->generatePaymentToken();
-                
-                // Refresh invoice to get the token
-                $invoice->refresh();
-                
-                // Verify token was generated, if not, create one manually
-                if (empty($invoice->payment_token)) {
-                    \Log::warning('Payment token generation returned empty, creating manually', [
-                        'invoice_id' => $invoice->id,
-                        'appointment_id' => $appointment->id,
-                        'generated_token' => $paymentToken
-                    ]);
-                    
-                    // Try to generate manually
-                    try {
-                        $manualToken = bin2hex(random_bytes(32));
-                        $invoice->update([
-                            'payment_token' => $manualToken,
-                            'payment_token_expires_at' => now()->addDays(90),
-                        ]);
-                        $invoice->refresh();
-                        \Log::info('Payment token created manually', [
-                            'invoice_id' => $invoice->id,
-                            'token_preview' => substr($manualToken, 0, 10) . '...'
-                        ]);
-                    } catch (\Exception $e) {
-                        \Log::error('Failed to manually set payment token', [
-                            'invoice_id' => $invoice->id,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                }
-            }
-
-            // Send confirmation email to patient
-            try {
-                $this->emailService->sendAppointmentConfirmation($appointment);
-            } catch (\Exception $e) {
-                // Log error but don't fail the booking
-                \Log::error('Failed to send appointment confirmation email', [
-                    'appointment_id' => $appointment->id,
-                    'error' => $e->getMessage()
+                    'billing_id' => $billing->id,
+                    'status' => 'paid',
+                    'paid_date' => now(),
                 ]);
             }
 
-            // Send notification email to doctor
-            try {
-                $this->emailService->notifyDoctorNewAppointment($appointment, $doctor);
-            } catch (\Exception $e) {
-                // Log error but don't fail the booking
-                \Log::error('Failed to send doctor notification email', [
-                    'appointment_id' => $appointment->id,
-                    'doctor_id' => $doctor->id,
-                    'error' => $e->getMessage()
-                ]);
-            }
+            // Mark pending booking as completed
+            $pendingBooking->markCompleted();
 
-            // Create notifications for new pending public booking
-            try {
-                $this->createPublicBookingNotifications($appointment, $patient);
-            } catch (\Exception $e) {
-                // Log error but don't fail the booking
-                \Log::error('Failed to create public booking notifications', [
-                    'appointment_id' => $appointment->id,
-                    'error' => $e->getMessage()
-                ]);
-            }
+            // Send notifications
+            $this->sendBookingNotifications($appointment, $patient, $doctor);
+
+            \Log::info('Booking finalized after payment', [
+                'pending_booking_id' => $pendingBooking->id,
+                'appointment_id' => $appointment->id,
+                'patient_id' => $patient->id,
+            ]);
 
             return [
                 'appointment' => $appointment,
+                'patient' => $patient,
+                'billing' => $billing,
                 'invoice' => $invoice,
-                'billing' => $billing
             ];
         });
     }
 
     /**
+     * Find pending booking by invoice.
+     */
+    public function findPendingBookingByInvoice(Invoice $invoice): ?PendingBooking
+    {
+        return PendingBooking::where('invoice_id', $invoice->id)
+            ->where('status', 'pending_payment')
+            ->first();
+    }
+
+    /**
+     * Update patient with additional data.
+     */
+    private function updatePatientData(Patient $patient, array $data, ?int $departmentId)
+    {
+        $patientUpdateData = [];
+
+        if (!empty($data['date_of_birth'])) {
+            $patientUpdateData['date_of_birth'] = $data['date_of_birth'];
+        }
+        if (!empty($data['gender'])) {
+            $patientUpdateData['gender'] = $data['gender'];
+        }
+
+        // Handle GP consent
+        if (!empty($data['consent_share_with_gp'])) {
+            $patientUpdateData['consent_share_with_gp'] = true;
+            if (!empty($data['gp_name'])) $patientUpdateData['gp_name'] = $data['gp_name'];
+            if (!empty($data['gp_email'])) $patientUpdateData['gp_email'] = $data['gp_email'];
+            if (!empty($data['gp_phone'])) $patientUpdateData['gp_phone'] = $data['gp_phone'];
+            if (!empty($data['gp_address'])) $patientUpdateData['gp_address'] = $data['gp_address'];
+        }
+
+        // Assign to department
+        if ($departmentId && !$patient->department_id) {
+            $patientUpdateData['department_id'] = $departmentId;
+        }
+
+        if (!empty($patientUpdateData)) {
+            $patient->update($patientUpdateData);
+        }
+
+        // Attach to departments pivot table
+        if ($departmentId && !$patient->departments()->where('departments.id', $departmentId)->exists()) {
+            $hasPrimary = $patient->departments()->wherePivot('is_primary', true)->exists();
+            $patient->departments()->attach($departmentId, [
+                'is_primary' => !$hasPrimary,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * Ensure invoice has a payment token.
+     */
+    private function ensurePaymentToken(Invoice $invoice)
+    {
+        $invoice->generatePaymentToken();
+        $invoice->refresh();
+
+        if (empty($invoice->payment_token)) {
+            try {
+                $manualToken = bin2hex(random_bytes(32));
+                $invoice->update([
+                    'payment_token' => $manualToken,
+                    'payment_token_expires_at' => now()->addDays(90),
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to set payment token', ['error' => $e->getMessage()]);
+            }
+        }
+    }
+
+    /**
+     * Send booking notifications.
+     */
+    private function sendBookingNotifications(Appointment $appointment, Patient $patient, Doctor $doctor)
+    {
+        // Send confirmation email to patient
+        try {
+            $this->emailService->sendAppointmentConfirmation($appointment);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send appointment confirmation email', ['error' => $e->getMessage()]);
+        }
+
+        // Send notification to doctor
+        try {
+            $this->emailService->notifyDoctorNewAppointment($appointment, $doctor);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send doctor notification email', ['error' => $e->getMessage()]);
+        }
+
+        // Create in-app notifications
+        try {
+            $this->createPublicBookingNotifications($appointment, $patient);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create public booking notifications', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Generate unique appointment number.
-     *
-     * @return string
      */
     private function generateAppointmentNumber()
     {
@@ -326,22 +492,18 @@ class PublicBookingService
 
     /**
      * Create notifications for new pending public booking.
-     *
-     * @param Appointment $appointment
-     * @param Patient $patient
-     * @return void
      */
     private function createPublicBookingNotifications(Appointment $appointment, Patient $patient)
     {
         $patientName = trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? ''));
         $appointmentDate = \Carbon\Carbon::parse($appointment->appointment_date)->format('M d, Y');
         $appointmentTime = \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A');
-        
+
         $notificationData = [
             'type' => UserNotification::TYPE_APPOINTMENT,
             'category' => UserNotification::CATEGORY_APPOINTMENT,
-            'title' => 'New Public Booking - Pending Approval',
-            'message' => "New appointment booking from {$patientName} on {$appointmentDate} at {$appointmentTime} requires your approval.",
+            'title' => 'New Public Booking - Payment Completed',
+            'message' => "New appointment booking from {$patientName} on {$appointmentDate} at {$appointmentTime}.",
             'priority' => 'high',
             'action_url' => route('staff.appointments.show', $appointment->id),
             'related_appointment_id' => $appointment->id,
@@ -356,46 +518,35 @@ class PublicBookingService
 
         // Notify all admin users
         $adminUsers = User::where(function($query) {
-            $query->where('is_admin', true)
-                  ->orWhere('role', 'admin');
-        })
-        ->where('is_active', true)
-        ->get();
+            $query->where('is_admin', true)->orWhere('role', 'admin');
+        })->where('is_active', true)->get();
 
         foreach ($adminUsers as $admin) {
-            UserNotification::create(array_merge($notificationData, [
-                'user_id' => $admin->id,
-            ]));
+            UserNotification::create(array_merge($notificationData, ['user_id' => $admin->id]));
         }
 
-        // Notify the doctor if they have a user account
+        // Notify the doctor
         if ($appointment->doctor && $appointment->doctor->user_id) {
             $doctorUser = User::find($appointment->doctor->user_id);
             if ($doctorUser && $doctorUser->is_active) {
                 UserNotification::create(array_merge($notificationData, [
                     'user_id' => $doctorUser->id,
-                    'title' => 'New Appointment Booking - Pending',
+                    'title' => 'New Appointment Booking',
                     'message' => "You have a new appointment booking from {$patientName} on {$appointmentDate} at {$appointmentTime}.",
                 ]));
             }
         }
 
-        // Notify staff in the department (if department exists)
+        // Notify department staff
         if ($appointment->department_id) {
             $departmentStaff = User::where('department_id', $appointment->department_id)
                 ->where('is_active', true)
-                ->where('role', '!=', 'admin') // Don't duplicate admin notifications
-                ->where(function($query) {
-                    $query->where('is_admin', false)
-                          ->orWhereNull('is_admin');
-                })
+                ->where('role', '!=', 'admin')
+                ->where(function($q) { $q->where('is_admin', false)->orWhereNull('is_admin'); })
                 ->get();
 
             foreach ($departmentStaff as $staff) {
-                // Skip if already notified (doctor)
-                if ($appointment->doctor && $appointment->doctor->user_id == $staff->id) {
-                    continue;
-                }
+                if ($appointment->doctor && $appointment->doctor->user_id == $staff->id) continue;
 
                 UserNotification::create(array_merge($notificationData, [
                     'user_id' => $staff->id,
@@ -404,13 +555,5 @@ class PublicBookingService
                 ]));
             }
         }
-
-        \Log::info('Public booking notifications created', [
-            'appointment_id' => $appointment->id,
-            'patient_id' => $patient->id,
-            'notified_admins' => $adminUsers->count(),
-            'notified_doctor' => $appointment->doctor && $appointment->doctor->user_id ? 1 : 0,
-        ]);
     }
 }
-

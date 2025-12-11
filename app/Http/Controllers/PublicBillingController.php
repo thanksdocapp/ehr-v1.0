@@ -255,7 +255,7 @@ class PublicBillingController extends Controller
 
         // Refresh invoice to get latest paid_amount
         $invoice->refresh();
-        
+
         // If session_id is provided (from Stripe), try to verify and send receipt
         if ($request->has('session_id')) {
             $this->handleStripeSuccessCallback($invoice, $request->session_id);
@@ -266,22 +266,22 @@ class PublicBillingController extends Controller
                 ->where('status', 'completed')
                 ->latest()
                 ->first();
-            
+
             if ($latestPayment) {
                 // Ensure billing is updated even if callback wasn't called
                 $this->updateInvoiceAndBilling($invoice);
-                
+
                 // Check if receipt already sent (to avoid duplicates)
                 $receiptSent = Cache::get('receipt_sent_' . $latestPayment->id, false);
-                
+
                 if (!$receiptSent) {
                     try {
                         $emailService = app(\App\Services\HospitalEmailNotificationService::class);
                         $emailService->sendPaymentReceipt($invoice, $latestPayment);
-                        
+
                         // Mark receipt as sent (cache for 1 hour)
                         Cache::put('receipt_sent_' . $latestPayment->id, true, 3600);
-                        
+
                         \Log::info('Payment receipt email sent from success page', [
                             'invoice_id' => $invoice->id,
                             'payment_id' => $latestPayment->id
@@ -296,11 +296,31 @@ class PublicBillingController extends Controller
                 }
             }
         }
-        
+
         // Always ensure billing is updated when viewing success page (fallback)
         $this->updateInvoiceAndBilling($invoice);
 
-        // Check if this payment was from a booking flow
+        // Check if this is a pending booking that needs to be finalized after payment
+        $pendingBookingToken = session('pending_booking_token');
+        if ($pendingBookingToken) {
+            try {
+                $result = $this->finalizePendingBookingAfterPayment($invoice, $pendingBookingToken);
+                if ($result && isset($result['appointment'])) {
+                    session()->forget('pending_booking_token');
+                    return redirect()->route('public.booking.success', [
+                        'appointmentNumber' => $result['appointment']->appointment_number
+                    ])->with('payment_success', true);
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to finalize pending booking after payment', [
+                    'invoice_id' => $invoice->id,
+                    'pending_booking_token' => $pendingBookingToken,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Check if this payment was from a booking flow (legacy - for free bookings)
         $bookingAppointmentNumber = session('booking_appointment_number');
         if ($bookingAppointmentNumber) {
             // Clear the session
@@ -312,6 +332,47 @@ class PublicBillingController extends Controller
         }
 
         return view('public.billing.success', compact('invoice', 'token'));
+    }
+
+    /**
+     * Finalize pending booking after payment is completed.
+     * Creates patient, appointment, and billing records.
+     */
+    private function finalizePendingBookingAfterPayment(Invoice $invoice, string $pendingBookingToken): ?array
+    {
+        $bookingService = app(\App\Services\PublicBookingService::class);
+        $pendingBooking = \App\Models\PendingBooking::where('booking_token', $pendingBookingToken)
+            ->where('invoice_id', $invoice->id)
+            ->where('status', 'pending_payment')
+            ->first();
+
+        if (!$pendingBooking) {
+            Log::warning('Pending booking not found for finalization', [
+                'invoice_id' => $invoice->id,
+                'pending_booking_token' => $pendingBookingToken
+            ]);
+            return null;
+        }
+
+        // Verify payment is completed
+        $hasCompletedPayment = $invoice->payments()
+            ->where('status', 'completed')
+            ->exists();
+
+        if (!$hasCompletedPayment && $invoice->status !== 'paid') {
+            Log::warning('Payment not completed for pending booking', [
+                'invoice_id' => $invoice->id,
+                'pending_booking_id' => $pendingBooking->id
+            ]);
+            return null;
+        }
+
+        Log::info('Finalizing pending booking after payment', [
+            'pending_booking_id' => $pendingBooking->id,
+            'invoice_id' => $invoice->id
+        ]);
+
+        return $bookingService->finalizeBookingAfterPayment($pendingBooking);
     }
     
     /**
