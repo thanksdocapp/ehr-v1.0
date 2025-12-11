@@ -334,7 +334,21 @@ class PublicBookingController extends Controller
      */
     public function confirm(Request $request)
     {
-        $this->checkBookingEnabled();
+        try {
+            $this->checkBookingEnabled();
+        } catch (\Exception $e) {
+            \Log::error('Public booking check failed', ['error' => $e->getMessage()]);
+            return redirect('/')->with('error', 'Online booking is currently unavailable.');
+        }
+
+        // Log incoming request for debugging
+        \Log::info('Public booking confirm request received', [
+            'has_doctor_id' => $request->has('doctor_id'),
+            'has_service_id' => $request->has('service_id'),
+            'has_csrf' => $request->has('_token'),
+            'method' => $request->method(),
+            'all_keys' => array_keys($request->all()),
+        ]);
 
         // Prepare validation rules
         $rules = [

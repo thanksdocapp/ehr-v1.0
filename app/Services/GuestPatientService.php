@@ -15,14 +15,23 @@ class GuestPatientService
      */
     public function findOrCreateGuest(array $data)
     {
-        // Try to find existing patient by email and phone
-        $patient = Patient::where('email', $data['email'])
-            ->where('phone', $data['phone'])
-            ->first();
+        // Try to find existing patient by email first (email is unique)
+        $patient = Patient::where('email', $data['email'])->first();
 
         if ($patient) {
-            // If found but is a guest, we can still use it
-            // If found and is not a guest, use it (existing patient)
+            // Update phone if different
+            if ($patient->phone !== $data['phone']) {
+                $patient->phone = $data['phone'];
+            }
+            // Update name if different
+            if ($patient->first_name !== $data['first_name']) {
+                $patient->first_name = $data['first_name'];
+            }
+            if ($patient->last_name !== $data['last_name']) {
+                $patient->last_name = $data['last_name'];
+            }
+            $patient->save();
+
             return $patient;
         }
 
