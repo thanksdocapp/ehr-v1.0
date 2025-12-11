@@ -98,6 +98,30 @@ class PublicFormController extends Controller
     }
 
     /**
+     * Save partial form data (Complete for now).
+     */
+    public function savePartial(Request $request, string $token)
+    {
+        $formRequest = FormRequest::where('token', $token)
+            ->with(['template', 'patient'])
+            ->firstOrFail();
+
+        // Check if form can be filled
+        if (!$formRequest->canBeFilled()) {
+            return redirect()->route('forms.fill', $token)
+                ->with('error', 'This form can no longer be modified.');
+        }
+
+        // Get all form data without strict validation (partial save)
+        $formData = $request->except(['_token']);
+
+        // Save partial data
+        $formRequest->savePartialData($formData);
+
+        return view('forms.saved', compact('formRequest'));
+    }
+
+    /**
      * Extract form fields from template content.
      * Looks for patterns like {{input:field_name:label:type}} or {{textarea:field_name:label}}
      */

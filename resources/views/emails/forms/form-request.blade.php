@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Please Complete This Form - {{ config('app.name') }}</title>
+    <title>{{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form to Complete') }} - {{ config('app.name') }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -97,7 +97,7 @@
 </head>
 <body>
     <div class="header">
-        <h1 style="margin: 0;">Form Request</h1>
+        <h1 style="margin: 0;">{{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form to Complete') }}</h1>
     </div>
 
     <div class="content">

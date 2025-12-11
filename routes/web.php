@@ -31,6 +31,7 @@ Route::get('/track/document/click/{token}', [\App\Http\Controllers\DocumentTrack
 // Public form routes (no auth required - patients fill forms via link)
 Route::get('/forms/{token}', [\App\Http\Controllers\PublicFormController::class, 'show'])->name('forms.fill');
 Route::post('/forms/{token}', [\App\Http\Controllers\PublicFormController::class, 'submit'])->name('forms.submit');
+Route::post('/forms/{token}/save', [\App\Http\Controllers\PublicFormController::class, 'savePartial'])->name('forms.save');
 
 // Root Route Handler - Patient Booking Page
 Route::get('/', function () {

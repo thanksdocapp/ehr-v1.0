@@ -187,6 +187,17 @@
                     </div>
                 </div>
 
+                @php
+                    $savedData = $formRequest->form_data ?? [];
+                @endphp
+
+                @if($formRequest->isInProgress())
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Welcome back!</strong> Your previous progress has been restored. Continue filling out the form below.
+                    </div>
+                @endif
+
                 <form action="{{ route('forms.submit', $formRequest->token) }}" method="POST" id="patientForm">
                     @csrf
 
@@ -205,7 +216,7 @@
                                            class="form-control @error($field['name']) is-invalid @enderror"
                                            id="{{ $field['name'] }}"
                                            name="{{ $field['name'] }}"
-                                           value="{{ old($field['name']) }}"
+                                           value="{{ old($field['name'], $savedData[$field['name']] ?? '') }}"
                                            {{ $field['required'] ? 'required' : '' }}>
                                     @break
 
@@ -214,17 +225,18 @@
                                               id="{{ $field['name'] }}"
                                               name="{{ $field['name'] }}"
                                               rows="4"
-                                              {{ $field['required'] ? 'required' : '' }}>{{ old($field['name']) }}</textarea>
+                                              {{ $field['required'] ? 'required' : '' }}>{{ old($field['name'], $savedData[$field['name']] ?? '') }}</textarea>
                                     @break
 
                                 @case('select')
+                                    @php $selectedValue = old($field['name'], $savedData[$field['name']] ?? ''); @endphp
                                     <select class="form-select @error($field['name']) is-invalid @enderror"
                                             id="{{ $field['name'] }}"
                                             name="{{ $field['name'] }}"
                                             {{ $field['required'] ? 'required' : '' }}>
                                         <option value="">-- Select --</option>
                                         @foreach($field['options'] as $option)
-                                            <option value="{{ trim($option) }}" {{ old($field['name']) == trim($option) ? 'selected' : '' }}>
+                                            <option value="{{ trim($option) }}" {{ $selectedValue == trim($option) ? 'selected' : '' }}>
                                                 {{ trim($option) }}
                                             </option>
                                         @endforeach
@@ -232,13 +244,14 @@
                                     @break
 
                                 @case('checkbox')
+                                    @php $isChecked = old($field['name'], $savedData[$field['name']] ?? false); @endphp
                                     <div class="form-check">
                                         <input type="checkbox"
                                                class="form-check-input @error($field['name']) is-invalid @enderror"
                                                id="{{ $field['name'] }}"
                                                name="{{ $field['name'] }}"
                                                value="1"
-                                               {{ old($field['name']) ? 'checked' : '' }}>
+                                               {{ $isChecked ? 'checked' : '' }}>
                                         <label class="form-check-label" for="{{ $field['name'] }}">
                                             Yes
                                         </label>
@@ -246,6 +259,7 @@
                                     @break
 
                                 @case('radio')
+                                    @php $selectedRadio = old($field['name'], $savedData[$field['name']] ?? ''); @endphp
                                     @foreach($field['options'] as $option)
                                         <div class="form-check">
                                             <input type="radio"
@@ -253,7 +267,7 @@
                                                    id="{{ $field['name'] }}_{{ Str::slug($option) }}"
                                                    name="{{ $field['name'] }}"
                                                    value="{{ trim($option) }}"
-                                                   {{ old($field['name']) == trim($option) ? 'checked' : '' }}
+                                                   {{ $selectedRadio == trim($option) ? 'checked' : '' }}
                                                    {{ $field['required'] ? 'required' : '' }}>
                                             <label class="form-check-label" for="{{ $field['name'] }}_{{ Str::slug($option) }}">
                                                 {{ trim($option) }}
@@ -295,7 +309,13 @@
                             <button type="submit" class="btn btn-submit">
                                 <i class="fas fa-paper-plane me-2"></i>Submit Form
                             </button>
+                            <button type="submit" formaction="{{ route('forms.save', $formRequest->token) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-save me-2"></i>Complete for Now
+                            </button>
                         </div>
+                        <p class="text-muted text-center mt-2 small">
+                            <i class="fas fa-info-circle me-1"></i>Use "Complete for Now" to save your progress and return later
+                        </p>
                     @endif
                 </form>
             </div>

@@ -39,6 +39,7 @@ class FormRequest extends Model
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_OPENED = 'opened';
+    public const STATUS_IN_PROGRESS = 'in_progress';
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_EXPIRED = 'expired';
 
@@ -171,6 +172,14 @@ class FormRequest extends Model
     }
 
     /**
+     * Check if form is in progress (partially filled).
+     */
+    public function isInProgress(): bool
+    {
+        return $this->status === self::STATUS_IN_PROGRESS;
+    }
+
+    /**
      * Check if form can be filled.
      * Forms can be filled if they are not completed and not expired.
      * Opening a form (status = OPENED) does not prevent it from being filled.
@@ -178,7 +187,7 @@ class FormRequest extends Model
     public function canBeFilled(): bool
     {
         // Can be filled if not completed and not expired
-        // Status can be PENDING or OPENED - both are fillable
+        // Status can be PENDING, OPENED, or IN_PROGRESS - all are fillable
         return !$this->isCompleted() && !$this->isExpired();
     }
 
@@ -209,6 +218,17 @@ class FormRequest extends Model
     }
 
     /**
+     * Save partial form data (in progress).
+     */
+    public function savePartialData(array $formData): bool
+    {
+        return $this->update([
+            'status' => self::STATUS_IN_PROGRESS,
+            'form_data' => $formData,
+        ]);
+    }
+
+    /**
      * Mark form as expired.
      */
     public function markAsExpired(): bool
@@ -232,6 +252,7 @@ class FormRequest extends Model
         return match ($this->status) {
             self::STATUS_PENDING => 'bg-warning text-dark',
             self::STATUS_OPENED => 'bg-info',
+            self::STATUS_IN_PROGRESS => 'bg-primary',
             self::STATUS_COMPLETED => 'bg-success',
             self::STATUS_EXPIRED => 'bg-secondary',
             default => 'bg-secondary',
