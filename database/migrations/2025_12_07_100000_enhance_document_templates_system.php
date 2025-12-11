@@ -12,129 +12,235 @@ return new class extends Migration
     public function up(): void
     {
         // Create document categories table
-        Schema::create('document_categories', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->text('description')->nullable();
-            $table->string('color', 7)->default('#667eea'); // Hex color
-            $table->string('icon', 50)->default('fa-folder');
-            $table->enum('type', ['letter', 'form', 'both'])->default('both');
-            $table->unsignedBigInteger('parent_id')->nullable();
-            $table->integer('sort_order')->default(0);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
+        if (!Schema::hasTable('document_categories')) {
+            Schema::create('document_categories', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('slug')->unique();
+                $table->text('description')->nullable();
+                $table->string('color', 7)->default('#667eea'); // Hex color
+                $table->string('icon', 50)->default('fa-folder');
+                $table->enum('type', ['letter', 'form', 'both'])->default('both');
+                $table->unsignedBigInteger('parent_id')->nullable();
+                $table->integer('sort_order')->default(0);
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
 
-            $table->foreign('parent_id')->references('id')->on('document_categories')->onDelete('set null');
-        });
+                $table->foreign('parent_id')->references('id')->on('document_categories')->onDelete('set null');
+            });
+        }
 
         // Enhance document_templates table
         Schema::table('document_templates', function (Blueprint $table) {
             // Category and organization
-            $table->unsignedBigInteger('category_id')->nullable()->after('type');
-            $table->text('description')->nullable()->after('name');
-            $table->string('icon', 50)->default('fa-file-alt')->after('description');
+            if (!Schema::hasColumn('document_templates', 'category_id')) {
+                $table->unsignedBigInteger('category_id')->nullable()->after('type');
+            }
+            if (!Schema::hasColumn('document_templates', 'description')) {
+                $table->text('description')->nullable()->after('name');
+            }
+            if (!Schema::hasColumn('document_templates', 'icon')) {
+                $table->string('icon', 50)->default('fa-file-alt')->after('description');
+            }
 
             // Versioning
-            $table->integer('version')->default(1)->after('is_active');
-            $table->unsignedBigInteger('parent_template_id')->nullable()->after('version');
-            $table->boolean('is_latest')->default(true)->after('parent_template_id');
+            if (!Schema::hasColumn('document_templates', 'version')) {
+                $table->integer('version')->default(1)->after('is_active');
+            }
+            if (!Schema::hasColumn('document_templates', 'parent_template_id')) {
+                $table->unsignedBigInteger('parent_template_id')->nullable()->after('version');
+            }
+            if (!Schema::hasColumn('document_templates', 'is_latest')) {
+                $table->boolean('is_latest')->default(true)->after('parent_template_id');
+            }
 
             // Access control
-            $table->json('allowed_roles')->nullable()->after('is_latest'); // ['admin', 'doctor', 'nurse']
-            $table->json('allowed_departments')->nullable()->after('allowed_roles'); // [1, 2, 3]
+            if (!Schema::hasColumn('document_templates', 'allowed_roles')) {
+                $table->json('allowed_roles')->nullable()->after('is_latest');
+            }
+            if (!Schema::hasColumn('document_templates', 'allowed_departments')) {
+                $table->json('allowed_departments')->nullable()->after('allowed_roles');
+            }
 
             // Clinical metadata
-            $table->boolean('requires_signature')->default(false)->after('allowed_departments');
-            $table->boolean('requires_witness')->default(false)->after('requires_signature');
-            $table->boolean('is_confidential')->default(false)->after('requires_witness');
-            $table->integer('retention_days')->nullable()->after('is_confidential'); // Document retention period
+            if (!Schema::hasColumn('document_templates', 'requires_signature')) {
+                $table->boolean('requires_signature')->default(false)->after('allowed_departments');
+            }
+            if (!Schema::hasColumn('document_templates', 'requires_witness')) {
+                $table->boolean('requires_witness')->default(false)->after('requires_signature');
+            }
+            if (!Schema::hasColumn('document_templates', 'is_confidential')) {
+                $table->boolean('is_confidential')->default(false)->after('requires_witness');
+            }
+            if (!Schema::hasColumn('document_templates', 'retention_days')) {
+                $table->integer('retention_days')->nullable()->after('is_confidential');
+            }
 
             // Usage tracking
-            $table->integer('usage_count')->default(0)->after('retention_days');
-            $table->timestamp('last_used_at')->nullable()->after('usage_count');
+            if (!Schema::hasColumn('document_templates', 'usage_count')) {
+                $table->integer('usage_count')->default(0)->after('retention_days');
+            }
+            if (!Schema::hasColumn('document_templates', 'last_used_at')) {
+                $table->timestamp('last_used_at')->nullable()->after('usage_count');
+            }
 
             // Favorites
-            $table->json('favorited_by')->nullable()->after('last_used_at'); // User IDs
+            if (!Schema::hasColumn('document_templates', 'favorited_by')) {
+                $table->json('favorited_by')->nullable()->after('last_used_at');
+            }
 
             // Tags for search
-            $table->json('tags')->nullable()->after('favorited_by');
+            if (!Schema::hasColumn('document_templates', 'tags')) {
+                $table->json('tags')->nullable()->after('favorited_by');
+            }
 
             // Print settings
-            $table->json('print_settings')->nullable()->after('tags'); // paper_size, orientation, margins
-
-            // Foreign keys
-            $table->foreign('category_id')->references('id')->on('document_categories')->onDelete('set null');
-            $table->foreign('parent_template_id')->references('id')->on('document_templates')->onDelete('set null');
+            if (!Schema::hasColumn('document_templates', 'print_settings')) {
+                $table->json('print_settings')->nullable()->after('tags');
+            }
         });
+
+        // Add foreign keys separately if the columns exist and foreign keys don't
+        if (Schema::hasColumn('document_templates', 'category_id') && Schema::hasTable('document_categories')) {
+            try {
+                Schema::table('document_templates', function (Blueprint $table) {
+                    $table->foreign('category_id')->references('id')->on('document_categories')->onDelete('set null');
+                });
+            } catch (\Exception $e) {
+                // Foreign key may already exist
+            }
+        }
+        if (Schema::hasColumn('document_templates', 'parent_template_id')) {
+            try {
+                Schema::table('document_templates', function (Blueprint $table) {
+                    $table->foreign('parent_template_id')->references('id')->on('document_templates')->onDelete('set null');
+                });
+            } catch (\Exception $e) {
+                // Foreign key may already exist
+            }
+        }
 
         // Enhance patient_documents table
         Schema::table('patient_documents', function (Blueprint $table) {
             // Priority and urgency
-            $table->enum('priority', ['low', 'normal', 'high', 'urgent'])->default('normal')->after('status');
+            if (!Schema::hasColumn('patient_documents', 'priority')) {
+                $table->enum('priority', ['low', 'normal', 'high', 'urgent'])->default('normal')->after('status');
+            }
 
             // Approval workflow
-            $table->enum('approval_status', ['not_required', 'pending', 'approved', 'rejected'])->default('not_required')->after('priority');
-            $table->unsignedBigInteger('approved_by')->nullable()->after('approval_status');
-            $table->timestamp('approved_at')->nullable()->after('approved_by');
-            $table->text('approval_notes')->nullable()->after('approved_at');
+            if (!Schema::hasColumn('patient_documents', 'approval_status')) {
+                $table->enum('approval_status', ['not_required', 'pending', 'approved', 'rejected'])->default('not_required')->after('priority');
+            }
+            if (!Schema::hasColumn('patient_documents', 'approved_by')) {
+                $table->unsignedBigInteger('approved_by')->nullable()->after('approval_status');
+            }
+            if (!Schema::hasColumn('patient_documents', 'approved_at')) {
+                $table->timestamp('approved_at')->nullable()->after('approved_by');
+            }
+            if (!Schema::hasColumn('patient_documents', 'approval_notes')) {
+                $table->text('approval_notes')->nullable()->after('approved_at');
+            }
 
             // Additional signatures
-            $table->json('additional_signatures')->nullable()->after('signed_at'); // [{user_id, name, role, signed_at, signature_path}]
-            $table->unsignedBigInteger('witness_id')->nullable()->after('additional_signatures');
-            $table->timestamp('witnessed_at')->nullable()->after('witness_id');
+            if (!Schema::hasColumn('patient_documents', 'additional_signatures')) {
+                $table->json('additional_signatures')->nullable()->after('signed_at');
+            }
+            if (!Schema::hasColumn('patient_documents', 'witness_id')) {
+                $table->unsignedBigInteger('witness_id')->nullable()->after('additional_signatures');
+            }
+            if (!Schema::hasColumn('patient_documents', 'witnessed_at')) {
+                $table->timestamp('witnessed_at')->nullable()->after('witness_id');
+            }
 
             // Related records
-            $table->unsignedBigInteger('appointment_id')->nullable()->after('witnessed_at');
-            $table->unsignedBigInteger('encounter_id')->nullable()->after('appointment_id');
+            if (!Schema::hasColumn('patient_documents', 'appointment_id')) {
+                $table->unsignedBigInteger('appointment_id')->nullable()->after('witnessed_at');
+            }
+            if (!Schema::hasColumn('patient_documents', 'encounter_id')) {
+                $table->unsignedBigInteger('encounter_id')->nullable()->after('appointment_id');
+            }
 
             // Notes and collaboration
-            $table->text('internal_notes')->nullable()->after('encounter_id');
-            $table->json('revision_history')->nullable()->after('internal_notes'); // Track changes
+            if (!Schema::hasColumn('patient_documents', 'internal_notes')) {
+                $table->text('internal_notes')->nullable()->after('encounter_id');
+            }
+            if (!Schema::hasColumn('patient_documents', 'revision_history')) {
+                $table->json('revision_history')->nullable()->after('internal_notes');
+            }
 
             // Expiry
-            $table->date('valid_from')->nullable()->after('revision_history');
-            $table->date('valid_until')->nullable()->after('valid_from');
+            if (!Schema::hasColumn('patient_documents', 'valid_from')) {
+                $table->date('valid_from')->nullable()->after('revision_history');
+            }
+            if (!Schema::hasColumn('patient_documents', 'valid_until')) {
+                $table->date('valid_until')->nullable()->after('valid_from');
+            }
 
             // External reference
-            $table->string('external_reference', 100)->nullable()->after('valid_until');
+            if (!Schema::hasColumn('patient_documents', 'external_reference')) {
+                $table->string('external_reference', 100)->nullable()->after('valid_until');
+            }
 
             // Confidentiality
-            $table->boolean('is_confidential')->default(false)->after('external_reference');
+            if (!Schema::hasColumn('patient_documents', 'is_confidential')) {
+                $table->boolean('is_confidential')->default(false)->after('external_reference');
+            }
 
             // Favorites
-            $table->json('favorited_by')->nullable()->after('is_confidential');
-
-            // Foreign keys
-            $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('witness_id')->references('id')->on('users')->onDelete('set null');
+            if (!Schema::hasColumn('patient_documents', 'favorited_by')) {
+                $table->json('favorited_by')->nullable()->after('is_confidential');
+            }
         });
+
+        // Add foreign keys separately
+        if (Schema::hasColumn('patient_documents', 'approved_by')) {
+            try {
+                Schema::table('patient_documents', function (Blueprint $table) {
+                    $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
+                });
+            } catch (\Exception $e) {
+                // Foreign key may already exist
+            }
+        }
+        if (Schema::hasColumn('patient_documents', 'witness_id')) {
+            try {
+                Schema::table('patient_documents', function (Blueprint $table) {
+                    $table->foreign('witness_id')->references('id')->on('users')->onDelete('set null');
+                });
+            } catch (\Exception $e) {
+                // Foreign key may already exist
+            }
+        }
 
         // Create document_template_favorites table for quick access
-        Schema::create('document_template_favorites', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('template_id');
-            $table->timestamps();
+        if (!Schema::hasTable('document_template_favorites')) {
+            Schema::create('document_template_favorites', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id');
+                $table->unsignedBigInteger('template_id');
+                $table->timestamps();
 
-            $table->unique(['user_id', 'template_id']);
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('template_id')->references('id')->on('document_templates')->onDelete('cascade');
-        });
+                $table->unique(['user_id', 'template_id']);
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+                $table->foreign('template_id')->references('id')->on('document_templates')->onDelete('cascade');
+            });
+        }
 
         // Create document_settings table
-        Schema::create('document_settings', function (Blueprint $table) {
-            $table->id();
-            $table->string('key')->unique();
-            $table->text('value')->nullable();
-            $table->string('type')->default('string'); // string, boolean, integer, json
-            $table->string('group')->default('general'); // general, templates, pdf, email
-            $table->text('description')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('document_settings')) {
+            Schema::create('document_settings', function (Blueprint $table) {
+                $table->id();
+                $table->string('key')->unique();
+                $table->text('value')->nullable();
+                $table->string('type')->default('string'); // string, boolean, integer, json
+                $table->string('group')->default('general'); // general, templates, pdf, email
+                $table->text('description')->nullable();
+                $table->timestamps();
+            });
 
-        // Insert default document settings
-        $this->seedDefaultSettings();
+            // Insert default document settings
+            $this->seedDefaultSettings();
+        }
     }
 
     /**

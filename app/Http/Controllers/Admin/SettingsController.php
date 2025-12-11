@@ -2198,6 +2198,12 @@ class SettingsController extends Controller
                 'recaptcha_secret_key' => 'nullable|string|max:255',
                 'onesignal_app_id' => 'nullable|string|max:255',
                 'onesignal_rest_api_key' => 'nullable|string|max:255',
+                // Whereby settings
+                'whereby_enabled' => 'nullable|in:0,1',
+                'whereby_api_key' => 'nullable|string|max:255',
+                'whereby_room_prefix' => 'nullable|string|max:39',
+                'whereby_room_mode' => 'nullable|in:normal,group',
+                'whereby_rooms_locked' => 'nullable|in:0,1',
             ]);
 
             if ($validator->fails()) {
@@ -2211,6 +2217,12 @@ class SettingsController extends Controller
                 'recaptcha_secret_key' => $request->input('recaptcha_secret_key'),
                 'onesignal_app_id' => $request->input('onesignal_app_id'),
                 'onesignal_rest_api_key' => $request->input('onesignal_rest_api_key'),
+                // Whereby settings
+                'whereby_enabled' => $request->input('whereby_enabled', '0'),
+                'whereby_api_key' => $request->input('whereby_api_key'),
+                'whereby_room_prefix' => $request->input('whereby_room_prefix'),
+                'whereby_room_mode' => $request->input('whereby_room_mode', 'normal'),
+                'whereby_rooms_locked' => $request->input('whereby_rooms_locked', '0'),
             ];
 
             foreach ($integrationSettings as $key => $value) {
@@ -2227,6 +2239,25 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             \Log::error('Failed to update integration settings: ' . $e->getMessage());
             return back()->with('error', 'Failed to update settings: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Test Whereby API connection.
+     */
+    public function testWherebyConnection(Request $request)
+    {
+        try {
+            $wherebyService = new \App\Services\WherebyService();
+            $result = $wherebyService->testConnection();
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            \Log::error('Whereby connection test failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Connection test failed: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

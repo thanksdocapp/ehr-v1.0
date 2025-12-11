@@ -233,6 +233,106 @@
                 </div>
             </div>
 
+            <!-- Whereby Video Consultation Integration -->
+            <div class="col-lg-6 mb-4">
+                <div class="card integration-card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="integration-logo bg-purple text-white me-3" style="background: #6C63FF;">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Whereby Video Consultation</h5>
+                                <small class="text-muted">Auto-generate video meeting rooms</small>
+                            </div>
+                        </div>
+                        @if(($settings['whereby_enabled'] ?? '0') === '1' && !empty($settings['whereby_api_key']))
+                            <span class="badge bg-success status-badge"><i class="fas fa-check me-1"></i>Active</span>
+                        @elseif(!empty($settings['whereby_api_key']))
+                            <span class="badge bg-warning text-dark status-badge"><i class="fas fa-pause me-1"></i>Disabled</span>
+                        @else
+                            <span class="badge bg-secondary status-badge"><i class="fas fa-minus me-1"></i>Not Configured</span>
+                        @endif
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="whereby_enabled" name="whereby_enabled" value="1"
+                                    {{ old('whereby_enabled', $settings['whereby_enabled'] ?? '0') === '1' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="whereby_enabled">
+                                    <strong>Enable Whereby Integration</strong>
+                                </label>
+                            </div>
+                            <div class="form-text">When enabled, online appointments will automatically get a Whereby meeting room.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="whereby_api_key" class="form-label">
+                                <i class="fas fa-key me-1"></i>API Key <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="password"
+                                       class="form-control api-key-input"
+                                       id="whereby_api_key"
+                                       name="whereby_api_key"
+                                       value="{{ old('whereby_api_key', $settings['whereby_api_key'] ?? '') }}"
+                                       placeholder="Enter your Whereby API key">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('whereby_api_key')">
+                                    <i class="fas fa-eye" id="whereby_api_key_icon"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Get your API key from <a href="https://whereby.com/org/api-keys" target="_blank" rel="noopener">Whereby Dashboard</a>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="whereby_room_prefix" class="form-label">
+                                <i class="fas fa-tag me-1"></i>Room Name Prefix
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="whereby_room_prefix"
+                                   name="whereby_room_prefix"
+                                   value="{{ old('whereby_room_prefix', $settings['whereby_room_prefix'] ?? 'consultation') }}"
+                                   placeholder="consultation"
+                                   maxlength="39">
+                            <div class="form-text">Prefix for room names (e.g., "consultation" creates "consultation-abc123")</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="whereby_room_mode" class="form-label">
+                                    <i class="fas fa-users me-1"></i>Room Mode
+                                </label>
+                                <select class="form-select" id="whereby_room_mode" name="whereby_room_mode">
+                                    <option value="normal" {{ old('whereby_room_mode', $settings['whereby_room_mode'] ?? 'normal') === 'normal' ? 'selected' : '' }}>
+                                        Normal (Up to 4 participants)
+                                    </option>
+                                    <option value="group" {{ old('whereby_room_mode', $settings['whereby_room_mode'] ?? 'normal') === 'group' ? 'selected' : '' }}>
+                                        Group (4+ participants)
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label d-block">
+                                    <i class="fas fa-lock me-1"></i>Room Lock
+                                </label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="whereby_rooms_locked" name="whereby_rooms_locked" value="1"
+                                        {{ old('whereby_rooms_locked', $settings['whereby_rooms_locked'] ?? '1') === '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="whereby_rooms_locked">Lock rooms by default</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="testWherebyBtn" onclick="testWherebyConnection()">
+                                <i class="fas fa-plug me-1"></i>Test Connection
+                            </button>
+                            <span id="wherebyTestResult" class="align-self-center small"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Push Notifications Integration -->
             <div class="col-lg-6 mb-4">
                 <div class="card integration-card h-100">
@@ -325,6 +425,45 @@ function togglePassword(inputId) {
         icon.classList.remove('fa-eye-slash');
         icon.classList.add('fa-eye');
     }
+}
+
+function testWherebyConnection() {
+    const btn = document.getElementById('testWherebyBtn');
+    const result = document.getElementById('wherebyTestResult');
+    const apiKey = document.getElementById('whereby_api_key').value;
+
+    if (!apiKey) {
+        result.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle me-1"></i>Please enter an API key first</span>';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testing...';
+    result.innerHTML = '';
+
+    fetch('{{ route("admin.settings.whereby.test") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ api_key: apiKey })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            result.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>' + data.message + '</span>';
+        } else {
+            result.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle me-1"></i>' + data.message + '</span>';
+        }
+    })
+    .catch(error => {
+        result.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle me-1"></i>Connection error</span>';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plug me-1"></i>Test Connection';
+    });
 }
 </script>
 @endpush

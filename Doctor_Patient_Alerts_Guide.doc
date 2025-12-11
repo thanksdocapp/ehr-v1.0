@@ -1,0 +1,516 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Doctor's Guide: Patient Alerts</title>
+<style>
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; margin: 40px; }
+    h1 { color: #2c3e50; font-size: 24pt; border-bottom: 2px solid #e74c3c; padding-bottom: 10px; }
+    h2 { color: #c0392b; font-size: 16pt; margin-top: 25px; }
+    h3 { color: #34495e; font-size: 13pt; margin-top: 20px; }
+    table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+    th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: left; }
+    th { background-color: #e74c3c; color: white; font-weight: bold; }
+    tr:nth-child(even) { background-color: #ecf0f1; }
+    .required { color: #e74c3c; font-weight: bold; }
+    .optional { color: #27ae60; font-style: italic; }
+    .note { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 15px 0; }
+    .tip { background-color: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 15px 0; }
+    .warning { background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 15px 0; }
+    .critical { background-color: #f8d7da; border: 2px solid #dc3545; padding: 15px; margin: 15px 0; }
+    .checklist { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; margin: 20px 0; font-family: Consolas, monospace; }
+    .checklist-title { font-weight: bold; text-align: center; margin-bottom: 15px; font-size: 14pt; }
+    ul { margin: 10px 0; }
+    li { margin: 5px 0; }
+    .page-break { page-break-before: always; }
+    .severity-critical { background-color: #dc3545; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+    .severity-high { background-color: #fd7e14; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+    .severity-medium { background-color: #17a2b8; color: white; padding: 3px 8px; border-radius: 3px; }
+    .severity-low { background-color: #6c757d; color: white; padding: 3px 8px; border-radius: 3px; }
+    .severity-info { background-color: #007bff; color: white; padding: 3px 8px; border-radius: 3px; }
+    .restricted { background-color: #6f42c1; color: white; padding: 2px 6px; border-radius: 3px; font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<h1>Doctor's Guide: Patient Alerts</h1>
+
+<p><strong>ThanksDoc EPR System</strong></p>
+
+<div class="critical">
+    <strong>What are Patient Alerts?</strong><br>
+    Patient alerts are important warnings that appear on a patient's profile to ensure all staff are aware of critical information such as allergies, safeguarding concerns, or communication needs.
+</div>
+
+<hr>
+
+<h2>Where Do Alerts Appear?</h2>
+
+<p>When a patient has active alerts, they appear as <strong>coloured badges</strong> at the top of:</p>
+<ul>
+    <li>Patient profile page</li>
+    <li>Appointment details</li>
+    <li>Medical records</li>
+    <li>Prescription pages</li>
+</ul>
+
+<div class="note">
+    <strong>Click on any alert badge</strong> to see full details in a popup window.
+</div>
+
+<hr>
+
+<h2>How to Add a Patient Alert</h2>
+
+<h3>Step 1: Go to Patient Profile</h3>
+<ul>
+    <li>Click <strong>"Patients"</strong> in the sidebar</li>
+    <li>Find and click on the patient's name</li>
+</ul>
+
+<h3>Step 2: Open Alerts Management</h3>
+<ul>
+    <li>Click <strong>"Manage Alerts"</strong> button on the patient's profile</li>
+    <li>Click <strong>"Add Alert"</strong> button</li>
+</ul>
+
+<h3>Step 3: Fill in Alert Details</h3>
+
+<table>
+    <tr>
+        <th>Field</th>
+        <th>What to Enter</th>
+        <th>Required?</th>
+    </tr>
+    <tr>
+        <td><strong>Alert Type</strong></td>
+        <td>Select category (Clinical, Safeguarding, Behaviour, etc.)</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><strong>Category</strong></td>
+        <td>Select specific alert code (auto-populates after selecting type)</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><strong>Severity</strong></td>
+        <td>Critical, High, Medium, Low, or Info</td>
+        <td><span class="optional">Optional</span> (uses default)</td>
+    </tr>
+    <tr>
+        <td><strong>Title</strong></td>
+        <td>Brief alert title</td>
+        <td><span class="optional">Optional</span> (auto-generated)</td>
+    </tr>
+    <tr>
+        <td><strong>Description</strong></td>
+        <td>Full details and clinical context</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><strong>Review Date</strong></td>
+        <td>Date to review/expire the alert</td>
+        <td><span class="optional">Optional</span></td>
+    </tr>
+    <tr>
+        <td><strong>Active</strong></td>
+        <td>Tick to make alert visible immediately</td>
+        <td>Default: Yes</td>
+    </tr>
+    <tr>
+        <td><strong>Restricted</strong></td>
+        <td>Tick to hide from nurses/staff (doctors only)</td>
+        <td>Default: No</td>
+    </tr>
+</table>
+
+<h3>Step 4: Save</h3>
+<ul>
+    <li>Click <strong>"Create Alert"</strong></li>
+    <li>Alert will immediately appear on patient's profile</li>
+</ul>
+
+<hr>
+
+<h2>Alert Types & When to Use Them</h2>
+
+<h3>1. Clinical Alerts</h3>
+<p>Medical conditions and risks</p>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Description</th>
+        <th>Severity</th>
+    </tr>
+    <tr>
+        <td>Drug Allergy</td>
+        <td>Known allergy to medication</td>
+        <td><span class="severity-critical">CRITICAL</span></td>
+    </tr>
+    <tr>
+        <td>Anaphylaxis Risk</td>
+        <td>History of severe allergic reaction</td>
+        <td><span class="severity-critical">CRITICAL</span></td>
+    </tr>
+    <tr>
+        <td>DNR Status</td>
+        <td>Do Not Resuscitate order in place</td>
+        <td><span class="severity-critical">CRITICAL</span></td>
+    </tr>
+    <tr>
+        <td>High Risk Medication</td>
+        <td>On anticoagulants, insulin, etc.</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+    <tr>
+        <td>Infection Risk</td>
+        <td>MRSA, C.diff, or other infection</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+    <tr>
+        <td>Fall Risk</td>
+        <td>History of falls, mobility issues</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+    <tr>
+        <td>Pressure Sore Risk</td>
+        <td>Risk of developing pressure ulcers</td>
+        <td><span class="severity-medium">MEDIUM</span></td>
+    </tr>
+</table>
+
+<h3>2. Safeguarding Alerts <span class="restricted">RESTRICTED</span></h3>
+<p>Only visible to doctors and admin</p>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Description</th>
+        <th>Severity</th>
+    </tr>
+    <tr>
+        <td>Child Safeguarding</td>
+        <td>Child protection concerns</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+    <tr>
+        <td>Adult Safeguarding</td>
+        <td>Adult protection concerns</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+    <tr>
+        <td>Domestic Abuse</td>
+        <td>History or risk of domestic abuse</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+    <tr>
+        <td>Vulnerable Adult</td>
+        <td>Identified as vulnerable</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+</table>
+
+<h3>3. Behaviour Alerts</h3>
+<p>Behaviour and safety concerns</p>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Description</th>
+        <th>Severity</th>
+    </tr>
+    <tr>
+        <td>Violence Risk</td>
+        <td>History of aggression/violence</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+    <tr>
+        <td>Staff Safety Concern</td>
+        <td>Previous incidents with staff</td>
+        <td><span class="severity-medium">MEDIUM</span></td>
+    </tr>
+    <tr>
+        <td>Self-Harm Risk <span class="restricted">RESTRICTED</span></td>
+        <td>History or risk of self-harm</td>
+        <td><span class="severity-critical">CRITICAL</span></td>
+    </tr>
+    <tr>
+        <td>Suicide Risk <span class="restricted">RESTRICTED</span></td>
+        <td>Suicidal ideation or history</td>
+        <td><span class="severity-critical">CRITICAL</span></td>
+    </tr>
+</table>
+
+<h3>4. Communication Alerts</h3>
+<p>Communication and accessibility needs</p>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Description</th>
+        <th>Severity</th>
+    </tr>
+    <tr>
+        <td>Interpreter Required</td>
+        <td>Needs language interpreter</td>
+        <td><span class="severity-medium">MEDIUM</span></td>
+    </tr>
+    <tr>
+        <td>Learning Disability</td>
+        <td>Has learning difficulties</td>
+        <td><span class="severity-medium">MEDIUM</span></td>
+    </tr>
+    <tr>
+        <td>Hearing Impairment</td>
+        <td>Deaf or hard of hearing</td>
+        <td><span class="severity-medium">MEDIUM</span></td>
+    </tr>
+    <tr>
+        <td>Visual Impairment</td>
+        <td>Blind or visually impaired</td>
+        <td><span class="severity-medium">MEDIUM</span></td>
+    </tr>
+    <tr>
+        <td>Mental Capacity</td>
+        <td>Lacks capacity for decisions</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+</table>
+
+<h3>5. Admin Alerts</h3>
+<p>Missing documentation or administrative issues</p>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Description</th>
+        <th>Severity</th>
+    </tr>
+    <tr>
+        <td>Missing ID</td>
+        <td>Patient ID not verified</td>
+        <td><span class="severity-low">LOW</span></td>
+    </tr>
+    <tr>
+        <td>Missing Consent</td>
+        <td>Consent form not signed</td>
+        <td><span class="severity-low">LOW</span></td>
+    </tr>
+    <tr>
+        <td>Missing GP Details</td>
+        <td>No GP information on file</td>
+        <td><span class="severity-low">LOW</span></td>
+    </tr>
+    <tr>
+        <td>Missing Guardian ID</td>
+        <td>Under-18 without guardian ID</td>
+        <td><span class="severity-medium">MEDIUM</span></td>
+    </tr>
+</table>
+
+<h3>6. Medication Alerts</h3>
+<p>Drug interactions and contraindications</p>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Description</th>
+        <th>Severity</th>
+    </tr>
+    <tr>
+        <td>Drug Interaction</td>
+        <td>Known drug interaction risk</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+    <tr>
+        <td>Allergy Conflict</td>
+        <td>Prescribed drug patient is allergic to</td>
+        <td><span class="severity-critical">CRITICAL</span></td>
+    </tr>
+    <tr>
+        <td>Contraindication</td>
+        <td>Drug contraindicated for condition</td>
+        <td><span class="severity-high">HIGH</span></td>
+    </tr>
+</table>
+
+<hr class="page-break">
+
+<h2>Understanding Severity Levels</h2>
+
+<table>
+    <tr>
+        <th>Level</th>
+        <th>Colour</th>
+        <th>When to Use</th>
+    </tr>
+    <tr>
+        <td><span class="severity-critical">CRITICAL</span></td>
+        <td>Red</td>
+        <td>Life-threatening risks (allergies, DNR, suicide risk)</td>
+    </tr>
+    <tr>
+        <td><span class="severity-high">HIGH</span></td>
+        <td>Orange</td>
+        <td>Significant clinical/safety risks</td>
+    </tr>
+    <tr>
+        <td><span class="severity-medium">MEDIUM</span></td>
+        <td>Blue</td>
+        <td>Important information for care planning</td>
+    </tr>
+    <tr>
+        <td><span class="severity-low">LOW</span></td>
+        <td>Grey</td>
+        <td>Administrative issues, non-urgent</td>
+    </tr>
+    <tr>
+        <td><span class="severity-info">INFO</span></td>
+        <td>Light Blue</td>
+        <td>General information only</td>
+    </tr>
+</table>
+
+<hr>
+
+<h2>Managing Existing Alerts</h2>
+
+<h3>To Edit an Alert:</h3>
+<ol>
+    <li>Go to patient's profile</li>
+    <li>Click "Manage Alerts"</li>
+    <li>Find the alert in the list</li>
+    <li>Click the <strong>Edit</strong> (pencil) icon</li>
+    <li>Make changes and save</li>
+</ol>
+
+<h3>To Deactivate an Alert:</h3>
+<ol>
+    <li>Go to patient's alerts list</li>
+    <li>Click the <strong>Toggle</strong> button on the alert</li>
+    <li>Alert becomes inactive (hidden from patient profile)</li>
+</ol>
+
+<div class="tip">
+    <strong>Tip:</strong> Don't delete alerts - deactivate them instead. This keeps a record for audit purposes.
+</div>
+
+<h3>To Reactivate an Alert:</h3>
+<ol>
+    <li>Go to patient's alerts list</li>
+    <li>Filter by "Inactive" status</li>
+    <li>Click <strong>Toggle</strong> to reactivate</li>
+</ol>
+
+<hr>
+
+<h2>Quick Reference Checklist</h2>
+
+<div class="checklist">
+    <div class="checklist-title">ADD PATIENT ALERT - CHECKLIST</div>
+    <p>
+    <strong>Required Information:</strong><br>
+    &#9744; Alert Type (Clinical, Safeguarding, etc.)<br>
+    &#9744; Category/Code (Drug Allergy, Fall Risk, etc.)<br>
+    &#9744; Description (full details)<br>
+    <br>
+    <strong>Optional but Recommended:</strong><br>
+    &#9744; Severity (if different from default)<br>
+    &#9744; Custom Title<br>
+    &#9744; Review Date<br>
+    <br>
+    <strong>For Sensitive Information:</strong><br>
+    &#9744; Tick "Restricted" for safeguarding alerts<br>
+    </p>
+</div>
+
+<hr>
+
+<h2>Restricted Alerts</h2>
+
+<div class="warning">
+    <strong>What are Restricted Alerts?</strong><br>
+    Restricted alerts are only visible to <strong>doctors and administrators</strong>. Nurses and other staff cannot see them.
+</div>
+
+<p>Use restricted alerts for:</p>
+<ul>
+    <li>Safeguarding concerns (child/adult protection)</li>
+    <li>Domestic abuse situations</li>
+    <li>Self-harm or suicide risk</li>
+    <li>Sensitive mental health information</li>
+</ul>
+
+<p>These alert types are <strong>automatically marked as restricted</strong>:</p>
+<ul>
+    <li>Child Safeguarding</li>
+    <li>Adult Safeguarding</li>
+    <li>Domestic Abuse</li>
+    <li>Self-Harm Risk</li>
+    <li>Suicide Risk</li>
+</ul>
+
+<hr>
+
+<h2>Common Questions (FAQ)</h2>
+
+<h3>Q: Can patients see their alerts?</h3>
+<p><strong>A:</strong> No. Patients cannot see any alerts on their own records.</p>
+
+<h3>Q: How do I know if a patient has alerts?</h3>
+<p><strong>A:</strong> Coloured badges appear at the top of the patient's profile. Critical alerts show in red.</p>
+
+<h3>Q: Can nurses add alerts?</h3>
+<p><strong>A:</strong> Yes, but only non-restricted alerts (communication, admin types). They cannot add safeguarding or restricted behaviour alerts.</p>
+
+<h3>Q: Do alerts expire automatically?</h3>
+<p><strong>A:</strong> Only if you set a review date. Otherwise, alerts remain active until manually deactivated.</p>
+
+<h3>Q: Should I delete old alerts?</h3>
+<p><strong>A:</strong> No. Deactivate them instead. This keeps an audit trail for medicolegal purposes.</p>
+
+<h3>Q: What happens when I create a critical alert?</h3>
+<p><strong>A:</strong> The system may send an email notification to designated staff (if configured by admin).</p>
+
+<h3>Q: Can I see all alerts across all patients?</h3>
+<p><strong>A:</strong> Yes. Go to the main "Alerts" page in the sidebar to see system-wide alerts.</p>
+
+<h3>Q: How do I add an allergy alert?</h3>
+<p><strong>A:</strong> Select Type: "Clinical" → Category: "Drug Allergy" → Enter the specific drug in the description.</p>
+
+<hr>
+
+<h2>Example Alert Descriptions</h2>
+
+<h3>Drug Allergy Example:</h3>
+<div style="background: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; margin: 10px 0;">
+    <strong>Type:</strong> Clinical<br>
+    <strong>Code:</strong> Drug Allergy<br>
+    <strong>Title:</strong> Penicillin Allergy<br>
+    <strong>Description:</strong> Patient has confirmed allergy to penicillin and all penicillin-based antibiotics. Previous reaction: anaphylaxis requiring hospitalisation (2019). Avoid all beta-lactam antibiotics. Alternative: macrolides or quinolones.
+</div>
+
+<h3>Communication Need Example:</h3>
+<div style="background: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; margin: 10px 0;">
+    <strong>Type:</strong> Communication<br>
+    <strong>Code:</strong> Interpreter Required<br>
+    <strong>Title:</strong> Urdu Interpreter Needed<br>
+    <strong>Description:</strong> Patient speaks limited English. Primary language is Urdu. Please arrange interpreter for all appointments. Family member can assist in emergencies but professional interpreter preferred for clinical discussions.
+</div>
+
+<h3>Fall Risk Example:</h3>
+<div style="background: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; margin: 10px 0;">
+    <strong>Type:</strong> Clinical<br>
+    <strong>Code:</strong> Fall Risk<br>
+    <strong>Title:</strong> High Fall Risk<br>
+    <strong>Description:</strong> Patient has history of multiple falls (3 in past 6 months). Uses walking frame. Requires assistance when mobilising. Ensure safe environment and supervision during appointments.
+</div>
+
+<hr>
+
+<h2>Need Help?</h2>
+
+<p>If you encounter any issues or have questions, please contact your system administrator or IT support.</p>
+
+<br><br>
+<p style="text-align: center; color: #7f8c8d; font-size: 10pt;">
+    <em>ThanksDoc EPR System - Patient Alerts Guide</em><br>
+    Document Version 1.0
+</p>
+
+</body>
+</html>

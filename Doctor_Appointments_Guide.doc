@@ -1,0 +1,560 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Doctor's Guide: Appointments</title>
+<style>
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; margin: 40px; }
+    h1 { color: #2c3e50; font-size: 24pt; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+    h2 { color: #2980b9; font-size: 16pt; margin-top: 25px; }
+    h3 { color: #34495e; font-size: 13pt; margin-top: 20px; }
+    table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+    th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: left; }
+    th { background-color: #3498db; color: white; font-weight: bold; }
+    tr:nth-child(even) { background-color: #ecf0f1; }
+    .required { color: #e74c3c; font-weight: bold; }
+    .optional { color: #27ae60; font-style: italic; }
+    .note { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 15px 0; }
+    .tip { background-color: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 15px 0; }
+    .warning { background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 15px 0; }
+    .info { background-color: #d1ecf1; border-left: 4px solid #17a2b8; padding: 10px 15px; margin: 15px 0; }
+    .checklist { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; margin: 20px 0; font-family: Consolas, monospace; }
+    .checklist-title { font-weight: bold; text-align: center; margin-bottom: 15px; font-size: 14pt; }
+    ul { margin: 10px 0; }
+    li { margin: 5px 0; }
+    .page-break { page-break-before: always; }
+    .status-pending { background-color: #ffc107; color: black; padding: 3px 8px; border-radius: 3px; }
+    .status-confirmed { background-color: #17a2b8; color: white; padding: 3px 8px; border-radius: 3px; }
+    .status-completed { background-color: #28a745; color: white; padding: 3px 8px; border-radius: 3px; }
+    .status-cancelled { background-color: #dc3545; color: white; padding: 3px 8px; border-radius: 3px; }
+    .flow-box { background-color: #e8f4fd; border: 1px solid #3498db; border-radius: 5px; padding: 15px; margin: 15px 0; }
+</style>
+</head>
+<body>
+
+<h1>Doctor's Guide: Appointments</h1>
+
+<p><strong>ThanksDoc EPR System</strong></p>
+
+<hr>
+
+<h2>Part 1: Viewing Your Appointments</h2>
+
+<h3>Where to Find Appointments</h3>
+<ul>
+    <li>Click <strong>"Appointments"</strong> in the left sidebar</li>
+    <li>Or click <strong>"Calendar"</strong> for a visual view</li>
+</ul>
+
+<h3>Appointment List View</h3>
+<p>Shows all your appointments in a table with:</p>
+<ul>
+    <li>Patient name</li>
+    <li>Date and time</li>
+    <li>Type (Consultation, Follow-up, etc.)</li>
+    <li>Status (colour-coded badge)</li>
+    <li>Actions (buttons to manage)</li>
+</ul>
+
+<h3>Calendar View</h3>
+<p>Shows appointments in a visual calendar format:</p>
+<ul>
+    <li>Day, week, or month view</li>
+    <li>Colour-coded by status</li>
+    <li>Click on any appointment to see details</li>
+</ul>
+
+<hr>
+
+<h2>Part 2: Appointment Statuses</h2>
+
+<table>
+    <tr>
+        <th>Status</th>
+        <th>Colour</th>
+        <th>Meaning</th>
+    </tr>
+    <tr>
+        <td><span class="status-pending">Pending</span></td>
+        <td>Yellow</td>
+        <td>New appointment, awaiting confirmation</td>
+    </tr>
+    <tr>
+        <td><span class="status-confirmed">Confirmed</span></td>
+        <td>Blue/Teal</td>
+        <td>Appointment confirmed and scheduled</td>
+    </tr>
+    <tr>
+        <td><span class="status-completed">Completed</span></td>
+        <td>Green</td>
+        <td>Appointment finished</td>
+    </tr>
+    <tr>
+        <td><span class="status-cancelled">Cancelled</span></td>
+        <td>Red</td>
+        <td>Appointment cancelled</td>
+    </tr>
+</table>
+
+<h3>Status Flow</h3>
+<div class="flow-box">
+    <p style="text-align: center;">
+        <strong>Pending</strong> → <strong>Confirmed</strong> → <strong>Completed</strong><br><br>
+        At any point before completion: Can be <strong>Cancelled</strong> or <strong>Rescheduled</strong>
+    </p>
+</div>
+
+<hr>
+
+<h2>Part 3: How Appointments Are Created</h2>
+
+<h3>Method 1: Patient Books Online (Public Booking)</h3>
+<p>Patients can book appointments using your <strong>personal booking link</strong>.</p>
+
+<div class="info">
+    <strong>Your Booking Link:</strong><br>
+    Find your unique booking link on your dashboard. Share it with patients so they can book online 24/7.
+</div>
+
+<p><strong>When a patient books online:</strong></p>
+<ol>
+    <li>They select a service (consultation type)</li>
+    <li>They choose a date and time from your available slots</li>
+    <li>They enter their details (name, email, phone)</li>
+    <li>They review and confirm</li>
+    <li>You receive a notification of the new booking</li>
+    <li>Appointment appears in your list as <span class="status-pending">Pending</span></li>
+</ol>
+
+<h3>Method 2: You Create an Appointment</h3>
+<ol>
+    <li>Click <strong>"Appointments"</strong> in the sidebar</li>
+    <li>Click <strong>"Add Appointment"</strong> button</li>
+    <li>Fill in the form (see details below)</li>
+    <li>Click <strong>"Create Appointment"</strong></li>
+</ol>
+
+<hr>
+
+<h2>Part 4: Creating an Appointment (Doctor)</h2>
+
+<h3>Step 1: Open the Form</h3>
+<ul>
+    <li>Go to Appointments → Add Appointment</li>
+</ul>
+
+<h3>Step 2: Fill in Details</h3>
+
+<table>
+    <tr>
+        <th>Field</th>
+        <th>What to Enter</th>
+        <th>Required?</th>
+    </tr>
+    <tr>
+        <td><strong>Patient</strong></td>
+        <td>Search and select patient from list</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><strong>Date</strong></td>
+        <td>Select appointment date</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><strong>Time</strong></td>
+        <td>Select appointment time</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><strong>Type</strong></td>
+        <td>Consultation, Follow-up, Emergency, Checkup, Surgery</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><strong>Reason</strong></td>
+        <td>Why the patient is coming</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><strong>Symptoms</strong></td>
+        <td>Patient-reported symptoms</td>
+        <td><span class="optional">Optional</span></td>
+    </tr>
+    <tr>
+        <td><strong>Online Appointment</strong></td>
+        <td>Tick if video consultation</td>
+        <td><span class="optional">Optional</span></td>
+    </tr>
+    <tr>
+        <td><strong>Meeting Link</strong></td>
+        <td>Video call URL (Zoom, Teams, etc.)</td>
+        <td>Required if online</td>
+    </tr>
+    <tr>
+        <td><strong>Fee</strong></td>
+        <td>Consultation fee</td>
+        <td><span class="optional">Optional</span></td>
+    </tr>
+    <tr>
+        <td><strong>Notes</strong></td>
+        <td>Any additional notes</td>
+        <td><span class="optional">Optional</span></td>
+    </tr>
+</table>
+
+<h3>Step 3: Save</h3>
+<ul>
+    <li>Click <strong>"Create Appointment"</strong></li>
+    <li>Patient receives email confirmation</li>
+</ul>
+
+<hr>
+
+<h2>Part 5: Appointment Types</h2>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>When to Use</th>
+    </tr>
+    <tr>
+        <td><strong>Consultation</strong></td>
+        <td>Standard appointment, new problem</td>
+    </tr>
+    <tr>
+        <td><strong>Follow-up</strong></td>
+        <td>Review of previous consultation</td>
+    </tr>
+    <tr>
+        <td><strong>Emergency</strong></td>
+        <td>Urgent/emergency appointment</td>
+    </tr>
+    <tr>
+        <td><strong>Checkup</strong></td>
+        <td>Routine health check</td>
+    </tr>
+    <tr>
+        <td><strong>Surgery</strong></td>
+        <td>Minor procedure or surgery</td>
+    </tr>
+</table>
+
+<hr class="page-break">
+
+<h2>Part 6: Managing Appointments</h2>
+
+<h3>Action: Confirm an Appointment</h3>
+<p><strong>When:</strong> New booking arrives as "Pending"</p>
+<ol>
+    <li>View the appointment details</li>
+    <li>Check the date/time works for you</li>
+    <li>Click <strong>"Confirm"</strong> button</li>
+    <li>Patient receives confirmation email</li>
+</ol>
+
+<div class="tip">
+    <strong>Tip:</strong> Review pending appointments daily to avoid delays in patient communication.
+</div>
+
+<h3>Action: Cancel an Appointment</h3>
+<p><strong>When:</strong> Appointment cannot proceed</p>
+<ol>
+    <li>View the appointment</li>
+    <li>Click <strong>"Cancel"</strong> button</li>
+    <li>Enter a reason (optional but recommended)</li>
+    <li>Confirm cancellation</li>
+    <li>Patient receives cancellation email</li>
+</ol>
+
+<div class="warning">
+    <strong>Warning:</strong> Cancelled appointments cannot be reopened. If needed again, create a new appointment.
+</div>
+
+<h3>Action: Reschedule an Appointment</h3>
+<p><strong>When:</strong> Need to change date or time</p>
+<ol>
+    <li>View the appointment</li>
+    <li>Click <strong>"Reschedule"</strong> button</li>
+    <li>Select new date and time</li>
+    <li>Enter reason for change</li>
+    <li>Click Save</li>
+    <li>Patient receives reschedule notification with new details</li>
+</ol>
+
+<h3>Action: Complete an Appointment</h3>
+<p><strong>When:</strong> Appointment finished</p>
+<ol>
+    <li>View the appointment</li>
+    <li>Click <strong>"Complete"</strong> button</li>
+    <li>Optionally create a medical record (recommended)</li>
+</ol>
+
+<div class="note">
+    <strong>Best Practice:</strong> Always create a medical record after completing an appointment to maintain proper documentation.
+</div>
+
+<h3>Action: Check-In Patient</h3>
+<p><strong>When:</strong> Patient arrives for appointment</p>
+<ol>
+    <li>Find today's appointment</li>
+    <li>Click <strong>"Check In"</strong> button</li>
+    <li>System records arrival time</li>
+</ol>
+
+<h3>Action: Check-Out Patient</h3>
+<p><strong>When:</strong> Appointment finished</p>
+<ol>
+    <li>Click <strong>"Check Out"</strong> button</li>
+    <li>System records end time and calculates duration</li>
+    <li>Appointment marked as completed</li>
+</ol>
+
+<h3>Action: Create Medical Record from Appointment</h3>
+<p><strong>When:</strong> After consultation is complete</p>
+<ol>
+    <li>View the appointment</li>
+    <li>Click <strong>"Create Medical Record"</strong></li>
+    <li>Form pre-fills with appointment data</li>
+    <li>Add clinical notes, diagnosis, plan</li>
+    <li>Save the medical record</li>
+</ol>
+
+<hr>
+
+<h2>Part 7: Online/Video Appointments</h2>
+
+<h3>Setting Up an Online Appointment</h3>
+<ol>
+    <li>When creating appointment, tick <strong>"Online Appointment"</strong></li>
+    <li>Select meeting platform (Zoom, Google Meet, Teams, etc.)</li>
+    <li>Enter the meeting link URL</li>
+    <li>Save appointment</li>
+</ol>
+
+<h3>Supported Platforms</h3>
+<ul>
+    <li>Zoom</li>
+    <li>Google Meet</li>
+    <li>Microsoft Teams</li>
+    <li>Whereby</li>
+    <li>Custom (any video link)</li>
+</ul>
+
+<div class="tip">
+    <strong>Tip:</strong> The meeting link is included in the patient's confirmation email automatically.
+</div>
+
+<hr>
+
+<h2>Part 8: Your Booking Link</h2>
+
+<h3>What is a Booking Link?</h3>
+<p>A unique URL that patients can use to book appointments with you online, 24/7.</p>
+
+<h3>Where to Find It</h3>
+<ul>
+    <li>Go to your <strong>Dashboard</strong></li>
+    <li>Look for <strong>"Your Booking Link"</strong> section</li>
+    <li>Click <strong>"Copy Link"</strong> to copy it</li>
+</ul>
+
+<h3>How to Share It</h3>
+<ul>
+    <li>Email it to patients</li>
+    <li>Add to your email signature</li>
+    <li>Print on business cards</li>
+    <li>Add to your website</li>
+    <li>Share on social media</li>
+</ul>
+
+<h3>What Patients See</h3>
+<p>When patients visit your booking link:</p>
+<ol>
+    <li>Your available services</li>
+    <li>Your available dates and times</li>
+    <li>Form to enter their details</li>
+    <li>Confirmation page</li>
+</ol>
+
+<hr>
+
+<h2>Part 9: Managing Your Availability</h2>
+
+<h3>Setting Working Hours</h3>
+<ol>
+    <li>Go to <strong>"My Schedule"</strong> in the sidebar</li>
+    <li>Set your available hours for each day</li>
+    <li>Click Save</li>
+</ol>
+
+<h3>Blocking Time Off</h3>
+<p>For holidays, training, or personal time:</p>
+<ol>
+    <li>Go to <strong>"My Schedule"</strong></li>
+    <li>Click <strong>"Add Blocked Date"</strong></li>
+    <li>Select date(s) you're unavailable</li>
+    <li>Enter reason (optional)</li>
+    <li>Save</li>
+</ol>
+
+<div class="info">
+    <strong>Note:</strong> Blocked dates won't show as available in your public booking link.
+</div>
+
+<hr class="page-break">
+
+<h2>Part 10: Email Notifications</h2>
+
+<h3>Emails Sent Automatically</h3>
+
+<table>
+    <tr>
+        <th>Event</th>
+        <th>Who Receives</th>
+    </tr>
+    <tr>
+        <td>New appointment created</td>
+        <td>Patient + Doctor</td>
+    </tr>
+    <tr>
+        <td>Appointment confirmed</td>
+        <td>Patient</td>
+    </tr>
+    <tr>
+        <td>Appointment cancelled</td>
+        <td>Patient + Doctor</td>
+    </tr>
+    <tr>
+        <td>Appointment rescheduled</td>
+        <td>Patient + Doctor</td>
+    </tr>
+    <tr>
+        <td>Appointment completed</td>
+        <td>Patient</td>
+    </tr>
+    <tr>
+        <td>Appointment reminder</td>
+        <td>Patient (before appointment)</td>
+    </tr>
+</table>
+
+<hr>
+
+<h2>Quick Reference Checklist</h2>
+
+<div class="checklist">
+    <div class="checklist-title">DAILY APPOINTMENT WORKFLOW</div>
+    <p>
+    <strong>Morning:</strong><br>
+    &#9744; Review today's appointments<br>
+    &#9744; Confirm any pending appointments<br>
+    &#9744; Check for cancellations/reschedules<br>
+    <br>
+    <strong>During Appointments:</strong><br>
+    &#9744; Check-in patient when they arrive<br>
+    &#9744; Conduct consultation<br>
+    &#9744; Check-out patient when finished<br>
+    &#9744; Create medical record<br>
+    <br>
+    <strong>End of Day:</strong><br>
+    &#9744; Mark remaining appointments as completed<br>
+    &#9744; Review tomorrow's schedule<br>
+    &#9744; Update any blocked dates if needed<br>
+    </p>
+</div>
+
+<hr>
+
+<h2>Common Questions (FAQ)</h2>
+
+<h3>Q: How do I know when I have a new booking?</h3>
+<p><strong>A:</strong> You'll receive an email notification. New bookings also appear on your dashboard and in the appointments list as "Pending".</p>
+
+<h3>Q: Can patients cancel their own appointments?</h3>
+<p><strong>A:</strong> Yes, patients can cancel through the patient portal. You'll be notified.</p>
+
+<h3>Q: What if two patients book the same time?</h3>
+<p><strong>A:</strong> The system prevents double-booking. Once a slot is taken, it's no longer available.</p>
+
+<h3>Q: How do I change my available hours?</h3>
+<p><strong>A:</strong> Go to "My Schedule" in the sidebar and update your working hours for each day.</p>
+
+<h3>Q: Can I see appointments from other doctors?</h3>
+<p><strong>A:</strong> No, you only see your own appointments. Admins can see all appointments.</p>
+
+<h3>Q: How do I add a fee to an appointment?</h3>
+<p><strong>A:</strong> Enter the fee amount when creating/editing the appointment. Or set default fees in your booking services.</p>
+
+<h3>Q: What happens if I don't confirm a pending appointment?</h3>
+<p><strong>A:</strong> It remains pending. The patient has received a booking confirmation but no official confirmation from you.</p>
+
+<h3>Q: Can I edit an appointment after it's completed?</h3>
+<p><strong>A:</strong> No, completed appointments are locked. You can still edit the associated medical record.</p>
+
+<h3>Q: How far in advance can patients book?</h3>
+<p><strong>A:</strong> This is configured in the booking settings. Ask your administrator for the current limit.</p>
+
+<h3>Q: What's the difference between "Complete" and "Check Out"?</h3>
+<p><strong>A:</strong> Check-out records the end time and automatically marks as complete. "Complete" just changes the status without time tracking.</p>
+
+<hr>
+
+<h2>Appointment Actions Summary</h2>
+
+<table>
+    <tr>
+        <th>Action</th>
+        <th>When to Use</th>
+        <th>What Happens</th>
+    </tr>
+    <tr>
+        <td><strong>Confirm</strong></td>
+        <td>New pending booking</td>
+        <td>Status → Confirmed, patient notified</td>
+    </tr>
+    <tr>
+        <td><strong>Cancel</strong></td>
+        <td>Cannot proceed</td>
+        <td>Status → Cancelled, patient notified</td>
+    </tr>
+    <tr>
+        <td><strong>Reschedule</strong></td>
+        <td>Change date/time</td>
+        <td>New date/time saved, patient notified</td>
+    </tr>
+    <tr>
+        <td><strong>Check In</strong></td>
+        <td>Patient arrives</td>
+        <td>Arrival time recorded</td>
+    </tr>
+    <tr>
+        <td><strong>Check Out</strong></td>
+        <td>Appointment ends</td>
+        <td>End time recorded, status → Completed</td>
+    </tr>
+    <tr>
+        <td><strong>Complete</strong></td>
+        <td>Finish appointment</td>
+        <td>Status → Completed</td>
+    </tr>
+    <tr>
+        <td><strong>Create Medical Record</strong></td>
+        <td>Document consultation</td>
+        <td>Opens pre-filled medical record form</td>
+    </tr>
+</table>
+
+<hr>
+
+<h2>Need Help?</h2>
+
+<p>If you encounter any issues or have questions, please contact your system administrator or IT support.</p>
+
+<br><br>
+<p style="text-align: center; color: #7f8c8d; font-size: 10pt;">
+    <em>ThanksDoc EPR System - Appointments Guide</em><br>
+    Document Version 1.0
+</p>
+
+</body>
+</html>

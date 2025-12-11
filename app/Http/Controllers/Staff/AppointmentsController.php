@@ -420,6 +420,25 @@ class AppointmentsController extends Controller
             'meeting_platform' => $request->meeting_platform,
         ]);
 
+        // If this is an online appointment without a meeting link, auto-generate Whereby room
+        if ($appointment->is_online && empty($appointment->meeting_link)) {
+            try {
+                $wherebyService = app(\App\Services\WherebyService::class);
+                if ($wherebyService->isEnabled()) {
+                    $wherebyService->createMeetingForAppointment($appointment);
+                    \Log::info('Whereby meeting created for staff appointment', [
+                        'appointment_id' => $appointment->id,
+                        'meeting_link' => $appointment->meeting_link,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to create Whereby meeting for staff appointment', [
+                    'appointment_id' => $appointment->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         return redirect()->route('staff.appointments.index')
             ->with('success', 'Appointment created successfully.');
     }

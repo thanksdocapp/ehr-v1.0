@@ -107,25 +107,68 @@
                         @if($appointment->meeting_link)
                             <div class="row mb-3">
                                 <div class="col-12">
-                                    <label class="form-label text-muted">Meeting Link</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" 
-                                               value="{{ $appointment->meeting_link }}" 
-                                               readonly id="meeting_link_display_{{ $appointment->id }}">
-                                        <button class="btn btn-outline-secondary" 
-                                                type="button" 
-                                                onclick="copyMeetingLink({{ $appointment->id }})"
-                                                title="Copy Meeting Link">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
-                                        @if($appointment->canJoinMeeting())
-                                            <a href="{{ $appointment->meeting_link }}" 
-                                               target="_blank" 
-                                               class="btn btn-success">
-                                                <i class="fas fa-video me-1"></i>Join Meeting
-                                            </a>
-                                        @endif
-                                    </div>
+                                    @if($appointment->whereby_host_url)
+                                        {{-- Whereby meeting - show both host and patient links --}}
+                                        <label class="form-label text-muted"><i class="fas fa-crown me-1"></i>Host Meeting Link</label>
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control"
+                                                   value="{{ $appointment->whereby_host_url }}"
+                                                   readonly id="host_link_display_{{ $appointment->id }}">
+                                            <button class="btn btn-outline-secondary"
+                                                    type="button"
+                                                    onclick="copyToClipboard('host_link_display_{{ $appointment->id }}')"
+                                                    title="Copy Host Link">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                            @if($appointment->canJoinMeeting())
+                                                <a href="{{ $appointment->whereby_host_url }}"
+                                                   target="_blank"
+                                                   class="btn btn-success">
+                                                    <i class="fas fa-video me-1"></i>Start Meeting (as Host)
+                                                </a>
+                                            @endif
+                                        </div>
+                                        <small class="text-info mb-3 d-block">
+                                            <i class="fas fa-info-circle me-1"></i>Use this link to join as meeting host
+                                        </small>
+
+                                        <label class="form-label text-muted"><i class="fas fa-user me-1"></i>Patient Meeting Link</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control"
+                                                   value="{{ $appointment->meeting_link }}"
+                                                   readonly id="meeting_link_display_{{ $appointment->id }}">
+                                            <button class="btn btn-outline-secondary"
+                                                    type="button"
+                                                    onclick="copyMeetingLink({{ $appointment->id }})"
+                                                    title="Copy Patient Link">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted mt-1 d-block">
+                                            <i class="fas fa-share-alt me-1"></i>Share this link with the patient
+                                        </small>
+                                    @else
+                                        {{-- Non-Whereby meeting --}}
+                                        <label class="form-label text-muted">Meeting Link</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control"
+                                                   value="{{ $appointment->meeting_link }}"
+                                                   readonly id="meeting_link_display_{{ $appointment->id }}">
+                                            <button class="btn btn-outline-secondary"
+                                                    type="button"
+                                                    onclick="copyMeetingLink({{ $appointment->id }})"
+                                                    title="Copy Meeting Link">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                            @if($appointment->canJoinMeeting())
+                                                <a href="{{ $appointment->meeting_link }}"
+                                                   target="_blank"
+                                                   class="btn btn-success">
+                                                    <i class="fas fa-video me-1"></i>Join Meeting
+                                                </a>
+                                            @endif
+                                        </div>
+                                    @endif
                                     @if($appointment->canJoinMeeting())
                                         <small class="text-success mt-1 d-block">
                                             <i class="fas fa-check-circle me-1"></i>Meeting is available now
@@ -631,13 +674,17 @@ function checkOutPatient(appointmentId) {
 }
 
 function copyMeetingLink(appointmentId) {
-    const meetingLink = document.getElementById('meeting_link_display_' + appointmentId);
-    if (!meetingLink) return;
-    
-    meetingLink.select();
-    meetingLink.setSelectionRange(0, 99999); // For mobile devices
-    
-    navigator.clipboard.writeText(meetingLink.value).then(function() {
+    copyToClipboard('meeting_link_display_' + appointmentId);
+}
+
+function copyToClipboard(elementId) {
+    const input = document.getElementById(elementId);
+    if (!input) return;
+
+    input.select();
+    input.setSelectionRange(0, 99999); // For mobile devices
+
+    navigator.clipboard.writeText(input.value).then(function() {
         const btn = event.target.closest('button');
         if (btn) {
             const originalHtml = btn.innerHTML;
@@ -650,6 +697,9 @@ function copyMeetingLink(appointmentId) {
                 btn.classList.add('btn-outline-secondary');
             }, 2000);
         }
+    }).catch(function(err) {
+        document.execCommand('copy');
+        alert('Link copied to clipboard!');
     });
 }
 </script>

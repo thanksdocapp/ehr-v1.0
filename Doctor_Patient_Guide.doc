@@ -1,0 +1,275 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Doctor's Guide: How to Add a New Patient</title>
+<style>
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; margin: 40px; }
+    h1 { color: #2c3e50; font-size: 24pt; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+    h2 { color: #2980b9; font-size: 16pt; margin-top: 25px; }
+    h3 { color: #34495e; font-size: 13pt; margin-top: 20px; }
+    table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+    th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: left; }
+    th { background-color: #3498db; color: white; font-weight: bold; }
+    tr:nth-child(even) { background-color: #ecf0f1; }
+    .required { color: #e74c3c; font-weight: bold; }
+    .note { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 15px 0; }
+    .tip { background-color: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 15px 0; }
+    .warning { background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 15px 0; }
+    .checklist { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; margin: 20px 0; font-family: Consolas, monospace; }
+    .checklist-title { font-weight: bold; text-align: center; margin-bottom: 15px; font-size: 14pt; }
+    ul { margin: 10px 0; }
+    li { margin: 5px 0; }
+    .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>Doctor's Guide: How to Add a New Patient</h1>
+
+<p><strong>ThanksDoc EPR System</strong></p>
+
+<hr>
+
+<h2>Step 1: Go to Patients Page</h2>
+
+<ul>
+    <li>Click <strong>"Patients"</strong> in the left sidebar menu</li>
+    <li>Click the <strong>"Add Patient"</strong> button (top right corner)</li>
+</ul>
+
+<hr>
+
+<h2>Step 2: Fill in Patient Details</h2>
+
+<h3>Personal Information <span class="required">(Required)</span></h3>
+
+<table>
+    <tr>
+        <th>Field</th>
+        <th>What to Enter</th>
+    </tr>
+    <tr>
+        <td><strong>First Name</strong></td>
+        <td>Patient's first name</td>
+    </tr>
+    <tr>
+        <td><strong>Last Name</strong></td>
+        <td>Patient's surname</td>
+    </tr>
+    <tr>
+        <td><strong>Gender</strong></td>
+        <td>Select: Male, Female, or Other</td>
+    </tr>
+    <tr>
+        <td><strong>Date of Birth</strong></td>
+        <td>Select date (age calculates automatically)</td>
+    </tr>
+</table>
+
+<div class="warning">
+    <strong>Under 18?</strong> You must upload a Guardian/Parent ID document
+</div>
+
+<h3>Contact Details <span class="required">(Required)</span></h3>
+
+<table>
+    <tr>
+        <th>Field</th>
+        <th>What to Enter</th>
+    </tr>
+    <tr>
+        <td><strong>Email</strong></td>
+        <td>Patient's email address</td>
+    </tr>
+    <tr>
+        <td><strong>Phone</strong></td>
+        <td>Patient's phone number</td>
+    </tr>
+    <tr>
+        <td><strong>Emergency Contact</strong></td>
+        <td>Name of emergency contact person</td>
+    </tr>
+    <tr>
+        <td><strong>Emergency Phone</strong></td>
+        <td>Emergency contact's phone number</td>
+    </tr>
+</table>
+
+<h3>Address (Optional)</h3>
+<ul>
+    <li>Address Line 1 and 2</li>
+    <li>City</li>
+    <li>County</li>
+    <li>Postcode</li>
+</ul>
+
+<h3>Documents (Optional)</h3>
+<table>
+    <tr>
+        <th>Document</th>
+        <th>Details</th>
+    </tr>
+    <tr>
+        <td><strong>Patient ID Document</strong></td>
+        <td>Upload patient's ID (PDF, JPG, PNG - max 5MB)</td>
+    </tr>
+    <tr>
+        <td><strong>Guardian ID Document</strong></td>
+        <td><span class="required">REQUIRED if patient is under 18</span></td>
+    </tr>
+</table>
+
+<hr>
+
+<h2>Step 3: Select Clinic</h2>
+
+<ul>
+    <li>Choose which clinic(s) this patient belongs to</li>
+    <li>If you don't select any, the system uses your assigned clinic automatically</li>
+</ul>
+
+<div class="tip">
+    <strong>Tip:</strong> The first clinic you select becomes the primary clinic for the patient.
+</div>
+
+<hr>
+
+<h2>Step 4: GP Details (Optional)</h2>
+
+<ul>
+    <li>Tick <strong>"Share with GP"</strong> if patient consents to share their information</li>
+</ul>
+
+<p>If ticked, you must fill in:</p>
+
+<table>
+    <tr>
+        <th>Field</th>
+        <th>What to Enter</th>
+    </tr>
+    <tr>
+        <td>GP Name</td>
+        <td>Name of the patient's GP</td>
+    </tr>
+    <tr>
+        <td>GP Email</td>
+        <td>GP's email address</td>
+    </tr>
+    <tr>
+        <td>GP Phone</td>
+        <td>GP's phone number</td>
+    </tr>
+    <tr>
+        <td>GP Address</td>
+        <td>GP practice address</td>
+    </tr>
+</table>
+
+<hr>
+
+<h2>Step 5: Medical Information (Optional)</h2>
+
+<table>
+    <tr>
+        <th>Field</th>
+        <th>What to Enter</th>
+    </tr>
+    <tr>
+        <td><strong>Insurance Provider</strong></td>
+        <td>Name of insurance company (if applicable)</td>
+    </tr>
+    <tr>
+        <td><strong>Insurance Number</strong></td>
+        <td>Policy number</td>
+    </tr>
+    <tr>
+        <td><strong>Allergies</strong></td>
+        <td>Click "Add Allergy" for each allergy</td>
+    </tr>
+    <tr>
+        <td><strong>Medical History</strong></td>
+        <td>Any relevant medical notes</td>
+    </tr>
+</table>
+
+<hr>
+
+<h2>Step 6: Save</h2>
+
+<ol>
+    <li>Review all the information you've entered</li>
+    <li>Click the <strong>"Create Patient"</strong> button at the bottom</li>
+    <li>Wait for confirmation message</li>
+</ol>
+
+<div class="tip">
+    <strong>Success!</strong> Patient is created with a unique ID (e.g., P20251234)<br>
+    You'll see: <em>"Patient created successfully"</em>
+</div>
+
+<hr class="page-break">
+
+<h2>Quick Reference Checklist</h2>
+
+<div class="checklist">
+    <div class="checklist-title">ADD NEW PATIENT - CHECKLIST</div>
+    <p>
+    &#9744; First Name<br>
+    &#9744; Last Name<br>
+    &#9744; Gender<br>
+    &#9744; Date of Birth<br>
+    &#9744; Email<br>
+    &#9744; Phone<br>
+    &#9744; Emergency Contact Name<br>
+    &#9744; Emergency Contact Phone<br>
+    <br>
+    <strong>If patient is UNDER 18:</strong><br>
+    &#9744; Guardian ID Document (REQUIRED)<br>
+    <br>
+    <strong>If "Share with GP" is ticked:</strong><br>
+    &#9744; GP Name<br>
+    &#9744; GP Email<br>
+    &#9744; GP Phone<br>
+    &#9744; GP Address
+    </p>
+</div>
+
+<hr>
+
+<h2>Common Questions (FAQ)</h2>
+
+<h3>Q: Where do I find my patients?</h3>
+<p><strong>A:</strong> Click "Patients" in the sidebar. You'll see patients from your clinic(s).</p>
+
+<h3>Q: Can I edit a patient later?</h3>
+<p><strong>A:</strong> Yes. Click on the patient name, then click the "Edit" button.</p>
+
+<h3>Q: What if the email already exists?</h3>
+<p><strong>A:</strong> The system will show an error. Each patient must have a unique email address.</p>
+
+<h3>Q: Why can't I see a patient I created?</h3>
+<p><strong>A:</strong> Check if you're logged into the correct clinic. Patients are filtered by clinic.</p>
+
+<h3>Q: How do I upload documents?</h3>
+<p><strong>A:</strong> Click "Choose File", select your PDF, JPG, or PNG file (max 5MB). The file uploads automatically when you save the patient.</p>
+
+<h3>Q: What formats are accepted for documents?</h3>
+<p><strong>A:</strong> PDF, JPG, JPEG, and PNG files up to 5MB in size.</p>
+
+<h3>Q: Can I add multiple allergies?</h3>
+<p><strong>A:</strong> Yes. Click the "Add Allergy" button for each allergy you want to add.</p>
+
+<hr>
+
+<h2>Need Help?</h2>
+
+<p>If you encounter any issues or have questions, please contact your system administrator or IT support.</p>
+
+<br><br>
+<p style="text-align: center; color: #7f8c8d; font-size: 10pt;">
+    <em>ThanksDoc EPR System - Doctor's Guide</em><br>
+    Document Version 1.0
+</p>
+
+</body>
+</html>

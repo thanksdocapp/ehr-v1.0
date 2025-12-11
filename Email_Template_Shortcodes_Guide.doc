@@ -1,0 +1,306 @@
+EMAIL TEMPLATE SHORTCODES GUIDE
+================================
+
+This document lists all available shortcodes that can be used in email templates.
+Use shortcodes in the format: {{shortcode_name}}
+
+
+================================================================================
+APPOINTMENT EMAILS
+================================================================================
+Templates: appointment_confirmation, appointment_reminder, appointment_cancellation,
+          appointment_reschedule, appointment_completion
+
+PATIENT INFORMATION
+-------------------
+{{patient_name}}          - Patient's full name
+{{patient_email}}         - Patient's email address
+
+DOCTOR INFORMATION
+------------------
+{{doctor_name}}           - Doctor's name
+{{doctor_specialization}} - Doctor's specialization/specialty
+{{doctor_phone}}          - Doctor's phone number
+{{doctor_email}}          - Doctor's email address
+
+APPOINTMENT DETAILS
+-------------------
+{{appointment_date}}      - Appointment date (e.g., December 12, 2025)
+{{appointment_time}}      - Appointment time (e.g., 9:30 AM)
+{{appointment_type}}      - Type of appointment (e.g., Consultation)
+{{notes}}                 - Appointment notes
+
+DEPARTMENT/CLINIC INFORMATION
+-----------------------------
+{{department}}            - Department/clinic name
+{{department_phone}}      - Department/clinic phone number
+{{department_email}}      - Department/clinic email address
+
+HOSPITAL INFORMATION
+--------------------
+{{hospital_name}}         - Hospital/practice name
+{{hospital_address}}      - Hospital address
+{{hospital_phone}}        - Hospital main phone number
+
+ONLINE CONSULTATION
+-------------------
+{{is_online}}             - Whether this is an online consultation
+{{meeting_link}}          - Video meeting link
+{{meeting_platform}}      - Platform name (Zoom, Google Meet, etc.)
+{{join_meeting_url}}      - URL to join the meeting
+
+ACTION LINKS
+------------
+{{reschedule_url}}        - Link for patient to reschedule
+{{cancel_url}}            - Link for patient to cancel
+
+REMINDER-SPECIFIC
+-----------------
+{{days_before}}           - Number of days before appointment (for reminders)
+
+
+================================================================================
+APPOINTMENT RESCHEDULE EMAILS
+================================================================================
+
+{{old_date}}              - Previous appointment date
+{{old_time}}              - Previous appointment time
+{{new_date}}              - New appointment date
+{{new_time}}              - New appointment time
+{{reschedule_reason}}     - Reason for rescheduling
+
+
+================================================================================
+BILLING/INVOICE EMAILS
+================================================================================
+Templates: billing_notification, payment_reminder
+
+PATIENT INFORMATION
+-------------------
+{{patient_name}}          - Patient's full name
+
+BILLING DETAILS
+---------------
+{{bill_number}}           - Bill number
+{{invoice_number}}        - Invoice number
+{{billing_date}}          - Date bill was created
+{{due_date}}              - Payment due date
+{{total_amount}}          - Total amount due
+{{balance}}               - Outstanding balance
+{{amount_due}}            - Amount currently due
+{{description}}           - Description of services
+{{type}}                  - Billing type (consultation, procedure, etc.)
+{{service_description}}   - Detailed service description
+
+PROVIDER INFORMATION
+--------------------
+{{doctor_name}}           - Doctor's name
+{{department_name}}       - Department name
+
+HOSPITAL/CONTACT
+----------------
+{{hospital_name}}         - Hospital name
+{{hospital_address}}      - Hospital address
+{{hospital_phone}}        - Hospital phone
+{{billing_phone}}         - Billing department phone
+
+ACTION LINKS
+------------
+{{payment_url}}           - Link to pay online
+
+
+================================================================================
+LAB RESULTS/TEST RESULTS EMAILS
+================================================================================
+Template: test_results_ready
+
+{{patient_name}}          - Patient's full name
+{{test_name}}             - Name of the test
+{{test_type}}             - Type of test
+{{test_date}}             - Date test was performed
+{{result_date}}           - Date results became available
+{{doctor_name}}           - Ordering doctor's name
+{{hospital_name}}         - Hospital name
+{{patient_portal_url}}    - Link to view results online
+{{contact_phone}}         - Contact phone number
+
+
+================================================================================
+PATIENT WELCOME EMAILS
+================================================================================
+Template: patient_welcome
+
+{{patient_name}}          - Patient's full name
+{{patient_id}}            - Patient ID number
+{{registration_date}}     - Date of registration
+{{hospital_name}}         - Hospital name
+{{patient_portal_url}}    - Link to patient portal login
+{{contact_email}}         - Contact email address
+{{contact_phone}}         - Contact phone number
+{{services_offered}}      - List of services offered
+
+
+================================================================================
+PRESCRIPTION READY EMAILS
+================================================================================
+Template: prescription_ready
+
+{{patient_name}}          - Patient's full name
+{{prescription_id}}       - Prescription ID
+{{doctor_name}}           - Prescribing doctor's name
+{{ready_date}}            - Date prescription is ready
+{{pickup_instructions}}   - Instructions for pickup
+{{pharmacy_hours}}        - Pharmacy operating hours
+{{hospital_name}}         - Hospital name
+{{pharmacy_phone}}        - Pharmacy phone number
+
+
+================================================================================
+DISCHARGE INSTRUCTIONS EMAILS
+================================================================================
+Template: discharge_instructions
+
+{{patient_name}}          - Patient's full name
+{{discharge_date}}        - Date of discharge
+{{attending_doctor}}      - Attending doctor's name
+{{follow_up_date}}        - Follow-up appointment date
+{{instructions}}          - Care instructions
+{{medications}}           - List of medications
+{{emergency_contact}}     - Emergency contact number
+{{hospital_name}}         - Hospital name
+
+
+================================================================================
+EMERGENCY CONTACT NOTIFICATION EMAILS
+================================================================================
+Template: emergency_contact_notification
+
+{{contact_name}}          - Emergency contact's name
+{{patient_name}}          - Patient's name
+{{emergency_type}}        - Type of emergency
+{{patient_condition}}     - Current patient condition
+{{admission_date}}        - Date of admission
+{{admission_time}}        - Time of admission
+{{department}}            - Department name
+{{room_number}}           - Room number
+{{attending_doctor}}      - Attending doctor's name
+{{visiting_hours}}        - Visiting hours information
+{{parking_info}}          - Parking information
+{{hospital_name}}         - Hospital name
+{{hospital_address}}      - Hospital address
+{{hospital_phone}}        - Hospital phone
+{{nurses_station_phone}}  - Nurses station phone
+{{patient_services_phone}} - Patient services phone
+
+
+================================================================================
+STAFF NOTIFICATION EMAILS
+================================================================================
+Template: staff_new_patient_registration
+
+{{staff_name}}            - Staff member's name
+{{patient_name}}          - Patient's full name
+{{patient_id}}            - Patient ID
+{{registration_date}}     - Registration date and time
+{{patient_phone}}         - Patient's phone number
+{{patient_email}}         - Patient's email address
+{{hospital_name}}         - Hospital name
+{{patient_url}}           - Link to view patient profile
+
+
+================================================================================
+DOCTOR NOTIFICATION EMAILS
+================================================================================
+Template: doctor_new_appointment
+
+{{doctor_name}}           - Doctor's name
+{{patient_name}}          - Patient's full name
+{{patient_phone}}         - Patient's phone number
+{{appointment_date}}      - Appointment date
+{{appointment_time}}      - Appointment time
+{{appointment_type}}      - Type of appointment
+{{notes}}                 - Appointment notes
+{{hospital_name}}         - Hospital name
+{{appointment_url}}       - Link to view appointment
+{{is_online}}             - Whether online consultation
+{{meeting_link}}          - Meeting link (if online)
+{{meeting_platform}}      - Meeting platform name
+
+
+================================================================================
+DOCTOR SCHEDULE/CONTACT UPDATE EMAILS
+================================================================================
+Templates: doctor_room_change, doctor_contact_update, doctor_department_change,
+          doctor_schedule_update
+
+{{patient_name}}          - Patient's name
+{{doctor_name}}           - Doctor's name
+{{old_room}}              - Previous room (room change)
+{{new_room}}              - New room (room change)
+{{new_phone}}             - New phone number (contact update)
+{{new_department}}        - New department (department change)
+{{hospital_name}}         - Hospital name
+{{contact_phone}}         - Contact phone number
+{{notification_date}}     - Date and time of notification
+
+
+================================================================================
+EXAMPLE USAGE
+================================================================================
+
+Example appointment confirmation email body:
+
+Dear {{patient_name}},
+
+Your appointment has been confirmed with the following details:
+
+Doctor: {{doctor_name}}
+Specialization: {{doctor_specialization}}
+Date: {{appointment_date}}
+Time: {{appointment_time}}
+Department: {{department}}
+
+Location: {{hospital_address}}
+
+If you need to contact the clinic, please call:
+- Clinic: {{department_phone}}
+- Hospital: {{hospital_phone}}
+
+{{notes}}
+
+If you need to reschedule or cancel, please click the links below:
+- Reschedule: {{reschedule_url}}
+- Cancel: {{cancel_url}}
+
+Thank you for choosing {{hospital_name}}.
+
+Best regards,
+{{doctor_name}}
+
+
+================================================================================
+NOTES
+================================================================================
+
+1. All shortcodes must be enclosed in double curly braces: {{shortcode}}
+
+2. Shortcodes are case-sensitive. Use exactly as shown.
+
+3. If a shortcode value is not available, it will be replaced with an empty
+   string or a default value.
+
+4. Not all shortcodes are available in all email templates. Use only the
+   shortcodes listed under each template category.
+
+5. To edit email templates, go to:
+   Admin Dashboard > Communication > Email Templates
+   or
+   Admin Dashboard > Email Templates
+
+6. You can preview how shortcodes will be replaced before sending.
+
+
+================================================================================
+Document Version: 1.0
+Last Updated: December 2025
+================================================================================

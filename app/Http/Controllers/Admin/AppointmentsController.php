@@ -143,8 +143,12 @@ class AppointmentsController extends Controller
             'meeting_platform' => 'nullable|in:zoom,google_meet,teams,whereby,custom'
         ]);
 
-        // Validate that meeting link is provided if online consultation
-        if ($request->boolean('is_online') && empty($request->meeting_link)) {
+        // Check if Whereby is enabled - if so, we don't require manual meeting link
+        $wherebyService = app(\App\Services\WherebyService::class);
+        $wherebyEnabled = $wherebyService->isEnabled();
+
+        // Validate that meeting link is provided if online consultation and Whereby is not enabled
+        if ($request->boolean('is_online') && empty($request->meeting_link) && !$wherebyEnabled) {
             return redirect()->back()
                 ->withErrors(['meeting_link' => 'Meeting link is required for online consultations.'])
                 ->withInput();
@@ -156,7 +160,23 @@ class AppointmentsController extends Controller
         $data['is_online'] = $request->boolean('is_online', false);
 
         $appointment = Appointment::create($data);
-        
+
+        // If this is an online appointment without a meeting link, auto-generate Whereby room
+        if ($appointment->is_online && empty($appointment->meeting_link) && $wherebyEnabled) {
+            try {
+                $wherebyService->createMeetingForAppointment($appointment);
+                \Log::info('Whereby meeting created for admin appointment', [
+                    'appointment_id' => $appointment->id,
+                    'meeting_link' => $appointment->meeting_link,
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to create Whereby meeting for admin appointment', [
+                    'appointment_id' => $appointment->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         // Load relationships for email notifications
         $appointment->load(['patient', 'doctor', 'department']);
         

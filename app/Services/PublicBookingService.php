@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\GuestPatientService;
 use App\Services\HospitalEmailNotificationService;
+use App\Services\WherebyService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -20,11 +21,13 @@ class PublicBookingService
 {
     protected $guestPatientService;
     protected $emailService;
+    protected $wherebyService;
 
-    public function __construct(GuestPatientService $guestPatientService, HospitalEmailNotificationService $emailService)
+    public function __construct(GuestPatientService $guestPatientService, HospitalEmailNotificationService $emailService, WherebyService $wherebyService)
     {
         $this->guestPatientService = $guestPatientService;
         $this->emailService = $emailService;
+        $this->wherebyService = $wherebyService;
     }
 
     /**
@@ -154,6 +157,24 @@ class PublicBookingService
             }
             
             $appointment = Appointment::create($appointmentData);
+
+            // If this is an online appointment, create Whereby meeting room
+            if ($appointment->is_online && $this->wherebyService->isEnabled()) {
+                try {
+                    $this->wherebyService->createMeetingForAppointment($appointment);
+                    \Log::info('Whereby meeting created for appointment', [
+                        'appointment_id' => $appointment->id,
+                        'meeting_link' => $appointment->meeting_link,
+                    ]);
+                } catch (\Exception $e) {
+                    // Log error but don't fail the booking - appointment will have is_online=true
+                    // but no meeting link yet, which can be added later manually
+                    \Log::error('Failed to create Whereby meeting for appointment', [
+                        'appointment_id' => $appointment->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             // Always create billing for the appointment (even if fee is 0)
             // Get first admin user for created_by, or use 1 as fallback

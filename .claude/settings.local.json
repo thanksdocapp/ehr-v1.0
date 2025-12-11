@@ -28,7 +28,10 @@
       "Bash(powershell -Command \"(Get-Content ''app\\Http\\Controllers\\Admin\\SettingsController.php'' | Measure-Object -Line).Lines\")",
       "Bash(powershell -Command \"(Get-Content ''app\\Helpers\\LogoHelper.php'' | Measure-Object -Line).Lines\")",
       "Bash(del \"c:\\Users\\chukw\\Documents\\ehr-v1.0\\check_form.php\")",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(netstat:*)",
+      "Bash(powershell:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

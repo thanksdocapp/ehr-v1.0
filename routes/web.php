@@ -894,6 +894,7 @@ Route::group(['middleware' => 'installed'], function () {
         // External Integrations
         Route::get('/settings/integrations', [\App\Http\Controllers\Admin\SettingsController::class, 'integrations'])->name('settings.integrations');
         Route::post('/settings/integrations', [\App\Http\Controllers\Admin\SettingsController::class, 'updateIntegrations'])->name('settings.integrations.update');
+        Route::post('/settings/whereby/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testWherebyConnection'])->name('settings.whereby.test');
 
         // Role-Based Menu Visibility
         Route::get('/settings/role-menu-visibility', [\App\Http\Controllers\Admin\RoleMenuVisibilityController::class, 'index'])->name('role-menu-visibility.index');

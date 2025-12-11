@@ -75,6 +75,42 @@
                                     </div>
                                 </div>
                                 @endif
+
+                                @if($appointment->is_online)
+                                <hr>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <small class="text-muted">Consultation Type</small>
+                                        <div>
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-video me-1"></i>Online Consultation
+                                            </span>
+                                        </div>
+                                        @if($appointment->meeting_link)
+                                        <div class="mt-2">
+                                            <small class="text-muted d-block">Meeting Link</small>
+                                            <div class="input-group mt-1">
+                                                <input type="text" class="form-control form-control-sm"
+                                                       value="{{ $appointment->meeting_link }}"
+                                                       readonly id="meeting_link_display">
+                                                <button class="btn btn-outline-secondary btn-sm"
+                                                        type="button"
+                                                        onclick="copyMeetingLink()">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>Save this link - you'll need it to join your consultation
+                                            </small>
+                                        </div>
+                                        @else
+                                        <small class="text-muted d-block mt-2">
+                                            <i class="fas fa-info-circle me-1"></i>Meeting link will be sent to your email before the appointment
+                                        </small>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endif
                             </div>
                         </div>
 
@@ -156,4 +192,32 @@
 </style>
 
 @include('partials.footer')
+
+<script>
+function copyMeetingLink() {
+    const input = document.getElementById('meeting_link_display');
+    if (!input) return;
+
+    input.select();
+    input.setSelectionRange(0, 99999);
+
+    navigator.clipboard.writeText(input.value).then(function() {
+        const btn = event.target.closest('button');
+        if (btn) {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-success');
+            setTimeout(function() {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-secondary');
+            }, 2000);
+        }
+    }).catch(function(err) {
+        document.execCommand('copy');
+        alert('Meeting link copied!');
+    });
+}
+</script>
 

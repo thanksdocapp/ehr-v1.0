@@ -12,9 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            $table->string('payment_token')->nullable()->unique()->after('invoice_number');
-            $table->timestamp('payment_token_expires_at')->nullable()->after('payment_token');
-            $table->index('payment_token');
+            if (!Schema::hasColumn('invoices', 'payment_token')) {
+                $table->string('payment_token')->nullable()->unique()->after('invoice_number');
+            }
+            if (!Schema::hasColumn('invoices', 'payment_token_expires_at')) {
+                $table->timestamp('payment_token_expires_at')->nullable()->after('payment_token');
+            }
         });
     }
 

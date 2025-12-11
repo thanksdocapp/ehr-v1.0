@@ -1,0 +1,391 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Doctor's Guide: How to Add Medical Records</title>
+<style>
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; margin: 40px; }
+    h1 { color: #2c3e50; font-size: 24pt; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+    h2 { color: #2980b9; font-size: 16pt; margin-top: 25px; }
+    h3 { color: #34495e; font-size: 13pt; margin-top: 20px; }
+    table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+    th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: left; }
+    th { background-color: #3498db; color: white; font-weight: bold; }
+    tr:nth-child(even) { background-color: #ecf0f1; }
+    .required { color: #e74c3c; font-weight: bold; }
+    .optional { color: #27ae60; font-style: italic; }
+    .note { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin: 15px 0; }
+    .tip { background-color: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; margin: 15px 0; }
+    .warning { background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 15px; margin: 15px 0; }
+    .critical { background-color: #f8d7da; border: 2px solid #dc3545; padding: 10px 15px; margin: 15px 0; }
+    .checklist { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; margin: 20px 0; font-family: Consolas, monospace; }
+    .checklist-title { font-weight: bold; text-align: center; margin-bottom: 15px; font-size: 14pt; }
+    ul { margin: 10px 0; }
+    li { margin: 5px 0; }
+    .page-break { page-break-before: always; }
+    .section-box { background-color: #e8f4fd; border: 1px solid #3498db; border-radius: 5px; padding: 15px; margin: 15px 0; }
+    .abbr { font-weight: bold; color: #2980b9; }
+</style>
+</head>
+<body>
+
+<h1>Doctor's Guide: How to Add Medical Records</h1>
+
+<p><strong>ThanksDoc EPR System</strong></p>
+
+<hr>
+
+<h2>Step 1: Go to Medical Records</h2>
+
+<ul>
+    <li>Click <strong>"Medical Records"</strong> in the left sidebar menu</li>
+    <li>Click the <strong>"Add Record"</strong> button (top right corner)</li>
+</ul>
+
+<div class="tip">
+    <strong>Alternative:</strong> You can also create a medical record directly from a completed appointment by clicking "Create Medical Record" on the appointment page.
+</div>
+
+<hr>
+
+<h2>Step 2: Select Patient & Basic Info</h2>
+
+<h3>Patient Selection <span class="required">(Required)</span></h3>
+
+<table>
+    <tr>
+        <th>Field</th>
+        <th>What to Do</th>
+    </tr>
+    <tr>
+        <td><strong>Patient</strong></td>
+        <td>Start typing patient name or ID to search and select</td>
+    </tr>
+    <tr>
+        <td><strong>Related Appointment</strong></td>
+        <td>Link to a previous appointment (optional)</td>
+    </tr>
+    <tr>
+        <td><strong>Record Date</strong></td>
+        <td>Date of consultation (defaults to today)</td>
+    </tr>
+    <tr>
+        <td><strong>Record Type</strong></td>
+        <td>Select: Consultation, Follow-up, Emergency, Routine Checkup, or Procedure</td>
+    </tr>
+</table>
+
+<div class="tip">
+    <strong>Time Saver:</strong> If the patient has previous records, use <strong>"Copy From Previous Record"</strong> to auto-fill their medical history, allergies, and drug history.
+</div>
+
+<hr>
+
+<h2>Step 3: Fill in Medical Information</h2>
+
+<p>Use the standard <strong>SOAP format</strong> for clinical documentation:</p>
+
+<div class="section-box">
+<h3>Medical History Fields</h3>
+
+<table>
+    <tr>
+        <th>Abbreviation</th>
+        <th>Full Name</th>
+        <th>What to Enter</th>
+        <th>Required?</th>
+    </tr>
+    <tr>
+        <td><span class="abbr">PC</span></td>
+        <td>Presenting Complaint</td>
+        <td>Why the patient came in today (chief complaint)</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><span class="abbr">HPC</span></td>
+        <td>History of Presenting Complaint</td>
+        <td>Detailed history of the current problem</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><span class="abbr">PMH</span></td>
+        <td>Past Medical History</td>
+        <td>Previous illnesses, surgeries, conditions</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><span class="abbr">DH</span></td>
+        <td>Drug History</td>
+        <td>Current medications and dosages</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><span class="abbr">Allergies</span></td>
+        <td>Allergies</td>
+        <td>All known allergies (drugs, food, environmental)</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><span class="abbr">SH</span></td>
+        <td>Social History</td>
+        <td>Smoking, alcohol, occupation, living situation</td>
+        <td><span class="optional">Optional</span></td>
+    </tr>
+    <tr>
+        <td><span class="abbr">FH</span></td>
+        <td>Family History</td>
+        <td>Relevant family medical conditions</td>
+        <td><span class="optional">Optional</span></td>
+    </tr>
+    <tr>
+        <td><span class="abbr">ICE</span></td>
+        <td>Ideas, Concerns, Expectations</td>
+        <td>Patient's thoughts about their condition</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+    <tr>
+        <td><span class="abbr">Plan</span></td>
+        <td>Management Plan</td>
+        <td>Investigations, treatment, follow-up plan</td>
+        <td><span class="required">Required</span></td>
+    </tr>
+</table>
+</div>
+
+<div class="critical">
+    <strong>IMPORTANT - Allergies:</strong> Always document allergies carefully. Write "NKDA" (No Known Drug Allergies) if the patient has none. This is a critical safety field.
+</div>
+
+<hr>
+
+<h2>Step 4: Record Vital Signs (Optional but Recommended)</h2>
+
+<table>
+    <tr>
+        <th>Vital Sign</th>
+        <th>Unit</th>
+        <th>Normal Range</th>
+    </tr>
+    <tr>
+        <td><strong>Temperature</strong></td>
+        <td>°C</td>
+        <td>36.1 - 37.2</td>
+    </tr>
+    <tr>
+        <td><strong>Blood Pressure</strong></td>
+        <td>mmHg</td>
+        <td>Format: 120/80</td>
+    </tr>
+    <tr>
+        <td><strong>Pulse</strong></td>
+        <td>bpm</td>
+        <td>60 - 100</td>
+    </tr>
+    <tr>
+        <td><strong>Respiratory Rate</strong></td>
+        <td>breaths/min</td>
+        <td>12 - 20</td>
+    </tr>
+    <tr>
+        <td><strong>Oxygen Saturation</strong></td>
+        <td>%</td>
+        <td>95 - 100</td>
+    </tr>
+    <tr>
+        <td><strong>Weight</strong></td>
+        <td>kg</td>
+        <td>-</td>
+    </tr>
+    <tr>
+        <td><strong>Height</strong></td>
+        <td>cm</td>
+        <td>-</td>
+    </tr>
+    <tr>
+        <td><strong>BMI</strong></td>
+        <td>kg/m²</td>
+        <td>Auto-calculated from weight & height</td>
+    </tr>
+</table>
+
+<hr>
+
+<h2>Step 5: Add Notes & Attachments (Optional)</h2>
+
+<h3>Additional Notes</h3>
+<p>Use this field for any extra observations or information not covered above.</p>
+
+<h3>File Attachments</h3>
+
+<table>
+    <tr>
+        <th>What You Can Upload</th>
+        <th>Details</th>
+    </tr>
+    <tr>
+        <td>Documents</td>
+        <td>PDF, Word (DOC, DOCX), Excel (XLS, XLSX), Text files</td>
+    </tr>
+    <tr>
+        <td>Images</td>
+        <td>JPG, PNG, GIF (for photos of conditions, scans, etc.)</td>
+    </tr>
+    <tr>
+        <td>Archives</td>
+        <td>ZIP, RAR files</td>
+    </tr>
+</table>
+
+<p><strong>Limits:</strong> Maximum 10 files, each up to 10MB</p>
+
+<p>For each attachment, you can select a <strong>category</strong>:</p>
+<ul>
+    <li><strong>Photo</strong> - Clinical photos</li>
+    <li><strong>Results</strong> - Lab results, test results</li>
+    <li><strong>Documents</strong> - Referral letters, reports</li>
+    <li><strong>Other</strong> - Anything else</li>
+</ul>
+
+<hr>
+
+<h2>Step 6: Verify & Save</h2>
+
+<ol>
+    <li>Review all the information you've entered</li>
+    <li>Tick the <strong>"Pre-consultation verified"</strong> checkbox</li>
+    <li>Click <strong>"Save Medical Record"</strong></li>
+</ol>
+
+<div class="tip">
+    <strong>Success!</strong> The record is saved and the patient will receive an email notification (unless marked as private).
+</div>
+
+<hr class="page-break">
+
+<h2>Quick Reference Checklist</h2>
+
+<div class="checklist">
+    <div class="checklist-title">ADD MEDICAL RECORD - CHECKLIST</div>
+    <p>
+    <strong>Basic Info:</strong><br>
+    &#9744; Select Patient<br>
+    &#9744; Record Date<br>
+    &#9744; Record Type<br>
+    <br>
+    <strong>Medical History (Required):</strong><br>
+    &#9744; PC - Presenting Complaint<br>
+    &#9744; HPC - History of Presenting Complaint<br>
+    &#9744; PMH - Past Medical History<br>
+    &#9744; DH - Drug History<br>
+    &#9744; Allergies<br>
+    &#9744; ICE - Ideas, Concerns, Expectations<br>
+    &#9744; Plan - Management Plan<br>
+    <br>
+    <strong>Optional but Recommended:</strong><br>
+    &#9744; SH - Social History<br>
+    &#9744; FH - Family History<br>
+    &#9744; Vital Signs<br>
+    &#9744; Notes<br>
+    &#9744; Attachments<br>
+    <br>
+    <strong>Before Saving:</strong><br>
+    &#9744; Pre-consultation verified checkbox<br>
+    </p>
+</div>
+
+<hr>
+
+<h2>Record Types Explained</h2>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>When to Use</th>
+    </tr>
+    <tr>
+        <td><strong>Consultation</strong></td>
+        <td>Standard patient visit, new problem</td>
+    </tr>
+    <tr>
+        <td><strong>Follow-up</strong></td>
+        <td>Reviewing progress from previous consultation</td>
+    </tr>
+    <tr>
+        <td><strong>Emergency</strong></td>
+        <td>Urgent/emergency visit</td>
+    </tr>
+    <tr>
+        <td><strong>Routine Checkup</strong></td>
+        <td>Regular health check, screening</td>
+    </tr>
+    <tr>
+        <td><strong>Procedure</strong></td>
+        <td>Minor surgery, procedure performed</td>
+    </tr>
+</table>
+
+<hr>
+
+<h2>Common Questions (FAQ)</h2>
+
+<h3>Q: How do I find a patient's previous records?</h3>
+<p><strong>A:</strong> Click on "Medical Records" in the sidebar, then use the search/filter to find by patient name. Or go to the patient's profile and click "Medical Records" tab.</p>
+
+<h3>Q: Can I edit a record after saving?</h3>
+<p><strong>A:</strong> Yes. Find the record, click on it to view, then click "Edit". Only the doctor who created the record can edit it.</p>
+
+<h3>Q: What does "Pre-consultation verified" mean?</h3>
+<p><strong>A:</strong> This confirms you've verified the patient's identity and previous records before the consultation. It's required before saving.</p>
+
+<h3>Q: How do I copy information from a previous record?</h3>
+<p><strong>A:</strong> After selecting a patient, a "Copy From Previous Record" dropdown appears. Select a previous record and PMH, Drug History, Allergies, SH, and FH will auto-fill.</p>
+
+<h3>Q: What if I don't have all the information?</h3>
+<p><strong>A:</strong> All required fields must be filled. For unknown information, you can write "Unknown" or "Not available" - but try to gather as much as possible.</p>
+
+<h3>Q: Can patients see their medical records?</h3>
+<p><strong>A:</strong> Yes, patients can view their own records through the patient portal. If you mark a record as "Private", the patient won't receive an email notification.</p>
+
+<h3>Q: How do I attach lab results or scans?</h3>
+<p><strong>A:</strong> Scroll down to "Attachments" section, click "Choose Files", select your files (PDF, images, etc.), choose a category for each, and save.</p>
+
+<h3>Q: What's the difference between Notes and Plan?</h3>
+<p><strong>A:</strong> <strong>Plan</strong> is the structured management plan (investigations, treatment, follow-up). <strong>Notes</strong> is for additional observations that don't fit elsewhere.</p>
+
+<hr>
+
+<h2>Abbreviations Reference</h2>
+
+<table>
+    <tr>
+        <th>Abbreviation</th>
+        <th>Meaning</th>
+    </tr>
+    <tr><td>PC</td><td>Presenting Complaint</td></tr>
+    <tr><td>HPC</td><td>History of Presenting Complaint</td></tr>
+    <tr><td>PMH</td><td>Past Medical History</td></tr>
+    <tr><td>DH</td><td>Drug History</td></tr>
+    <tr><td>SH</td><td>Social History</td></tr>
+    <tr><td>FH</td><td>Family History</td></tr>
+    <tr><td>ICE</td><td>Ideas, Concerns, Expectations</td></tr>
+    <tr><td>NKDA</td><td>No Known Drug Allergies</td></tr>
+    <tr><td>BMI</td><td>Body Mass Index</td></tr>
+    <tr><td>BP</td><td>Blood Pressure</td></tr>
+    <tr><td>HR</td><td>Heart Rate / Pulse</td></tr>
+    <tr><td>RR</td><td>Respiratory Rate</td></tr>
+    <tr><td>SpO2</td><td>Oxygen Saturation</td></tr>
+</table>
+
+<hr>
+
+<h2>Need Help?</h2>
+
+<p>If you encounter any issues or have questions, please contact your system administrator or IT support.</p>
+
+<br><br>
+<p style="text-align: center; color: #7f8c8d; font-size: 10pt;">
+    <em>ThanksDoc EPR System - Medical Records Guide</em><br>
+    Document Version 1.0
+</p>
+
+</body>
+</html>

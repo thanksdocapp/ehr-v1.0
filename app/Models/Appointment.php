@@ -29,6 +29,8 @@ class Appointment extends Model
         'is_online',
         'meeting_link',
         'meeting_platform',
+        'whereby_meeting_id',
+        'whereby_host_url',
         'check_in_time',
         'check_out_time',
         'prescription',

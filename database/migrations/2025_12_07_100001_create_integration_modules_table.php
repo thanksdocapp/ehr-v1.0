@@ -12,6 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         // Integration Modules - Main configuration table
+        if (Schema::hasTable('integration_modules')) {
+            return; // All tables already exist, skip migration
+        }
+
         Schema::create('integration_modules', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // Display name: "Randox Lab Tests"
