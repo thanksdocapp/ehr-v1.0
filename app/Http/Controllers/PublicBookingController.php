@@ -175,28 +175,74 @@ class PublicBookingController extends Controller
 
     /**
      * Step 4: Review and confirm (GET - handles direct access/refresh)
-     * Redirects to homepage since this page requires POST data
+     * Try to restore from session or redirect to booking start
      */
     public function showReview(Request $request)
     {
         $this->checkBookingEnabled();
 
-        // Review page should only be accessible via POST with form data
-        // If accessed via GET, redirect to homepage with message
-        return redirect('/')->with('info', 'Please start a new booking to continue.');
+        // Try to restore booking data from session
+        $bookingData = session('booking_data');
+
+        if ($bookingData && isset($bookingData['doctor_id'])) {
+            // Restore the review page with session data
+            $doctor = Doctor::find($bookingData['doctor_id']);
+            $service = BookingService::find($bookingData['service_id'] ?? null);
+
+            if ($doctor && $service) {
+                $price = $service->getPriceForDoctor($doctor->id);
+
+                return view('public-booking.review', [
+                    'doctor' => $doctor,
+                    'service' => $service,
+                    'appointment_date' => $bookingData['appointment_date'],
+                    'appointment_time' => $bookingData['appointment_time'],
+                    'patient_data' => $bookingData['patient_data'] ?? [],
+                    'price' => $price,
+                    'step' => 4
+                ]);
+            }
+        }
+
+        // No valid session data - redirect to booking page
+        return redirect('/')->with('info', 'Your booking session has expired. Please start a new booking.');
     }
 
     /**
      * Step 5: Confirm appointment (GET - handles direct access/refresh)
-     * Redirects to homepage since this page requires POST data
+     * Try to restore from session or redirect to booking start
      */
     public function showConfirm(Request $request)
     {
         $this->checkBookingEnabled();
 
-        // Confirm page should only be accessible via POST with form data
-        // If accessed via GET, redirect to homepage with message
-        return redirect('/')->with('info', 'Please start a new booking to continue.');
+        // Check if there's a recent appointment with pending payment
+        $bookingAppointmentNumber = session('booking_appointment_number');
+
+        if ($bookingAppointmentNumber) {
+            $appointment = \App\Models\Appointment::where('appointment_number', $bookingAppointmentNumber)
+                ->with(['billing.invoice'])
+                ->first();
+
+            if ($appointment && $appointment->billing && $appointment->billing->invoice) {
+                $invoice = $appointment->billing->invoice;
+
+                if ($invoice->payment_token && $invoice->status !== 'paid') {
+                    // Redirect to payment page
+                    return redirect()->route('public.billing.pay', ['token' => $invoice->payment_token]);
+                }
+            }
+
+            // Appointment exists but no pending payment - show success
+            if ($appointment) {
+                return redirect()->route('public.booking.success', [
+                    'appointmentNumber' => $appointment->appointment_number
+                ]);
+            }
+        }
+
+        // No valid session data - redirect to booking page
+        return redirect('/')->with('info', 'Your booking session has expired. Please start a new booking.');
     }
 
     /**
@@ -259,6 +305,18 @@ class PublicBookingController extends Controller
         if ($departmentId) {
             $patientData['department_id'] = $departmentId;
         }
+
+        // Store booking data in session for page refresh recovery
+        session([
+            'booking_data' => [
+                'doctor_id' => $doctor->id,
+                'service_id' => $service->id,
+                'appointment_date' => $request->appointment_date,
+                'appointment_time' => $request->appointment_time,
+                'patient_data' => $patientData,
+                'department_id' => $departmentId,
+            ]
+        ]);
 
         return view('public-booking.review', [
             'doctor' => $doctor,
@@ -332,22 +390,27 @@ class PublicBookingController extends Controller
             $appointment = $result['appointment'];
             $invoice = $result['invoice'] ?? null;
 
+            // Store appointment number in session for recovery
+            session(['booking_appointment_number' => $appointment->appointment_number]);
+
+            // Clear booking data from session (booking completed)
+            session()->forget('booking_data');
+
             // If invoice exists and has payment token, redirect to payment
             if ($invoice) {
                 // Refresh invoice to ensure we have the latest payment_token
                 $invoice->refresh();
-                
+
                 if ($invoice->payment_token) {
                     \Log::info('Redirecting to payment page', [
                         'invoice_id' => $invoice->id,
                         'appointment_id' => $appointment->id,
                         'token_preview' => substr($invoice->payment_token, 0, 10) . '...'
                     ]);
-                    
+
                     $paymentUrl = route('public.billing.pay', ['token' => $invoice->payment_token]);
-                    
-                    return redirect($paymentUrl)
-                        ->with('booking_appointment_number', $appointment->appointment_number);
+
+                    return redirect($paymentUrl);
                 } else {
                     \Log::warning('Invoice created but payment token is missing', [
                         'invoice_id' => $invoice->id,
@@ -358,7 +421,7 @@ class PublicBookingController extends Controller
 
             // Otherwise, go directly to success
             return redirect()->route('public.booking.success', [
-                'appointment_number' => $appointment->appointment_number
+                'appointmentNumber' => $appointment->appointment_number
             ]);
         } catch (\Exception $e) {
             \Log::error('Public booking failed', [
