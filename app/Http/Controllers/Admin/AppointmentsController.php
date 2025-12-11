@@ -165,6 +165,7 @@ class AppointmentsController extends Controller
         if ($appointment->is_online && empty($appointment->meeting_link) && $wherebyEnabled) {
             try {
                 $wherebyService->createMeetingForAppointment($appointment);
+                $appointment->refresh(); // Reload to get the updated meeting_link
                 \Log::info('Whereby meeting created for admin appointment', [
                     'appointment_id' => $appointment->id,
                     'meeting_link' => $appointment->meeting_link,

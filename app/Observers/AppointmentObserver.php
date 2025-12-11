@@ -21,12 +21,28 @@ class AppointmentObserver
     public function created(Appointment $appointment)
     {
         try {
+            // Skip email notification for online appointments with Whereby platform
+            // that don't have a meeting link yet - the controller will handle this
+            // after the Whereby meeting is created
+            if ($appointment->is_online &&
+                $appointment->meeting_platform === 'whereby' &&
+                empty($appointment->meeting_link)) {
+                Log::info('Skipping observer notification for Whereby appointment - will be sent after meeting link is generated', [
+                    'appointment_id' => $appointment->id
+                ]);
+
+                // Still send in-app notifications, just skip the email
+                $appointment->load(['patient.user', 'doctor.user']);
+                $this->notificationService->sendAppointmentNotification($appointment, 'created', ['skip_email' => true]);
+                return;
+            }
+
             // Load relationships
             $appointment->load(['patient.user', 'doctor.user']);
-            
+
             // Send appointment created notifications
             $this->notificationService->sendAppointmentNotification($appointment, 'created');
-            
+
             Log::info('Appointment created notification sent', ['appointment_id' => $appointment->id]);
         } catch (\Exception $e) {
             Log::error('Failed to send appointment created notification', [

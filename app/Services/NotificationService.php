@@ -41,9 +41,10 @@ class NotificationService
      *
      * @param Appointment $appointment
      * @param string $eventType 'created', 'updated', 'cancelled', 'reminder'
+     * @param array $options Optional settings like 'skip_email' => true
      * @return void
      */
-    public function sendAppointmentNotification(Appointment $appointment, string $eventType = 'created')
+    public function sendAppointmentNotification(Appointment $appointment, string $eventType = 'created', array $options = [])
     {
         $notificationData = $this->getAppointmentNotificationData($appointment, $eventType);
 
@@ -66,8 +67,15 @@ class NotificationService
             }
         }
 
-        // Send Email notification to patient and doctor
-        $this->sendAppointmentEmail($appointment, $eventType);
+        // Send Email notification to patient and doctor (unless skip_email is set)
+        if (empty($options['skip_email'])) {
+            $this->sendAppointmentEmail($appointment, $eventType);
+        } else {
+            Log::info('Skipping email notification as requested', [
+                'appointment_id' => $appointment->id,
+                'event_type' => $eventType
+            ]);
+        }
 
         // Send SMS notification if patient has SMS preferences enabled
         $this->sendAppointmentSms($appointment, $eventType);

@@ -119,6 +119,11 @@ class PublicBookingService
         if ($appointment->is_online && $this->wherebyService->isEnabled()) {
             try {
                 $this->wherebyService->createMeetingForAppointment($appointment);
+                $appointment->refresh(); // Reload to get the updated meeting_link
+                \Log::info('Whereby meeting created for public booking', [
+                    'appointment_id' => $appointment->id,
+                    'meeting_link' => $appointment->meeting_link,
+                ]);
             } catch (\Exception $e) {
                 \Log::error('Failed to create Whereby meeting', ['error' => $e->getMessage()]);
             }
@@ -315,6 +320,11 @@ class PublicBookingService
             if ($appointment->is_online && $this->wherebyService->isEnabled()) {
                 try {
                     $this->wherebyService->createMeetingForAppointment($appointment);
+                    $appointment->refresh(); // Reload to get the updated meeting_link
+                    \Log::info('Whereby meeting created for paid booking', [
+                        'appointment_id' => $appointment->id,
+                        'meeting_link' => $appointment->meeting_link,
+                    ]);
                 } catch (\Exception $e) {
                     \Log::error('Failed to create Whereby meeting', ['error' => $e->getMessage()]);
                 }
