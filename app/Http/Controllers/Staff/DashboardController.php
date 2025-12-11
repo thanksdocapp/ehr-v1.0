@@ -151,8 +151,27 @@ class DashboardController extends Controller
             
             // Get Quincy prescription delivery status for this doctor
             $quincyDeliveryStatus = $this->getDoctorQuincyDeliveryStatus($doctor ? $doctor->id : null);
-            
-            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'quincyDeliveryStatus'));
+
+            // Get upcoming video consultations (online appointments for today and future)
+            $upcomingVideoConsultations = Appointment::with(['patient', 'doctor', 'service'])
+                ->where('is_online', true)
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->where(function($q) {
+                    $q->whereDate('appointment_date', '>', Carbon::today())
+                      ->orWhere(function($q2) {
+                          $q2->whereDate('appointment_date', Carbon::today())
+                             ->whereTime('appointment_time', '>=', Carbon::now()->subMinutes(30)->format('H:i:s'));
+                      });
+                })
+                ->when($doctor, function($q) use ($doctor) {
+                    $q->where('doctor_id', $doctor->id);
+                })
+                ->orderBy('appointment_date', 'asc')
+                ->orderBy('appointment_time', 'asc')
+                ->limit(5)
+                ->get();
+
+            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'quincyDeliveryStatus', 'upcomingVideoConsultations'));
         }
 
         return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus'));

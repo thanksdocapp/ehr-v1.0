@@ -258,6 +258,92 @@
     </div>
     @endif
 
+    <!-- Upcoming Video Consultations -->
+    @if(isset($upcomingVideoConsultations) && $upcomingVideoConsultations->count() > 0)
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="doctor-card" style="border-left: 4px solid #6C63FF;">
+                <div class="doctor-card-header" style="background: linear-gradient(135deg, rgba(108, 99, 255, 0.05) 0%, rgba(108, 99, 255, 0.02) 100%);">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="doctor-card-title mb-0">
+                            <i class="fas fa-video me-2" style="color: #6C63FF;"></i>
+                            Upcoming Video Consultations
+                        </h5>
+                        <a href="{{ route('staff.appointments.index') }}?is_online=1&status=pending,confirmed" class="btn btn-sm btn-outline-primary">
+                            View All <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="doctor-card-body">
+                    <div class="row g-3">
+                        @foreach($upcomingVideoConsultations as $videoAppt)
+                        <div class="col-lg-6">
+                            <div class="video-consultation-card p-3 rounded" style="background: #f8f9fa; border: 1px solid #e9ecef;">
+                                <div class="d-flex align-items-start">
+                                    <div class="flex-shrink-0">
+                                        <div class="doctor-user-avatar" style="width: 50px; height: 50px; background: linear-gradient(135deg, #6C63FF 0%, #5a52e0 100%);">
+                                            <i class="fas fa-video" style="font-size: 1.25rem;"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 class="mb-1 fw-bold">{{ $videoAppt->patient->first_name }} {{ $videoAppt->patient->last_name }}</h6>
+                                                <div class="text-muted small">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    {{ $videoAppt->appointment_date->format('D, M j, Y') }}
+                                                    <span class="mx-1">•</span>
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    {{ \Carbon\Carbon::parse($videoAppt->appointment_time)->format('h:i A') }}
+                                                </div>
+                                            </div>
+                                            @if($videoAppt->appointment_date->isToday())
+                                                <span class="badge bg-success">Today</span>
+                                            @elseif($videoAppt->appointment_date->isTomorrow())
+                                                <span class="badge bg-info">Tomorrow</span>
+                                            @else
+                                                <span class="badge bg-secondary">{{ $videoAppt->appointment_date->diffForHumans() }}</span>
+                                            @endif
+                                        </div>
+                                        @if($videoAppt->service)
+                                        <div class="mb-2">
+                                            <span class="badge bg-light text-dark">
+                                                <i class="fas fa-stethoscope me-1"></i>{{ $videoAppt->service->name }}
+                                            </span>
+                                        </div>
+                                        @endif
+                                        <div class="d-flex gap-2 mt-2">
+                                            @if($videoAppt->canJoinMeeting())
+                                                @if($videoAppt->whereby_host_url)
+                                                    <a href="{{ $videoAppt->whereby_host_url }}" target="_blank" class="btn btn-sm btn-success">
+                                                        <i class="fas fa-video me-1"></i>Start Meeting
+                                                    </a>
+                                                @elseif($videoAppt->meeting_link)
+                                                    <a href="{{ $videoAppt->meeting_link }}" target="_blank" class="btn btn-sm btn-success">
+                                                        <i class="fas fa-video me-1"></i>Join Meeting
+                                                    </a>
+                                                @endif
+                                            @else
+                                                <button class="btn btn-sm btn-outline-secondary" disabled title="Meeting available 15 minutes before appointment">
+                                                    <i class="fas fa-clock me-1"></i>Not Yet Available
+                                                </button>
+                                            @endif
+                                            <a href="{{ route('staff.appointments.show', $videoAppt->id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <style>
         .stat-card-enhanced {
             background: #ffffff;
