@@ -31,7 +31,8 @@
       "Bash(cd:*)",
       "Bash(netstat:*)",
       "Bash(powershell:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

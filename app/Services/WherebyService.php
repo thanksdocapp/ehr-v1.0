@@ -229,11 +229,14 @@ class WherebyService
     /**
      * Test the API connection.
      *
+     * @param string|null $apiKey Optional API key to test (uses configured key if not provided)
      * @return array
      */
-    public function testConnection(): array
+    public function testConnection(?string $apiKey = null): array
     {
-        if (empty($this->apiKey)) {
+        $keyToTest = $apiKey ?? $this->apiKey;
+
+        if (empty($keyToTest)) {
             return [
                 'success' => false,
                 'message' => 'API key is not configured',
@@ -243,7 +246,7 @@ class WherebyService
         try {
             // Create a test meeting that ends in 5 minutes
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Authorization' => 'Bearer ' . $keyToTest,
                 'Content-Type' => 'application/json',
             ])->post($this->baseUrl . '/meetings', [
                 'endDate' => now()->addMinutes(5)->toIso8601String(),
@@ -254,9 +257,11 @@ class WherebyService
             if ($response->successful()) {
                 $data = $response->json();
 
-                // Delete the test meeting immediately
+                // Delete the test meeting immediately using the same key
                 if (!empty($data['meetingId'])) {
-                    $this->deleteMeeting($data['meetingId']);
+                    Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $keyToTest,
+                    ])->delete($this->baseUrl . '/meetings/' . $data['meetingId']);
                 }
 
                 return [

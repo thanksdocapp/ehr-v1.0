@@ -2248,8 +2248,17 @@ class SettingsController extends Controller
     public function testWherebyConnection(Request $request)
     {
         try {
+            $apiKey = $request->input('api_key');
+
+            if (empty($apiKey)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please enter an API key to test'
+                ]);
+            }
+
             $wherebyService = new \App\Services\WherebyService();
-            $result = $wherebyService->testConnection();
+            $result = $wherebyService->testConnection($apiKey);
 
             return response()->json($result);
         } catch (\Exception $e) {
