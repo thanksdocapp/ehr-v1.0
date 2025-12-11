@@ -12,10 +12,52 @@ use App\Models\User;
 use App\Models\IntegrationModule;
 use App\Services\Integrations\QuincyService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    /**
+     * Get the current user's department IDs for filtering
+     */
+    private function getUserDepartmentIds()
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return [];
+        }
+
+        // Super admins see everything
+        if ($user->is_super_admin) {
+            return [];
+        }
+
+        $departmentIds = [];
+
+        // For doctors, get all departments from doctors pivot table or department_id
+        if ($user->role === 'doctor') {
+            $doctor = Doctor::where('user_id', $user->id)->with('departments')->first();
+            if ($doctor) {
+                if ($doctor->departments->isNotEmpty()) {
+                    $departmentIds = $doctor->departments->pluck('id')->toArray();
+                } elseif ($doctor->department_id) {
+                    $departmentIds = [$doctor->department_id];
+                }
+            }
+        } else {
+            // For other roles, get all departments from users pivot table or department_id
+            $user->load('departments');
+            if ($user->departments->isNotEmpty()) {
+                $departmentIds = $user->departments->pluck('id')->toArray();
+            } elseif ($user->department_id) {
+                $departmentIds = [$user->department_id];
+            }
+        }
+
+        return $departmentIds;
+    }
+
     /**
      * Show the admin dashboard.
      */
@@ -136,17 +178,30 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get recent appointments.
+     * Get recent appointments filtered by user's department/clinic.
      */
     private function getRecentAppointments()
     {
-        return Appointment::select('id', 'appointment_number', 'patient_id', 'appointment_date', 'appointment_time', 'status', 'doctor_id', 'department_id', 'created_at')
+        $departmentIds = $this->getUserDepartmentIds();
+
+        $query = Appointment::select('id', 'appointment_number', 'patient_id', 'appointment_date', 'appointment_time', 'status', 'doctor_id', 'department_id', 'created_at')
             ->with([
-                'doctor:id,title,first_name,last_name',
-                'department:id,name', 
+                'doctor:id,title,first_name,last_name,department_id',
+                'department:id,name',
                 'patient:id,first_name,last_name,phone,email'
-            ])
-            ->orderBy('created_at', 'desc')
+            ]);
+
+        // Filter by department if user has department restrictions
+        if (!empty($departmentIds)) {
+            $query->where(function($q) use ($departmentIds) {
+                $q->whereIn('department_id', $departmentIds)
+                  ->orWhereHas('doctor', function($dq) use ($departmentIds) {
+                      $dq->whereIn('department_id', $departmentIds);
+                  });
+            });
+        }
+
+        return $query->orderBy('created_at', 'desc')
             ->take(10)
             ->get();
     }
@@ -601,27 +656,50 @@ class DashboardController extends Controller
     }
     
     /**
-     * Get recent patients.
+     * Get recent patients filtered by user's department/clinic.
      */
     private function getRecentPatients()
     {
-        return Patient::orderBy('created_at', 'desc')
+        $departmentIds = $this->getUserDepartmentIds();
+        $user = Auth::user();
+
+        $query = Patient::query();
+
+        // Filter by department if user has department restrictions
+        if (!empty($departmentIds)) {
+            $query->visibleTo($user);
+        }
+
+        return $query->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
     }
     
     /**
-     * Get pending appointments.
+     * Get pending appointments filtered by user's department/clinic.
      */
     private function getPendingAppointments()
     {
-        return Appointment::with([
+        $departmentIds = $this->getUserDepartmentIds();
+
+        $query = Appointment::with([
             'doctor:id,title,first_name,last_name,department_id',
             'doctor.department:id,name',
             'patient:id,first_name,last_name,email,phone'
         ])
-            ->where('status', 'pending')
-            ->orderBy('appointment_date', 'asc')
+            ->where('status', 'pending');
+
+        // Filter by department if user has department restrictions
+        if (!empty($departmentIds)) {
+            $query->where(function($q) use ($departmentIds) {
+                $q->whereIn('department_id', $departmentIds)
+                  ->orWhereHas('doctor', function($dq) use ($departmentIds) {
+                      $dq->whereIn('department_id', $departmentIds);
+                  });
+            });
+        }
+
+        return $query->orderBy('appointment_date', 'asc')
             ->orderBy('appointment_time', 'asc')
             ->limit(5)
             ->get()
@@ -632,17 +710,30 @@ class DashboardController extends Controller
     }
     
     /**
-     * Get today's appointments.
+     * Get today's appointments filtered by user's department/clinic.
      */
     private function getTodaysAppointments()
     {
-        return Appointment::with([
+        $departmentIds = $this->getUserDepartmentIds();
+
+        $query = Appointment::with([
             'doctor:id,title,first_name,last_name,department_id',
             'doctor.department:id,name',
             'patient:id,first_name,last_name,email,phone'
         ])
-            ->whereDate('appointment_date', Carbon::today())
-            ->orderBy('appointment_time', 'asc')
+            ->whereDate('appointment_date', Carbon::today());
+
+        // Filter by department if user has department restrictions
+        if (!empty($departmentIds)) {
+            $query->where(function($q) use ($departmentIds) {
+                $q->whereIn('department_id', $departmentIds)
+                  ->orWhereHas('doctor', function($dq) use ($departmentIds) {
+                      $dq->whereIn('department_id', $departmentIds);
+                  });
+            });
+        }
+
+        return $query->orderBy('appointment_time', 'asc')
             ->get()
             ->map(function($appointment) {
                 $appointment->patient_name = $appointment->patient ? ($appointment->patient->first_name . ' ' . $appointment->patient->last_name) : 'N/A';
@@ -738,11 +829,13 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get upcoming video consultations (online appointments for today and future)
+     * Get upcoming video consultations filtered by user's department/clinic.
      */
     private function getUpcomingVideoConsultations()
     {
-        return Appointment::with(['patient', 'doctor', 'service'])
+        $departmentIds = $this->getUserDepartmentIds();
+
+        $query = Appointment::with(['patient', 'doctor', 'service'])
             ->where('is_online', true)
             ->whereIn('status', ['pending', 'confirmed'])
             ->where(function($q) {
@@ -751,8 +844,19 @@ class DashboardController extends Controller
                       $q2->whereDate('appointment_date', Carbon::today())
                          ->whereTime('appointment_time', '>=', Carbon::now()->subMinutes(30)->format('H:i:s'));
                   });
-            })
-            ->orderBy('appointment_date', 'asc')
+            });
+
+        // Filter by department if user has department restrictions
+        if (!empty($departmentIds)) {
+            $query->where(function($q) use ($departmentIds) {
+                $q->whereIn('department_id', $departmentIds)
+                  ->orWhereHas('doctor', function($dq) use ($departmentIds) {
+                      $dq->whereIn('department_id', $departmentIds);
+                  });
+            });
+        }
+
+        return $query->orderBy('appointment_date', 'asc')
             ->orderBy('appointment_time', 'asc')
             ->limit(5)
             ->get();
