@@ -808,6 +808,49 @@
             </div>
             @endif
 
+            <!-- Upcoming Video Consultations -->
+            <div class="quick-action-card fade-in-up mb-4">
+                <div class="table-header-modern">
+                    <h5 class="chart-title-modern mb-0">
+                        <i class="fas fa-video me-2" style="color: #6C63FF;"></i>Video Consultations
+                    </h5>
+                    <a href="{{ route('admin.appointments.index') }}?is_online=1&status=pending,confirmed" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">
+                        View All <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                @if(isset($upcomingVideoConsultations) && $upcomingVideoConsultations->count() > 0)
+                    <div class="list-group list-group-flush">
+                        @foreach($upcomingVideoConsultations->take(5) as $videoAppt)
+                        <div class="quick-action-item">
+                            <div class="quick-action-icon" style="background: linear-gradient(135deg, #6C63FF 0%, #5a52e0 100%);">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ $videoAppt->patient ? ($videoAppt->patient->first_name . ' ' . $videoAppt->patient->last_name) : 'N/A' }}</div>
+                                <small class="text-muted">
+                                    {{ $videoAppt->doctor ? ('Dr. ' . $videoAppt->doctor->first_name . ' ' . $videoAppt->doctor->last_name) : 'N/A' }}
+                                    - {{ $videoAppt->appointment_date->format('M d') }} @ {{ \Carbon\Carbon::parse($videoAppt->appointment_time)->format('h:i A') }}
+                                </small>
+                            </div>
+                            @if($videoAppt->appointment_date->isToday())
+                                <span class="badge bg-success" style="border-radius: 8px;">Today</span>
+                            @elseif($videoAppt->appointment_date->isTomorrow())
+                                <span class="badge bg-info" style="border-radius: 8px;">Tomorrow</span>
+                            @else
+                                <span class="badge bg-secondary" style="border-radius: 8px;">{{ $videoAppt->appointment_date->diffForHumans() }}</span>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="empty-state-modern" style="padding: 2rem 1rem;">
+                        <i class="fas fa-video text-muted" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="text-muted mb-0 mt-2">No upcoming video consultations</p>
+                        <small class="text-muted">Online appointments will appear here when scheduled.</small>
+                    </div>
+                @endif
+            </div>
+
             <!-- Pending Appointments -->
             <div class="quick-action-card fade-in-up mb-4">
                 <div class="table-header-modern">

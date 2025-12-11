@@ -40,7 +40,10 @@ class DashboardController extends Controller
         
         // Check Quincy integration status
         $quincyStatus = $this->getQuincyIntegrationStatus();
-        
+
+        // Get upcoming video consultations
+        $upcomingVideoConsultations = $this->getUpcomingVideoConsultations();
+
         return view('admin.dashboard', compact(
             'stats',
             'recentAppointments',
@@ -50,7 +53,8 @@ class DashboardController extends Controller
             'departmentStats',
             'appointmentChartData',
             'patientRegistrationData',
-            'quincyStatus'
+            'quincyStatus',
+            'upcomingVideoConsultations'
         ));
     }
 
@@ -731,5 +735,26 @@ class DashboardController extends Controller
                 'message' => 'Error checking status: ' . $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Get upcoming video consultations (online appointments for today and future)
+     */
+    private function getUpcomingVideoConsultations()
+    {
+        return Appointment::with(['patient', 'doctor', 'service'])
+            ->where('is_online', true)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->where(function($q) {
+                $q->whereDate('appointment_date', '>', Carbon::today())
+                  ->orWhere(function($q2) {
+                      $q2->whereDate('appointment_date', Carbon::today())
+                         ->whereTime('appointment_time', '>=', Carbon::now()->subMinutes(30)->format('H:i:s'));
+                  });
+            })
+            ->orderBy('appointment_date', 'asc')
+            ->orderBy('appointment_time', 'asc')
+            ->limit(5)
+            ->get();
     }
 }

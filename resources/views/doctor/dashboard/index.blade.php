@@ -259,7 +259,6 @@
     @endif
 
     <!-- Upcoming Video Consultations -->
-    @if(isset($upcomingVideoConsultations) && $upcomingVideoConsultations->count() > 0)
     <div class="row g-3 mb-4">
         <div class="col-12">
             <div class="doctor-card" style="border-left: 4px solid #6C63FF;">
@@ -275,6 +274,7 @@
                     </div>
                 </div>
                 <div class="doctor-card-body">
+                    @if(isset($upcomingVideoConsultations) && $upcomingVideoConsultations->count() > 0)
                     <div class="row g-3">
                         @foreach($upcomingVideoConsultations as $videoAppt)
                         <div class="col-lg-6">
@@ -338,11 +338,17 @@
                         </div>
                         @endforeach
                     </div>
+                    @else
+                    <div class="text-center py-4">
+                        <i class="fas fa-video fa-3x text-muted mb-3" style="opacity: 0.3;"></i>
+                        <p class="text-muted mb-0">No upcoming video consultations.</p>
+                        <small class="text-muted">Online appointments will appear here when scheduled.</small>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
-    @endif
 
     <style>
         .stat-card-enhanced {
