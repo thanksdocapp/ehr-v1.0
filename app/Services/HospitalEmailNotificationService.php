@@ -962,6 +962,15 @@ class HospitalEmailNotificationService
             }
         }
 
+        // Build online consultation section if applicable
+        $onlineConsultationSection = '';
+        if ($appointment->is_online && $appointment->meeting_link) {
+            $platformName = $appointment->meeting_platform_name ?? 'Video Call';
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nMeeting Link: {$appointment->meeting_link}\n";
+        } elseif ($appointment->is_online) {
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation. Meeting link will be generated.\n";
+        }
+
         $variables = [
             'doctor_name' => $doctor->name,
             'patient_name' => $patient->full_name,
@@ -975,6 +984,7 @@ class HospitalEmailNotificationService
             'is_online' => $appointment->is_online ?? false,
             'meeting_link' => $appointment->meeting_link ?? null,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
+            'online_consultation_section' => $onlineConsultationSection,
         ];
 
         return $this->emailService->sendTemplateEmail(
