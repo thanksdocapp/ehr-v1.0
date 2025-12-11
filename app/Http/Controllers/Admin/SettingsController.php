@@ -2200,7 +2200,7 @@ class SettingsController extends Controller
                 'onesignal_rest_api_key' => 'nullable|string|max:255',
                 // Whereby settings
                 'whereby_enabled' => 'nullable|in:0,1',
-                'whereby_api_key' => 'nullable|string|max:255',
+                'whereby_api_key' => 'nullable|string|max:500',
                 'whereby_room_prefix' => 'nullable|string|max:39',
                 'whereby_room_mode' => 'nullable|in:normal,group',
                 'whereby_rooms_locked' => 'nullable|in:0,1',
