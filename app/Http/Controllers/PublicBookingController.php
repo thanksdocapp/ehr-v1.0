@@ -175,28 +175,28 @@ class PublicBookingController extends Controller
 
     /**
      * Step 4: Review and confirm (GET - handles direct access/refresh)
-     * Prevents 404 when /book/review is accessed via GET
+     * Redirects to homepage since this page requires POST data
      */
     public function showReview(Request $request)
     {
         $this->checkBookingEnabled();
-        
+
         // Review page should only be accessible via POST with form data
-        // If accessed via GET, redirect to homepage or show 404
-        abort(404, 'Review page can only be accessed after completing the booking form.');
+        // If accessed via GET, redirect to homepage with message
+        return redirect('/')->with('info', 'Please start a new booking to continue.');
     }
 
     /**
      * Step 5: Confirm appointment (GET - handles direct access/refresh)
-     * Prevents 404 when /book/confirm is accessed via GET
+     * Redirects to homepage since this page requires POST data
      */
     public function showConfirm(Request $request)
     {
         $this->checkBookingEnabled();
-        
+
         // Confirm page should only be accessible via POST with form data
-        // If accessed via GET, redirect to homepage or show 404
-        abort(404, 'Confirmation can only be done after completing the booking form.');
+        // If accessed via GET, redirect to homepage with message
+        return redirect('/')->with('info', 'Please start a new booking to continue.');
     }
 
     /**
