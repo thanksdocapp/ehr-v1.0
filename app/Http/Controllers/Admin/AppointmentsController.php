@@ -294,8 +294,8 @@ class AppointmentsController extends Controller
             'next_appointment_date' => 'nullable|date|after:appointment_date'
         ]);
 
-        // Validate that meeting link is provided if online consultation
-        if ($request->boolean('is_online') && empty($request->meeting_link)) {
+        // Validate that meeting link is provided if online consultation (except for Whereby which auto-generates)
+        if ($request->boolean('is_online') && empty($request->meeting_link) && $request->meeting_platform !== 'whereby') {
             return redirect()->back()
                 ->withErrors(['meeting_link' => 'Meeting link is required for online consultations.'])
                 ->withInput();

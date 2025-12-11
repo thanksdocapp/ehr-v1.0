@@ -358,8 +358,8 @@ class AppointmentsController extends Controller
             'meeting_platform' => 'nullable|in:zoom,google_meet,teams,whereby,custom'
         ]);
 
-        // Validate that meeting link is provided if online consultation
-        if ($request->boolean('is_online') && empty($request->meeting_link)) {
+        // Validate that meeting link is provided if online consultation (except for Whereby which auto-generates)
+        if ($request->boolean('is_online') && empty($request->meeting_link) && $request->meeting_platform !== 'whereby') {
             return redirect()->back()
                 ->withErrors(['meeting_link' => 'Meeting link is required for online consultations.'])
                 ->withInput();
@@ -516,8 +516,8 @@ class AppointmentsController extends Controller
             'meeting_platform' => 'nullable|in:zoom,google_meet,teams,whereby,custom'
         ]);
 
-        // Validate that meeting link is provided if online consultation
-        if ($request->boolean('is_online') && empty($request->meeting_link)) {
+        // Validate that meeting link is provided if online consultation (except for Whereby which auto-generates)
+        if ($request->boolean('is_online') && empty($request->meeting_link) && $request->meeting_platform !== 'whereby') {
             return redirect()->back()
                 ->withErrors(['meeting_link' => 'Meeting link is required for online consultations.'])
                 ->withInput();

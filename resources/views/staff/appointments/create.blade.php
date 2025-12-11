@@ -318,27 +318,26 @@
                         <div class="row" id="meeting_link_row" style="{{ old('is_online') ? '' : 'display: none;' }}">
                             <div class="col-md-6 mb-3">
                                 <label for="meeting_platform" class="form-label">Meeting Platform</label>
-                                <select class="form-control @error('meeting_platform') is-invalid @enderror" 
+                                <select class="form-control @error('meeting_platform') is-invalid @enderror"
                                         id="meeting_platform" name="meeting_platform">
-                                    <option value="">Select Platform</option>
+                                    <option value="whereby" {{ old('meeting_platform', 'whereby') == 'whereby' ? 'selected' : '' }}>Whereby (Auto-generated)</option>
                                     <option value="zoom" {{ old('meeting_platform') == 'zoom' ? 'selected' : '' }}>Zoom</option>
                                     <option value="google_meet" {{ old('meeting_platform') == 'google_meet' ? 'selected' : '' }}>Google Meet</option>
                                     <option value="teams" {{ old('meeting_platform') == 'teams' ? 'selected' : '' }}>Microsoft Teams</option>
-                                    <option value="whereby" {{ old('meeting_platform') == 'whereby' ? 'selected' : '' }}>Whereby</option>
                                     <option value="custom" {{ old('meeting_platform') == 'custom' ? 'selected' : '' }}>Custom Platform</option>
                                 </select>
                                 @error('meeting_platform')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="meeting_link" class="form-label">Meeting Link <span class="text-danger">*</span></label>
+                            <div class="col-md-6 mb-3" id="meeting_link_container">
+                                <label for="meeting_link" class="form-label">Meeting Link <span class="text-danger" id="meeting_link_required">*</span></label>
                                 <div class="input-group">
-                                    <input type="url" class="form-control @error('meeting_link') is-invalid @enderror" 
-                                           id="meeting_link" name="meeting_link" 
-                                           value="{{ old('meeting_link') }}" 
+                                    <input type="url" class="form-control @error('meeting_link') is-invalid @enderror"
+                                           id="meeting_link" name="meeting_link"
+                                           value="{{ old('meeting_link') }}"
                                            placeholder="Enter meeting link based on selected platform">
-                                    <button type="button" class="btn btn-outline-secondary" id="copy_meeting_link" 
+                                    <button type="button" class="btn btn-outline-secondary" id="copy_meeting_link"
                                             title="Copy Meeting Link" style="display: none;">
                                         <i class="fas fa-copy"></i>
                                     </button>
@@ -346,7 +345,16 @@
                                 @error('meeting_link')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <small class="form-text text-muted">Required for online consultations</small>
+                                <small class="form-text text-muted" id="meeting_link_help">Required for online consultations</small>
+                            </div>
+                            <!-- Whereby auto-generation notice -->
+                            <div class="col-md-6 mb-3" id="whereby_notice" style="display: none;">
+                                <label class="form-label">Meeting Link</label>
+                                <div class="alert alert-info mb-0 py-2" style="border-radius: 8px;">
+                                    <i class="fas fa-magic me-2"></i>
+                                    <strong>Auto-generated</strong>
+                                    <p class="mb-0 mt-1 small">A Whereby meeting room will be automatically created when you schedule this appointment.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -650,43 +658,63 @@ $(document).ready(function() {
 
     // Client-side validation for meeting link
     $('#appointmentForm').on('submit', function(e) {
-        if ($('#is_online').is(':checked') && !$('#meeting_link').val().trim()) {
+        const isOnline = $('#is_online').is(':checked');
+        const platform = $('#meeting_platform').val();
+        const meetingLink = $('#meeting_link').val().trim();
+
+        // Only require meeting link for non-Whereby platforms
+        if (isOnline && platform !== 'whereby' && !meetingLink) {
             e.preventDefault();
             $('#meeting_link').addClass('is-invalid');
-            alert('Meeting link is required for online consultations.');
+            alert('Meeting link is required for online consultations with ' + platform.replace('_', ' ') + '.');
             return false;
         }
     });
     
-    // Update meeting link placeholder based on selected platform
-    $('#meeting_platform').off('change.placeholder').on('change.placeholder', function() {
-        // Call the global function if available, otherwise use jQuery
-        if (typeof window.updateMeetingLinkPlaceholder === 'function') {
-            window.updateMeetingLinkPlaceholder();
+    // Update meeting link UI based on selected platform
+    function updateMeetingPlatformUI() {
+        const platform = $('#meeting_platform').val();
+        const meetingLinkContainer = $('#meeting_link_container');
+        const wherebyNotice = $('#whereby_notice');
+        const meetingLinkInput = $('#meeting_link');
+        const meetingLinkRequired = $('#meeting_link_required');
+
+        if (platform === 'whereby') {
+            // Hide manual link input, show auto-generation notice
+            meetingLinkContainer.hide();
+            wherebyNotice.show();
+            meetingLinkInput.prop('required', false).removeAttr('required');
+            meetingLinkInput.val(''); // Clear any manual link
         } else {
-            const platform = $(this).val();
-            const meetingLinkInput = $('#meeting_link');
+            // Show manual link input, hide notice
+            meetingLinkContainer.show();
+            wherebyNotice.hide();
+
+            if ($('#is_online').is(':checked')) {
+                meetingLinkInput.prop('required', true);
+                meetingLinkRequired.show();
+            }
+
+            // Update placeholder based on platform
             const placeholders = {
                 'zoom': 'https://zoom.us/j/xxxxxxxxxx',
                 'google_meet': 'https://meet.google.com/xxx-xxxx-xxx',
                 'teams': 'https://teams.microsoft.com/l/meetup-join/xxx',
-                'whereby': 'https://subdomain.whereby.com/room-name',
                 'custom': 'https://your-platform.com/meeting-link',
                 '': 'Enter meeting link based on selected platform'
             };
             meetingLinkInput.attr('placeholder', placeholders[platform] || placeholders['']);
         }
+    }
+
+    // Handle platform change
+    $('#meeting_platform').off('change.platform').on('change.platform', function() {
+        updateMeetingPlatformUI();
     });
-    
-    // Trigger change on page load if platform is already selected
+
+    // Initialize on page load
     setTimeout(function() {
-        if ($('#meeting_platform').val()) {
-            $('#meeting_platform').trigger('change.placeholder');
-        }
-        // Also call the global function
-        if (typeof window.updateMeetingLinkPlaceholder === 'function') {
-            window.updateMeetingLinkPlaceholder();
-        }
+        updateMeetingPlatformUI();
     }, 300);
 
     // Filter time slots based on selected date
