@@ -110,12 +110,15 @@ class TemplatesController extends Controller
     /**
      * Search patients (AJAX endpoint for Select2).
      * Returns Select2-compatible format.
+     * Only returns patients belonging to the logged-in doctor.
      */
     public function searchPatients(Request $request)
     {
         $search = $request->get('q', '');
+        $doctorId = auth()->id();
 
         // Use cross-database compatible query (no CONCAT)
+        // Filter to only show patients created by or assigned to the logged-in doctor
         $patients = Patient::where(function ($query) use ($search) {
             $query->where('first_name', 'like', "%{$search}%")
                 ->orWhere('last_name', 'like', "%{$search}%")
@@ -124,6 +127,10 @@ class TemplatesController extends Controller
                 ->orWhere('patient_id', 'like', "%{$search}%");
         })
         ->where('is_active', true)
+        ->where(function ($query) use ($doctorId) {
+            $query->where('created_by_doctor_id', $doctorId)
+                ->orWhere('assigned_doctor_id', $doctorId);
+        })
         ->limit(20)
         ->get(['id', 'first_name', 'last_name', 'email', 'date_of_birth', 'patient_id']);
 
