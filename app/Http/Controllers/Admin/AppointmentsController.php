@@ -161,8 +161,12 @@ class AppointmentsController extends Controller
 
         $appointment = Appointment::create($data);
 
-        // If this is an online appointment without a meeting link, auto-generate Whereby room
-        if ($appointment->is_online && empty($appointment->meeting_link) && $wherebyEnabled) {
+        // Track if we need to send emails manually (for Whereby appointments)
+        $sendEmailsManually = false;
+
+        // If this is an online appointment with Whereby platform and no meeting link, auto-generate
+        if ($appointment->is_online && empty($appointment->meeting_link) && $appointment->meeting_platform === 'whereby' && $wherebyEnabled) {
+            $sendEmailsManually = true; // Observer skipped email, we'll send after link is created
             try {
                 $wherebyService->createMeetingForAppointment($appointment);
                 $appointment->refresh(); // Reload to get the updated meeting_link
@@ -180,23 +184,42 @@ class AppointmentsController extends Controller
 
         // Load relationships for email notifications
         $appointment->load(['patient', 'doctor', 'department']);
-        
+
         // Handle emergency admission notifications
         if ($appointment->type === 'emergency') {
             $this->handleEmergencyAdmissionNotifications($appointment, $emailService);
         }
-        
+
         // Send email notifications if enabled
-        if (config('hospital.notifications.appointment_confirmation.enabled', true)) {
+        // For Whereby appointments, the observer skipped email so we send manually here
+        // For non-Whereby appointments, the observer already sent emails
+        $shouldSendEmails = config('hospital.notifications.appointment_confirmation.enabled', true);
+
+        if ($shouldSendEmails && $sendEmailsManually) {
+            // For Whereby appointments where observer skipped email
+            if (empty($appointment->meeting_link)) {
+                // Whereby link creation failed, still send emails but without meeting link
+                \Log::warning('Sending appointment emails without Whereby link - link creation may have failed', [
+                    'appointment_id' => $appointment->id
+                ]);
+            }
+
             try {
                 // Send confirmation to patient
-                if (config('hospital.notifications.appointment_confirmation.send_to_patient', true)) {
+                if (config('hospital.notifications.appointment_confirmation.send_to_patient', true) && $appointment->patient && $appointment->patient->email) {
                     $emailService->sendAppointmentConfirmation($appointment);
+                    \Log::info('Appointment confirmation email sent after Whereby processing', [
+                        'appointment_id' => $appointment->id,
+                        'has_meeting_link' => !empty($appointment->meeting_link)
+                    ]);
                 }
-                
+
                 // Send notification to doctor
                 if (config('hospital.notifications.appointment_confirmation.send_to_doctor', true) && $appointment->doctor) {
                     $emailService->notifyDoctorNewAppointment($appointment, $appointment->doctor);
+                    \Log::info('Doctor notification email sent after Whereby processing', [
+                        'appointment_id' => $appointment->id
+                    ]);
                 }
             } catch (\Exception $e) {
                 // Log error but don't fail the appointment creation
@@ -206,6 +229,7 @@ class AppointmentsController extends Controller
                 ]);
             }
         }
+        // Note: For non-Whereby appointments, emails are sent by AppointmentObserver
 
         return redirect()
             ->route('admin.appointments.index')
