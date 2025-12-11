@@ -45,13 +45,23 @@ class HospitalEmailNotificationService
         $doctor = $appointment->doctor;
         $patient = $appointment->patient;
 
+        // Format appointment time properly
+        $appointmentTime = $appointment->appointment_time;
+        if ($appointmentTime) {
+            try {
+                $appointmentTime = \Carbon\Carbon::parse($appointmentTime)->format('g:i A');
+            } catch (\Exception $e) {
+                // Keep original value if parsing fails
+            }
+        }
+
         $variables = [
             'patient_name' => $patient->full_name,
             'patient_email' => $patient->email,
             'doctor_name' => $doctor ? $doctor->name : 'TBD',
             'doctor_specialization' => $doctor ? $doctor->specialization : 'General',
             'appointment_date' => $appointment->appointment_date->format('F d, Y'),
-            'appointment_time' => $appointment->appointment_time,
+            'appointment_time' => $appointmentTime,
             'appointment_type' => $appointment->type ?? 'Consultation',
             'department' => $appointment->department ? $appointment->department->name : 'General',
             'hospital_name' => config('app.name', 'Hospital'),
@@ -97,11 +107,21 @@ class HospitalEmailNotificationService
         $doctor = $appointment->doctor;
         $patient = $appointment->patient;
 
+        // Format appointment time properly
+        $appointmentTime = $appointment->appointment_time;
+        if ($appointmentTime) {
+            try {
+                $appointmentTime = \Carbon\Carbon::parse($appointmentTime)->format('g:i A');
+            } catch (\Exception $e) {
+                // Keep original value if parsing fails
+            }
+        }
+
         $variables = [
             'patient_name' => $patient->full_name,
             'doctor_name' => $doctor ? $doctor->name : 'TBD',
             'appointment_date' => $appointment->appointment_date->format('F d, Y'),
-            'appointment_time' => $appointment->appointment_time,
+            'appointment_time' => $appointmentTime,
             'days_before' => $daysBefore,
             'hospital_name' => config('app.name', 'Hospital'),
             'appointment_id' => $appointment->id,
@@ -821,12 +841,22 @@ class HospitalEmailNotificationService
 
         $patient = $appointment->patient;
 
+        // Format appointment time properly
+        $appointmentTime = $appointment->appointment_time;
+        if ($appointmentTime) {
+            try {
+                $appointmentTime = \Carbon\Carbon::parse($appointmentTime)->format('g:i A');
+            } catch (\Exception $e) {
+                // Keep original value if parsing fails
+            }
+        }
+
         $variables = [
             'doctor_name' => $doctor->name,
             'patient_name' => $patient->full_name,
             'patient_phone' => $patient->phone ?? 'Not provided',
             'appointment_date' => $appointment->appointment_date->format('F d, Y'),
-            'appointment_time' => $appointment->appointment_time,
+            'appointment_time' => $appointmentTime,
             'appointment_type' => $appointment->type ?? 'Consultation',
             'notes' => $appointment->notes ?? 'No additional notes',
             'hospital_name' => config('app.name', 'Hospital'),
@@ -1508,11 +1538,21 @@ class HospitalEmailNotificationService
         $doctor = $appointment->doctor;
         $patient = $appointment->patient;
 
+        // Format appointment time properly
+        $appointmentTime = $appointment->appointment_time;
+        if ($appointmentTime) {
+            try {
+                $appointmentTime = \Carbon\Carbon::parse($appointmentTime)->format('g:i A');
+            } catch (\Exception $e) {
+                // Keep original value if parsing fails
+            }
+        }
+
         $variables = [
             'patient_name' => $patient->full_name,
             'doctor_name' => $doctor ? $doctor->name : 'TBD',
             'appointment_date' => $appointment->appointment_date->format('F d, Y'),
-            'appointment_time' => $appointment->appointment_time,
+            'appointment_time' => $appointmentTime,
             'department' => $appointment->department ? $appointment->department->name : 'General',
             'hospital_name' => config('app.name', 'Hospital'),
             'hospital_phone' => config('hospital.phone', ''),
@@ -1542,11 +1582,21 @@ class HospitalEmailNotificationService
         $doctor = $appointment->doctor;
         $patient = $appointment->patient;
 
+        // Format appointment time properly
+        $appointmentTime = $appointment->appointment_time;
+        if ($appointmentTime) {
+            try {
+                $appointmentTime = \Carbon\Carbon::parse($appointmentTime)->format('g:i A');
+            } catch (\Exception $e) {
+                // Keep original value if parsing fails
+            }
+        }
+
         $variables = [
             'patient_name' => $patient->full_name,
             'doctor_name' => $doctor ? $doctor->name : 'TBD',
             'appointment_date' => $appointment->appointment_date->format('F d, Y'),
-            'appointment_time' => $appointment->appointment_time,
+            'appointment_time' => $appointmentTime,
             'department' => $appointment->department ? $appointment->department->name : 'General',
             'hospital_name' => config('app.name', 'Hospital'),
             'diagnosis' => $appointment->diagnosis ?? 'No diagnosis recorded',
@@ -1579,13 +1629,32 @@ class HospitalEmailNotificationService
         $doctor = $appointment->doctor;
         $patient = $appointment->patient;
 
+        // Format appointment times properly
+        $newTime = $appointment->appointment_time;
+        if ($newTime) {
+            try {
+                $newTime = \Carbon\Carbon::parse($newTime)->format('g:i A');
+            } catch (\Exception $e) {
+                // Keep original value if parsing fails
+            }
+        }
+
+        // Format old time if it looks like a raw time value
+        if ($oldTime && preg_match('/^\d{2}:\d{2}/', $oldTime)) {
+            try {
+                $oldTime = \Carbon\Carbon::parse($oldTime)->format('g:i A');
+            } catch (\Exception $e) {
+                // Keep original value if parsing fails
+            }
+        }
+
         $variables = [
             'patient_name' => $patient->full_name,
             'doctor_name' => $doctor ? $doctor->name : 'TBD',
             'old_date' => $oldDate,
             'old_time' => $oldTime,
             'new_date' => $appointment->appointment_date->format('F d, Y'),
-            'new_time' => $appointment->appointment_time,
+            'new_time' => $newTime,
             'department' => $appointment->department ? $appointment->department->name : 'General',
             'hospital_name' => config('app.name', 'Hospital'),
             'hospital_phone' => config('hospital.phone', ''),
@@ -1614,11 +1683,21 @@ class HospitalEmailNotificationService
 
         $patient = $appointment->patient;
 
+        // Format appointment time properly
+        $appointmentTime = $appointment->appointment_time;
+        if ($appointmentTime) {
+            try {
+                $appointmentTime = \Carbon\Carbon::parse($appointmentTime)->format('g:i A');
+            } catch (\Exception $e) {
+                // Keep original value if parsing fails
+            }
+        }
+
         $variables = [
             'doctor_name' => $doctor->name,
             'patient_name' => $patient ? $patient->full_name : 'Patient',
             'appointment_date' => $appointment->appointment_date->format('F d, Y'),
-            'appointment_time' => $appointment->appointment_time,
+            'appointment_time' => $appointmentTime,
             'department' => $appointment->department ? $appointment->department->name : 'General',
             'hospital_name' => config('app.name', 'Hospital'),
             'cancellation_reason' => $appointment->notes ?? 'Appointment cancelled',
