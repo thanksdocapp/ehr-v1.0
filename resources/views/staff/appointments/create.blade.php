@@ -231,39 +231,12 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="is_online" name="is_online" value="1" 
                                        {{ old('is_online') ? 'checked' : '' }}
-                                       onchange="handleOnlineConsultationChange(this)">
-                                <label class="form-check-label" for="is_online" onclick="setTimeout(function(){handleOnlineConsultationChange(document.getElementById('is_online'));}, 10);">
+                                       >
+                                <label class="form-check-label" for="is_online">
                                     <i class="fas fa-video me-1"></i>Online Consultation
                                 </label>
                             </div>
                         </div>
-                        
-                        <script>
-                        // Simple function to toggle Whereby info panel visibility
-                        function handleOnlineConsultationChange(checkbox) {
-                            var meetingRow = document.getElementById('meeting_link_row');
-                            if (!meetingRow) return;
-
-                            var isChecked = checkbox && (checkbox.checked || checkbox.getAttribute('checked') !== null);
-
-                            if (isChecked) {
-                                meetingRow.style.display = 'block';
-                            } else {
-                                meetingRow.style.display = 'none';
-                            }
-                        }
-
-                        // Initialize on page load
-                        document.addEventListener('DOMContentLoaded', function() {
-                            var checkbox = document.getElementById('is_online');
-                            if (checkbox) {
-                                handleOnlineConsultationChange(checkbox);
-                                checkbox.addEventListener('change', function() {
-                                    handleOnlineConsultationChange(this);
-                                });
-                            }
-                        });
-                        </script>
                         
                         <div class="row" id="meeting_link_row" @if(!old('is_online')) style="display: none;" @endif>
                             <div class="col-12 mb-3">
@@ -597,14 +570,13 @@ $(document).ready(function() {
 
     // Toggle Whereby info panel based on is_online checkbox
     function toggleMeetingLink() {
-        const checkbox = $('#is_online');
-        const isChecked = checkbox.is(':checked') || checkbox.prop('checked');
+        const checkbox = document.getElementById('is_online');
+        const meetingRow = document.getElementById('meeting_link_row');
+        if (!checkbox || !meetingRow) return;
 
-        if (isChecked) {
-            $('#meeting_link_row').slideDown();
-        } else {
-            $('#meeting_link_row').slideUp();
-        }
+        const isChecked = !!checkbox.checked;
+        // Keep the Whereby notice "fixed" (no slide animation) while online consultation is selected
+        meetingRow.style.display = isChecked ? 'block' : 'none';
     }
 
     // Handle checkbox change
