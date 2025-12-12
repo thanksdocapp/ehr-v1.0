@@ -50,6 +50,18 @@
                                         <label for="patient" class="form-label">
                                             <i class="fas fa-user me-1"></i>Patient *
                                         </label>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   id="patientSearchInput"
+                                                   placeholder="Search patient by name or email…"
+                                                   autocomplete="off">
+                                            <button type="button" class="btn btn-outline-secondary" id="patientSearchClearBtn" style="display:none;">
+                                                Clear
+                                            </button>
+                                        </div>
+                                        <small class="text-muted d-block mb-2" id="patientSearchMeta" style="display:none;"></small>
                                         <select name="patient_id" id="patient" class="form-select @error('patient_id') is-invalid @enderror" required>
                                             <option value="">Select a patient</option>
                                             @foreach($patients as $patient)
@@ -342,6 +354,99 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
+    // ===== Patient search (alerts-style: live filter the select options) =====
+    (function initPatientSelectSearch() {
+        const select = document.getElementById('patient');
+        const input = document.getElementById('patientSearchInput');
+        const clearBtn = document.getElementById('patientSearchClearBtn');
+        const meta = document.getElementById('patientSearchMeta');
+        if (!select || !input || !clearBtn || !meta) return;
+
+        const cachedOptions = Array.from(select.options).map(opt => ({
+            value: opt.value,
+            label: (opt.textContent || '').trim(),
+            disabled: !!opt.disabled,
+            dataset: { ...opt.dataset },
+        }));
+
+        const placeholder = cachedOptions[0] || { value: '', label: 'Select a patient', disabled: false, dataset: {} };
+        const patients = cachedOptions.slice(1).filter(o => o.value);
+        const totalPatients = patients.length;
+
+        function rebuildOptions(optionsToShow, currentValue) {
+            select.innerHTML = '';
+
+            const ph = document.createElement('option');
+            ph.value = placeholder.value;
+            ph.textContent = placeholder.label;
+            ph.disabled = placeholder.disabled;
+            select.appendChild(ph);
+
+            const selected = patients.find(p => p.value === currentValue);
+            if (selected && !optionsToShow.some(p => p.value === currentValue)) {
+                optionsToShow = [selected, ...optionsToShow];
+            }
+
+            for (const item of optionsToShow) {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.textContent = item.label;
+                if (item.dataset) {
+                    for (const [k, v] of Object.entries(item.dataset)) {
+                        opt.dataset[k] = v;
+                    }
+                }
+                select.appendChild(opt);
+            }
+
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        function updateMeta(query, visibleCount) {
+            if (!query) {
+                meta.style.display = 'none';
+                meta.textContent = '';
+                return;
+            }
+            meta.style.display = 'block';
+            meta.textContent = visibleCount > 0
+                ? `Found ${visibleCount} of ${totalPatients} patients`
+                : 'No patients found. Try a different search or clear.';
+        }
+
+        let t = null;
+        function applyFilter() {
+            const query = (input.value || '').toLowerCase().trim();
+            clearBtn.style.display = query ? 'inline-block' : 'none';
+
+            const currentValue = select.value;
+            if (!query) {
+                rebuildOptions(patients, currentValue);
+                updateMeta('', 0);
+                return;
+            }
+
+            const matches = patients.filter(p => (p.label || '').toLowerCase().includes(query));
+            rebuildOptions(matches, currentValue);
+            updateMeta(query, matches.length);
+        }
+
+        input.addEventListener('input', () => {
+            if (t) window.clearTimeout(t);
+            t = window.setTimeout(applyFilter, 80);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            applyFilter();
+            input.focus();
+        });
+
+        applyFilter();
+    })();
+
     // Set today's date as default for billing date
     if (!$('#billing_date').val()) {
         $('#billing_date').val(new Date().toISOString().split('T')[0]);

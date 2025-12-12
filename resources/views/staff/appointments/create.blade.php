@@ -50,10 +50,6 @@
                                         </button>
                                     </div>
                                     <small class="text-muted d-block mb-2" id="patientSearchMeta" style="display:none;"></small>
-                                    <div id="patientSearchResults"
-                                         class="list-group mb-2"
-                                         style="display:none; max-height: 240px; overflow: auto;">
-                                    </div>
                                     <select class="form-control @error('patient_id') is-invalid @enderror" 
                                             id="patient_id" name="patient_id" required>
                                         <option value="">Select Patient</option>
@@ -393,28 +389,58 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // ===== Patient search (vanilla JS) =====
-    (function initPatientSearch() {
+    // ===== Patient search (alerts-style: live filter the select options) =====
+    (function initPatientSelectSearch() {
         const select = document.getElementById('patient_id');
         const input = document.getElementById('patientSearchInput');
         const clearBtn = document.getElementById('patientSearchClearBtn');
         const meta = document.getElementById('patientSearchMeta');
-        const results = document.getElementById('patientSearchResults');
         if (!select || !input || !clearBtn || !meta) return;
-        if (!results) return;
 
-        // Cache options once (we won't mutate the <select> list; we just set its value on selection).
-        const allPatients = Array.from(select.options)
-          .slice(1)
-          .filter(opt => opt && opt.value)
-          .map(opt => ({
-              value: opt.value,
-              label: (opt.textContent || '').trim(),
-              text: (opt.textContent || '').toLowerCase(),
-          }));
-        const totalPatients = allPatients.length;
+        const cachedOptions = Array.from(select.options).map(opt => ({
+            value: opt.value,
+            label: (opt.textContent || '').trim(),
+            disabled: !!opt.disabled,
+            dataset: { ...opt.dataset },
+        }));
 
-        function setMeta(visibleCount, query) {
+        const placeholder = cachedOptions[0] || { value: '', label: 'Select Patient', disabled: false, dataset: {} };
+        const patients = cachedOptions.slice(1).filter(o => o.value);
+        const totalPatients = patients.length;
+
+        function rebuildOptions(optionsToShow, currentValue) {
+            select.innerHTML = '';
+
+            const ph = document.createElement('option');
+            ph.value = placeholder.value;
+            ph.textContent = placeholder.label;
+            ph.disabled = placeholder.disabled;
+            select.appendChild(ph);
+
+            // Always keep current selection visible (even if it doesn't match the filter)
+            const selected = patients.find(p => p.value === currentValue);
+            if (selected && !optionsToShow.some(p => p.value === currentValue)) {
+                optionsToShow = [selected, ...optionsToShow];
+            }
+
+            for (const item of optionsToShow) {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.textContent = item.label;
+                if (item.dataset) {
+                    for (const [k, v] of Object.entries(item.dataset)) {
+                        opt.dataset[k] = v;
+                    }
+                }
+                select.appendChild(opt);
+            }
+
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        function updateMeta(query, visibleCount) {
             if (!query) {
                 meta.style.display = 'none';
                 meta.textContent = '';
@@ -423,90 +449,39 @@ $(document).ready(function() {
             meta.style.display = 'block';
             meta.textContent = visibleCount > 0
                 ? `Found ${visibleCount} of ${totalPatients} patients`
-                : 'No patients match your search. Try a different name/phone or clear the search.';
-        }
-
-        function hideResults() {
-            results.style.display = 'none';
-            results.innerHTML = '';
-        }
-
-        function showResults(items, query) {
-            results.innerHTML = '';
-            if (!query) {
-                hideResults();
-                return;
-            }
-
-            if (!items.length) {
-                hideResults();
-                return;
-            }
-
-            const max = 20;
-            for (const p of items.slice(0, max)) {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'list-group-item list-group-item-action';
-                btn.textContent = p.label;
-                btn.addEventListener('click', () => {
-                    select.value = p.value;
-                    select.dispatchEvent(new Event('change', { bubbles: true }));
-                    input.value = p.label;
-                    hideResults();
-                    meta.style.display = 'none';
-                    meta.textContent = '';
-                });
-                results.appendChild(btn);
-            }
-
-            results.style.display = 'block';
-        }
-
-        function render(queryRaw) {
-            const query = (queryRaw || '').trim().toLowerCase();
-            clearBtn.style.display = query ? 'inline-block' : 'none';
-
-            if (!query) {
-                setMeta(0, '');
-                hideResults();
-                return;
-            }
-
-            const matches = allPatients.filter(p => p.text.includes(query));
-            setMeta(matches.length, query);
-            showResults(matches, query);
+                : 'No patients found. Try a different search or clear.';
         }
 
         // Small debounce to keep typing snappy even with large lists
         let t = null;
+        function applyFilter() {
+            const query = (input.value || '').toLowerCase().trim();
+            clearBtn.style.display = query ? 'inline-block' : 'none';
+
+            const currentValue = select.value;
+            if (!query) {
+                rebuildOptions(patients, currentValue);
+                updateMeta('', 0);
+                return;
+            }
+
+            const matches = patients.filter(p => (p.label || '').toLowerCase().includes(query));
+            rebuildOptions(matches, currentValue);
+            updateMeta(query, matches.length);
+        }
+
         input.addEventListener('input', () => {
             if (t) window.clearTimeout(t);
-            t = window.setTimeout(() => render(input.value), 80);
+            t = window.setTimeout(applyFilter, 80);
         });
 
         clearBtn.addEventListener('click', () => {
             input.value = '';
-            render('');
+            applyFilter();
             input.focus();
         });
 
-        // If there is an existing selection, reflect it in the search input for clarity.
-        if (select.value) {
-            const selected = allPatients.find(p => p.value === select.value);
-            if (selected) {
-                input.value = selected.label;
-            }
-        }
-
-        // Hide results when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!results.contains(e.target) && e.target !== input) {
-                hideResults();
-            }
-        });
-
-        render('');
+        applyFilter();
     })();
 
     // Set default appointment date to today
