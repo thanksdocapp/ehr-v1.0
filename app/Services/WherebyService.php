@@ -36,6 +36,13 @@ class WherebyService
      */
     public function createMeeting(Appointment $appointment): ?array
     {
+        Log::info('WherebyService::createMeeting called', [
+            'appointment_id' => $appointment->id,
+            'is_online' => $appointment->is_online,
+            'meeting_platform' => $appointment->meeting_platform,
+            'existing_meeting_link' => $appointment->meeting_link,
+        ]);
+
         if (!$this->isEnabled()) {
             Log::warning('Whereby integration is not enabled or configured', [
                 'enabled_setting' => $this->enabled,
@@ -47,9 +54,17 @@ class WherebyService
 
         try {
             // Calculate end time (appointment time + duration + 30 minutes buffer)
-            $appointmentDateTime = \Carbon\Carbon::parse(
-                $appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time
-            );
+            $dateString = $appointment->appointment_date instanceof \Carbon\Carbon
+                ? $appointment->appointment_date->format('Y-m-d')
+                : $appointment->appointment_date;
+            $timeString = $appointment->appointment_time;
+
+            Log::info('Whereby: Parsing appointment datetime', [
+                'date_string' => $dateString,
+                'time_string' => $timeString,
+            ]);
+
+            $appointmentDateTime = \Carbon\Carbon::parse($dateString . ' ' . $timeString);
 
             // Get appointment duration (default 60 minutes if not set)
             $duration = $appointment->service?->default_duration_minutes ?? 60;
@@ -206,19 +221,36 @@ class WherebyService
      */
     public function createMeetingForAppointment(Appointment $appointment): bool
     {
+        Log::info('WherebyService::createMeetingForAppointment called', [
+            'appointment_id' => $appointment->id,
+            'is_online' => $appointment->is_online,
+            'existing_meeting_link' => $appointment->meeting_link,
+        ]);
+
         // Only create if appointment is online and doesn't already have a meeting link
         if (!$appointment->is_online) {
+            Log::info('Whereby: Skipping - appointment is not online');
             return false;
         }
 
         // Skip if already has a meeting link (unless it's empty)
         if (!empty($appointment->meeting_link)) {
+            Log::info('Whereby: Skipping - appointment already has meeting link', [
+                'meeting_link' => $appointment->meeting_link,
+            ]);
             return true;
         }
 
         $meetingData = $this->createMeeting($appointment);
 
         if ($meetingData && !empty($meetingData['room_url'])) {
+            Log::info('Whereby: Meeting created, saving to appointment', [
+                'appointment_id' => $appointment->id,
+                'room_url' => $meetingData['room_url'],
+                'host_room_url' => $meetingData['host_room_url'],
+                'meeting_id' => $meetingData['meeting_id'],
+            ]);
+
             $appointment->update([
                 'meeting_link' => $meetingData['room_url'],
                 'meeting_platform' => 'whereby',
@@ -226,8 +258,21 @@ class WherebyService
                 'whereby_host_url' => $meetingData['host_room_url'],
             ]);
 
+            // Verify the save
+            $appointment->refresh();
+            Log::info('Whereby: Appointment updated', [
+                'appointment_id' => $appointment->id,
+                'saved_meeting_link' => $appointment->meeting_link,
+                'saved_host_url' => $appointment->whereby_host_url,
+            ]);
+
             return true;
         }
+
+        Log::warning('Whereby: createMeeting returned no data or empty room_url', [
+            'appointment_id' => $appointment->id,
+            'meeting_data' => $meetingData,
+        ]);
 
         return false;
     }
