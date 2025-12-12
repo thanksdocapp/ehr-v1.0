@@ -511,17 +511,6 @@
                         </tbody>
                     </table>
                 </div>
-                
-                <!-- Pagination -->
-                <div class="card-footer d-flex justify-content-between align-items-center">
-                    <div class="text-muted">
-                        Showing {{ $bills->firstItem() }} to {{ $bills->lastItem() }} 
-                        of {{ $bills->total() }} results
-                    </div>
-                    <div>
-                        {{ $bills->appends(request()->query())->links() }}
-                    </div>
-                </div>
             @else
                 <div class="text-center py-5">
                     <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
@@ -533,6 +522,19 @@
                 </div>
             @endif
         </div>
+
+        @if($bills->count() > 0)
+            <!-- Pagination -->
+            <div class="doctor-card-footer d-flex justify-content-between align-items-center px-3 py-3 border-top">
+                <div class="text-muted">
+                    Showing {{ $bills->firstItem() }} to {{ $bills->lastItem() }}
+                    of {{ $bills->total() }} results
+                </div>
+                <div>
+                    {{ $bills->appends(request()->query())->links() }}
+                </div>
+            </div>
+        @endif
     </div>
 </div>
 
