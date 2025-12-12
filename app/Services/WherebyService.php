@@ -54,17 +54,27 @@ class WherebyService
 
         try {
             // Calculate end time (appointment time + duration + 30 minutes buffer)
-            $dateString = $appointment->appointment_date instanceof \Carbon\Carbon
-                ? $appointment->appointment_date->format('Y-m-d')
-                : $appointment->appointment_date;
-            $timeString = $appointment->appointment_time;
+            // Handle different formats: appointment_time might be just time (H:i:s) or full datetime
+            $timeValue = $appointment->appointment_time;
 
-            Log::info('Whereby: Parsing appointment datetime', [
-                'date_string' => $dateString,
-                'time_string' => $timeString,
+            // Check if appointment_time is already a full datetime string
+            if ($timeValue instanceof \Carbon\Carbon) {
+                $appointmentDateTime = $timeValue;
+            } elseif (preg_match('/^\d{4}-\d{2}-\d{2}/', $timeValue)) {
+                // Already contains a date (e.g., "2025-12-12 11:00:00"), parse directly
+                $appointmentDateTime = \Carbon\Carbon::parse($timeValue);
+            } else {
+                // Just a time string (e.g., "11:00:00"), combine with date
+                $dateString = $appointment->appointment_date instanceof \Carbon\Carbon
+                    ? $appointment->appointment_date->format('Y-m-d')
+                    : $appointment->appointment_date;
+                $appointmentDateTime = \Carbon\Carbon::parse($dateString . ' ' . $timeValue);
+            }
+
+            Log::info('Whereby: Parsed appointment datetime', [
+                'original_time_value' => $timeValue,
+                'parsed_datetime' => $appointmentDateTime->toIso8601String(),
             ]);
-
-            $appointmentDateTime = \Carbon\Carbon::parse($dateString . ' ' . $timeString);
 
             // Get appointment duration (default 60 minutes if not set)
             $duration = $appointment->service?->default_duration_minutes ?? 60;
