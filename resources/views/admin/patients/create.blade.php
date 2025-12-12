@@ -173,15 +173,41 @@
     @endif
 
     @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Validation Errors</h5>
-            <hr>
+        @php
+            $fieldLabels = [
+                'first_name' => 'First name',
+                'last_name' => 'Last name',
+                'name' => 'Name',
+                'email' => 'Email',
+                'phone' => 'Phone',
+                'date_of_birth' => 'Date of birth',
+                'gender' => 'Gender',
+                'address' => 'Address line one',
+                'address_line_2' => 'Address line two',
+                'city' => 'Post town',
+                'state' => 'County',
+                'postal_code' => 'Postcode',
+                'country' => 'Country',
+                'guardian_name' => 'Guardian name',
+                'guardian_phone' => 'Guardian phone',
+                'guardian_relationship' => 'Guardian relationship',
+            ];
+        @endphp
+        <div class="alert alert-warning border border-warning" role="alert" style="border-radius: 6px;">
+            <div class="fw-semibold mb-2">
+                {{ $errors->count() }} {{ Str::plural('error', $errors->count()) }}
+                prohibited this patient from being saved:
+            </div>
             <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
+                @foreach($errors->getMessages() as $field => $messages)
+                    @foreach(($messages ?? []) as $message)
+                        <li>
+                            {{ $fieldLabels[$field] ?? Str::of($field)->replace('_', ' ')->lower()->ucfirst() }}
+                            {{ $message }}
+                        </li>
+                    @endforeach
                 @endforeach
             </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
 
