@@ -83,15 +83,6 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-
-                                <div class="form-group mb-3">
-                                    <label for="reason" class="form-label">Reason for Visit</label>
-                                    <textarea class="form-control @error('reason') is-invalid @enderror" 
-                                              id="reason" name="reason" rows="3" placeholder="Brief description of the appointment reason...">{{ old('reason') }}</textarea>
-                                    @error('reason')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
                             </div>
 
                             <div class="col-md-6">
@@ -148,73 +139,89 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                            </div>
+                        </div>
 
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label for="appointment_date" class="form-label">Appointment Date <span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control @error('appointment_date') is-invalid @enderror" 
-                                                   id="appointment_date" name="appointment_date" 
-                                                   value="{{ old('appointment_date', date('Y-m-d')) }}" 
-                                                   min="{{ date('Y-m-d') }}" required>
-                                            @error('appointment_date')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label for="estimated_duration" class="form-label">Estimated Duration <span class="text-danger">*</span></label>
-                                            <select class="form-control @error('estimated_duration') is-invalid @enderror"
-                                                    id="estimated_duration" name="estimated_duration" required>
-                                                <option value="30" {{ old('estimated_duration', '30') === '30' ? 'selected' : '' }}>30 minutes</option>
-                                                <option value="45" {{ old('estimated_duration') === '45' ? 'selected' : '' }}>45 minutes</option>
-                                                <option value="60" {{ old('estimated_duration') === '60' ? 'selected' : '' }}>1 hour</option>
-                                                <option value="90" {{ old('estimated_duration') === '90' ? 'selected' : '' }}>1.5 hours</option>
-                                                <option value="120" {{ old('estimated_duration') === '120' ? 'selected' : '' }}>2 hours</option>
-                                            </select>
-                                            @error('estimated_duration')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                            <small class="text-muted">Duration affects available time ranges</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label for="appointment_time" class="form-label">Appointment Time <span class="text-danger">*</span></label>
-                                            <select class="form-control @error('appointment_time') is-invalid @enderror" 
-                                                    id="appointment_time" name="appointment_time" required>
-                                                <option value="">Select Time</option>
-                                                @for($hour = 8; $hour <= 17; $hour++)
-                                                    @for($minute = 0; $minute < 60; $minute += 30)
-                                                        @php
-                                                            $time = sprintf('%02d:%02d', $hour, $minute);
-                                                            $displayTime = date('g:i A', strtotime($time));
-                                                        @endphp
-                                                        <option value="{{ $time }}" {{ old('appointment_time') === $time ? 'selected' : '' }}>
-                                                            {{ $displayTime }}
-                                                        </option>
-                                                    @endfor
-                                                @endfor
-                                            </select>
-                                            @error('appointment_time')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                            <div id="timeSlotNotice" class="alert alert-warning mt-2 mb-0" style="display:none;">
-                                                <div class="d-flex align-items-start justify-content-between gap-3">
-                                                    <div>
-                                                        <div class="fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>Selected time isn’t available</div>
-                                                        <div id="timeSlotNoticeText" class="small mb-0">
-                                                            This time is unavailable (past/closed). Please choose a later time or change the day.
-                                                        </div>
-                                                    </div>
-                                                    <button type="button" id="timeSlotTomorrowBtn" class="btn btn-sm btn-outline-warning flex-shrink-0">
-                                                        Set date to tomorrow
-                                                    </button>
+                        <!-- Appointment Date / Duration / Time (full-width, below Appointment Type) -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="appointment_date" class="form-label">Appointment Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control @error('appointment_date') is-invalid @enderror"
+                                           id="appointment_date" name="appointment_date"
+                                           value="{{ old('appointment_date', date('Y-m-d')) }}"
+                                           min="{{ date('Y-m-d') }}" required>
+                                    @error('appointment_date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="estimated_duration" class="form-label">Estimated Duration <span class="text-danger">*</span></label>
+                                    <select class="form-control @error('estimated_duration') is-invalid @enderror"
+                                            id="estimated_duration" name="estimated_duration" required>
+                                        <option value="30" {{ old('estimated_duration', '30') === '30' ? 'selected' : '' }}>30 minutes</option>
+                                        <option value="45" {{ old('estimated_duration') === '45' ? 'selected' : '' }}>45 minutes</option>
+                                        <option value="60" {{ old('estimated_duration') === '60' ? 'selected' : '' }}>1 hour</option>
+                                        <option value="90" {{ old('estimated_duration') === '90' ? 'selected' : '' }}>1.5 hours</option>
+                                        <option value="120" {{ old('estimated_duration') === '120' ? 'selected' : '' }}>2 hours</option>
+                                    </select>
+                                    @error('estimated_duration')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Duration affects available time ranges</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="appointment_time" class="form-label">Appointment Time <span class="text-danger">*</span></label>
+                                    <select class="form-control @error('appointment_time') is-invalid @enderror"
+                                            id="appointment_time" name="appointment_time" required>
+                                        <option value="">Select Time</option>
+                                        @for($hour = 8; $hour <= 17; $hour++)
+                                            @for($minute = 0; $minute < 60; $minute += 30)
+                                                @php
+                                                    $time = sprintf('%02d:%02d', $hour, $minute);
+                                                    $displayTime = date('g:i A', strtotime($time));
+                                                @endphp
+                                                <option value="{{ $time }}" {{ old('appointment_time') === $time ? 'selected' : '' }}>
+                                                    {{ $displayTime }}
+                                                </option>
+                                            @endfor
+                                        @endfor
+                                    </select>
+                                    @error('appointment_time')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div id="timeSlotNotice" class="alert alert-warning mt-2 mb-0" style="display:none;">
+                                        <div class="d-flex align-items-start justify-content-between gap-3">
+                                            <div>
+                                                <div class="fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>Selected time isn’t available</div>
+                                                <div id="timeSlotNoticeText" class="small mb-0">
+                                                    This time is unavailable (past/closed). Please choose a later time or change the day.
                                                 </div>
                                             </div>
+                                            <button type="button" id="timeSlotTomorrowBtn" class="btn btn-sm btn-outline-warning flex-shrink-0">
+                                                Set date to tomorrow
+                                            </button>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reason for Visit (full-width) -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group mb-3">
+                                    <label for="reason" class="form-label">Reason for Visit</label>
+                                    <textarea class="form-control @error('reason') is-invalid @enderror"
+                                              id="reason" name="reason" rows="3"
+                                              placeholder="Brief description of the appointment reason...">{{ old('reason') }}</textarea>
+                                    @error('reason')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
