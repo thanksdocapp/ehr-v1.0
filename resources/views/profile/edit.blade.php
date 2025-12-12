@@ -197,7 +197,7 @@
 
                     <a href="mailto:info@thanksdoc.co.uk?subject=Account%20Deletion%20Request"
                        class="btn btn-outline-danger">
-                        <i class="fas fa-envelope me-2"></i>Contact Support (info@thanksdoc.co.uk)
+                        <i class="fas fa-envelope me-2"></i>Contact Support
                     </a>
                 </div>
             </div>
