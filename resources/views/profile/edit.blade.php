@@ -191,14 +191,14 @@
                     <h5 class="doctor-card-title mb-0 text-white"><i class="fas fa-trash me-2"></i>Delete Account</h5>
                 </div>
                 <div class="doctor-card-body">
-                    <p class="text-muted mb-4">
-                        Once your account is deleted, all of its resources and data will be permanently deleted. 
-                        Before deleting your account, please download any data or information that you wish to retain.
+                    <p class="text-muted mb-3">
+                        To delete your account, please contact support.
                     </p>
-                    
-                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
-                        <i class="fas fa-trash me-2"></i>Delete Account
-                    </button>
+
+                    <a href="mailto:info@thankdoc.co.uk?subject=Account%20Deletion%20Request"
+                       class="btn btn-outline-danger">
+                        <i class="fas fa-envelope me-2"></i>Contact Support (info@thankdoc.co.uk)
+                    </a>
                 </div>
             </div>
         </div>
@@ -256,54 +256,6 @@
                     @endif
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Account Modal -->
-<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteAccountModalLabel">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Delete Account
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="post" action="{{ route('profile.destroy') }}">
-                <div class="modal-body">
-                    @csrf
-                    @method('delete')
-                    
-                    <p class="text-danger fw-semibold mb-3">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Are you sure you want to delete your account?
-                    </p>
-                    
-                    <p class="text-muted mb-3">
-                        Once your account is deleted, all of its resources and data will be permanently deleted. 
-                        Please enter your password to confirm you would like to permanently delete your account.
-                    </p>
-
-                    <div class="mb-3">
-                        <label for="password_delete" class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
-                        <input type="password" name="password" id="password_delete" 
-                               class="form-control @error('password', 'userDeletion') is-invalid @enderror" 
-                               placeholder="Enter your password">
-                        @error('password', 'userDeletion')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>Cancel
-                    </button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash me-2"></i>Delete Account
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
