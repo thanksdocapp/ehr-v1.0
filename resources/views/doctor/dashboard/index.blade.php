@@ -621,9 +621,9 @@
                                             <a href="{{ route('staff.appointments.show', $appointment->id) }}" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
                                                 <i class="fas fa-eye"></i> View
                                             </a>
-                                            @if($appointment->is_online && $appointment->meeting_link && $appointment->canJoinMeeting())
-                                                <a href="{{ $appointment->meeting_link }}" target="_blank" class="btn btn-sm btn-success" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
-                                                    <i class="fas fa-video"></i> Join
+                                            @if($appointment->is_online && ($appointment->whereby_host_url || $appointment->meeting_link) && $appointment->canJoinMeeting())
+                                                <a href="{{ $appointment->whereby_host_url ?? $appointment->meeting_link }}" target="_blank" class="btn btn-sm btn-success" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                                                    <i class="fas fa-video"></i> Start
                                                 </a>
                                             @endif
                                         </div>
@@ -731,8 +731,8 @@
                                                 <a href="{{ route('staff.appointments.show', $appointment->id) }}" class="btn btn-outline-primary btn-sm" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                @if($appointment->is_online && $appointment->meeting_link && $appointment->canJoinMeeting())
-                                                    <a href="{{ $appointment->meeting_link }}" target="_blank" class="btn btn-success btn-sm" title="Join Meeting">
+                                                @if($appointment->is_online && ($appointment->whereby_host_url || $appointment->meeting_link) && $appointment->canJoinMeeting())
+                                                    <a href="{{ $appointment->whereby_host_url ?? $appointment->meeting_link }}" target="_blank" class="btn btn-success btn-sm" title="Start Meeting as Host">
                                                         <i class="fas fa-video"></i>
                                                     </a>
                                                 @endif

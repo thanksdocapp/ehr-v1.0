@@ -962,11 +962,13 @@ class HospitalEmailNotificationService
             }
         }
 
-        // Build online consultation section if applicable
+        // Build online consultation section if applicable - use HOST link for doctor
         $onlineConsultationSection = '';
-        if ($appointment->is_online && $appointment->meeting_link) {
+        if ($appointment->is_online && ($appointment->whereby_host_url || $appointment->meeting_link)) {
             $platformName = $appointment->meeting_platform_name ?? 'Video Call';
-            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nMeeting Link: {$appointment->meeting_link}\n";
+            // Use host URL for doctor if available (Whereby), otherwise use regular meeting link
+            $doctorMeetingLink = $appointment->whereby_host_url ?? $appointment->meeting_link;
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nJoin as Host: {$doctorMeetingLink}\n";
         } elseif ($appointment->is_online) {
             $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation. Meeting link will be generated.\n";
         }
@@ -982,7 +984,8 @@ class HospitalEmailNotificationService
             'hospital_name' => config('app.name', 'Hospital'),
             'appointment_url' => url('/staff/appointments/' . $appointment->id),
             'is_online' => $appointment->is_online ?? false,
-            'meeting_link' => $appointment->meeting_link ?? null,
+            'meeting_link' => $appointment->whereby_host_url ?? $appointment->meeting_link ?? null,
+            'host_meeting_link' => $appointment->whereby_host_url ?? $appointment->meeting_link ?? null,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
             'online_consultation_section' => $onlineConsultationSection,
         ];
