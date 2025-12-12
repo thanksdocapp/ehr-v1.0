@@ -106,12 +106,13 @@ class AppointmentObserver
                     // This avoids emails containing empty/unchanged meeting-link shortcodes.
                     try {
                         if ($appointment->is_online &&
-                            $appointment->meeting_platform === 'whereby' &&
+                            ($appointment->meeting_platform === 'whereby' || empty($appointment->meeting_platform)) &&
                             empty($appointment->meeting_link)) {
                             $wherebyService = app(\App\Services\WherebyService::class);
                             if ($wherebyService->isEnabled()) {
                                 Log::info('Whereby: Creating meeting on appointment confirmation', [
                                     'appointment_id' => $appointment->id,
+                                    'meeting_platform' => $appointment->meeting_platform,
                                 ]);
                                 $wherebyService->createMeetingForAppointment($appointment);
                                 $appointment->refresh();

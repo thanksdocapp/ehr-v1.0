@@ -16,6 +16,7 @@ use App\Services\GuestPatientService;
 use App\Services\HospitalEmailNotificationService;
 use App\Services\WherebyService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -91,6 +92,9 @@ class PublicBookingService
         $appointmentNumber = $this->generateAppointmentNumber();
 
         // Create appointment
+        $isOnline = isset($data['consultation_type']) && $data['consultation_type'] === 'online';
+        $useWhereby = $isOnline && $this->wherebyService->isEnabled();
+
         $appointmentData = [
             'appointment_number' => $appointmentNumber,
             'patient_id' => $patient->id,
@@ -103,7 +107,10 @@ class PublicBookingService
             'reason' => $data['reason'] ?? null,
             'notes' => $data['notes'] ?? null,
             'fee' => 0,
-            'is_online' => isset($data['consultation_type']) && $data['consultation_type'] === 'online',
+            'is_online' => $isOnline,
+            // If Whereby is enabled and this is an online consult, mark platform up-front so
+            // the AppointmentObserver can skip sending an email before the meeting link exists.
+            'meeting_platform' => $useWhereby ? 'whereby' : null,
         ];
 
         if (Schema::hasColumn('appointments', 'service_id')) {
@@ -115,17 +122,17 @@ class PublicBookingService
 
         $appointment = Appointment::create($appointmentData);
 
-        // Create Whereby meeting if online
-        if ($appointment->is_online && $this->wherebyService->isEnabled()) {
+        // Create Whereby meeting if online and enabled
+        if ($useWhereby) {
             try {
                 $this->wherebyService->createMeetingForAppointment($appointment);
                 $appointment->refresh(); // Reload to get the updated meeting_link
-                \Log::info('Whereby meeting created for public booking', [
+                Log::info('Whereby meeting created for public booking', [
                     'appointment_id' => $appointment->id,
                     'meeting_link' => $appointment->meeting_link,
                 ]);
             } catch (\Exception $e) {
-                \Log::error('Failed to create Whereby meeting', ['error' => $e->getMessage()]);
+                Log::error('Failed to create Whereby meeting', ['error' => $e->getMessage()]);
             }
         }
 
@@ -236,7 +243,7 @@ class PublicBookingService
         // Generate payment token
         $this->ensurePaymentToken($invoice);
 
-        \Log::info('Pending booking created - awaiting payment', [
+        Log::info('Pending booking created - awaiting payment', [
             'pending_booking_id' => $pendingBooking->id,
             'invoice_id' => $invoice->id,
             'fee' => $fee,
@@ -293,6 +300,7 @@ class PublicBookingService
             $appointmentNumber = $this->generateAppointmentNumber();
 
             // Create appointment
+            $useWhereby = $pendingBooking->is_online && $this->wherebyService->isEnabled();
             $appointmentData = [
                 'appointment_number' => $appointmentNumber,
                 'patient_id' => $patient->id,
@@ -305,6 +313,8 @@ class PublicBookingService
                 'notes' => $pendingBooking->notes,
                 'fee' => $pendingBooking->fee,
                 'is_online' => $pendingBooking->is_online,
+                // Same reasoning as above: ensure observer doesn't email before meeting link exists.
+                'meeting_platform' => $useWhereby ? 'whereby' : null,
             ];
 
             if (Schema::hasColumn('appointments', 'service_id')) {
@@ -316,17 +326,17 @@ class PublicBookingService
 
             $appointment = Appointment::create($appointmentData);
 
-            // Create Whereby meeting if online
-            if ($appointment->is_online && $this->wherebyService->isEnabled()) {
+            // Create Whereby meeting if online and enabled
+            if ($useWhereby) {
                 try {
                     $this->wherebyService->createMeetingForAppointment($appointment);
                     $appointment->refresh(); // Reload to get the updated meeting_link
-                    \Log::info('Whereby meeting created for paid booking', [
+                    Log::info('Whereby meeting created for paid booking', [
                         'appointment_id' => $appointment->id,
                         'meeting_link' => $appointment->meeting_link,
                     ]);
                 } catch (\Exception $e) {
-                    \Log::error('Failed to create Whereby meeting', ['error' => $e->getMessage()]);
+                    Log::error('Failed to create Whereby meeting', ['error' => $e->getMessage()]);
                 }
             }
 
@@ -372,7 +382,7 @@ class PublicBookingService
             // Send notifications
             $this->sendBookingNotifications($appointment, $patient, $doctor);
 
-            \Log::info('Booking finalized after payment', [
+            Log::info('Booking finalized after payment', [
                 'pending_booking_id' => $pendingBooking->id,
                 'appointment_id' => $appointment->id,
                 'patient_id' => $patient->id,
@@ -456,7 +466,7 @@ class PublicBookingService
                     'payment_token_expires_at' => now()->addDays(90),
                 ]);
             } catch (\Exception $e) {
-                \Log::error('Failed to set payment token', ['error' => $e->getMessage()]);
+                Log::error('Failed to set payment token', ['error' => $e->getMessage()]);
             }
         }
     }
@@ -470,21 +480,21 @@ class PublicBookingService
         try {
             $this->emailService->sendAppointmentConfirmation($appointment);
         } catch (\Exception $e) {
-            \Log::error('Failed to send appointment confirmation email', ['error' => $e->getMessage()]);
+            Log::error('Failed to send appointment confirmation email', ['error' => $e->getMessage()]);
         }
 
         // Send notification to doctor
         try {
             $this->emailService->notifyDoctorNewAppointment($appointment, $doctor);
         } catch (\Exception $e) {
-            \Log::error('Failed to send doctor notification email', ['error' => $e->getMessage()]);
+            Log::error('Failed to send doctor notification email', ['error' => $e->getMessage()]);
         }
 
         // Create in-app notifications
         try {
             $this->createPublicBookingNotifications($appointment, $patient);
         } catch (\Exception $e) {
-            \Log::error('Failed to create public booking notifications', ['error' => $e->getMessage()]);
+            Log::error('Failed to create public booking notifications', ['error' => $e->getMessage()]);
         }
     }
 
