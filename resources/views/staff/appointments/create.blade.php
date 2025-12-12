@@ -50,6 +50,10 @@
                                         </button>
                                     </div>
                                     <small class="text-muted d-block mb-2" id="patientSearchMeta" style="display:none;"></small>
+                                    <div id="patientSearchResults"
+                                         class="list-group mb-2"
+                                         style="display:none; max-height: 240px; overflow: auto;">
+                                    </div>
                                     <select class="form-control @error('patient_id') is-invalid @enderror" 
                                             id="patient_id" name="patient_id" required>
                                         <option value="">Select Patient</option>
@@ -395,19 +399,19 @@ $(document).ready(function() {
         const input = document.getElementById('patientSearchInput');
         const clearBtn = document.getElementById('patientSearchClearBtn');
         const meta = document.getElementById('patientSearchMeta');
+        const results = document.getElementById('patientSearchResults');
         if (!select || !input || !clearBtn || !meta) return;
+        if (!results) return;
 
-        // NOTE: Hiding <option> elements (option.hidden) is not reliable across browsers.
-        // Instead, cache options and rebuild the <select> when filtering.
-        const placeholder = select.options[0] ? select.options[0].cloneNode(true) : new Option('Select Patient', '');
+        // Cache options once (we won't mutate the <select> list; we just set its value on selection).
         const allPatients = Array.from(select.options)
-            .slice(1)
-            .filter(opt => opt && opt.value)
-            .map(opt => ({
-                value: opt.value,
-                label: (opt.textContent || '').trim(),
-                text: (opt.textContent || '').toLowerCase(),
-            }));
+          .slice(1)
+          .filter(opt => opt && opt.value)
+          .map(opt => ({
+              value: opt.value,
+              label: (opt.textContent || '').trim(),
+              text: (opt.textContent || '').toLowerCase(),
+          }));
         const totalPatients = allPatients.length;
 
         function setMeta(visibleCount, query) {
@@ -418,42 +422,60 @@ $(document).ready(function() {
             }
             meta.style.display = 'block';
             meta.textContent = visibleCount > 0
-                ? `Showing ${visibleCount} of ${totalPatients} patients`
+                ? `Found ${visibleCount} of ${totalPatients} patients`
                 : 'No patients match your search. Try a different name/phone or clear the search.';
+        }
+
+        function hideResults() {
+            results.style.display = 'none';
+            results.innerHTML = '';
+        }
+
+        function showResults(items, query) {
+            results.innerHTML = '';
+            if (!query) {
+                hideResults();
+                return;
+            }
+
+            if (!items.length) {
+                hideResults();
+                return;
+            }
+
+            const max = 20;
+            for (const p of items.slice(0, max)) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'list-group-item list-group-item-action';
+                btn.textContent = p.label;
+                btn.addEventListener('click', () => {
+                    select.value = p.value;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    input.value = p.label;
+                    hideResults();
+                    meta.style.display = 'none';
+                    meta.textContent = '';
+                });
+                results.appendChild(btn);
+            }
+
+            results.style.display = 'block';
         }
 
         function render(queryRaw) {
             const query = (queryRaw || '').trim().toLowerCase();
             clearBtn.style.display = query ? 'inline-block' : 'none';
 
-            const selectedValue = select.value;
-            const selected = selectedValue ? allPatients.find(p => p.value === selectedValue) : null;
-
-            const matches = !query
-                ? allPatients
-                : allPatients.filter(p => p.text.includes(query));
-
-            // Rebuild options
-            select.innerHTML = '';
-            select.appendChild(placeholder.cloneNode(true));
-
-            // Preserve current selection even if it doesn't match query
-            if (query && selected && !selected.text.includes(query)) {
-                const opt = new Option(`${selected.label} (selected)`, selected.value, false, true);
-                select.appendChild(opt);
+            if (!query) {
+                setMeta(0, '');
+                hideResults();
+                return;
             }
 
-            for (const p of matches) {
-                const opt = new Option(p.label, p.value, false, p.value === selectedValue);
-                select.appendChild(opt);
-            }
-
-            // If selection isn't present anymore, keep placeholder selected
-            if (selectedValue && !Array.from(select.options).some(o => o.value === selectedValue)) {
-                select.value = '';
-            }
-
+            const matches = allPatients.filter(p => p.text.includes(query));
             setMeta(matches.length, query);
+            showResults(matches, query);
         }
 
         // Small debounce to keep typing snappy even with large lists
@@ -469,7 +491,21 @@ $(document).ready(function() {
             input.focus();
         });
 
-        // If there is an existing selection (old value), keep everything visible but show meta when searching.
+        // If there is an existing selection, reflect it in the search input for clarity.
+        if (select.value) {
+            const selected = allPatients.find(p => p.value === select.value);
+            if (selected) {
+                input.value = selected.label;
+            }
+        }
+
+        // Hide results when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!results.contains(e.target) && e.target !== input) {
+                hideResults();
+            }
+        });
+
         render('');
     })();
 
