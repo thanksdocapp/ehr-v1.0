@@ -528,15 +528,6 @@
                     </a>
                 </div>
                 
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <a href="{{ route('staff.appointments.calendar') }}" class="doctor-quick-action">
-                        <div class="doctor-quick-action-icon" style="background: transparent; color: #000;">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
-                        <div class="doctor-quick-action-title">Full Calendar</div>
-                        <div class="doctor-quick-action-subtitle">View All</div>
-                    </a>
-                </div>
             </div>
         </div>
     </div>
