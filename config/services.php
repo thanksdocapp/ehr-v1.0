@@ -38,5 +38,9 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'ideal_postcodes' => [
+        'api_key' => env('IDEAL_POSTCODES_API_KEY'),
+    ],
+
 ];
 

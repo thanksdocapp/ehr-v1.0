@@ -429,6 +429,17 @@
                             </div>
                         </div>
                         <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="ideal_postcodes_finder" class="form-label fw-semibold">Find Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text"
+                                           id="ideal_postcodes_finder"
+                                           class="form-control"
+                                           placeholder="Start typing postcode or address…">
+                                </div>
+                                <small class="text-muted" id="ideal_postcodes_notice" style="display:none;"></small>
+                            </div>
                             <div class="col-md-6 mb-3">
                                 <label for="address" class="form-label fw-semibold">Address Line 1</label>
                                 <input type="text" name="address" id="address"
@@ -469,127 +480,15 @@
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="postal_code" class="form-label fw-semibold">Postcode</label>
-                                <div class="input-group">
-                                    <input type="text" name="postal_code" id="postal_code"
-                                           class="form-control @error('postal_code') is-invalid @enderror"
-                                           value="{{ old('postal_code') }}" placeholder="e.g. SW1A 1AA"
-                                           style="text-transform: uppercase;">
-                                    <button type="button" class="btn btn-outline-primary" id="postcode_lookup_btn">
-                                        <i class="fas fa-search"></i> Lookup
-                                    </button>
-                                </div>
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>Enter postcode and click Lookup to auto-fill address
-                                </small>
+                                <input type="text" name="postal_code" id="postal_code"
+                                       class="form-control @error('postal_code') is-invalid @enderror"
+                                       value="{{ old('postal_code') }}" placeholder="e.g. SW1A 1AA"
+                                       style="text-transform: uppercase;">
                                 @error('postal_code')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
                             </div>
                         </div>
-
-                        <!-- Postcode Lookup Script -->
-                        <script>
-                        (function() {
-                            var lookupBtn = document.getElementById('postcode_lookup_btn');
-                            var postcodeInput = document.getElementById('postal_code');
-
-                            if (lookupBtn && postcodeInput) {
-                                lookupBtn.addEventListener('click', function() {
-                                    var postcode = postcodeInput.value.trim().replace(/\s/g, '');
-                                    if (!postcode) {
-                                        alert('Please enter a postcode');
-                                        return;
-                                    }
-
-                                    // Show loading state
-                                    lookupBtn.disabled = true;
-                                    lookupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Looking up...';
-
-                                    // Use Postcodes.io API (free, no API key required)
-                                    fetch('https://api.postcodes.io/postcodes/' + encodeURIComponent(postcode))
-                                        .then(function(response) { return response.json(); })
-                                        .then(function(data) {
-                                            if (data.status === 200 && data.result) {
-                                                var result = data.result;
-
-                                                // Fill in address fields
-                                                var cityField = document.getElementById('city');
-                                                var stateField = document.getElementById('state');
-
-                                                if (cityField) {
-                                                    // Use admin_district (borough/city) or post_town
-                                                    cityField.value = result.admin_district || result.post_town || '';
-                                                }
-                                                if (stateField) {
-                                                    // Use county or region
-                                                    stateField.value = result.admin_county || result.region || '';
-                                                }
-
-                                                // Format postcode properly
-                                                postcodeInput.value = result.postcode || postcode.toUpperCase();
-
-                                                // Show success toast
-                                                if (typeof Swal !== 'undefined') {
-                                                    Swal.fire({
-                                                        icon: 'success',
-                                                        title: 'Address Found',
-                                                        text: 'Town/City and County have been filled in.',
-                                                        timer: 2500,
-                                                        showConfirmButton: false,
-                                                        toast: true,
-                                                        position: 'top-end'
-                                                    });
-                                                }
-                                            } else {
-                                                // Postcode not found
-                                                if (typeof Swal !== 'undefined') {
-                                                    Swal.fire({
-                                                        icon: 'error',
-                                                        title: 'Postcode Not Found',
-                                                        text: 'Please check the postcode and try again.',
-                                                        timer: 3000,
-                                                        showConfirmButton: false,
-                                                        toast: true,
-                                                        position: 'top-end'
-                                                    });
-                                                } else {
-                                                    alert('Postcode not found. Please check and try again.');
-                                                }
-                                            }
-                                        })
-                                        .catch(function(error) {
-                                            console.error('Postcode lookup error:', error);
-                                            if (typeof Swal !== 'undefined') {
-                                                Swal.fire({
-                                                    icon: 'error',
-                                                    title: 'Lookup Failed',
-                                                    text: 'Unable to lookup postcode. Please enter address manually.',
-                                                    timer: 3000,
-                                                    showConfirmButton: false,
-                                                    toast: true,
-                                                    position: 'top-end'
-                                                });
-                                            } else {
-                                                alert('Unable to lookup postcode. Please enter address manually.');
-                                            }
-                                        })
-                                        .finally(function() {
-                                            // Reset button
-                                            lookupBtn.disabled = false;
-                                            lookupBtn.innerHTML = '<i class="fas fa-search"></i> Lookup';
-                                        });
-                                });
-
-                                // Also trigger lookup on Enter key in postcode field
-                                postcodeInput.addEventListener('keypress', function(e) {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        lookupBtn.click();
-                                    }
-                                });
-                            }
-                        })();
-                        </script>
                     </div>
                 </div>
 
@@ -1005,6 +904,7 @@
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder@latest/dist/address-finder.min.js"></script>
 <script>
 $(document).ready(function() {
     // Log any server-side errors for debugging
@@ -1083,6 +983,52 @@ $(document).ready(function() {
         }
         $(this).val(value);
     });
+
+    // Ideal Postcodes Address Finder (fallbacks to manual entry if not configured)
+    (function initIdealPostcodes() {
+        const apiKey = @json(config('services.ideal_postcodes.api_key'));
+        const input = document.getElementById('ideal_postcodes_finder');
+        const notice = document.getElementById('ideal_postcodes_notice');
+        if (!input || !notice) return;
+
+        function showNotice(msg) {
+            notice.style.display = 'block';
+            notice.innerHTML = `<i class="fas fa-info-circle me-1"></i>${msg}`;
+        }
+
+        if (!apiKey) {
+            showNotice('Address lookup is unavailable (missing API key). Please enter address manually.');
+            return;
+        }
+        const AF = (typeof AddressFinder !== 'undefined' && AddressFinder)
+            ? AddressFinder
+            : (window.IdealPostcodes && window.IdealPostcodes.AddressFinder ? window.IdealPostcodes.AddressFinder : null);
+
+        if (!AF || typeof AF.setup !== 'function') {
+            showNotice('Address lookup failed to load. Please enter address manually.');
+            return;
+        }
+
+        try {
+            AF.setup({
+                apiKey: apiKey,
+                inputField: input,
+                outputFields: {
+                    line_1: '#address',
+                    line_2: '#address_line_2',
+                    post_town: '#city',
+                    county: '#state',
+                    postcode: '#postal_code',
+                },
+                onCheckFailed: function() {
+                    showNotice('Address lookup is unavailable right now. Please enter address manually.');
+                },
+            });
+        } catch (e) {
+            console.error('Ideal Postcodes init error:', e);
+            showNotice('Address lookup is unavailable. Please enter address manually.');
+        }
+    })();
     
     // Age calculation with years and months - Auto-calculates on change and page load
     function calculateAgeAndToggleGuardian() {
