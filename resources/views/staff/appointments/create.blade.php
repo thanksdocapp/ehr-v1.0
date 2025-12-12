@@ -581,51 +581,145 @@ $(document).ready(function() {
     // Initialize on page load
     toggleMeetingLink();
 
-    // Filter time slots based on selected date
-    $('#appointment_date').on('change', function() {
-        const selectedDate = new Date($(this).val());
+    // ===== Appointment time slots (connect to Weekly Availability) =====
+    // Source of truth: Public booking availability API (uses SlotAvailabilityService / doctor availability + exceptions)
+    const $timeSelect = $('#appointment_time');
+    const $dateInput = $('#appointment_date');
+    const originalTimeOptions = $timeSelect.find('option').clone(true, true);
+
+    function getDoctorIdForSlots() {
+        const $doctorSelect = $('#doctor_id');
+        if ($doctorSelect.length) return $doctorSelect.val();
+        const $hidden = $('input[name="doctor_id"]');
+        if ($hidden.length) return $hidden.val();
+        return null;
+    }
+
+    function restoreStaticTimesFallback() {
+        // Restore original static options
+        $timeSelect.empty();
+        originalTimeOptions.each(function() {
+            $timeSelect.append($(this).clone());
+        });
+        applyTodayPastTimeDisabling();
+    }
+
+    function applyTodayPastTimeDisabling() {
+        const dateVal = $dateInput.val();
+        if (!dateVal) return;
+        const selectedDate = new Date(dateVal);
         const today = new Date();
-        const timeSelect = $('#appointment_time');
-        
+
         // If appointment is today, disable past time slots
         if (selectedDate.toDateString() === today.toDateString()) {
             const currentHour = today.getHours();
             const currentMinute = today.getMinutes();
-            
-            timeSelect.find('option').each(function() {
+            const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+            $timeSelect.find('option').each(function() {
                 const timeValue = $(this).val();
-                if (timeValue) {
-                    const [hour, minute] = timeValue.split(':').map(Number);
-                    const timeInMinutes = hour * 60 + minute;
-                    const currentTimeInMinutes = currentHour * 60 + currentMinute;
-                    
-                    if (timeInMinutes <= currentTimeInMinutes + 30) { // Add 30 min buffer
-                        $(this).prop('disabled', true);
-                    } else {
-                        $(this).prop('disabled', false);
-                    }
-                }
+                if (!timeValue) return;
+                const [hour, minute] = timeValue.split(':').map(Number);
+                const timeInMinutes = hour * 60 + minute;
+                $(this).prop('disabled', timeInMinutes <= currentTimeInMinutes + 30); // 30 min buffer
             });
         } else {
             // Enable all time slots for future dates
-            timeSelect.find('option').prop('disabled', false);
+            $timeSelect.find('option').prop('disabled', false);
         }
 
-        // If the currently selected option became disabled, clear it and show a notice.
-        const selectedOpt = timeSelect.find('option:selected');
-        if (selectedOpt.length && selectedOpt.val() && selectedOpt.prop('disabled')) {
-            timeSelect.val('');
-            showTimeSlotNotice('That time is no longer available (past/closed). Please pick another time or change the day.');
+        // If all times are disabled for today, show "closed" guidance
+        const enabledCount = $timeSelect.find('option[value!=""]').filter(function() { return !$(this).prop('disabled'); }).length;
+        if (selectedDate.toDateString() === today.toDateString() && enabledCount === 0) {
+            showTimeSlotNotice('Clinic hours for today are over. Please change the appointment date to tomorrow.');
+        }
+    }
+
+    function populateAvailabilitySlots(slots) {
+        const currentValue = $timeSelect.val();
+        $timeSelect.empty();
+        $timeSelect.append($('<option value="">Select Time</option>'));
+
+        for (const slot of slots) {
+            const start = slot.start || slot.time; // support both shapes
+            const display = slot.display || start;
+            if (!start) continue;
+            $timeSelect.append($('<option></option>').attr('value', start).text(display));
+        }
+
+        // Keep selection if still present
+        if (currentValue && $timeSelect.find(`option[value="${currentValue}"]`).length) {
+            $timeSelect.val(currentValue);
         } else {
-            // If it's today and all time slots are disabled, show "closed for today" guidance.
-            const enabledCount = timeSelect.find('option[value!=""]').filter(function() { return !$(this).prop('disabled'); }).length;
-            if (selectedDate.toDateString() === today.toDateString() && enabledCount === 0) {
-                showTimeSlotNotice('Clinic hours for today are over. Please change the appointment date to tomorrow.');
+            $timeSelect.val('');
+        }
+    }
+
+    async function loadAvailableTimeSlots() {
+        const doctorId = getDoctorIdForSlots();
+        const date = $dateInput.val();
+
+        if (!doctorId || !date) {
+            restoreStaticTimesFallback();
+            hideTimeSlotNotice();
+            return;
+        }
+
+        // Loading state
+        $timeSelect.prop('disabled', true);
+        const prevVal = $timeSelect.val();
+        $timeSelect.empty().append($('<option value="">Loading available times…</option>'));
+
+        try {
+            const url = `/api/doctor/${encodeURIComponent(doctorId)}/available-slots?date=${encodeURIComponent(date)}`;
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(data?.error || `Failed to load availability (${res.status})`);
+            }
+
+            const slots = Array.isArray(data?.slots) ? data.slots : [];
+
+            // Apply a 30-min buffer client-side for today's date (matches previous UI behavior)
+            const today = new Date();
+            const selectedDate = new Date(date);
+            const nowPlusBuffer = new Date(Date.now() + 30 * 60 * 1000);
+
+            const filtered = slots.filter(s => {
+                const start = s.start || s.time;
+                if (!start) return false;
+                if (selectedDate.toDateString() !== today.toDateString()) return true;
+                const [hh, mm] = start.split(':').map(Number);
+                const slotDt = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), hh, mm, 0, 0);
+                return slotDt.getTime() > nowPlusBuffer.getTime();
+            });
+
+            populateAvailabilitySlots(filtered);
+
+            if (filtered.length === 0) {
+                showTimeSlotNotice('No available times for the selected day (based on weekly availability). Please change the day to tomorrow or another date.');
             } else {
                 hideTimeSlotNotice();
             }
+
+            // Restore previous value if still possible
+            if (prevVal && $timeSelect.find(`option[value="${prevVal}"]`).length) {
+                $timeSelect.val(prevVal);
+            }
+        } catch (e) {
+            // Fallback to original hardcoded times to avoid breaking scheduling
+            restoreStaticTimesFallback();
+            showTimeSlotNotice('Could not load weekly availability right now. Using default times—please double-check the doctor schedule or choose tomorrow.');
+        } finally {
+            $timeSelect.prop('disabled', false);
         }
-    }).trigger('change');
+    }
+
+    // Load slots when doctor/date changes
+    $dateInput.on('change', loadAvailableTimeSlots);
+    $('#doctor_id').on('change', loadAvailableTimeSlots);
+    // Also handle doctor-locked view (hidden input) - initial load
+    setTimeout(loadAvailableTimeSlots, 0);
 
     function showTimeSlotNotice(message) {
         $('#timeSlotNoticeText').text(message);
