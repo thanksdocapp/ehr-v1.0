@@ -425,22 +425,42 @@ class AppointmentsController extends Controller
         $wherebyService = app(\App\Services\WherebyService::class);
         $wherebyEnabled = $wherebyService->isEnabled();
 
+        \Log::info('Staff appointment created - checking Whereby', [
+            'appointment_id' => $appointment->id,
+            'is_online' => $appointment->is_online,
+            'meeting_platform' => $appointment->meeting_platform,
+            'meeting_link' => $appointment->meeting_link,
+            'whereby_enabled' => $wherebyEnabled,
+        ]);
+
         // If this is an online appointment with Whereby platform and no meeting link, try to auto-generate
         if ($appointment->is_online && empty($appointment->meeting_link) && $appointment->meeting_platform === 'whereby') {
+            \Log::info('Whereby: Conditions met for meeting creation', ['appointment_id' => $appointment->id]);
+
             if ($wherebyEnabled) {
                 $sendEmailsManually = true; // Observer skipped email, we'll send after link is created
+                \Log::info('Whereby: About to call createMeetingForAppointment', ['appointment_id' => $appointment->id]);
+
                 try {
-                    $wherebyService->createMeetingForAppointment($appointment);
+                    $result = $wherebyService->createMeetingForAppointment($appointment);
+                    \Log::info('Whereby: createMeetingForAppointment returned', [
+                        'appointment_id' => $appointment->id,
+                        'result' => $result,
+                    ]);
+
                     $appointment->refresh(); // Reload to get the updated meeting_link
 
-                    \Log::info('Whereby meeting created for staff appointment', [
+                    \Log::info('Whereby meeting result for staff appointment', [
                         'appointment_id' => $appointment->id,
                         'meeting_link' => $appointment->meeting_link,
+                        'whereby_host_url' => $appointment->whereby_host_url,
+                        'success' => !empty($appointment->meeting_link),
                     ]);
                 } catch (\Exception $e) {
                     \Log::error('Failed to create Whereby meeting for staff appointment', [
                         'appointment_id' => $appointment->id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
                     ]);
                 }
             } else {
@@ -449,6 +469,13 @@ class AppointmentsController extends Controller
                     'appointment_id' => $appointment->id
                 ]);
             }
+        } else {
+            \Log::info('Whereby: Conditions NOT met for meeting creation', [
+                'appointment_id' => $appointment->id,
+                'is_online' => $appointment->is_online,
+                'has_meeting_link' => !empty($appointment->meeting_link),
+                'meeting_platform' => $appointment->meeting_platform,
+            ]);
         }
 
         // Send email notifications if Whereby was enabled and observer skipped email
