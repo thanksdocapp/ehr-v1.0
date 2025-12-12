@@ -38,6 +38,18 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="patient_id" class="form-label">Patient <span class="text-danger">*</span></label>
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text"
+                                               class="form-control"
+                                               id="patientSearchInput"
+                                               placeholder="Search patient by name or phone…"
+                                               autocomplete="off">
+                                        <button type="button" class="btn btn-outline-secondary" id="patientSearchClearBtn" style="display:none;">
+                                            Clear
+                                        </button>
+                                    </div>
+                                    <small class="text-muted d-block mb-2" id="patientSearchMeta" style="display:none;"></small>
                                     <select class="form-control @error('patient_id') is-invalid @enderror" 
                                             id="patient_id" name="patient_id" required>
                                         <option value="">Select Patient</option>
@@ -369,6 +381,75 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
+    // ===== Patient search (vanilla JS) =====
+    (function initPatientSearch() {
+        const select = document.getElementById('patient_id');
+        const input = document.getElementById('patientSearchInput');
+        const clearBtn = document.getElementById('patientSearchClearBtn');
+        const meta = document.getElementById('patientSearchMeta');
+        if (!select || !input || !clearBtn || !meta) return;
+
+        // Cache original option text for fast filtering
+        const options = Array.from(select.options).map((opt, idx) => ({
+            opt,
+            idx,
+            value: opt.value,
+            text: (opt.textContent || '').toLowerCase(),
+            isPlaceholder: opt.value === '' && idx === 0,
+        }));
+
+        const patientOptions = options.filter(o => !o.isPlaceholder);
+        const totalPatients = patientOptions.length;
+
+        function setMeta(visibleCount, query) {
+            if (!query) {
+                meta.style.display = 'none';
+                meta.textContent = '';
+                return;
+            }
+            meta.style.display = 'block';
+            meta.textContent = visibleCount > 0
+                ? `Showing ${visibleCount} of ${totalPatients} patients`
+                : 'No patients match your search. Try a different name/phone or clear the search.';
+        }
+
+        function applyFilter(queryRaw) {
+            const query = (queryRaw || '').trim().toLowerCase();
+            clearBtn.style.display = query ? 'inline-block' : 'none';
+
+            let visibleCount = 0;
+            for (const o of options) {
+                if (o.isPlaceholder) {
+                    o.opt.hidden = false;
+                    continue;
+                }
+
+                const show = !query || o.text.includes(query);
+                o.opt.hidden = !show;
+                if (show) visibleCount++;
+            }
+
+            // If currently selected option is hidden, keep selection but prompt user via meta.
+            setMeta(visibleCount, query);
+        }
+
+        // Small debounce to keep typing snappy even with large lists
+        let t = null;
+        input.addEventListener('input', () => {
+            if (t) window.clearTimeout(t);
+            t = window.setTimeout(() => applyFilter(input.value), 80);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            applyFilter('');
+            input.focus();
+        });
+
+        // If there is an existing selection (old value), keep everything visible but show meta when searching.
+        applyFilter('');
+    })();
+
     // Set default appointment date to today
     const today = new Date().toISOString().split('T')[0];
     $('#appointment_date').attr('min', today);
