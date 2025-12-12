@@ -13,11 +13,6 @@
                 </h2>
                 <p class="page-subtitle text-muted mb-0">View and manage your appointments in calendar view</p>
             </div>
-            <div>
-                <a href="{{ route('staff.appointments.index') }}" class="btn btn-modern-outline">
-                    <i class="fas fa-list me-1"></i>List View
-                </a>
-            </div>
         </div>
     </div>
 
@@ -51,42 +46,61 @@
         </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="row g-4 mt-4">
-        <div class="col-md-3">
-            <div class="stat-card-modern">
-                <div class="stat-card-icon" style="background: var(--gradient-warning);">
-                    <i class="fas fa-clock"></i>
+    <!-- Summary & Actions (Card) -->
+    <div class="modern-card mt-4">
+        <div class="modern-card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="modern-card-title mb-0">
+                    <i class="fas fa-layer-group me-2"></i>Summary & Actions
+                </h5>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('staff.appointments.index') }}" class="btn btn-sm btn-modern-outline">
+                        <i class="fas fa-list me-1"></i>List View
+                    </a>
+                    <a href="{{ route('staff.appointments.create') }}" class="btn btn-sm btn-modern-primary">
+                        <i class="fas fa-calendar-plus me-1"></i>New Appointment
+                    </a>
                 </div>
-                <div class="stat-card-number" id="pendingCount">0</div>
-                <div class="stat-card-label">Pending</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="stat-card-modern">
-                <div class="stat-card-icon" style="background: var(--gradient-info);">
-                    <i class="fas fa-check-circle"></i>
+        <div class="modern-card-body">
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="stat-card-modern">
+                        <div class="stat-card-icon" style="background: var(--gradient-warning);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-card-number" id="pendingCount">0</div>
+                        <div class="stat-card-label">Pending</div>
+                    </div>
                 </div>
-                <div class="stat-card-number" id="confirmedCount">0</div>
-                <div class="stat-card-label">Confirmed</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card-modern">
-                <div class="stat-card-icon" style="background: var(--gradient-success);">
-                    <i class="fas fa-check-double"></i>
+                <div class="col-md-3">
+                    <div class="stat-card-modern">
+                        <div class="stat-card-icon" style="background: var(--gradient-info);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-card-number" id="confirmedCount">0</div>
+                        <div class="stat-card-label">Confirmed</div>
+                    </div>
                 </div>
-                <div class="stat-card-number" id="completedCount">0</div>
-                <div class="stat-card-label">Completed</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card-modern">
-                <div class="stat-card-icon" style="background: var(--gradient-danger);">
-                    <i class="fas fa-times-circle"></i>
+                <div class="col-md-3">
+                    <div class="stat-card-modern">
+                        <div class="stat-card-icon" style="background: var(--gradient-success);">
+                            <i class="fas fa-check-double"></i>
+                        </div>
+                        <div class="stat-card-number" id="completedCount">0</div>
+                        <div class="stat-card-label">Completed</div>
+                    </div>
                 </div>
-                <div class="stat-card-number" id="cancelledCount">0</div>
-                <div class="stat-card-label">Cancelled</div>
+                <div class="col-md-3">
+                    <div class="stat-card-modern">
+                        <div class="stat-card-icon" style="background: var(--gradient-danger);">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-card-number" id="cancelledCount">0</div>
+                        <div class="stat-card-label">Cancelled</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
