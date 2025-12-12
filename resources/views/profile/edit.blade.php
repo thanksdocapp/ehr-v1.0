@@ -195,9 +195,9 @@
                         To delete your account, please contact support.
                     </p>
 
-                    <a href="mailto:info@thankdoc.co.uk?subject=Account%20Deletion%20Request"
+                    <a href="mailto:info@thanksdoc.co.uk?subject=Account%20Deletion%20Request"
                        class="btn btn-outline-danger">
-                        <i class="fas fa-envelope me-2"></i>Contact Support (info@thankdoc.co.uk)
+                        <i class="fas fa-envelope me-2"></i>Contact Support (info@thanksdoc.co.uk)
                     </a>
                 </div>
             </div>
