@@ -161,6 +161,7 @@
                                     <label for="estimated_duration" class="form-label">Estimated Duration <span class="text-danger">*</span></label>
                                     <select class="form-control @error('estimated_duration') is-invalid @enderror"
                                             id="estimated_duration" name="estimated_duration" required>
+                                        <option value="15" {{ old('estimated_duration') === '15' ? 'selected' : '' }}>15 minutes</option>
                                         <option value="30" {{ old('estimated_duration', '30') === '30' ? 'selected' : '' }}>30 minutes</option>
                                         <option value="45" {{ old('estimated_duration') === '45' ? 'selected' : '' }}>45 minutes</option>
                                         <option value="60" {{ old('estimated_duration') === '60' ? 'selected' : '' }}>1 hour</option>
