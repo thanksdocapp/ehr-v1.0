@@ -164,7 +164,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group mb-3">
-                                            <label for="estimated_duration" class="form-label">Estimated Duration (minutes) <span class="text-danger">*</span></label>
+                                            <label for="estimated_duration" class="form-label">Estimated Duration <span class="text-danger">*</span></label>
                                             <select class="form-control @error('estimated_duration') is-invalid @enderror"
                                                     id="estimated_duration" name="estimated_duration" required>
                                                 <option value="30" {{ old('estimated_duration', '30') === '30' ? 'selected' : '' }}>30 minutes</option>
