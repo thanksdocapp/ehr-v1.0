@@ -904,6 +904,7 @@
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder-bundled@5/dist/address-finder.js" defer></script>
 <script>
 $(document).ready(function() {
     // Log any server-side errors for debugging
@@ -1012,7 +1013,7 @@ $(document).ready(function() {
             if (document.querySelector('script[data-ideal-postcodes-af="1"]')) return;
 
             const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder@latest/dist/address-finder.min.js';
+            s.src = 'https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder-bundled@5/dist/address-finder.js';
             s.async = true;
             s.setAttribute('data-ideal-postcodes-af', '1');
             document.head.appendChild(s);

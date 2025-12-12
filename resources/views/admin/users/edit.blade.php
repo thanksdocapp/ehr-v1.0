@@ -545,7 +545,7 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder@latest/dist/address-finder.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder-bundled@5/dist/address-finder.js" defer></script>
 <script>
 $(document).ready(function() {
     // Ideal Postcodes Address Finder (race-safe)
