@@ -972,7 +972,6 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder@latest/dist/address-finder.min.js" defer></script>
 <script>
 $(document).ready(function() {
     // Log any server-side errors for debugging
@@ -1015,9 +1014,21 @@ $(document).ready(function() {
             return null;
         }
 
+        function ensureAFScript() {
+            if (getAF()) return;
+            if (document.querySelector('script[data-ideal-postcodes-af="1"]')) return;
+
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder@latest/dist/address-finder.min.js';
+            s.async = true;
+            s.setAttribute('data-ideal-postcodes-af', '1');
+            document.head.appendChild(s);
+        }
+
         function waitForAF(timeoutMs) {
             return new Promise((resolve, reject) => {
                 const start = Date.now();
+                ensureAFScript();
 
                 (function tick() {
                     const AF = getAF();
@@ -1032,7 +1043,6 @@ $(document).ready(function() {
             showNotice('Address lookup is unavailable (missing API key). Please enter address manually.');
             return;
         }
-
         hideNotice();
         waitForAF(8000)
             .then((AF) => {

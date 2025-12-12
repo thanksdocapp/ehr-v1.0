@@ -280,6 +280,101 @@
                     </div>
                 </div>
 
+                <!-- Address Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <h4 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Address</h4>
+                        <small class="opacity-75">Optional address details for this user</small>
+                    </div>
+                    <div class="form-section-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="ideal_postcodes_finder" class="form-label">
+                                        <i class="fas fa-search me-1"></i>Find Address
+                                    </label>
+                                    <input type="text" class="form-control" id="ideal_postcodes_finder"
+                                           placeholder="Start typing postcode or address…">
+                                    <small class="form-help" id="ideal_postcodes_notice" style="display:none;"></small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="address" class="form-label">
+                                        <i class="fas fa-home me-1"></i>Address Line 1
+                                    </label>
+                                    <input type="text" class="form-control @error('address') is-invalid @enderror"
+                                           id="address" name="address" value="{{ old('address') }}">
+                                    @error('address')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="address_line_2" class="form-label">
+                                        <i class="fas fa-building me-1"></i>Address Line 2
+                                    </label>
+                                    <input type="text" class="form-control @error('address_line_2') is-invalid @enderror"
+                                           id="address_line_2" name="address_line_2" value="{{ old('address_line_2') }}">
+                                    @error('address_line_2')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="city" class="form-label">
+                                        <i class="fas fa-city me-1"></i>Town/City
+                                    </label>
+                                    <input type="text" class="form-control @error('city') is-invalid @enderror"
+                                           id="city" name="city" value="{{ old('city') }}">
+                                    @error('city')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="state" class="form-label">
+                                        <i class="fas fa-map me-1"></i>County
+                                    </label>
+                                    <input type="text" class="form-control @error('state') is-invalid @enderror"
+                                           id="state" name="state" value="{{ old('state') }}">
+                                    @error('state')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="postal_code" class="form-label">
+                                        <i class="fas fa-mail-bulk me-1"></i>Postcode
+                                    </label>
+                                    <input type="text" class="form-control @error('postal_code') is-invalid @enderror"
+                                           id="postal_code" name="postal_code" value="{{ old('postal_code') }}"
+                                           style="text-transform: uppercase;">
+                                    @error('postal_code')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="country" class="form-label">
+                                        <i class="fas fa-flag me-1"></i>Country
+                                    </label>
+                                    <input type="text" class="form-control @error('country') is-invalid @enderror"
+                                           id="country" name="country" value="{{ old('country', 'United Kingdom') }}">
+                                    @error('country')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Account Details Section -->
                 <div class="form-section">
                     <div class="form-section-header">
@@ -432,8 +527,70 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder@latest/dist/address-finder.min.js" defer></script>
 <script>
 $(document).ready(function() {
+    // Ideal Postcodes Address Finder (race-safe)
+    (function initIdealPostcodes() {
+        const apiKey = @json(config('services.ideal_postcodes.api_key'));
+        const input = document.getElementById('ideal_postcodes_finder');
+        const notice = document.getElementById('ideal_postcodes_notice');
+        if (!input || !notice) return;
+
+        function hideNotice() {
+            notice.style.display = 'none';
+            notice.textContent = '';
+        }
+        function showNotice(msg) {
+            notice.style.display = 'block';
+            notice.innerHTML = `<i class="fas fa-info-circle me-1"></i>${msg}`;
+        }
+        function getAF() {
+            if (typeof AddressFinder !== 'undefined' && AddressFinder) return AddressFinder;
+            if (window.IdealPostcodes && window.IdealPostcodes.AddressFinder) return window.IdealPostcodes.AddressFinder;
+            return null;
+        }
+        function waitForAF(timeoutMs) {
+            return new Promise((resolve, reject) => {
+                const start = Date.now();
+                (function tick() {
+                    const AF = getAF();
+                    if (AF && typeof AF.setup === 'function') return resolve(AF);
+                    if (Date.now() - start > timeoutMs) return reject(new Error('Ideal Postcodes AddressFinder load timeout'));
+                    setTimeout(tick, 50);
+                })();
+            });
+        }
+
+        if (!apiKey) {
+            showNotice('Address lookup is unavailable (missing API key). Please enter address manually.');
+            return;
+        }
+
+        hideNotice();
+        waitForAF(8000)
+            .then((AF) => {
+                AF.setup({
+                    apiKey: apiKey,
+                    inputField: input,
+                    outputFields: {
+                        line_1: '#address',
+                        line_2: '#address_line_2',
+                        post_town: '#city',
+                        county: '#state',
+                        postcode: '#postal_code',
+                    },
+                    onCheckFailed: function() {
+                        showNotice('Address lookup is unavailable right now. Please enter address manually.');
+                    },
+                });
+            })
+            .catch((e) => {
+                console.error('Ideal Postcodes load/init failed:', e);
+                showNotice('Address lookup failed to load. Please enter address manually.');
+            });
+    })();
+
     // Password confirmation validation
     $('#password_confirmation').on('input', function() {
         const password = $('#password').val();
