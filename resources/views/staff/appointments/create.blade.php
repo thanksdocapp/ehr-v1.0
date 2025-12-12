@@ -397,17 +397,18 @@ $(document).ready(function() {
         const meta = document.getElementById('patientSearchMeta');
         if (!select || !input || !clearBtn || !meta) return;
 
-        // Cache original option text for fast filtering
-        const options = Array.from(select.options).map((opt, idx) => ({
-            opt,
-            idx,
-            value: opt.value,
-            text: (opt.textContent || '').toLowerCase(),
-            isPlaceholder: opt.value === '' && idx === 0,
-        }));
-
-        const patientOptions = options.filter(o => !o.isPlaceholder);
-        const totalPatients = patientOptions.length;
+        // NOTE: Hiding <option> elements (option.hidden) is not reliable across browsers.
+        // Instead, cache options and rebuild the <select> when filtering.
+        const placeholder = select.options[0] ? select.options[0].cloneNode(true) : new Option('Select Patient', '');
+        const allPatients = Array.from(select.options)
+            .slice(1)
+            .filter(opt => opt && opt.value)
+            .map(opt => ({
+                value: opt.value,
+                label: (opt.textContent || '').trim(),
+                text: (opt.textContent || '').toLowerCase(),
+            }));
+        const totalPatients = allPatients.length;
 
         function setMeta(visibleCount, query) {
             if (!query) {
@@ -421,41 +422,55 @@ $(document).ready(function() {
                 : 'No patients match your search. Try a different name/phone or clear the search.';
         }
 
-        function applyFilter(queryRaw) {
+        function render(queryRaw) {
             const query = (queryRaw || '').trim().toLowerCase();
             clearBtn.style.display = query ? 'inline-block' : 'none';
 
-            let visibleCount = 0;
-            for (const o of options) {
-                if (o.isPlaceholder) {
-                    o.opt.hidden = false;
-                    continue;
-                }
+            const selectedValue = select.value;
+            const selected = selectedValue ? allPatients.find(p => p.value === selectedValue) : null;
 
-                const show = !query || o.text.includes(query);
-                o.opt.hidden = !show;
-                if (show) visibleCount++;
+            const matches = !query
+                ? allPatients
+                : allPatients.filter(p => p.text.includes(query));
+
+            // Rebuild options
+            select.innerHTML = '';
+            select.appendChild(placeholder.cloneNode(true));
+
+            // Preserve current selection even if it doesn't match query
+            if (query && selected && !selected.text.includes(query)) {
+                const opt = new Option(`${selected.label} (selected)`, selected.value, false, true);
+                select.appendChild(opt);
             }
 
-            // If currently selected option is hidden, keep selection but prompt user via meta.
-            setMeta(visibleCount, query);
+            for (const p of matches) {
+                const opt = new Option(p.label, p.value, false, p.value === selectedValue);
+                select.appendChild(opt);
+            }
+
+            // If selection isn't present anymore, keep placeholder selected
+            if (selectedValue && !Array.from(select.options).some(o => o.value === selectedValue)) {
+                select.value = '';
+            }
+
+            setMeta(matches.length, query);
         }
 
         // Small debounce to keep typing snappy even with large lists
         let t = null;
         input.addEventListener('input', () => {
             if (t) window.clearTimeout(t);
-            t = window.setTimeout(() => applyFilter(input.value), 80);
+            t = window.setTimeout(() => render(input.value), 80);
         });
 
         clearBtn.addEventListener('click', () => {
             input.value = '';
-            applyFilter('');
+            render('');
             input.focus();
         });
 
         // If there is an existing selection (old value), keep everything visible but show meta when searching.
-        applyFilter('');
+        render('');
     })();
 
     // Set default appointment date to today
