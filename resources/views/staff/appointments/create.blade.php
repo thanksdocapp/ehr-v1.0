@@ -189,171 +189,53 @@
                         </div>
                         
                         <script>
-                        // Inline function to handle Online Consultation - runs immediately
+                        // Simple function to toggle Whereby info panel visibility
                         function handleOnlineConsultationChange(checkbox) {
                             var meetingRow = document.getElementById('meeting_link_row');
-                            var meetingLink = document.getElementById('meeting_link');
-                            var meetingPlatform = document.getElementById('meeting_platform');
-                            
                             if (!meetingRow) return;
-                            
+
                             var isChecked = checkbox && (checkbox.checked || checkbox.getAttribute('checked') !== null);
-                            
+
                             if (isChecked) {
-                                // Force show - use multiple methods
                                 meetingRow.style.display = 'block';
-                                meetingRow.style.visibility = 'visible';
-                                meetingRow.style.opacity = '1';
-                                meetingRow.removeAttribute('style');
-                                meetingRow.setAttribute('style', 'display: block !important; visibility: visible !important; opacity: 1 !important;');
-                                
-                                // Set required field
-                                if (meetingLink) {
-                                    meetingLink.required = true;
-                                    meetingLink.setAttribute('required', 'required');
-                                }
                             } else {
-                                // Force hide
                                 meetingRow.style.display = 'none';
-                                meetingRow.style.visibility = 'hidden';
-                                meetingRow.removeAttribute('style');
-                                meetingRow.setAttribute('style', 'display: none !important;');
-                                
-                                // Remove required and clear fields
-                                if (meetingLink) {
-                                    meetingLink.required = false;
-                                    meetingLink.removeAttribute('required');
-                                    meetingLink.value = '';
-                                }
-                                if (meetingPlatform) {
-                                    meetingPlatform.value = '';
-                                }
                             }
                         }
-                        
-                        // Update meeting link placeholder based on selected platform - make it globally accessible
-                        window.updateMeetingLinkPlaceholder = function() {
-                            var platformSelect = document.getElementById('meeting_platform');
-                            var meetingLinkInput = document.getElementById('meeting_link');
-                            
-                            if (!platformSelect || !meetingLinkInput) {
-                                // Retry if elements not ready
-                                setTimeout(window.updateMeetingLinkPlaceholder, 100);
-                                return;
-                            }
-                            
-                            var platform = platformSelect.value;
-                            var placeholders = {
-                                'zoom': 'https://zoom.us/j/xxxxxxxxxx',
-                                'google_meet': 'https://meet.google.com/xxx-xxxx-xxx',
-                                'teams': 'https://teams.microsoft.com/l/meetup-join/xxx',
-                                'whereby': 'https://subdomain.whereby.com/room-name',
-                                'custom': 'https://your-platform.com/meeting-link',
-                                '': 'Enter meeting link based on selected platform'
-                            };
-                            
-                            var placeholder = placeholders[platform] || placeholders[''];
-                            meetingLinkInput.setAttribute('placeholder', placeholder);
-                            meetingLinkInput.placeholder = placeholder; // Also set property directly
-                            
-                            // Also update via jQuery if available
-                            if (typeof $ !== 'undefined' && $('#meeting_link').length) {
-                                $('#meeting_link').attr('placeholder', placeholder);
-                            }
-                        };
-                        
-                        // Initialize on page load - wait for DOM
-                        function initializeMeetingFields() {
+
+                        // Initialize on page load
+                        document.addEventListener('DOMContentLoaded', function() {
                             var checkbox = document.getElementById('is_online');
                             if (checkbox) {
-                                // Check initial state
-                                setTimeout(function() {
-                                    handleOnlineConsultationChange(checkbox);
-                                }, 100);
-                                
-                                // Also add event listeners
+                                handleOnlineConsultationChange(checkbox);
                                 checkbox.addEventListener('change', function() {
                                     handleOnlineConsultationChange(this);
                                 });
-                                checkbox.addEventListener('click', function() {
-                                    setTimeout(function() {
-                                        handleOnlineConsultationChange(checkbox);
-                                    }, 10);
-                                });
                             }
-                            
-                            // Setup placeholder update for meeting platform
-                            var platformSelect = document.getElementById('meeting_platform');
-                            if (platformSelect) {
-                                // Remove any existing listeners to avoid duplicates
-                                var newSelect = platformSelect.cloneNode(true);
-                                platformSelect.parentNode.replaceChild(newSelect, platformSelect);
-                                
-                                // Add fresh event listener
-                                newSelect.addEventListener('change', function() {
-                                    window.updateMeetingLinkPlaceholder();
-                                });
-                                
-                                // Also add onchange attribute as backup
-                                newSelect.setAttribute('onchange', 'window.updateMeetingLinkPlaceholder();');
-                                
-                                // Update placeholder on page load if platform is already selected
-                                setTimeout(function() {
-                                    window.updateMeetingLinkPlaceholder();
-                                }, 200);
-                            } else {
-                                // Retry if element not ready
-                                setTimeout(initializeMeetingFields, 100);
-                            }
-                        }
-                        
-                        // Wait for DOM to be ready
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', initializeMeetingFields);
-                        } else {
-                            initializeMeetingFields();
-                        }
+                        });
                         </script>
                         
                         <div class="row" id="meeting_link_row" style="{{ old('is_online') ? '' : 'display: none;' }}">
-                            <div class="col-md-6 mb-3">
-                                <label for="meeting_platform" class="form-label">Meeting Platform</label>
-                                <select class="form-control @error('meeting_platform') is-invalid @enderror"
-                                        id="meeting_platform" name="meeting_platform">
-                                    <option value="whereby" {{ old('meeting_platform', 'whereby') == 'whereby' ? 'selected' : '' }}>Whereby (Auto-generated)</option>
-                                    <option value="zoom" {{ old('meeting_platform') == 'zoom' ? 'selected' : '' }}>Zoom</option>
-                                    <option value="google_meet" {{ old('meeting_platform') == 'google_meet' ? 'selected' : '' }}>Google Meet</option>
-                                    <option value="teams" {{ old('meeting_platform') == 'teams' ? 'selected' : '' }}>Microsoft Teams</option>
-                                    <option value="custom" {{ old('meeting_platform') == 'custom' ? 'selected' : '' }}>Custom Platform</option>
-                                </select>
-                                @error('meeting_platform')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-6 mb-3" id="meeting_link_container">
-                                <label for="meeting_link" class="form-label">Meeting Link <span class="text-danger" id="meeting_link_required">*</span></label>
-                                <div class="input-group">
-                                    <input type="url" class="form-control @error('meeting_link') is-invalid @enderror"
-                                           id="meeting_link" name="meeting_link"
-                                           value="{{ old('meeting_link') }}"
-                                           placeholder="Enter meeting link based on selected platform">
-                                    <button type="button" class="btn btn-outline-secondary" id="copy_meeting_link"
-                                            title="Copy Meeting Link" style="display: none;">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </div>
-                                @error('meeting_link')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted" id="meeting_link_help">Required for online consultations</small>
-                            </div>
-                            <!-- Whereby auto-generation notice -->
-                            <div class="col-md-6 mb-3" id="whereby_notice" style="display: none;">
-                                <label class="form-label">Meeting Link</label>
-                                <div class="alert alert-info mb-0 py-2" style="border-radius: 8px;">
-                                    <i class="fas fa-magic me-2"></i>
-                                    <strong>Auto-generated</strong>
-                                    <p class="mb-0 mt-1 small">A Whereby meeting room will be automatically created when you schedule this appointment.</p>
+                            <div class="col-12 mb-3">
+                                <!-- Hidden field to set Whereby as the platform -->
+                                <input type="hidden" name="meeting_platform" value="whereby">
+
+                                <div class="alert alert-info mb-0" style="border-radius: 8px; border-left: 4px solid #6C63FF;">
+                                    <div class="d-flex align-items-start">
+                                        <div class="me-3">
+                                            <i class="fas fa-video fa-2x" style="color: #6C63FF;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1" style="color: #6C63FF;">
+                                                <i class="fas fa-magic me-1"></i>Whereby Video Consultation
+                                            </h6>
+                                            <p class="mb-2 small">A secure Whereby meeting room will be automatically created when you schedule this appointment.</p>
+                                            <ul class="mb-0 small" style="padding-left: 1.2rem;">
+                                                <li><strong>Patient</strong> will receive a link to join the consultation</li>
+                                                <li><strong>Doctor</strong> will receive a host link with meeting controls</li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -585,137 +467,25 @@ $(document).ready(function() {
         }
     });
 
-    // Toggle meeting link fields based on is_online checkbox - ensure checkbox state changes
+    // Toggle Whereby info panel based on is_online checkbox
     function toggleMeetingLink() {
         const checkbox = $('#is_online');
         const isChecked = checkbox.is(':checked') || checkbox.prop('checked');
-        
+
         if (isChecked) {
             $('#meeting_link_row').slideDown();
-            $('#meeting_link').prop('required', true);
         } else {
             $('#meeting_link_row').slideUp();
-            $('#meeting_link').prop('required', false);
-            $('#meeting_link').val('');
-            $('#meeting_platform').val('');
         }
     }
-    
+
     // Handle checkbox change
     $('#is_online').on('change', function() {
         toggleMeetingLink();
     });
-    
-    // Handle checkbox click directly - use setTimeout to ensure state is updated
-    $('#is_online').on('click', function(e) {
-        // Use setTimeout to check state after browser processes the click
-        setTimeout(function() {
-            toggleMeetingLink();
-        }, 10);
-    });
-    
-    // Handle label click - ensure it toggles the checkbox
-    $('label[for="is_online"]').on('click', function(e) {
-        // Don't prevent default - let label naturally toggle checkbox
-        setTimeout(function() {
-            toggleMeetingLink();
-        }, 10);
-    });
-    
+
     // Initialize on page load
     toggleMeetingLink();
-
-    // Show/hide copy button based on meeting link value
-    $('#meeting_link').on('input', function() {
-        if ($(this).val()) {
-            $('#copy_meeting_link').show();
-        } else {
-            $('#copy_meeting_link').hide();
-        }
-    });
-
-    // Copy meeting link function
-    $('#copy_meeting_link').on('click', function() {
-        const meetingLink = $('#meeting_link').val();
-        if (meetingLink) {
-            navigator.clipboard.writeText(meetingLink).then(function() {
-                const btn = $('#copy_meeting_link');
-                const originalHtml = btn.html();
-                btn.html('<i class="fas fa-check"></i>');
-                btn.removeClass('btn-outline-secondary').addClass('btn-success');
-                setTimeout(function() {
-                    btn.html(originalHtml);
-                    btn.removeClass('btn-success').addClass('btn-outline-secondary');
-                }, 2000);
-            }).catch(function(err) {
-                // Fallback for older browsers
-                $('#meeting_link').select();
-                document.execCommand('copy');
-                alert('Meeting link copied to clipboard!');
-            });
-        }
-    });
-
-    // Client-side validation for meeting link
-    $('#appointmentForm').on('submit', function(e) {
-        const isOnline = $('#is_online').is(':checked');
-        const platform = $('#meeting_platform').val();
-        const meetingLink = $('#meeting_link').val().trim();
-
-        // Only require meeting link for non-Whereby platforms
-        if (isOnline && platform !== 'whereby' && !meetingLink) {
-            e.preventDefault();
-            $('#meeting_link').addClass('is-invalid');
-            alert('Meeting link is required for online consultations with ' + platform.replace('_', ' ') + '.');
-            return false;
-        }
-    });
-    
-    // Update meeting link UI based on selected platform
-    function updateMeetingPlatformUI() {
-        const platform = $('#meeting_platform').val();
-        const meetingLinkContainer = $('#meeting_link_container');
-        const wherebyNotice = $('#whereby_notice');
-        const meetingLinkInput = $('#meeting_link');
-        const meetingLinkRequired = $('#meeting_link_required');
-
-        if (platform === 'whereby') {
-            // Hide manual link input, show auto-generation notice
-            meetingLinkContainer.hide();
-            wherebyNotice.show();
-            meetingLinkInput.prop('required', false).removeAttr('required');
-            meetingLinkInput.val(''); // Clear any manual link
-        } else {
-            // Show manual link input, hide notice
-            meetingLinkContainer.show();
-            wherebyNotice.hide();
-
-            if ($('#is_online').is(':checked')) {
-                meetingLinkInput.prop('required', true);
-                meetingLinkRequired.show();
-            }
-
-            // Update placeholder based on platform
-            const placeholders = {
-                'zoom': 'https://zoom.us/j/xxxxxxxxxx',
-                'google_meet': 'https://meet.google.com/xxx-xxxx-xxx',
-                'teams': 'https://teams.microsoft.com/l/meetup-join/xxx',
-                'custom': 'https://your-platform.com/meeting-link',
-                '': 'Enter meeting link based on selected platform'
-            };
-            meetingLinkInput.attr('placeholder', placeholders[platform] || placeholders['']);
-        }
-    }
-
-    // Handle platform change
-    $('#meeting_platform').off('change.platform').on('change.platform', function() {
-        updateMeetingPlatformUI();
-    });
-
-    // Initialize on page load
-    setTimeout(function() {
-        updateMeetingPlatformUI();
-    }, 300);
 
     // Filter time slots based on selected date
     $('#appointment_date').on('change', function() {
