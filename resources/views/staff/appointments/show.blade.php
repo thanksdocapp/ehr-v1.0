@@ -479,13 +479,21 @@
                             @endif
                         @endif
 
-                        @if($appointment->is_online && $appointment->meeting_link && $appointment->canJoinMeeting())
+                        @if(auth()->user()->role === 'doctor' && $appointment->status === 'confirmed' && $appointment->is_online && ($appointment->whereby_host_url || $appointment->meeting_link))
                             <div class="dropdown-divider"></div>
-                            <a href="{{ $appointment->meeting_link }}" 
-                               target="_blank" 
-                               class="btn btn-success">
-                                <i class="fas fa-video me-1"></i>Join Video Call
+                            @php
+                                $doctorJoinUrl = $appointment->whereby_host_url ?: $appointment->meeting_link;
+                            @endphp
+                            <a href="{{ $doctorJoinUrl }}"
+                               target="_blank"
+                               class="btn {{ $appointment->canJoinMeeting() ? 'btn-success' : 'btn-outline-success' }}">
+                                <i class="fas fa-video me-1"></i>Join Meeting
                             </a>
+                            @if(!$appointment->canJoinMeeting())
+                                <small class="text-muted mt-1 d-block">
+                                    <i class="fas fa-clock me-1"></i>Link is visible now; typically joinable 15 minutes before start.
+                                </small>
+                            @endif
                         @endif
                     </div>
                 </div>

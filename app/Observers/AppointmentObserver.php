@@ -102,6 +102,28 @@ class AppointmentObserver
         switch ($newStatus) {
             case 'confirmed':
                 if ($oldStatus === 'pending') {
+                    // Ensure online Whereby appointments have a meeting link before sending confirmation emails.
+                    // This avoids emails containing empty/unchanged meeting-link shortcodes.
+                    try {
+                        if ($appointment->is_online &&
+                            $appointment->meeting_platform === 'whereby' &&
+                            empty($appointment->meeting_link)) {
+                            $wherebyService = app(\App\Services\WherebyService::class);
+                            if ($wherebyService->isEnabled()) {
+                                Log::info('Whereby: Creating meeting on appointment confirmation', [
+                                    'appointment_id' => $appointment->id,
+                                ]);
+                                $wherebyService->createMeetingForAppointment($appointment);
+                                $appointment->refresh();
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Whereby: Failed to create meeting on appointment confirmation', [
+                            'appointment_id' => $appointment->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+
                     $this->notificationService->sendAppointmentNotification($appointment, 'confirmed');
                 }
                 break;

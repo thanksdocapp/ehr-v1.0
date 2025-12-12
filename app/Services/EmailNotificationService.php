@@ -564,15 +564,23 @@ class EmailNotificationService
                 }
             }
 
-            // Replace variables in content (handle both {{var}} and {{ var }} formats)
+            // Replace variables in content.
+            // Support multiple "shortcode" styles used across deployments:
+            // - {{ var }} (default)
+            // - { var }
+            // - [[ var ]]
+            // - [ var ]
+            // Also match case-insensitively so {{MEETING_LINK}} works with 'meeting_link'.
             foreach ($safeVariables as $key => $value) {
                 // Escape special regex characters in the key
                 $escapedKey = preg_quote($key, '/');
                 
-                // Replace both formats: {{key}} and {{ key }}
+                // Replace supported formats
                 $patterns = [
-                    '/\{\{\s*' . $escapedKey . '\s*\}\}/',
-                    '/\{\{' . $escapedKey . '\}\}/',
+                    '/\{\{\s*' . $escapedKey . '\s*\}\}/i',
+                    '/\{\s*' . $escapedKey . '\s*\}/i',
+                    '/\[\[\s*' . $escapedKey . '\s*\]\]/i',
+                    '/\[\s*' . $escapedKey . '\s*\]/i',
                 ];
                 
                 foreach ($patterns as $pattern) {
@@ -594,8 +602,10 @@ class EmailNotificationService
             foreach ($globalVars as $key => $value) {
                 $escapedKey = preg_quote($key, '/');
                 $patterns = [
-                    '/\{\{\s*' . $escapedKey . '\s*\}\}/',
-                    '/\{\{' . $escapedKey . '\}\}/',
+                    '/\{\{\s*' . $escapedKey . '\s*\}\}/i',
+                    '/\{\s*' . $escapedKey . '\s*\}/i',
+                    '/\[\[\s*' . $escapedKey . '\s*\]\]/i',
+                    '/\[\s*' . $escapedKey . '\s*\]/i',
                 ];
                 
                 foreach ($patterns as $pattern) {
