@@ -171,6 +171,19 @@
                                             @error('appointment_time')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
+                                            <div id="timeSlotNotice" class="alert alert-warning mt-2 mb-0" style="display:none;">
+                                                <div class="d-flex align-items-start justify-content-between gap-3">
+                                                    <div>
+                                                        <div class="fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>Selected time isn’t available</div>
+                                                        <div id="timeSlotNoticeText" class="small mb-0">
+                                                            This time is unavailable (past/closed). Please choose a later time or change the day.
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" id="timeSlotTomorrowBtn" class="btn btn-sm btn-outline-warning flex-shrink-0">
+                                                        Set date to tomorrow
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -215,7 +228,7 @@
                         });
                         </script>
                         
-                        <div class="row" id="meeting_link_row" style="{{ old('is_online') ? '' : 'display: none;' }}">
+                        <div class="row" id="meeting_link_row" @if(!old('is_online')) style="display: none;" @endif>
                             <div class="col-12 mb-3">
                                 <!-- Hidden field to set Whereby as the platform -->
                                 <input type="hidden" name="meeting_platform" value="whereby">
@@ -516,7 +529,57 @@ $(document).ready(function() {
             // Enable all time slots for future dates
             timeSelect.find('option').prop('disabled', false);
         }
+
+        // If the currently selected option became disabled, clear it and show a notice.
+        const selectedOpt = timeSelect.find('option:selected');
+        if (selectedOpt.length && selectedOpt.val() && selectedOpt.prop('disabled')) {
+            timeSelect.val('');
+            showTimeSlotNotice('That time is no longer available (past/closed). Please pick another time or change the day.');
+        } else {
+            // If it's today and all time slots are disabled, show "closed for today" guidance.
+            const enabledCount = timeSelect.find('option[value!=""]').filter(function() { return !$(this).prop('disabled'); }).length;
+            if (selectedDate.toDateString() === today.toDateString() && enabledCount === 0) {
+                showTimeSlotNotice('Clinic hours for today are over. Please change the appointment date to tomorrow.');
+            } else {
+                hideTimeSlotNotice();
+            }
+        }
     }).trigger('change');
+
+    function showTimeSlotNotice(message) {
+        $('#timeSlotNoticeText').text(message);
+        $('#timeSlotNotice').stop(true, true).fadeIn(150);
+    }
+
+    function hideTimeSlotNotice() {
+        $('#timeSlotNotice').stop(true, true).fadeOut(150);
+    }
+
+    function setDateToTomorrow() {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        $('#appointment_date').val(`${yyyy}-${mm}-${dd}`).trigger('change');
+        $('#appointment_time').val('').trigger('change');
+        hideTimeSlotNotice();
+    }
+
+    $('#timeSlotTomorrowBtn').on('click', function() {
+        setDateToTomorrow();
+    });
+
+    // Also validate when time changes (e.g., user selects a disabled slot via keyboard)
+    $('#appointment_time').on('change', function() {
+        const opt = $(this).find('option:selected');
+        if (opt.length && opt.val() && opt.prop('disabled')) {
+            $(this).val('');
+            showTimeSlotNotice('That time is unavailable. Please choose another time or change the day.');
+            return;
+        }
+        hideTimeSlotNotice();
+    });
 
     // Auto-dismiss alerts after 30 seconds
     setTimeout(function() {
