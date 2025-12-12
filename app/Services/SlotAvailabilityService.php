@@ -16,9 +16,10 @@ class SlotAvailabilityService
      * @param int $doctorId
      * @param string $date (YYYY-MM-DD)
      * @param int|null $serviceId
+     * @param int|null $durationMinutes Override duration (minutes) if provided
      * @return array
      */
-    public function getAvailableSlots($doctorId, $date, $serviceId = null)
+    public function getAvailableSlots($doctorId, $date, $serviceId = null, $durationMinutes = null)
     {
         $doctor = Doctor::findOrFail($doctorId);
         $dateObj = Carbon::parse($date);
@@ -28,9 +29,14 @@ class SlotAvailabilityService
             return []; // Doctor has blocked this date
         }
 
-        // Get service duration (default 30 minutes if no service)
+        // Get duration (default 30 minutes). Priority:
+        // 1) explicit override (durationMinutes)
+        // 2) service duration (if serviceId provided)
+        // 3) default 30
         $duration = 30;
-        if ($serviceId) {
+        if (is_numeric($durationMinutes) && (int) $durationMinutes > 0) {
+            $duration = (int) $durationMinutes;
+        } elseif ($serviceId) {
             $service = BookingService::find($serviceId);
             if ($service) {
                 $duration = $service->getDurationForDoctor($doctorId);
@@ -221,7 +227,11 @@ class SlotAvailabilityService
         // Check if slot conflicts with existing appointments
         foreach ($existingAppointments as $appointment) {
             $apptStart = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
-            $apptEnd = $apptStart->copy()->addMinutes(30); // Default appointment duration
+            $apptDuration = (int) ($appointment->estimated_duration ?? 30);
+            if ($apptDuration <= 0) {
+                $apptDuration = 30;
+            }
+            $apptEnd = $apptStart->copy()->addMinutes($apptDuration);
 
             // Check for overlap
             if ($slotStart->lt($apptEnd) && $slotEnd->gt($apptStart)) {

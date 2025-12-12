@@ -508,6 +508,7 @@ class PublicBookingController extends Controller
         $validator = Validator::make($request->all(), [
             'service_id' => 'nullable|exists:booking_services,id',
             'date' => 'required|date|after_or_equal:today',
+            'duration' => 'nullable|integer|min:15|max:480',
         ]);
 
         if ($validator->fails()) {
@@ -517,7 +518,8 @@ class PublicBookingController extends Controller
         $slots = $this->slotAvailabilityService->getAvailableSlots(
             $doctorId,
             $request->date,
-            $request->service_id
+            $request->service_id,
+            $request->duration
         );
 
         return response()->json([

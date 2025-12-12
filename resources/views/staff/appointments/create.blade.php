@@ -150,7 +150,7 @@
                                 </div>
 
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="form-group mb-3">
                                             <label for="appointment_date" class="form-label">Appointment Date <span class="text-danger">*</span></label>
                                             <input type="date" class="form-control @error('appointment_date') is-invalid @enderror" 
@@ -162,7 +162,24 @@
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-3">
+                                            <label for="estimated_duration" class="form-label">Estimated Duration (minutes) <span class="text-danger">*</span></label>
+                                            <select class="form-control @error('estimated_duration') is-invalid @enderror"
+                                                    id="estimated_duration" name="estimated_duration" required>
+                                                <option value="30" {{ old('estimated_duration', '30') === '30' ? 'selected' : '' }}>30 minutes</option>
+                                                <option value="45" {{ old('estimated_duration') === '45' ? 'selected' : '' }}>45 minutes</option>
+                                                <option value="60" {{ old('estimated_duration') === '60' ? 'selected' : '' }}>1 hour</option>
+                                                <option value="90" {{ old('estimated_duration') === '90' ? 'selected' : '' }}>1.5 hours</option>
+                                                <option value="120" {{ old('estimated_duration') === '120' ? 'selected' : '' }}>2 hours</option>
+                                            </select>
+                                            @error('estimated_duration')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <small class="text-muted">Duration affects available time ranges</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
                                         <div class="form-group mb-3">
                                             <label for="appointment_time" class="form-label">Appointment Time <span class="text-danger">*</span></label>
                                             <select class="form-control @error('appointment_time') is-invalid @enderror" 
@@ -284,23 +301,6 @@
                                         <option value="urgent" {{ old('priority') === 'urgent' ? 'selected' : '' }}>Urgent</option>
                                     </select>
                                     @error('priority')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="estimated_duration" class="form-label">Estimated Duration (minutes)</label>
-                                    <select class="form-control @error('estimated_duration') is-invalid @enderror" 
-                                            id="estimated_duration" name="estimated_duration">
-                                        <option value="30" {{ old('estimated_duration', '30') === '30' ? 'selected' : '' }}>30 minutes</option>
-                                        <option value="45" {{ old('estimated_duration') === '45' ? 'selected' : '' }}>45 minutes</option>
-                                        <option value="60" {{ old('estimated_duration') === '60' ? 'selected' : '' }}>1 hour</option>
-                                        <option value="90" {{ old('estimated_duration') === '90' ? 'selected' : '' }}>1.5 hours</option>
-                                        <option value="120" {{ old('estimated_duration') === '120' ? 'selected' : '' }}>2 hours</option>
-                                    </select>
-                                    @error('estimated_duration')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -658,6 +658,7 @@ $(document).ready(function() {
     async function loadAvailableTimeSlots() {
         const doctorId = getDoctorIdForSlots();
         const date = $dateInput.val();
+        const duration = parseInt($('#estimated_duration').val(), 10) || 30;
 
         if (!doctorId || !date) {
             restoreStaticTimesFallback();
@@ -671,7 +672,7 @@ $(document).ready(function() {
         $timeSelect.empty().append($('<option value="">Loading available times…</option>'));
 
         try {
-            const url = `/api/doctor/${encodeURIComponent(doctorId)}/available-slots?date=${encodeURIComponent(date)}`;
+            const url = `/api/doctor/${encodeURIComponent(doctorId)}/available-slots?date=${encodeURIComponent(date)}&duration=${encodeURIComponent(duration)}`;
             const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
@@ -718,6 +719,10 @@ $(document).ready(function() {
     // Load slots when doctor/date changes
     $dateInput.on('change', loadAvailableTimeSlots);
     $('#doctor_id').on('change', loadAvailableTimeSlots);
+    $('#estimated_duration').on('change', function() {
+        // Duration affects the slot end time and available ranges
+        loadAvailableTimeSlots();
+    });
     // Also handle doctor-locked view (hidden input) - initial load
     setTimeout(loadAvailableTimeSlots, 0);
 
