@@ -72,6 +72,23 @@ class WherebyService
             // End date is appointment time + duration + 30 minutes buffer
             $endDate = $appointmentDateTime->copy()->addMinutes($duration + 30);
 
+            // IMPORTANT: Whereby requires endDate to be in the future
+            // If endDate is in the past, set it to 24 hours from now
+            $now = \Carbon\Carbon::now();
+            if ($endDate->lte($now)) {
+                Log::warning('Whereby: Calculated endDate is in the past, adjusting to 24 hours from now', [
+                    'original_end_date' => $endDate->toIso8601String(),
+                    'appointment_datetime' => $appointmentDateTime->toIso8601String(),
+                ]);
+                $endDate = $now->copy()->addHours(24);
+            }
+
+            Log::info('Whereby: End date calculated', [
+                'appointment_datetime' => $appointmentDateTime->toIso8601String(),
+                'end_date' => $endDate->toIso8601String(),
+                'duration_minutes' => $duration,
+            ]);
+
             // Prepare room name prefix
             $roomNamePrefix = Setting::get('whereby_room_prefix', 'consultation');
             $roomNamePrefix = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $roomNamePrefix));
@@ -93,10 +110,20 @@ class WherebyService
                 'fields' => ['hostRoomUrl'],
             ];
 
-            $response = Http::withHeaders([
+            Log::info('Whereby: Making API request', [
+                'url' => $this->baseUrl . '/meetings',
+                'request_body' => $requestBody,
+            ]);
+
+            $response = Http::timeout(30)->withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
             ])->post($this->baseUrl . '/meetings', $requestBody);
+
+            Log::info('Whereby: API response received', [
+                'status' => $response->status(),
+                'successful' => $response->successful(),
+            ]);
 
             if ($response->successful()) {
                 $data = $response->json();
