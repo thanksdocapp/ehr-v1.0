@@ -2307,7 +2307,6 @@
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="border-radius: 16px; margin-top: 0.5rem;">
                         <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
-                        <li><a class="dropdown-item" href="{{ route('change-password') }}"><i class="fas fa-key me-2"></i>Change Password</a></li>
                         <li><a class="dropdown-item" href="{{ route('staff.schedule.index') }}"><i class="fas fa-calendar-alt me-2"></i>My Schedule</a></li>
                         <li><a class="dropdown-item" href="{{ route('staff.doctor-services.index') }}"><i class="fas fa-briefcase-medical me-2"></i>Services</a></li>
                         <li><hr class="dropdown-divider"></li>

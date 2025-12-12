@@ -2284,7 +2284,6 @@
                 <ul class="dropdown-menu dropdown-menu-end">
                     @if(!(isset($isForced2FASetup) && $isForced2FASetup))
                     <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
-                    <li><a class="dropdown-item" href="{{ route('change-password') }}"><i class="fas fa-key me-2"></i>Change Password</a></li>
                     <li><hr class="dropdown-divider"></li>
                     @endif
                     <li>
