@@ -57,22 +57,36 @@ class WherebyService
             // Handle different formats: appointment_time might be just time (H:i:s) or full datetime
             $timeValue = $appointment->appointment_time;
 
-            // Check if appointment_time is already a full datetime string
-            if ($timeValue instanceof \Carbon\Carbon) {
+            /**
+             * IMPORTANT:
+             * In this codebase, `Appointment::appointment_time` is cast as `datetime:H:i`.
+             * That means it often comes through as a Carbon instance that represents a TIME,
+             * but its DATE portion may be unrelated to `appointment_date`.
+             *
+             * Always combine `appointment_date` + `appointment_time` to build a real datetime.
+             */
+            if (!empty($appointment->appointment_date) && !empty($appointment->appointment_time)) {
+                // Uses Appointment accessor which safely combines date + time.
+                $appointmentDateTime = $appointment->appointment_date_time;
+            } elseif ($timeValue instanceof \Carbon\Carbon) {
+                // Fallback (should be rare): use whatever we have.
                 $appointmentDateTime = $timeValue;
-            } elseif (preg_match('/^\d{4}-\d{2}-\d{2}/', $timeValue)) {
+            } elseif (is_string($timeValue) && preg_match('/^\d{4}-\d{2}-\d{2}/', $timeValue)) {
                 // Already contains a date (e.g., "2025-12-12 11:00:00"), parse directly
                 $appointmentDateTime = \Carbon\Carbon::parse($timeValue);
             } else {
-                // Just a time string (e.g., "11:00:00"), combine with date
-                $dateString = $appointment->appointment_date instanceof \Carbon\Carbon
-                    ? $appointment->appointment_date->format('Y-m-d')
-                    : $appointment->appointment_date;
-                $appointmentDateTime = \Carbon\Carbon::parse($dateString . ' ' . $timeValue);
+                // Last-resort: parse whatever time/string is provided.
+                $appointmentDateTime = \Carbon\Carbon::parse((string) $timeValue);
             }
 
             Log::info('Whereby: Parsed appointment datetime', [
                 'original_time_value' => $timeValue,
+                'appointment_date' => $appointment->appointment_date instanceof \Carbon\Carbon
+                    ? $appointment->appointment_date->toDateString()
+                    : $appointment->appointment_date,
+                'appointment_time_his' => $appointment->appointment_time instanceof \Carbon\Carbon
+                    ? $appointment->appointment_time->format('H:i:s')
+                    : $appointment->appointment_time,
                 'parsed_datetime' => $appointmentDateTime->toIso8601String(),
             ]);
 
