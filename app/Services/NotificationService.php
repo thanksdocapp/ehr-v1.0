@@ -483,7 +483,7 @@ class NotificationService
                 'category' => UserNotification::CATEGORY_APPOINTMENT,
                 'title' => 'New Appointment',
                 'message' => "New appointment with {$patientName} on {$appointmentDateTime}",
-                'action_url' => '/admin/appointments/' . $appointment->id,
+                'action_url' => '/staff/appointments/' . $appointment->id,
                 'priority' => 'medium',
             ],
             'confirmed' => [
@@ -491,7 +491,7 @@ class NotificationService
                 'category' => UserNotification::CATEGORY_APPOINTMENT,
                 'title' => 'Appointment Confirmed',
                 'message' => "Appointment with {$patientName} on {$appointmentDateTime} has been confirmed",
-                'action_url' => '/admin/appointments/' . $appointment->id,
+                'action_url' => '/staff/appointments/' . $appointment->id,
                 'priority' => 'high',
             ],
             'cancelled' => [
@@ -499,7 +499,7 @@ class NotificationService
                 'category' => UserNotification::CATEGORY_APPOINTMENT,
                 'title' => 'Appointment Cancelled',
                 'message' => "Appointment with {$patientName} on {$appointmentDateTime} has been cancelled",
-                'action_url' => '/admin/appointments',
+                'action_url' => '/staff/appointments',
                 'priority' => 'high',
             ],
         ];

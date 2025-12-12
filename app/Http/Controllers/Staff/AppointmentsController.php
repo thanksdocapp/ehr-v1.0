@@ -420,11 +420,16 @@ class AppointmentsController extends Controller
             'meeting_platform' => $request->meeting_platform,
         ]);
 
-        // If this is an online appointment without a meeting link, auto-generate Whereby room
+        // Track if we need to send emails manually (for Whereby appointments where observer skipped email)
+        $sendEmailsManually = false;
+        $wherebyService = app(\App\Services\WherebyService::class);
+        $wherebyEnabled = $wherebyService->isEnabled();
+
+        // If this is an online appointment with Whereby platform and no meeting link, try to auto-generate
         if ($appointment->is_online && empty($appointment->meeting_link) && $appointment->meeting_platform === 'whereby') {
-            try {
-                $wherebyService = app(\App\Services\WherebyService::class);
-                if ($wherebyService->isEnabled()) {
+            if ($wherebyEnabled) {
+                $sendEmailsManually = true; // Observer skipped email, we'll send after link is created
+                try {
                     $wherebyService->createMeetingForAppointment($appointment);
                     $appointment->refresh(); // Reload to get the updated meeting_link
 
@@ -432,33 +437,53 @@ class AppointmentsController extends Controller
                         'appointment_id' => $appointment->id,
                         'meeting_link' => $appointment->meeting_link,
                     ]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create Whereby meeting for staff appointment', [
+                        'appointment_id' => $appointment->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            } else {
+                // Whereby is not enabled but user selected it - log warning
+                \Log::warning('Whereby platform selected but integration is not enabled', [
+                    'appointment_id' => $appointment->id
+                ]);
+            }
+        }
 
-                    // Now send the email notification with the meeting link
-                    // (Observer skipped email for Whereby appointments without link)
-                    if (!empty($appointment->meeting_link)) {
-                        $appointment->load(['patient.user', 'doctor.user']);
-                        $hospitalEmailService = app(\App\Services\HospitalEmailNotificationService::class);
+        // Send email notifications if Whereby was enabled and observer skipped email
+        if ($sendEmailsManually) {
+            if (empty($appointment->meeting_link)) {
+                // Whereby link creation failed, still send emails but without meeting link
+                \Log::warning('Sending appointment emails without Whereby link - link creation may have failed', [
+                    'appointment_id' => $appointment->id
+                ]);
+            }
 
-                        // Send confirmation email to patient
-                        if ($appointment->patient && $appointment->patient->email) {
-                            $hospitalEmailService->sendAppointmentConfirmation($appointment);
-                            \Log::info('Appointment confirmation email sent after Whereby link generated', [
-                                'appointment_id' => $appointment->id,
-                                'patient_email' => $appointment->patient->email
-                            ]);
-                        }
+            try {
+                $appointment->load(['patient.user', 'doctor.user']);
+                $hospitalEmailService = app(\App\Services\HospitalEmailNotificationService::class);
 
-                        // Send notification to doctor
-                        if ($appointment->doctor && $appointment->doctor->user) {
-                            $hospitalEmailService->sendNewAppointmentToDoctor($appointment);
-                            \Log::info('New appointment email sent to doctor after Whereby link generated', [
-                                'appointment_id' => $appointment->id
-                            ]);
-                        }
-                    }
+                // Send confirmation email to patient
+                if ($appointment->patient && $appointment->patient->email) {
+                    $hospitalEmailService->sendAppointmentConfirmation($appointment);
+                    \Log::info('Appointment confirmation email sent after Whereby processing', [
+                        'appointment_id' => $appointment->id,
+                        'patient_email' => $appointment->patient->email,
+                        'has_meeting_link' => !empty($appointment->meeting_link)
+                    ]);
+                }
+
+                // Send notification to doctor
+                if ($appointment->doctor && $appointment->doctor->user) {
+                    $hospitalEmailService->sendNewAppointmentToDoctor($appointment);
+                    \Log::info('New appointment email sent to doctor after Whereby processing', [
+                        'appointment_id' => $appointment->id,
+                        'has_meeting_link' => !empty($appointment->meeting_link)
+                    ]);
                 }
             } catch (\Exception $e) {
-                \Log::error('Failed to create Whereby meeting for staff appointment', [
+                \Log::error('Failed to send appointment emails for staff appointment', [
                     'appointment_id' => $appointment->id,
                     'error' => $e->getMessage()
                 ]);

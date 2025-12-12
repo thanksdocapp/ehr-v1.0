@@ -37,7 +37,11 @@ class WherebyService
     public function createMeeting(Appointment $appointment): ?array
     {
         if (!$this->isEnabled()) {
-            Log::warning('Whereby integration is not enabled or configured');
+            Log::warning('Whereby integration is not enabled or configured', [
+                'enabled_setting' => $this->enabled,
+                'has_api_key' => !empty($this->apiKey),
+                'api_key_length' => $this->apiKey ? strlen($this->apiKey) : 0,
+            ]);
             return null;
         }
 
@@ -101,6 +105,8 @@ class WherebyService
                 'appointment_id' => $appointment->id,
                 'status' => $response->status(),
                 'response' => $response->json(),
+                'request_body' => $requestBody,
+                'api_key_prefix' => substr($this->apiKey, 0, 20) . '...',
             ]);
 
             return null;

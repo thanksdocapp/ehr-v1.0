@@ -926,7 +926,7 @@ class HospitalEmailNotificationService
             'patient_phone' => $patient->phone ?? 'Not provided',
             'patient_email' => $patient->email ?? 'Not provided',
             'hospital_name' => config('app.name', 'Hospital'),
-            'patient_url' => url('/admin/patients/' . $patient->id),
+            'patient_url' => url('/staff/patients/' . $patient->id),
         ];
 
         return $this->emailService->sendTemplateEmail(
@@ -980,7 +980,7 @@ class HospitalEmailNotificationService
             'appointment_type' => $appointment->type ?? 'Consultation',
             'notes' => $appointment->notes ?? 'No additional notes',
             'hospital_name' => config('app.name', 'Hospital'),
-            'appointment_url' => url('/admin/appointments/' . $appointment->id),
+            'appointment_url' => url('/staff/appointments/' . $appointment->id),
             'is_online' => $appointment->is_online ?? false,
             'meeting_link' => $appointment->meeting_link ?? null,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
@@ -1336,7 +1336,7 @@ class HospitalEmailNotificationService
             'vital_signs' => $this->formatVitalSignsForEmail($admissionInfo['vital_signs'] ?? []),
             'emergency_contact' => $admissionInfo['emergency_contact'] ?? 'Not provided',
             'hospital_name' => config('app.name', 'Hospital'),
-            'patient_url' => url('/admin/patients/' . $patient->id),
+            'patient_url' => url('/staff/patients/' . $patient->id),
             'medical_history' => $admissionInfo['medical_history'] ?? 'No known allergies or conditions',
         ];
 
@@ -1374,7 +1374,7 @@ class HospitalEmailNotificationService
             'specialist_required' => $admissionInfo['specialist_required'] ?? 'General',
             'estimated_treatment_time' => $admissionInfo['estimated_treatment_time'] ?? 'Unknown',
             'hospital_name' => config('app.name', 'Hospital'),
-            'patient_url' => url('/admin/patients/' . $patient->id),
+            'patient_url' => url('/staff/patients/' . $patient->id),
             'emergency_protocol' => $admissionInfo['emergency_protocol'] ?? 'Standard emergency protocol in effect',
         ];
 
@@ -1412,7 +1412,7 @@ class HospitalEmailNotificationService
             'lab_technician' => $labReport->lab_technician ?? 'Laboratory',
             'notes' => $labReport->notes ?? 'Please review and advise next steps.',
             'hospital_name' => config('app.name', 'Hospital'),
-            'lab_report_url' => url('/admin/lab-reports/' . $labReport->id),
+            'lab_report_url' => url('/staff/lab-reports/' . $labReport->id),
         ];
 
         return $this->emailService->sendTemplateEmail(

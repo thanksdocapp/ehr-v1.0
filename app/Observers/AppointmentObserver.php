@@ -21,14 +21,19 @@ class AppointmentObserver
     public function created(Appointment $appointment)
     {
         try {
-            // Skip email notification for online appointments with Whereby platform
-            // that don't have a meeting link yet - the controller will handle this
-            // after the Whereby meeting is created
+            // Only skip email notification for online appointments with Whereby platform
+            // if Whereby is actually ENABLED - the controller will handle sending email
+            // after the Whereby meeting link is created
+            $wherebyService = app(\App\Services\WherebyService::class);
+            $wherebyEnabled = $wherebyService->isEnabled();
+
             if ($appointment->is_online &&
                 $appointment->meeting_platform === 'whereby' &&
-                empty($appointment->meeting_link)) {
+                empty($appointment->meeting_link) &&
+                $wherebyEnabled) {
                 Log::info('Skipping observer notification for Whereby appointment - will be sent after meeting link is generated', [
-                    'appointment_id' => $appointment->id
+                    'appointment_id' => $appointment->id,
+                    'whereby_enabled' => true
                 ]);
 
                 // Still send in-app notifications, just skip the email
