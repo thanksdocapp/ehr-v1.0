@@ -2194,6 +2194,7 @@ class SettingsController extends Controller
             $validator = Validator::make($request->all(), [
                 'tinymce_api_key' => 'nullable|string|max:255',
                 'google_maps_api_key' => 'nullable|string|max:255',
+                'ideal_postcodes_api_key' => 'nullable|string|max:255',
                 'recaptcha_site_key' => 'nullable|string|max:255',
                 'recaptcha_secret_key' => 'nullable|string|max:255',
                 'onesignal_app_id' => 'nullable|string|max:255',
@@ -2213,6 +2214,7 @@ class SettingsController extends Controller
             $integrationSettings = [
                 'tinymce_api_key' => $request->input('tinymce_api_key'),
                 'google_maps_api_key' => $request->input('google_maps_api_key'),
+                'ideal_postcodes_api_key' => $request->input('ideal_postcodes_api_key'),
                 'recaptcha_site_key' => $request->input('recaptcha_site_key'),
                 'recaptcha_secret_key' => $request->input('recaptcha_secret_key'),
                 'onesignal_app_id' => $request->input('onesignal_app_id'),

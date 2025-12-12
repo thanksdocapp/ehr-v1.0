@@ -985,7 +985,7 @@ $(document).ready(function() {
 
     // Ideal Postcodes Address Finder (fallbacks to manual entry if not configured)
     (function initIdealPostcodes() {
-        const apiKey = @json(config('services.ideal_postcodes.api_key'));
+        const apiKey = @json(\App\Models\Setting::get('ideal_postcodes_api_key') ?: config('services.ideal_postcodes.api_key'));
         const input = document.getElementById('ideal_postcodes_finder');
         const notice = document.getElementById('ideal_postcodes_notice');
         if (!input || !notice) return;

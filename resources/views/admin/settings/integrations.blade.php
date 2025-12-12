@@ -178,6 +178,57 @@
                 </div>
             </div>
 
+            <!-- Ideal Postcodes Address Finder Integration -->
+            <div class="col-lg-6 mb-4">
+                <div class="card integration-card h-100" style="border-left-color:#0ea5e9;">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="integration-logo text-white me-3" style="background:#0ea5e9;">
+                                <i class="fas fa-map-marked-alt"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Ideal Postcodes</h5>
+                                <small class="text-muted">UK address finder & validation</small>
+                            </div>
+                        </div>
+                        @if(!empty($settings['ideal_postcodes_api_key']))
+                            <span class="badge bg-success status-badge"><i class="fas fa-check me-1"></i>Configured</span>
+                        @else
+                            <span class="badge bg-warning text-dark status-badge"><i class="fas fa-exclamation me-1"></i>Not Set</span>
+                        @endif
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="ideal_postcodes_api_key" class="form-label">
+                                <i class="fas fa-key me-1"></i>API Key
+                            </label>
+                            <div class="input-group">
+                                <input type="password"
+                                       class="form-control api-key-input"
+                                       id="ideal_postcodes_api_key"
+                                       name="ideal_postcodes_api_key"
+                                       value="{{ old('ideal_postcodes_api_key', $settings['ideal_postcodes_api_key'] ?? '') }}"
+                                       placeholder="Enter your Ideal Postcodes API key">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('ideal_postcodes_api_key')">
+                                    <i class="fas fa-eye" id="ideal_postcodes_api_key_icon"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Used for address lookup on Patient and User forms. Docs:
+                                <a href="https://docs.ideal-postcodes.co.uk/docs/address-finder" target="_blank" rel="noopener">Address Finder</a>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mb-0">
+                            <small>
+                                <i class="fas fa-lightbulb me-1"></i>
+                                If no key is set, address lookup is disabled and users can still enter addresses manually.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Google reCAPTCHA Integration -->
             <div class="col-lg-6 mb-4">
                 <div class="card integration-card h-100">
