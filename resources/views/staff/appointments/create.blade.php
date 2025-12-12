@@ -237,11 +237,44 @@
                                 </label>
                             </div>
                         </div>
+
+                        <script>
+                        // Keep the Whereby notice visible whenever "Online Consultation" is selected.
+                        (function initWherebyNoticeToggle() {
+                            function apply() {
+                                var checkbox = document.getElementById('is_online');
+                                var row = document.getElementById('meeting_link_row');
+                                var platformInput = document.getElementById('meeting_platform_whereby');
+                                if (!checkbox || !row) return;
+
+                                var on = !!checkbox.checked;
+                                // Use default .row display (flex) when visible
+                                row.style.display = on ? '' : 'none';
+                                // Prevent accidental submission of meeting_platform when not online
+                                if (platformInput) {
+                                    platformInput.disabled = !on;
+                                }
+                            }
+
+                            document.addEventListener('DOMContentLoaded', function() {
+                                var checkbox = document.getElementById('is_online');
+                                if (!checkbox) return;
+                                checkbox.addEventListener('change', apply);
+                                apply();
+                            });
+                        })();
+                        </script>
                         
                         <div class="row" id="meeting_link_row" @if(!old('is_online')) style="display: none;" @endif>
                             <div class="col-12 mb-3">
                                 <!-- Hidden field to set Whereby as the platform -->
-                                <input type="hidden" name="meeting_platform" value="whereby">
+                                <input
+                                    type="hidden"
+                                    id="meeting_platform_whereby"
+                                    name="meeting_platform"
+                                    value="whereby"
+                                    @if(!old('is_online')) disabled @endif
+                                >
 
                                 <div class="alert alert-info mb-0" style="border-radius: 8px; border-left: 4px solid #6C63FF;">
                                     <div class="d-flex align-items-start">
@@ -568,24 +601,7 @@ $(document).ready(function() {
         }
     });
 
-    // Toggle Whereby info panel based on is_online checkbox
-    function toggleMeetingLink() {
-        const checkbox = document.getElementById('is_online');
-        const meetingRow = document.getElementById('meeting_link_row');
-        if (!checkbox || !meetingRow) return;
-
-        const isChecked = !!checkbox.checked;
-        // Keep the Whereby notice "fixed" (no slide animation) while online consultation is selected
-        meetingRow.style.display = isChecked ? 'block' : 'none';
-    }
-
-    // Handle checkbox change
-    $('#is_online').on('change', function() {
-        toggleMeetingLink();
-    });
-
-    // Initialize on page load
-    toggleMeetingLink();
+    // Whereby notice toggle is handled by the inline script next to the checkbox (more robust if other JS fails).
 
     // ===== Appointment time slots (connect to Weekly Availability) =====
     // Source of truth: Public booking availability API (uses SlotAvailabilityService / doctor availability + exceptions)
