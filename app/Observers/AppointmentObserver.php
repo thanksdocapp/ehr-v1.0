@@ -103,10 +103,10 @@ class AppointmentObserver
             case 'confirmed':
                 if ($oldStatus === 'pending') {
                     // Ensure online Whereby appointments have a meeting link before sending confirmation emails.
-                    // This avoids emails containing empty/unchanged meeting-link shortcodes.
+                    // IMPORTANT: Only do this when the appointment is explicitly marked as a Whereby meeting.
                     try {
                         if ($appointment->is_online &&
-                            ($appointment->meeting_platform === 'whereby' || empty($appointment->meeting_platform)) &&
+                            $appointment->meeting_platform === 'whereby' &&
                             empty($appointment->meeting_link)) {
                             $wherebyService = app(\App\Services\WherebyService::class);
                             if ($wherebyService->isEnabled()) {
