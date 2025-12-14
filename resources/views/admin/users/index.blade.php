@@ -381,7 +381,6 @@
                             </th>
                             <th>Clinic(s)</th>
                             <th>Phone</th>
-                            <th>Employee ID</th>
                             <th>Status</th>
                             <th>
                                 <a href="{{ request()->fullUrlWithQuery(['sort' => 'created_at', 'direction' => request('direction') === 'asc' ? 'desc' : 'asc']) }}" class="sort-link">
@@ -455,13 +454,6 @@
                                 <td>
                                     @if($user->phone)
                                         <span class="text-muted">{{ $user->phone }}</span>
-                                    @else
-                                        <span class="text-muted small">—</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($user->employee_id)
-                                        <code class="small">{{ $user->employee_id }}</code>
                                     @else
                                         <span class="text-muted small">—</span>
                                     @endif
