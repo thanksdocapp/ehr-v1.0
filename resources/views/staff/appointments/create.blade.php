@@ -623,12 +623,12 @@ $(document).ready(function() {
         originalTimeOptions.each(function() {
             $timeSelect.append($(this).clone());
         });
-        applyTodayPastTimeDisabling();
+        return applyTodayPastTimeDisabling();
     }
 
     function applyTodayPastTimeDisabling() {
         const dateVal = $dateInput.val();
-        if (!dateVal) return;
+        if (!dateVal) return false;
         const selectedDate = new Date(dateVal);
         const today = new Date();
 
@@ -648,13 +648,18 @@ $(document).ready(function() {
         } else {
             // Enable all time slots for future dates
             $timeSelect.find('option').prop('disabled', false);
+            // Any "today is over" notice is now stale
+            hideTimeSlotNotice();
+            return false;
         }
 
         // If all times are disabled for today, show "closed" guidance
         const enabledCount = $timeSelect.find('option[value!=""]').filter(function() { return !$(this).prop('disabled'); }).length;
         if (selectedDate.toDateString() === today.toDateString() && enabledCount === 0) {
             showTimeSlotNotice('Clinic hours for today are over. Please change the appointment date to tomorrow.');
+            return true;
         }
+        return false;
     }
 
     function populateAvailabilitySlots(slots) {
@@ -683,8 +688,8 @@ $(document).ready(function() {
         const duration = parseInt($('#estimated_duration').val(), 10) || 30;
 
         if (!doctorId || !date) {
-            restoreStaticTimesFallback();
-            hideTimeSlotNotice();
+            const noticeShown = restoreStaticTimesFallback();
+            if (!noticeShown) hideTimeSlotNotice();
             return;
         }
 
@@ -726,8 +731,10 @@ $(document).ready(function() {
                 } else {
                     // No slots returned - could be doctor not working this day, no availability configured, etc.
                     // Use a softer message and still allow scheduling with default times
-                    restoreStaticTimesFallback();
-                    hideTimeSlotNotice(); // Don't show warning - just use default business hours
+                    const noticeShown = restoreStaticTimesFallback();
+                    if (!noticeShown) {
+                        hideTimeSlotNotice(); // If fallback didn't show any guidance, keep the UI clean
+                    }
                 }
             } else {
                 hideTimeSlotNotice();

@@ -568,7 +568,7 @@ use Illuminate\Support\Facades\Storage;
                 </div>
                 <div class="modern-card-body">
                     <p class="text-muted mb-3">Deleting a clinic is permanent. If doctors are assigned, deletion is blocked.</p>
-                    <button type="button" class="btn btn-danger w-100" onclick="deleteDepartment({{ $department->id }})">
+                    <button type="button" class="btn btn-danger w-100" data-delete-department-id="{{ $department->id }}">
                         <i class="fas fa-trash me-2"></i>Delete Clinic
                     </button>
                 </div>
@@ -581,6 +581,10 @@ use Illuminate\Support\Facades\Storage;
 @push('scripts')
 <script>
 $(document).ready(function() {
+    // Keep Blade interpolations inside strings so JS linters don't break on Blade syntax
+    const departmentId = Number('{{ $department->id }}');
+    const doctorsCountForDeleteCheck = Number('{{ $department->doctors_count ?? 0 }}');
+
     // Toggle status
     $('.toggle-status').click(function() {
         let button = $(this);
@@ -616,7 +620,7 @@ $(document).ready(function() {
         }
         
         // Check if department has doctors assigned
-        const doctorsCount = {{ $department->doctors_count ?? 0 }};
+        const doctorsCount = doctorsCountForDeleteCheck;
         console.log('Department has', doctorsCount, 'doctors assigned');
         
         // If department has doctors, show informative message instead of delete confirmation
@@ -647,8 +651,9 @@ $(document).ready(function() {
                     csrfToken.type = 'hidden';
                     csrfToken.name = '_token';
                     
-                    // Try to get CSRF token from meta tag or Laravel's global
-                    let csrfTokenValue = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    // Try to get CSRF token from meta tag or Laravel's global (no optional chaining for Blade linters)
+                    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                    let csrfTokenValue = csrfMeta ? csrfMeta.getAttribute('content') : null;
                     if (!csrfTokenValue && typeof Laravel !== 'undefined') {
                         csrfTokenValue = Laravel.csrfToken;
                     }
@@ -696,6 +701,13 @@ $(document).ready(function() {
         
         return false;
     };
+
+    // Wire delete button (avoid inline onclick so Blade/JS linters don't choke)
+    $(document).on('click', '[data-delete-department-id]', function(e) {
+        e.preventDefault();
+        const id = $(this).data('delete-department-id') || departmentId;
+        window.deleteDepartment(id);
+    });
 });
 </script>
 @endpush
