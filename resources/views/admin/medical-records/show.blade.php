@@ -610,7 +610,7 @@
                         <a href="{{ contextRoute('medical-records.index') }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Back to Records
                         </a>
-                        <button type="button" class="btn btn-danger" onclick="return deleteRecord({{ $medicalRecord->id }})">
+                        <button type="button" class="btn btn-danger" data-delete-record-id="{{ $medicalRecord->id }}">
                             <i class="fas fa-trash me-2"></i>Delete Record
                         </button>
                     </div>
@@ -640,8 +640,11 @@
                                 @php
                                 $iconMap = ['create' => 'plus', 'update' => 'edit', 'delete' => 'trash', 'view' => 'eye', 'login' => 'sign-in-alt', 'logout' => 'sign-out-alt'];
                                 $icon = $iconMap[$activity->action] ?? 'circle';
+                                // Some badge backgrounds are very light (e.g., "light", "warning") so white text becomes unreadable.
+                                $badgeBg = $activity->severity_badge;
+                                $badgeTextClass = in_array($badgeBg, ['light', 'warning', 'info']) ? 'text-dark' : 'text-white';
                                 @endphp
-                                <tr style="cursor: pointer;" onclick="window.location.href='{{ route('admin.advanced-reports.audit-trail.show', $activity->id) }}'">
+                                <tr class="audit-row" style="cursor: pointer;" data-href="{{ route('admin.advanced-reports.audit-trail.show', $activity->id) }}">
                                     <td>
                                         <small class="text-muted">{{ $activity->created_at->format('d-m-y') }}</small><br>
                                         <small class="text-muted">{{ $activity->created_at->format('H:i') }}</small>
@@ -653,7 +656,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ $activity->severity_badge }}">
+                                        <span class="badge bg-{{ $badgeBg }} {{ $badgeTextClass }}">
                                             @if($activity->action === 'pre_consultation_verified')
                                                 <i class="fas fa-clipboard-check me-1"></i>Pre-consultation Verified
                                             @else
@@ -816,7 +819,8 @@ function deleteRecord(recordId) {
                 csrfToken.name = '_token';
                 
                 // Try to get CSRF token from meta tag or Laravel's global
-                let csrfTokenValue = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                let csrfTokenValue = csrfMeta ? csrfMeta.getAttribute('content') : null;
                 if (!csrfTokenValue && typeof Laravel !== 'undefined') {
                     csrfTokenValue = Laravel.csrfToken;
                 }
@@ -864,6 +868,25 @@ function deleteRecord(recordId) {
     
     return false;
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Audit row click-through
+    document.querySelectorAll('tr.audit-row[data-href]').forEach(function(row) {
+        row.addEventListener('click', function() {
+            var href = row.getAttribute('data-href');
+            if (href) window.location.href = href;
+        });
+    });
+
+    // Delete button
+    var deleteBtn = document.querySelector('[data-delete-record-id]');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            var recordId = deleteBtn.getAttribute('data-delete-record-id');
+            if (recordId) deleteRecord(recordId);
+        });
+    }
+});
 
 // Print functionality
 function printRecord() {
