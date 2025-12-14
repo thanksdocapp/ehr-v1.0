@@ -198,7 +198,7 @@
                                     <div id="timeSlotNotice" class="alert alert-warning mt-2 mb-0" style="display:none;">
                                         <div class="d-flex align-items-start justify-content-between gap-3">
                                             <div>
-                                                <div class="fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>Selected time isn’t available</div>
+                                                <div class="fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>Appointment time unavailable</div>
                                                 <div id="timeSlotNoticeText" class="small mb-0">
                                                     This time is unavailable (past/closed). Please choose a later time or change the day.
                                                 </div>
