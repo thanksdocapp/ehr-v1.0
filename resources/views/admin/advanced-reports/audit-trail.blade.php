@@ -58,10 +58,25 @@
     }
 
     .audit-desc {
-        max-width: 520px;
-        white-space: nowrap;
+        max-width: 720px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
         overflow: hidden;
-        text-overflow: ellipsis;
+    }
+
+    .audit-desc.is-expanded {
+        display: block;
+        -webkit-line-clamp: unset;
+        overflow: visible;
+    }
+
+    .audit-desc-toggle {
+        font-size: 0.8rem;
+        text-decoration: none;
     }
 
     .audit-table td {
@@ -406,7 +421,17 @@
                         @endif
                     </td>
                     <td>
-                        <div class="audit-desc" title="{{ $log->description }}">{{ $log->description }}</div>
+                        @php
+                            $desc = (string) ($log->description ?? '');
+                            $descTooLong = \Illuminate\Support\Str::length($desc) > 140;
+                        @endphp
+
+                        <div id="desc-{{ $log->id }}" class="audit-desc" title="{{ $desc }}">{{ $desc }}</div>
+                        @if($descTooLong)
+                            <div class="mt-1">
+                                <a href="#" class="audit-desc-toggle" data-target="desc-{{ $log->id }}">More</a>
+                            </div>
+                        @endif
                         @php
                             $changedKeys = [];
                             $old = is_array($log->old_values ?? null) ? $log->old_values : [];
@@ -458,4 +483,23 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.audit-desc-toggle[data-target]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            var targetId = link.getAttribute('data-target');
+            if (!targetId) return;
+            var el = document.getElementById(targetId);
+            if (!el) return;
+
+            var expanded = el.classList.toggle('is-expanded');
+            link.textContent = expanded ? 'Less' : 'More';
+        });
+    });
+});
+</script>
+@endpush
 
