@@ -720,7 +720,15 @@ $(document).ready(function() {
             populateAvailabilitySlots(filtered);
 
             if (filtered.length === 0) {
-                showTimeSlotNotice('No available times for the selected day (based on weekly availability). Please change the day to tomorrow or another date.');
+                // Check if original slots had data but were filtered out (all past) vs no slots returned at all
+                if (slots.length > 0 && filtered.length === 0) {
+                    showTimeSlotNotice('All available times for today have passed. Please select tomorrow or another date.');
+                } else {
+                    // No slots returned - could be doctor not working this day, no availability configured, etc.
+                    // Use a softer message and still allow scheduling with default times
+                    restoreStaticTimesFallback();
+                    hideTimeSlotNotice(); // Don't show warning - just use default business hours
+                }
             } else {
                 hideTimeSlotNotice();
             }
