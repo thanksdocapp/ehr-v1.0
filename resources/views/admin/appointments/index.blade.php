@@ -17,10 +17,61 @@
                     <h1 class="modern-page-title">Appointments Management</h1>
                     <p class="modern-page-subtitle">Manage and track all patient appointments</p>
                 </div>
-                <div class="mt-3 mt-md-0">
+                <div class="mt-3 mt-md-0 d-flex gap-2">
+                    <a href="{{ contextRoute('appointments.calendar') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-calendar-alt me-2"></i>Calendar View
+                    </a>
                     <a href="{{ contextRoute('appointments.create') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
                         <i class="fas fa-plus me-2"></i>New Appointment
                     </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards Row -->
+    <div class="row g-4 mb-4 fade-in-up" style="animation-delay: 0.1s;">
+        <div class="col-xl-3 col-md-6">
+            <div class="modern-stat-card">
+                <div class="modern-stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="modern-stat-content">
+                    <div class="modern-stat-number">{{ $stats['total_appointments'] ?? $appointments->total() }}</div>
+                    <div class="modern-stat-label">Total Appointments</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="modern-stat-card">
+                <div class="modern-stat-icon" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="modern-stat-content">
+                    <div class="modern-stat-number">{{ $stats['pending_appointments'] ?? 0 }}</div>
+                    <div class="modern-stat-label">Pending</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="modern-stat-card">
+                <div class="modern-stat-icon" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="modern-stat-content">
+                    <div class="modern-stat-number">{{ $stats['confirmed_appointments'] ?? 0 }}</div>
+                    <div class="modern-stat-label">Confirmed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="modern-stat-card">
+                <div class="modern-stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <div class="modern-stat-content">
+                    <div class="modern-stat-number">{{ $stats['today_appointments'] ?? 0 }}</div>
+                    <div class="modern-stat-label">Today's Appointments</div>
                 </div>
             </div>
         </div>

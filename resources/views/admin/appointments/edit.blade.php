@@ -153,11 +153,25 @@ textarea.form-control {
 @endpush
 
 @section('content')
-<div class="container-fluid">
-    <div class="page-title mb-4">
-        <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Appointment</h5>
-        <small class="text-muted">Update appointment details</small>
-        <p class="page-subtitle text-muted">Update appointment information and details</p>
+<div class="fade-in">
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">Edit Appointment</h1>
+                    <p class="modern-page-subtitle">Update appointment #{{ $appointment->appointment_number }}</p>
+                </div>
+                <div class="mt-3 mt-md-0 d-flex gap-2">
+                    <a href="{{ contextRoute('appointments.show', $appointment->id) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-eye me-2"></i>View Details
+                    </a>
+                    <a href="{{ contextRoute('appointments.index') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     @if ($errors->any())
