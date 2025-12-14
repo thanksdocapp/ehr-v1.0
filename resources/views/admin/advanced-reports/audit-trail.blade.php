@@ -40,6 +40,35 @@
         overflow: hidden;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
+
+    .audit-cell-meta {
+        color: #6c757d;
+        font-size: 0.78rem;
+        line-height: 1.2;
+    }
+
+    .audit-mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.78rem;
+    }
+
+    .audit-badge {
+        font-weight: 600;
+        letter-spacing: 0.2px;
+    }
+
+    .audit-desc {
+        max-width: 520px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .audit-table td {
+        vertical-align: top;
+        padding-top: 0.85rem;
+        padding-bottom: 0.85rem;
+    }
     
     /* Pagination styling */
     .pagination {
@@ -128,6 +157,30 @@
     </div>
 </div>
 
+<!-- Security / Quality Signals -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stats-card">
+            <h6><i class="fas fa-shield-alt me-2"></i>High Risk (7 days)</h6>
+            <div class="stat-value text-danger">{{ number_format($stats['high_risk_7d'] ?? 0) }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <h6><i class="fas fa-ban me-2"></i>Failed Logins (Today)</h6>
+            <div class="stat-value text-danger">{{ number_format($stats['failed_logins_today'] ?? 0) }}</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="stats-card">
+            <h6><i class="fas fa-info-circle me-2"></i>Tip</h6>
+            <div class="audit-cell-meta" style="font-size: 0.9rem;">
+                Use filters + search to trace who changed a record, when it happened, and which module/record was affected.
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Filters -->
 <div class="filter-card">
     <form method="GET" action="{{ route('admin.advanced-reports.audit-trail') }}">
@@ -139,6 +192,17 @@
                     @foreach($eventTypes as $key => $label)
                         <option value="{{ $key }}" {{ request('event_type') == $key ? 'selected' : '' }}>
                             {{ $label }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Severity</label>
+                <select name="severity" class="form-select">
+                    <option value="">All Severities</option>
+                    @foreach(($severities ?? []) as $sev)
+                        <option value="{{ $sev }}" {{ request('severity') == $sev ? 'selected' : '' }}>
+                            {{ ucfirst($sev) }}
                         </option>
                     @endforeach
                 </select>
@@ -155,22 +219,15 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">From Date</label>
-                <input type="text" name="date_from" id="date_from" class="form-control" 
-                       value="{{ request('date_from') ? formatDate(request('date_from')) : '' }}"
-                       placeholder="dd-mm-yyyy" 
-                       pattern="\d{2}-\d{2}-\d{4}" 
-                       maxlength="10">
-                <small class="form-text text-muted" style="font-size: 0.75rem;">Format: dd-mm-yyyy</small>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">To Date</label>
-                <input type="text" name="date_to" id="date_to" class="form-control" 
-                       value="{{ request('date_to') ? formatDate(request('date_to')) : '' }}"
-                       placeholder="dd-mm-yyyy" 
-                       pattern="\d{2}-\d{2}-\d{4}" 
-                       maxlength="10">
-                <small class="form-text text-muted" style="font-size: 0.75rem;">Format: dd-mm-yyyy</small>
+                <label class="form-label">Module</label>
+                <select name="model_type" class="form-select">
+                    <option value="">All Modules</option>
+                    @foreach(($modelTypes ?? []) as $type => $label)
+                        <option value="{{ $type }}" {{ request('model_type') == $type ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
             <div class="col-md-2 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100">
@@ -178,11 +235,30 @@
                 </button>
             </div>
         </div>
-        <div class="row mt-3">
-            <div class="col-md-6">
-                <input type="text" name="search" class="form-control" placeholder="Search description, user, IP..." value="{{ request('search') }}">
+        <div class="row g-3 mt-1">
+            <div class="col-md-2">
+                <label class="form-label">From Date</label>
+                <input type="text" name="date_from" id="date_from" class="form-control"
+                       value="{{ request('date_from') ? formatDate(request('date_from')) : '' }}"
+                       placeholder="dd-mm-yyyy"
+                       pattern="\d{2}-\d{2}-\d{4}"
+                       maxlength="10">
+                <small class="form-text text-muted" style="font-size: 0.75rem;">Format: dd-mm-yyyy</small>
             </div>
-            <div class="col-md-6 text-end">
+            <div class="col-md-2">
+                <label class="form-label">To Date</label>
+                <input type="text" name="date_to" id="date_to" class="form-control"
+                       value="{{ request('date_to') ? formatDate(request('date_to')) : '' }}"
+                       placeholder="dd-mm-yyyy"
+                       pattern="\d{2}-\d{2}-\d{4}"
+                       maxlength="10">
+                <small class="form-text text-muted" style="font-size: 0.75rem;">Format: dd-mm-yyyy</small>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" class="form-control" placeholder="Description, user/email, module, record ID, IP..." value="{{ request('search') }}">
+            </div>
+            <div class="col-md-3 d-flex align-items-end justify-content-end gap-2">
                 <a href="{{ route('admin.advanced-reports.audit-trail') }}" class="btn btn-secondary">
                     <i class="fas fa-redo me-2"></i>Reset
                 </a>
@@ -197,41 +273,164 @@
 <!-- Audit Logs Table -->
 <div class="log-table">
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        @php
+            $actionBadge = [
+                'login' => 'success',
+                'logout' => 'secondary',
+                'create' => 'primary',
+                'update' => 'warning',
+                'delete' => 'danger',
+                'view' => 'info',
+                'download' => 'info',
+                'export' => 'info',
+                'import' => 'info',
+                'failed_login' => 'danger',
+                'password_change' => 'warning',
+                'pre_consultation_verified' => 'success',
+            ];
+
+            $actionIcon = [
+                'login' => 'sign-in-alt',
+                'logout' => 'sign-out-alt',
+                'create' => 'plus-circle',
+                'update' => 'edit',
+                'delete' => 'trash',
+                'view' => 'eye',
+                'download' => 'download',
+                'export' => 'file-export',
+                'import' => 'file-import',
+                'failed_login' => 'ban',
+                'password_change' => 'key',
+                'pre_consultation_verified' => 'clipboard-check',
+            ];
+
+            $targetRouteMap = [
+                'App\\Models\\Patient' => 'admin.patients.show',
+                'App\\Models\\Appointment' => 'admin.appointments.show',
+                'App\\Models\\MedicalRecord' => 'admin.medical-records.show',
+                'App\\Models\\Prescription' => 'admin.prescriptions.show',
+                'App\\Models\\Billing' => 'admin.billing.show',
+                'App\\Models\\LabReport' => 'admin.lab-reports.show',
+                'App\\Models\\GeneratedDocument' => 'admin.generated-documents.show',
+                'App\\Models\\User' => 'admin.users.show',
+            ];
+        @endphp
+
+        <table class="table table-hover mb-0 audit-table">
             <thead class="table-light">
                 <tr>
-                    <th>Date & Time</th>
-                    <th>User</th>
-                    <th>Event</th>
+                    <th style="min-width: 160px;">Time</th>
+                    <th style="min-width: 220px;">Actor</th>
+                    <th style="min-width: 220px;">Action</th>
+                    <th style="min-width: 220px;">Target</th>
                     <th>Description</th>
-                    <th>IP Address</th>
-                    <th>Actions</th>
+                    <th style="min-width: 210px;">Source</th>
+                    <th style="width: 72px;">View</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($logs as $log)
                 <tr>
                     <td>
-                        <small>{{ formatDate($log->created_at) }}</small><br>
-                        <small class="text-muted">{{ $log->created_at->format('h:i A') }}</small>
+                        <div class="fw-semibold">{{ formatDate($log->created_at) }}</div>
+                        <div class="audit-cell-meta">
+                            {{ $log->created_at->format('H:i') }} · {{ $log->created_at->diffForHumans() }}
+                        </div>
                     </td>
                     <td>
-                        <strong>{{ $log->user_name ?? 'System' }}</strong><br>
-                        @if($log->user)
-                            <small class="text-muted">{{ $log->user->email }}</small>
+                        <div class="fw-semibold">{{ $log->user->name ?? 'System' }}</div>
+                        <div class="audit-cell-meta">
+                            @if($log->user)
+                                {{ $log->user->email }}
+                                · {{ ucfirst($log->user->role ?? 'staff') }}
+                            @else
+                                System event
+                            @endif
+                        </div>
+                    </td>
+                    <td>
+                        @php
+                            $action = $log->action ?? 'event';
+                            $actionLabel = \Illuminate\Support\Str::of((string) $action)->replace('_', ' ')->title();
+                            $actionColor = $actionBadge[$action] ?? 'secondary';
+                            $icon = $actionIcon[$action] ?? 'circle';
+
+                            $sev = $log->severity ?? null;
+                            $sevLabel = $sev ? ucfirst($sev) : 'N/A';
+                            $sevBgClass = $log->severity_badge ?? 'bg-secondary';
+                            $sevTextClass = in_array($sevBgClass, ['bg-warning', 'bg-light', 'bg-info']) ? 'text-dark' : 'text-white';
+                        @endphp
+
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="badge bg-{{ $actionColor }} audit-badge">
+                                <i class="fas fa-{{ $icon }} me-1"></i>{{ $actionLabel }}
+                            </span>
+                            @if($sev)
+                                <span class="badge {{ $sevBgClass }} {{ $sevTextClass }} audit-badge" title="Severity">
+                                    <i class="{{ $log->severity_icon }} me-1"></i>{{ $sevLabel }}
+                                </span>
+                            @endif
+                        </div>
+                        @if(!empty($log->session_id))
+                            <div class="audit-cell-meta mt-1">
+                                Session: <span class="audit-mono">{{ \Illuminate\Support\Str::limit($log->session_id, 14, '…') }}</span>
+                            </div>
                         @endif
                     </td>
                     <td>
-                        <span class="badge bg-{{ $log->event_badge_color }}">
-                            <i class="fas fa-{{ $log->event_icon }} me-1"></i>
-                            {{ $log->formatted_event_type }}
-                        </span>
-                        @if($log->short_model_name)
-                            <br><small class="text-muted">{{ $log->short_model_name }}</small>
+                        @php
+                            $modelType = $log->model_type;
+                            $modelId = $log->model_id;
+                            $short = null;
+                            if ($modelType) {
+                                $parts = explode('\\', $modelType);
+                                $short = end($parts);
+                            }
+                            $routeName = ($modelType && isset($targetRouteMap[$modelType])) ? $targetRouteMap[$modelType] : null;
+                            $canLink = $routeName && $modelId && \Illuminate\Support\Facades\Route::has($routeName);
+                        @endphp
+
+                        @if($short || $modelId)
+                            <div class="fw-semibold">
+                                @if($canLink)
+                                    <a href="{{ route($routeName, $modelId) }}" class="text-decoration-none">
+                                        {{ $short ?? 'Record' }} #{{ $modelId }}
+                                    </a>
+                                @else
+                                    {{ $short ?? 'Record' }} @if($modelId)#{{ $modelId }}@endif
+                                @endif
+                            </div>
+                            <div class="audit-cell-meta">{{ $modelType ?? 'N/A' }}</div>
+                        @else
+                            <span class="text-muted">—</span>
                         @endif
                     </td>
-                    <td>{{ $log->description }}</td>
-                    <td><code>{{ $log->ip_address }}</code></td>
+                    <td>
+                        <div class="audit-desc" title="{{ $log->description }}">{{ $log->description }}</div>
+                        @php
+                            $changedKeys = [];
+                            $old = is_array($log->old_values ?? null) ? $log->old_values : [];
+                            $new = is_array($log->new_values ?? null) ? $log->new_values : [];
+                            if (!empty($old) || !empty($new)) {
+                                $changedKeys = array_values(array_unique(array_merge(array_keys($old), array_keys($new))));
+                            }
+                        @endphp
+                        @if(!empty($changedKeys))
+                            <div class="audit-cell-meta mt-1">
+                                Changed: {{ \Illuminate\Support\Str::limit(implode(', ', array_slice($changedKeys, 0, 6)), 80, '…') }}
+                            </div>
+                        @endif
+                    </td>
+                    <td>
+                        <div class="audit-mono">
+                            {{ $log->ip_address ?? '—' }}
+                        </div>
+                        @if(!empty($log->user_agent))
+                            <div class="audit-cell-meta" title="{{ $log->user_agent }}">
+                                {{ \Illuminate\Support\Str::limit($log->user_agent, 36, '…') }}
+                            </div>
+                        @endif
+                    </td>
                     <td>
                         <a href="{{ route('admin.advanced-reports.audit-trail.show', $log->id) }}" 
                            class="btn btn-sm btn-outline-primary" 
@@ -242,7 +441,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center py-4">
+                    <td colspan="7" class="text-center py-4">
                         <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                         <p class="text-muted">No audit logs found</p>
                     </td>

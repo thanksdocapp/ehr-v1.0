@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\UserActivity;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class AuditTrailController extends Controller
 {
@@ -31,13 +32,24 @@ class AuditTrailController extends Controller
             $query->where('model_type', $request->model_type);
         }
 
+        // Filter by severity
+        if ($request->filled('severity')) {
+            $query->where('severity', $request->severity);
+        }
+
         // Filter by date range
         if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+            $from = parseDateInput($request->date_from);
+            if ($from) {
+                $query->whereDate('created_at', '>=', $from);
+            }
         }
 
         if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+            $to = parseDateInput($request->date_to);
+            if ($to) {
+                $query->whereDate('created_at', '<=', $to);
+            }
         }
 
         // Search in description
@@ -46,8 +58,11 @@ class AuditTrailController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('description', 'like', "%{$search}%")
                   ->orWhere('ip_address', 'like', "%{$search}%")
+                  ->orWhere('model_type', 'like', "%{$search}%")
+                  ->orWhere('model_id', 'like', "%{$search}%")
                   ->orWhereHas('user', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
+                      $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
                   });
             });
         }
@@ -57,17 +72,21 @@ class AuditTrailController extends Controller
         // Get unique users for filter
         $users = User::orderBy('name')->get();
         
-        // Get unique event types
-        $eventTypes = [
-            'login' => 'Login',
-            'logout' => 'Logout',
-            'create' => 'Create',
-            'update' => 'Update',
-            'delete' => 'Delete',
-            'view' => 'View',
-            'download' => 'Download',
-            'export' => 'Export',
-        ];
+        // Get unique event types (actions) - prefer what's actually in DB, but fall back to common actions
+        $dbActions = UserActivity::select('action')->distinct()->pluck('action')->filter()->values();
+        $fallbackActions = collect([
+            'login', 'logout',
+            'create', 'update', 'delete', 'view',
+            'download', 'export', 'import',
+            'password_change', 'failed_login',
+            'pre_consultation_verified',
+        ]);
+
+        $actions = $dbActions->merge($fallbackActions)->filter()->unique()->sort()->values();
+        $eventTypes = $actions->mapWithKeys(function ($action) {
+            $label = Str::of((string) $action)->replace('_', ' ')->title();
+            return [$action => (string) $label];
+        })->toArray();
         
         // Get unique model types
         $modelTypes = UserActivity::select('model_type')
@@ -81,15 +100,28 @@ class AuditTrailController extends Controller
             })
             ->toArray();
 
+        // Get unique severities
+        $severities = UserActivity::select('severity')
+            ->distinct()
+            ->whereNotNull('severity')
+            ->pluck('severity')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->toArray();
+
         // Statistics
         $stats = [
             'total_logs' => UserActivity::count(),
             'today_logs' => UserActivity::whereDate('created_at', today())->count(),
             'unique_users' => UserActivity::distinct('user_id')->whereNotNull('user_id')->count('user_id'),
             'login_count' => UserActivity::where('action', 'login')->whereDate('created_at', today())->count(),
+            'high_risk_7d' => UserActivity::whereIn('severity', ['high', 'critical'])->where('created_at', '>=', now()->subDays(7))->count(),
+            'failed_logins_today' => UserActivity::where('action', 'failed_login')->whereDate('created_at', today())->count(),
         ];
 
-        return view('admin.advanced-reports.audit-trail', compact('logs', 'users', 'eventTypes', 'modelTypes', 'stats'));
+        return view('admin.advanced-reports.audit-trail', compact('logs', 'users', 'eventTypes', 'modelTypes', 'severities', 'stats'));
     }
 
     /**
@@ -134,11 +166,39 @@ class AuditTrailController extends Controller
         }
 
         if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+            $from = parseDateInput($request->date_from);
+            if ($from) {
+                $query->whereDate('created_at', '>=', $from);
+            }
         }
 
         if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+            $to = parseDateInput($request->date_to);
+            if ($to) {
+                $query->whereDate('created_at', '<=', $to);
+            }
+        }
+
+        if ($request->filled('severity')) {
+            $query->where('severity', $request->severity);
+        }
+
+        if ($request->filled('model_type')) {
+            $query->where('model_type', $request->model_type);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhere('ip_address', 'like', "%{$search}%")
+                  ->orWhere('model_type', 'like', "%{$search}%")
+                  ->orWhere('model_id', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
         }
 
         $logs = $query->get();
@@ -168,7 +228,7 @@ class AuditTrailController extends Controller
                     $log->created_at->format('Y-m-d H:i:s'),
                     $log->user->name ?? 'System',
                     ucfirst($log->action),
-                    $modelName,
+                    $modelName . ($log->model_id ? (' #' . $log->model_id) : ''),
                     $log->description,
                     $log->ip_address,
                     $log->severity,
