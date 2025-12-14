@@ -59,6 +59,20 @@
     margin-bottom: 1.5rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
+
+/* Medical records: make stat card icons feel "EHR modern" (override modern-ui's default black icon block) */
+.ehr-stat-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+.ehr-stat-icon--success {
+    background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%) !important;
+}
+.ehr-stat-icon--warning {
+    background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%) !important;
+}
+.ehr-stat-icon--danger {
+    background: linear-gradient(135deg, #e74a3b 0%, #c0392b 100%) !important;
+}
 </style>
 @endpush
 
@@ -86,7 +100,7 @@
         <div class="col-lg-3 col-md-6">
             <div class="stat-card-enhanced fade-in-up stagger-1">
                 <div class="stat-card-content">
-                    <div class="stat-icon-wrapper">
+                    <div class="stat-icon-wrapper ehr-stat-icon">
                         <i class="fas fa-file-medical"></i>
                     </div>
                     <div class="stat-info">
@@ -99,7 +113,7 @@
         <div class="col-lg-3 col-md-6">
             <div class="stat-card-enhanced fade-in-up stagger-2">
                 <div class="stat-card-content">
-                    <div class="stat-icon-wrapper">
+                    <div class="stat-icon-wrapper ehr-stat-icon--success">
                         <i class="fas fa-calendar"></i>
                     </div>
                     <div class="stat-info">
@@ -112,7 +126,7 @@
         <div class="col-lg-3 col-md-6">
             <div class="stat-card-enhanced fade-in-up stagger-3">
                 <div class="stat-card-content">
-                    <div class="stat-icon-wrapper">
+                    <div class="stat-icon-wrapper ehr-stat-icon--warning">
                         <i class="fas fa-stethoscope"></i>
                     </div>
                     <div class="stat-info">
@@ -125,7 +139,7 @@
         <div class="col-lg-3 col-md-6">
             <div class="stat-card-enhanced fade-in-up stagger-4">
                 <div class="stat-card-content">
-                    <div class="stat-icon-wrapper">
+                    <div class="stat-icon-wrapper ehr-stat-icon--danger">
                         <i class="fas fa-prescription-bottle-alt"></i>
                     </div>
                     <div class="stat-info">

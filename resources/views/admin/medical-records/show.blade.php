@@ -533,7 +533,7 @@
             <!-- File Attachments -->
             @if($medicalRecord->attachments && $medicalRecord->attachments->count() > 0)
             <div class="record-section">
-                <div class="record-section-header" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                <div class="record-section-header">
                     <h4 class="mb-0"><i class="fas fa-paperclip me-2"></i>Documents or Attachments</h4>
                     <small class="opacity-75">Files attached to this medical record</small>
                 </div>
