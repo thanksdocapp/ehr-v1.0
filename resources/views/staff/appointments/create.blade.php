@@ -4,6 +4,60 @@
 @section('page-title', 'Schedule New Appointment')
 @section('page-subtitle', auth()->user()->role === 'doctor' ? 'Schedule appointments for your patients' : 'Book appointments for patients with available doctors')
 
+@push('styles')
+<style>
+    /* Time slot notice (scoped to this view) */
+    #timeSlotNotice {
+        border-radius: 14px;
+        padding: 0.9rem 1rem;
+        background: #fff8e6;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        border-left: 5px solid #f59e0b;
+        color: #1f2937; /* readable, not washed out */
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    #timeSlotNotice .time-slot-notice__title {
+        font-weight: 800;
+        color: #111827;
+        letter-spacing: -0.2px;
+        margin-bottom: 0.15rem;
+    }
+
+    #timeSlotNotice .time-slot-notice__title i {
+        color: #b45309; /* darker amber */
+    }
+
+    #timeSlotNotice #timeSlotNoticeText {
+        color: rgba(17, 24, 39, 0.82);
+        line-height: 1.35;
+    }
+
+    #timeSlotTomorrowBtn {
+        border-radius: 12px;
+        font-weight: 700;
+        padding: 0.5rem 0.75rem;
+        border-color: rgba(245, 158, 11, 0.65);
+        background: #fff;
+        color: #92400e;
+        white-space: nowrap;
+    }
+
+    #timeSlotTomorrowBtn:hover {
+        background: rgba(245, 158, 11, 0.12);
+        border-color: rgba(245, 158, 11, 0.85);
+        color: #7c2d12;
+    }
+
+    /* Mobile: stack message + button neatly */
+    @media (max-width: 576px) {
+        #timeSlotTomorrowBtn {
+            width: 100%;
+        }
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="fade-in-up">
 
@@ -195,10 +249,10 @@
                                     @error('appointment_time')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-                                    <div id="timeSlotNotice" class="alert alert-warning mt-2 mb-0" style="display:none;">
-                                        <div class="d-flex align-items-start justify-content-between gap-3">
+                                    <div id="timeSlotNotice" class="alert mt-2 mb-0" style="display:none;">
+                                        <div class="d-flex flex-column flex-sm-row align-items-start justify-content-between gap-3">
                                             <div>
-                                                <div class="fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>Appointment time unavailable</div>
+                                                <div class="time-slot-notice__title"><i class="fas fa-exclamation-triangle me-1"></i>Appointment time unavailable</div>
                                                 <div id="timeSlotNoticeText" class="small mb-0">
                                                     This time is unavailable (past/closed). Please choose a later time or change the day.
                                                 </div>
