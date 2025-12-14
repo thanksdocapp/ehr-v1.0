@@ -41,6 +41,7 @@
         background: #fff;
         color: #92400e;
         white-space: nowrap;
+        align-self: flex-start;
     }
 
     #timeSlotTomorrowBtn:hover {
@@ -49,11 +50,9 @@
         color: #7c2d12;
     }
 
-    /* Mobile: stack message + button neatly */
+    /* Mobile: give the button full width for easy tapping */
     @media (max-width: 576px) {
-        #timeSlotTomorrowBtn {
-            width: 100%;
-        }
+        #timeSlotTomorrowBtn { width: 100%; }
     }
 </style>
 @endpush
@@ -250,14 +249,14 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                     <div id="timeSlotNotice" class="alert mt-2 mb-0" style="display:none;">
-                                        <div class="d-flex flex-column flex-sm-row align-items-start justify-content-between gap-3">
-                                            <div>
-                                                <div class="time-slot-notice__title"><i class="fas fa-exclamation-triangle me-1"></i>Appointment time unavailable</div>
-                                                <div id="timeSlotNoticeText" class="small mb-0">
-                                                    This time is unavailable (past/closed). Please choose a later time or change the day.
-                                                </div>
+                                        <div class="d-flex flex-column align-items-start gap-2">
+                                            <div class="time-slot-notice__title">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Appointment time unavailable
                                             </div>
-                                            <button type="button" id="timeSlotTomorrowBtn" class="btn btn-sm btn-outline-warning flex-shrink-0">
+                                            <div id="timeSlotNoticeText" class="small mb-0">
+                                                This time is unavailable (past/closed). Please choose a later time or change the day.
+                                            </div>
+                                            <button type="button" id="timeSlotTomorrowBtn" class="btn btn-sm btn-outline-warning">
                                                 Set date to tomorrow
                                             </button>
                                         </div>
