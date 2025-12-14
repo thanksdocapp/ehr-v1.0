@@ -430,10 +430,12 @@
                             <div>
                                 <h6 class="text-info">Appointment Scheduling Guidelines</h6>
                                 <ul class="mb-0 text-muted small">
-                                    <li class="mb-1">Appointments can be scheduled from 8:00 AM to 5:30 PM</li>
-                                    <li class="mb-1">Emergency appointments take priority over regular appointments</li>
-                                    <li class="mb-1">Patients will receive confirmation via email/SMS if contact details are available</li>
-                                    <li>You can assign a doctor now or leave it for later assignment</li>
+                                    <li class="mb-1">Appointment times are shown from the selected doctor’s <strong>weekly availability</strong> and the selected <strong>duration</strong>.</li>
+                                    <li class="mb-1">If no times are available for a day, choose another date/doctor (or use <strong>Set date to tomorrow</strong>).</li>
+                                    <li class="mb-1">If availability can’t be loaded, the system falls back to default clinic hours (8:00 AM–5:30 PM).</li>
+                                    <li class="mb-1">Appointments created here start as <strong>Pending</strong> and can be confirmed later.</li>
+                                    <li class="mb-1">For <strong>Online</strong> appointments with <strong>Whereby</strong>, the meeting room is created automatically when possible.</li>
+                                    <li>Patient/doctor notifications (email/SMS) depend on your notification settings and may be sent on creation and/or confirmation.</li>
                                 </ul>
                             </div>
                         </div>
