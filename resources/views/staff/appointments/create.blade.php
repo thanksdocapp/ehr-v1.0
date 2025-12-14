@@ -623,12 +623,12 @@ $(document).ready(function() {
         originalTimeOptions.each(function() {
             $timeSelect.append($(this).clone());
         });
-        return applyTodayPastTimeDisabling();
+        applyTodayPastTimeDisabling();
     }
 
     function applyTodayPastTimeDisabling() {
         const dateVal = $dateInput.val();
-        if (!dateVal) return false;
+        if (!dateVal) return;
         const selectedDate = new Date(dateVal);
         const today = new Date();
 
@@ -648,18 +648,13 @@ $(document).ready(function() {
         } else {
             // Enable all time slots for future dates
             $timeSelect.find('option').prop('disabled', false);
-            // Any "today is over" notice is now stale
-            hideTimeSlotNotice();
-            return false;
         }
 
         // If all times are disabled for today, show "closed" guidance
         const enabledCount = $timeSelect.find('option[value!=""]').filter(function() { return !$(this).prop('disabled'); }).length;
         if (selectedDate.toDateString() === today.toDateString() && enabledCount === 0) {
             showTimeSlotNotice('Clinic hours for today are over. Please change the appointment date to tomorrow.');
-            return true;
         }
-        return false;
     }
 
     function populateAvailabilitySlots(slots) {
@@ -688,8 +683,8 @@ $(document).ready(function() {
         const duration = parseInt($('#estimated_duration').val(), 10) || 30;
 
         if (!doctorId || !date) {
-            const noticeShown = restoreStaticTimesFallback();
-            if (!noticeShown) hideTimeSlotNotice();
+            restoreStaticTimesFallback();
+            hideTimeSlotNotice();
             return;
         }
 
@@ -725,17 +720,7 @@ $(document).ready(function() {
             populateAvailabilitySlots(filtered);
 
             if (filtered.length === 0) {
-                // Check if original slots had data but were filtered out (all past) vs no slots returned at all
-                if (slots.length > 0 && filtered.length === 0) {
-                    showTimeSlotNotice('All available times for today have passed. Please select tomorrow or another date.');
-                } else {
-                    // No slots returned - could be doctor not working this day, no availability configured, etc.
-                    // Use a softer message and still allow scheduling with default times
-                    const noticeShown = restoreStaticTimesFallback();
-                    if (!noticeShown) {
-                        hideTimeSlotNotice(); // If fallback didn't show any guidance, keep the UI clean
-                    }
-                }
+                showTimeSlotNotice('No available times for the selected day (based on weekly availability). Please change the day to tomorrow or another date.');
             } else {
                 hideTimeSlotNotice();
             }
