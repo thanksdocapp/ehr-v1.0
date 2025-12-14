@@ -8,6 +8,7 @@
 @endsection
 
 @push('styles')
+@include('admin.shared.modern-ui')
 <style>
 .stats-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -136,7 +137,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="filter-card">
+    <div class="filter-card" style="background: white;">
         <form method="GET" class="row g-3">
             <div class="col-md-3">
                 <label for="patient_id" class="form-label">Patient</label>
@@ -229,9 +230,7 @@
                         <i class="fas fa-download me-1"></i>Export
                     </button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-file-excel me-2"></i>Excel</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf me-2"></i>PDF</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-file-csv me-2"></i>CSV</a></li>
+                        <li><span class="dropdown-item-text text-muted"><i class="fas fa-info-circle me-2"></i>Export coming soon</span></li>
                     </ul>
                 </div>
             </div>
@@ -341,7 +340,7 @@
                 </div>
 
                 <!-- Pagination -->
-                <div class="d-flex justify-content-between align-items-center p-3">
+                <div class="d-flex justify-content-between align-items-center p-3 border-top">
                     <div class="text-muted">
                         Showing {{ $records->firstItem() }} to {{ $records->lastItem() }} of {{ $records->total() }} results
                     </div>

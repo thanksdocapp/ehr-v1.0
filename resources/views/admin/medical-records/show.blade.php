@@ -9,6 +9,7 @@
 @endsection
 
 @push('styles')
+@include('admin.shared.modern-ui')
 <style>
 .record-section {
     background: #fff;
@@ -217,6 +218,31 @@
     width: 16px;
 }
 
+/* Modern EHR tweaks */
+.ehr-sticky {
+    position: sticky;
+    top: 1rem;
+    z-index: 10;
+}
+
+.ehr-header-badges .badge {
+    border-radius: 999px;
+}
+
+.record-section-header {
+    background: linear-gradient(135deg, #f8f9fc 0%, #eef0f5 100%);
+    color: #2d3748;
+}
+
+.record-section-header h4,
+.record-section-header small {
+    color: #2d3748;
+}
+
+.record-section-header i {
+    color: #1a202c;
+}
+
 @media (max-width: 768px) {
     .vital-signs-grid {
         grid-template-columns: 1fr;
@@ -237,9 +263,64 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="page-title mb-4">
-        <h1><i class="fas fa-file-medical-alt me-2 text-primary"></i>Medical Record Details</h1>
-        <p class="page-subtitle text-muted">View comprehensive medical record information</p>
+    @php
+        $recordTypeLabel = ucfirst(str_replace('_', ' ', $medicalRecord->record_type));
+        $recordTypeBadge = match($medicalRecord->record_type) {
+            'consultation' => 'bg-primary',
+            'diagnosis' => 'bg-info',
+            'prescription' => 'bg-warning',
+            'lab_result' => 'bg-danger',
+            'follow_up' => 'bg-secondary',
+            'discharge' => 'bg-dark',
+            default => 'bg-secondary',
+        };
+    @endphp
+
+    <div class="modern-page-header mb-4">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h1 class="modern-page-title">
+                        <i class="fas fa-file-medical-alt"></i>
+                        Medical Record
+                    </h1>
+                    <p class="modern-page-subtitle mb-2">
+                        @if($medicalRecord->patient)
+                            {{ $medicalRecord->patient->full_name }} <span class="text-muted">({{ $medicalRecord->patient->patient_id }})</span>
+                        @else
+                            <span class="text-muted">Patient record deleted</span>
+                        @endif
+                    </p>
+                    <div class="d-flex flex-wrap gap-2 ehr-header-badges">
+                        <span class="badge {{ $recordTypeBadge }} text-white">
+                            <i class="fas fa-tag me-1"></i>{{ $recordTypeLabel }}
+                        </span>
+                        <span class="badge {{ $medicalRecord->is_private ? 'bg-danger' : 'bg-success' }} text-white">
+                            <i class="fas fa-{{ $medicalRecord->is_private ? 'lock' : 'unlock' }} me-1"></i>
+                            {{ $medicalRecord->is_private ? 'Private' : 'Public' }}
+                        </span>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-hashtag me-1"></i>Record #{{ $medicalRecord->id }}
+                        </span>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-clock me-1"></i>Updated {{ $medicalRecord->updated_at->diffForHumans() }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ contextRoute('medical-records.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </a>
+                    <a href="{{ contextRoute('medical-records.edit', $medicalRecord->id) }}" class="btn btn-doctor-primary">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
+                    <button type="button" class="btn btn-danger" data-delete-record-id="{{ $medicalRecord->id }}">
+                        <i class="fas fa-trash me-1"></i>Delete
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row">
@@ -620,23 +701,6 @@
             </div>
             @endif
 
-            <!-- Action Buttons -->
-            <div class="record-section">
-                <div class="record-section-body text-center">
-                    <div class="action-buttons">
-                        <a href="{{ contextRoute('medical-records.edit', $medicalRecord->id) }}" class="btn btn-doctor-primary">
-                            <i class="fas fa-edit me-2"></i>Edit Record
-                        </a>
-                        <a href="{{ contextRoute('medical-records.index') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left me-2"></i>Back to Records
-                        </a>
-                        <button type="button" class="btn btn-danger" data-delete-record-id="{{ $medicalRecord->id }}">
-                            <i class="fas fa-trash me-2"></i>Delete Record
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             <!-- Audit Trail -->
             @if(isset($auditActivities) && $auditActivities->count() > 0)
             <div class="record-section">
@@ -705,6 +769,25 @@
 
         <!-- Sidebar Information -->
         <div class="col-lg-4">
+            <div class="quick-info-card ehr-sticky">
+                <h6><i class="fas fa-bolt me-2"></i>Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{{ contextRoute('medical-records.edit', $medicalRecord->id) }}" class="btn btn-doctor-primary">
+                        <i class="fas fa-edit me-1"></i>Edit Record
+                    </a>
+                    <a href="{{ contextRoute('medical-records.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Records
+                    </a>
+                    <button type="button" class="btn btn-outline-danger" data-delete-record-id="{{ $medicalRecord->id }}">
+                        <i class="fas fa-trash me-1"></i>Delete Record
+                    </button>
+                </div>
+                <div class="audit-cell-meta mt-3">
+                    <div><strong>Created:</strong> {{ formatDateTime($medicalRecord->created_at) }}</div>
+                    <div><strong>Updated:</strong> {{ formatDateTime($medicalRecord->updated_at) }}</div>
+                </div>
+            </div>
+
             <div class="quick-info-card">
                 <h6><i class="fas fa-clock me-2"></i>Record Timeline</h6>
                 <div class="timeline-item">
@@ -900,13 +983,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Delete button
-    var deleteBtn = document.querySelector('[data-delete-record-id]');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', function() {
-            var recordId = deleteBtn.getAttribute('data-delete-record-id');
+    document.querySelectorAll('[data-delete-record-id]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var recordId = btn.getAttribute('data-delete-record-id');
             if (recordId) deleteRecord(recordId);
         });
-    }
+    });
 });
 
 // Print functionality

@@ -9,6 +9,7 @@
 @endsection
 
 @push('styles')
+@include('admin.shared.modern-ui')
 <style>
 .form-section {
     background: #fff;
@@ -126,10 +127,23 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="page-title mb-4">
-        <h5 class="mb-0"><i class="fas fa-file-medical-alt me-2"></i>Add Medical Record</h5>
-        <small class="text-muted">Create a new medical record</small>
-        <p class="page-subtitle text-muted">Create a new medical record with diagnosis, treatment, and vital signs</p>
+    <div class="modern-page-header mb-4">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h1 class="modern-page-title">
+                        <i class="fas fa-file-medical-alt"></i>
+                        Add Medical Record
+                    </h1>
+                    <p class="modern-page-subtitle mb-0">Create a new medical record with diagnosis, treatment, and vital signs</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ route('admin.medical-records.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row">
