@@ -588,10 +588,30 @@
                         </div>
                         @endif
 
-                        @if(!empty($medicalRecord->vital_signs['bmi']))
+                        @php
+                            $weightVal = $medicalRecord->vital_signs['weight'] ?? null;
+                            $heightVal = $medicalRecord->vital_signs['height'] ?? null;
+                            $bmiVal = $medicalRecord->vital_signs['bmi'] ?? null;
+
+                            // If BMI isn't stored but weight + height are entered, compute BMI (assumes weight in kg, height in cm).
+                            if (empty($bmiVal) && !empty($weightVal) && !empty($heightVal)) {
+                                $w = is_numeric($weightVal) ? (float) $weightVal : null;
+                                $h = is_numeric($heightVal) ? (float) $heightVal : null;
+
+                                if ($w && $h && $w > 0 && $h > 0) {
+                                    // Height is typically stored as cm in this app; if it's already meters, keep as-is.
+                                    $hMeters = $h > 3 ? ($h / 100.0) : $h;
+                                    if ($hMeters > 0) {
+                                        $bmiVal = $w / ($hMeters * $hMeters);
+                                    }
+                                }
+                            }
+                        @endphp
+
+                        @if(!empty($bmiVal))
                         <div class="vital-sign-card">
                             <div class="vital-sign-icon"><i class="fas fa-calculator"></i></div>
-                            <div class="vital-sign-value">{{ number_format($medicalRecord->vital_signs['bmi'], 1) }}</div>
+                            <div class="vital-sign-value">{{ number_format($bmiVal, 1) }}</div>
                             <div class="vital-sign-label">BMI</div>
                         </div>
                         @endif
