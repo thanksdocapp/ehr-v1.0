@@ -52,11 +52,12 @@
 }
 
 .filter-card {
-    background: #f8f9fc;
-    border: 1px solid #e3e6f0;
-    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 </style>
 @endpush
@@ -109,27 +110,27 @@
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem; background: linear-gradient(135deg, #f6c23e 0%, #f093fb 100%); color: white; border-radius: 15px;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number" style="font-size: 1.75rem; font-weight: 600; color: white;">{{ $stats['consultations'] }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem; opacity: 0.9;">Consultations</div>
+            <div class="stat-card-enhanced fade-in-up stagger-3">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-stethoscope"></i>
                     </div>
-                    <div class="stat-icon" style="width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2);">
-                        <i class="fas fa-stethoscope text-white"></i>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['consultations'] ?? 0) }}</div>
+                        <div class="stat-label">Consultations</div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card" style="padding: 1rem; background: linear-gradient(135deg, #e74a3b 0%, #fd79a8 100%); color: white; border-radius: 15px;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-number" style="font-size: 1.75rem; font-weight: 600; color: white;">{{ $stats['prescriptions'] }}</div>
-                        <div class="stat-label" style="font-size: 0.875rem; margin-top: 0.25rem; opacity: 0.9;">Prescriptions</div>
+            <div class="stat-card-enhanced fade-in-up stagger-4">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-prescription-bottle-alt"></i>
                     </div>
-                    <div class="stat-icon" style="width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2);">
-                        <i class="fas fa-prescription-bottle-alt text-white"></i>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['prescriptions'] ?? 0) }}</div>
+                        <div class="stat-label">Prescriptions</div>
                     </div>
                 </div>
             </div>
@@ -327,7 +328,8 @@
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <button class="btn btn-sm btn-outline-danger" 
-                                                    onclick="deleteRecord({{ $record->id }}); return false;" 
+                                                    type="button"
+                                                    data-delete-record-id="{{ $record->id }}"
                                                     title="Delete Record">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -375,6 +377,14 @@ $(document).ready(function() {
             $(this).val('');
         }
     });
+
+    // Delete buttons (avoid inline onclick handlers)
+    document.querySelectorAll('[data-delete-record-id]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const recordId = btn.getAttribute('data-delete-record-id');
+            if (recordId) deleteRecord(recordId);
+        });
+    });
 });
 
 // Delete medical record function
@@ -409,8 +419,9 @@ function deleteRecord(recordId) {
                 csrfToken.type = 'hidden';
                 csrfToken.name = '_token';
                 
-                // Try to get CSRF token from meta tag or Laravel's global
-                let csrfTokenValue = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                // Try to get CSRF token from meta tag or Laravel's global (no optional chaining for broad compatibility)
+                var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                let csrfTokenValue = csrfMeta ? csrfMeta.getAttribute('content') : null;
                 if (!csrfTokenValue && typeof Laravel !== 'undefined') {
                     csrfTokenValue = Laravel.csrfToken;
                 }

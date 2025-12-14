@@ -13,18 +13,25 @@
 <style>
 .form-section {
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     margin-bottom: 2rem;
-    border: 1px solid #e3e6f0;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+.form-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+    border-color: rgba(102, 126, 234, 0.18);
 }
 
 .form-section-header {
-    background: #f8f9fc;
+    background: linear-gradient(135deg, #f8f9fc 0%, #eef0f5 100%);
     color: #2d3748;
     padding: 1.5rem 2rem;
-    border-radius: 12px 12px 0 0;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .form-section-header h4,
@@ -95,11 +102,12 @@
 }
 
 .info-card {
-    background: #f8f9fc;
-    border: 1px solid #e3e6f0;
-    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .info-card h6 {

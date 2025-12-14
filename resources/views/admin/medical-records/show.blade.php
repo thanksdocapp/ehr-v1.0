@@ -13,21 +13,29 @@
 <style>
 .record-section {
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     margin-bottom: 2rem;
-    border: 1px solid #e3e6f0;
+    border: 1px solid rgba(0, 0, 0, 0.08);
     overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+.record-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+    border-color: rgba(102, 126, 234, 0.18);
 }
 
 .record-section-header {
-    background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
-    color: white;
+    background: linear-gradient(135deg, #f8f9fc 0%, #eef0f5 100%);
+    color: #2d3748;
     padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .record-section-body {
-    padding: 2rem;
+    padding: 1.75rem 2rem;
 }
 
 .info-row {
@@ -107,11 +115,18 @@
 }
 
 .vital-sign-card {
-    background: #f8f9fc;
-    border: 1px solid #e3e6f0;
-    border-radius: 8px;
-    padding: 1.5rem;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    padding: 1.25rem;
     text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.25s ease;
+}
+
+.vital-sign-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
 }
 
 .vital-sign-icon {
@@ -192,11 +207,19 @@
 }
 
 .quick-info-card {
-    background: #f8f9fc;
-    border: 1px solid #e3e6f0;
-    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.25s ease;
+}
+
+.quick-info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+    border-color: rgba(102, 126, 234, 0.18);
 }
 
 .quick-info-card h6 {
