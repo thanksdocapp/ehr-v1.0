@@ -6,112 +6,125 @@ use Illuminate\Support\Facades\Storage;
 
 @section('title', 'Department Details')
 
+@section('breadcrumb')
+    <li class="breadcrumb-item"><a href="{{ contextRoute('dashboard') }}">Admin</a></li>
+    <li class="breadcrumb-item"><a href="{{ contextRoute('departments.index') }}">Clinics</a></li>
+    <li class="breadcrumb-item active">{{ $department->name }}</li>
+@endsection
+
+@push('styles')
+@include('admin.shared.modern-ui')
+<style>
+    /* Departments show: color-coded stat icons (override modern-ui default black icon background) */
+    .dept-stat-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; }
+    .dept-stat-icon--success { background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%) !important; }
+    .dept-stat-icon--info { background: linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%) !important; }
+    .dept-stat-icon--warning { background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%) !important; }
+
+    .dept-hero-badges .badge {
+        border-radius: 999px;
+        padding: 0.45rem 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+    }
+    .dept-image {
+        width: 100%;
+        max-height: 260px;
+        object-fit: cover;
+        border-radius: 14px;
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-0 text-gray-800">{{ $department->name }}</h1>
-            <p class="mb-0 text-muted">Department Overview & Statistics</p>
-        </div>
-        <div>
-            <a href="{{ contextRoute('departments.edit', $department->id) }}" class="btn btn-warning">
-                <i class="fas fa-edit"></i> Edit Department
-            </a>
-            <a href="{{ contextRoute('departments.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to Clinics
-            </a>
+    <!-- Modern Page Header -->
+    <div class="modern-page-header">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h1 class="modern-page-title">
+                        <i class="fas fa-hospital-alt"></i>
+                        {{ $department->name }}
+                    </h1>
+                    <p class="modern-page-subtitle">Clinic overview, activity, and operational details</p>
+                    <div class="dept-hero-badges mt-3 d-flex flex-wrap gap-2">
+                        <span class="badge {{ $department->is_active ? 'bg-success' : 'bg-secondary' }}">
+                            <i class="fas {{ $department->is_active ? 'fa-check-circle' : 'fa-pause-circle' }} me-1"></i>
+                            {{ $department->is_active ? 'Active' : 'Inactive' }}
+                        </span>
+                        @if($department->is_emergency)
+                            <span class="badge bg-danger">
+                                <i class="fas fa-bolt me-1"></i>
+                                Emergency
+                            </span>
+                        @endif
+                    </div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ contextRoute('departments.index') }}" class="btn btn-light">
+                        <i class="fas fa-arrow-left me-2"></i>Back
+                    </a>
+                    <a href="{{ contextRoute('departments.edit', $department->id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <!-- Patients Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Total Patients
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $patientStats['total'] }}</div>
-                            <div class="text-xs text-muted mt-1">
-                                <span class="text-success">{{ $patientStats['active'] }} active</span> | 
-                                <span>{{ $patientStats['this_month'] }} this month</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-gray-300"></i>
-                        </div>
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper dept-stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($patientStats['total'] ?? 0) }}</div>
+                        <div class="stat-label">Patients ({{ number_format($patientStats['active'] ?? 0) }} active)</div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Appointments Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Appointments
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $appointmentStats['total'] }}</div>
-                            <div class="text-xs text-muted mt-1">
-                                <span class="text-info">{{ $appointmentStats['today'] }} today</span> | 
-                                <span class="text-warning">{{ $appointmentStats['upcoming'] }} upcoming</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
-                        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper dept-stat-icon--success">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($appointmentStats['total'] ?? 0) }}</div>
+                        <div class="stat-label">{{ number_format($appointmentStats['today'] ?? 0) }} today · {{ number_format($appointmentStats['upcoming'] ?? 0) }} upcoming</div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Doctors Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Doctors
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $doctorStats['total'] }}</div>
-                            <div class="text-xs text-muted mt-1">
-                                <span class="text-success">{{ $doctorStats['active'] }} active</span> | 
-                                <span>{{ $doctorStats['available'] }} available</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-md fa-2x text-gray-300"></i>
-                        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper dept-stat-icon--info">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($doctorStats['total'] ?? 0) }}</div>
+                        <div class="stat-label">{{ number_format($doctorStats['active'] ?? 0) }} active · {{ number_format($doctorStats['available'] ?? 0) }} available</div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Medical Records Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Medical Records
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $medicalRecordStats['total'] }}</div>
-                            <div class="text-xs text-muted mt-1">
-                                <span>{{ $medicalRecordStats['this_month'] }} this month</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-file-medical fa-2x text-gray-300"></i>
-                        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper dept-stat-icon--warning">
+                        <i class="fas fa-file-medical"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($medicalRecordStats['total'] ?? 0) }}</div>
+                        <div class="stat-label">{{ number_format($medicalRecordStats['this_month'] ?? 0) }} this month</div>
                     </div>
                 </div>
             </div>
@@ -122,21 +135,20 @@ use Illuminate\Support\Facades\Storage;
         <!-- Left Column -->
         <div class="col-lg-8">
             <!-- Department Information -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">Department Information</h6>
-                    @if($department->is_emergency)
-                        <span class="badge bg-danger">Emergency Department</span>
-                    @endif
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title">
+                        <i class="fas fa-building"></i>
+                        Clinic Information
+                    </h6>
                 </div>
-                <div class="card-body">
+                <div class="modern-card-body">
                     <div class="row">
                         <div class="col-md-6">
                             @if($department->image)
                                 <img src="{{ Storage::disk('public')->url('uploads/departments/' . $department->image) }}" 
                                      alt="{{ $department->name }}" 
-                                     class="img-fluid rounded mb-3" 
-                                     style="max-height: 250px; width: 100%; object-fit: cover;">
+                                     class="dept-image mb-3">
                             @endif
                         </div>
                         <div class="col-md-6">
@@ -182,14 +194,14 @@ use Illuminate\Support\Facades\Storage;
 
                     @if($department->description)
                     <div class="mt-3">
-                        <h6 class="text-primary">Description</h6>
+                        <h6 class="fw-bold mb-2">Description</h6>
                         <p class="text-muted">{{ $department->description }}</p>
                     </div>
                     @endif
 
                     @if($department->services && count($department->services) > 0)
                     <div class="mt-3">
-                        <h6 class="text-primary">Services Offered</h6>
+                        <h6 class="fw-bold mb-2">Services Offered</h6>
                         <div class="d-flex flex-wrap gap-2">
                             @foreach($department->services as $service)
                                 <span class="badge bg-secondary">{{ $service }}</span>
@@ -204,17 +216,15 @@ use Illuminate\Support\Facades\Storage;
             <div class="row mb-4">
                 <!-- Appointments Statistics -->
                 <div class="col-md-6 mb-4">
-                    <div class="card shadow">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Appointment Statistics</h6>
+                    <div class="modern-card">
+                        <div class="modern-card-header">
+                            <h6 class="modern-card-title"><i class="fas fa-chart-line"></i>Appointment Statistics</h6>
                         </div>
-                        <div class="card-body">
+                        <div class="modern-card-body">
                             <div class="row text-center">
                                 <div class="col-6 mb-3">
-                                    <div class="border-right">
-                                        <div class="h4 mb-0 text-success">{{ $appointmentStats['completed'] }}</div>
-                                        <small class="text-muted">Completed</small>
-                                    </div>
+                                    <div class="h4 mb-0 text-success">{{ $appointmentStats['completed'] }}</div>
+                                    <small class="text-muted">Completed</small>
                                 </div>
                                 <div class="col-6 mb-3">
                                     <div class="h4 mb-0 text-warning">{{ $appointmentStats['pending'] }}</div>
@@ -235,11 +245,11 @@ use Illuminate\Support\Facades\Storage;
 
                 <!-- Prescriptions & Lab Reports -->
                 <div class="col-md-6 mb-4">
-                    <div class="card shadow">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Prescriptions & Lab Reports</h6>
+                    <div class="modern-card">
+                        <div class="modern-card-header">
+                            <h6 class="modern-card-title"><i class="fas fa-notes-medical"></i>Prescriptions & Lab Reports</h6>
                         </div>
-                        <div class="card-body">
+                        <div class="modern-card-body">
                             <div class="row text-center">
                                 <div class="col-6 mb-3">
                                     <div class="h4 mb-0 text-primary">{{ $prescriptionStats['total'] }}</div>
@@ -271,18 +281,19 @@ use Illuminate\Support\Facades\Storage;
 
             <!-- Today's Appointments -->
             @if($todayAppointments->count() > 0)
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-calendar-day"></i> Today's Appointments ({{ $todayAppointments->count() }})
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title">
+                        <i class="fas fa-calendar-day"></i>
+                        Today's Appointments ({{ $todayAppointments->count() }})
                     </h6>
                     <a href="{{ route('admin.appointments.index') }}?department_id={{ $department->id }}&date={{ today()->format('Y-m-d') }}" class="btn btn-sm btn-primary">
                         View All
                     </a>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
+                <div class="modern-card-body">
+                    <div class="modern-table-wrapper">
+                        <table class="modern-table">
                             <thead>
                                 <tr>
                                     <th>Time</th>
@@ -329,18 +340,19 @@ use Illuminate\Support\Facades\Storage;
 
             <!-- Upcoming Appointments -->
             @if($upcomingAppointments->count() > 0)
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-calendar-week"></i> Upcoming Appointments (Next 7 Days)
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title">
+                        <i class="fas fa-calendar-week"></i>
+                        Upcoming Appointments (Next 7 Days)
                     </h6>
                     <a href="{{ route('admin.appointments.index') }}?department_id={{ $department->id }}" class="btn btn-sm btn-primary">
                         View All
                     </a>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
+                <div class="modern-card-body">
+                    <div class="modern-table-wrapper">
+                        <table class="modern-table">
                             <thead>
                                 <tr>
                                     <th>Date</th>
@@ -383,18 +395,19 @@ use Illuminate\Support\Facades\Storage;
 
             <!-- Recent Patients -->
             @if($recentPatients->count() > 0)
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-user-plus"></i> Recent Patients
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title">
+                        <i class="fas fa-user-plus"></i>
+                        Recent Patients
                     </h6>
                     <a href="{{ route('admin.patients.index') }}?department_id={{ $department->id }}" class="btn btn-sm btn-primary">
                         View All Patients
                     </a>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
+                <div class="modern-card-body">
+                    <div class="modern-table-wrapper">
+                        <table class="modern-table">
                             <thead>
                                 <tr>
                                     <th>Patient ID</th>
@@ -437,11 +450,11 @@ use Illuminate\Support\Facades\Storage;
         <!-- Right Sidebar -->
         <div class="col-lg-4">
             <!-- Quick Actions -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title"><i class="fas fa-bolt"></i>Quick Actions</h6>
                 </div>
-                <div class="card-body">
+                <div class="modern-card-body">
                     <div class="d-grid gap-2">
                         <a href="{{ route('admin.appointments.create') }}?department_id={{ $department->id }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-plus"></i> New Appointment
@@ -466,13 +479,11 @@ use Illuminate\Support\Facades\Storage;
 
             <!-- Top Doctors -->
             @if($topDoctors->count() > 0)
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-star"></i> Top Doctors by Appointments
-                    </h6>
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title"><i class="fas fa-star"></i>Top Doctors</h6>
                 </div>
-                <div class="card-body">
+                <div class="modern-card-body">
                     <div class="list-group list-group-flush">
                         @foreach($topDoctors as $doctor)
                             <div class="list-group-item d-flex justify-content-between align-items-center px-0">
@@ -492,16 +503,17 @@ use Illuminate\Support\Facades\Storage;
 
             <!-- Department Doctors List -->
             @if($department->doctors->count() > 0)
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-user-md"></i> Department Doctors ({{ $department->doctors->count() }})
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title">
+                        <i class="fas fa-user-md"></i>
+                        Doctors ({{ $department->doctors->count() }})
                     </h6>
                     <a href="{{ route('admin.doctors.index') }}?department_id={{ $department->id }}" class="btn btn-sm btn-outline-primary">
                         View All
                     </a>
                 </div>
-                <div class="card-body">
+                <div class="modern-card-body">
                     <div class="list-group list-group-flush">
                         @foreach($department->doctors->take(5) as $doctor)
                             <div class="list-group-item d-flex justify-content-between align-items-center px-0">
@@ -529,11 +541,11 @@ use Illuminate\Support\Facades\Storage;
             @endif
 
             <!-- Additional Information -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Additional Information</h6>
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title"><i class="fas fa-info-circle"></i>Additional Information</h6>
                 </div>
-                <div class="card-body">
+                <div class="modern-card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-6">Created:</dt>
                         <dd class="col-sm-6">{{ formatDate($department->created_at) }}</dd>
@@ -548,62 +560,23 @@ use Illuminate\Support\Facades\Storage;
                     </dl>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-                
-                <div class="card-footer">
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ contextRoute('departments.index') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left"></i> Back to Clinics
-                        </a>
-                        <div>
-                            <a href="{{ contextRoute('departments.edit', $department->id) }}" class="btn btn-warning">
-                                <i class="fas fa-edit"></i> Edit Department
-                            </a>
-                            <button type="button" class="btn btn-danger" onclick="deleteDepartment({{ $department->id }})">
-                                <i class="fas fa-trash"></i> Delete Department
-                            </button>
-                        </div>
-                    </div>
+
+            <!-- Danger Zone -->
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title"><i class="fas fa-exclamation-triangle"></i>Danger Zone</h6>
+                </div>
+                <div class="modern-card-body">
+                    <p class="text-muted mb-3">Deleting a clinic is permanent. If doctors are assigned, deletion is blocked.</p>
+                    <button type="button" class="btn btn-danger w-100" onclick="deleteDepartment({{ $department->id }})">
+                        <i class="fas fa-trash me-2"></i>Delete Clinic
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 @endsection
-
-@push('styles')
-<style>
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
-}
-
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
-}
-
-.border-left-info {
-    border-left: 0.25rem solid #36b9cc !important;
-}
-
-.border-left-warning {
-    border-left: 0.25rem solid #f6c23e !important;
-}
-
-.border-left-danger {
-    border-left: 0.25rem solid #e74a3b !important;
-}
-
-.card {
-    transition: transform 0.2s;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-}
-</style>
-@endpush
 
 @push('scripts')
 <script>

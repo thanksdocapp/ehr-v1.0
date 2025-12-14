@@ -9,193 +9,495 @@
 @endsection
 
 @push('styles')
+@include('admin.shared.modern-ui')
 <style>
+/* Page Header */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    color: white;
+}
+
+.page-header h4 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.page-header p {
+    opacity: 0.9;
+    margin-bottom: 0;
+}
+
+/* Form Sections */
 .form-section {
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     border: 1px solid #e3e6f0;
+    overflow: hidden;
 }
 
 .form-section-header {
-    background: #f8f9fc;
-    color: #2d3748;
-    padding: 1.5rem 2rem;
-    border-radius: 12px 12px 0 0;
-    border-bottom: 2px solid #e2e8f0;
+    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
 }
 
-.form-section-header h4,
 .form-section-header h5 {
-    color: #1a202c;
     font-weight: 700;
-}
-
-.form-section-header i {
     color: #1a202c;
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
 }
 
 .form-section-header small {
-    color: #4a5568;
+    color: #718096;
+    font-size: 0.85rem;
+}
+
+.form-section-header .header-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.form-section-header .header-icon.personal {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.form-section-header .header-icon.role {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+}
+
+.form-section-header .header-icon.address {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: white;
+}
+
+.form-section-header .header-icon.security {
+    background: linear-gradient(135deg, #fa709a, #fee140);
+    color: white;
 }
 
 .form-section-body {
-    padding: 2rem;
+    padding: 1.5rem;
 }
 
-.form-group {
-    margin-bottom: 1.5rem;
+/* Form Controls */
+.modern-form-group {
+    margin-bottom: 1.25rem;
 }
 
-.form-label {
+.modern-form-label {
     font-weight: 600;
-    color: #5a5c69;
+    color: #374151;
     margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    display: block;
+}
+
+.modern-form-label i {
+    color: #6b7280;
+    margin-right: 0.35rem;
+}
+
+.modern-form-label .required {
+    color: #ef4444;
+    margin-left: 0.25rem;
+}
+
+.modern-form-control {
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.925rem;
+    transition: all 0.2s ease;
+    width: 100%;
+    background: #fff;
+}
+
+.modern-form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    outline: none;
+}
+
+.modern-form-control.is-invalid {
+    border-color: #ef4444;
+}
+
+.modern-form-control.is-invalid:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+select.modern-form-control {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25em 1.25em;
+    padding-right: 2.5rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+textarea.modern-form-control {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.form-hint {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.35rem;
+}
+
+/* Checkbox Styling */
+.modern-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 2px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modern-checkbox:hover {
+    border-color: #667eea;
+    background: #f3f4f6;
+}
+
+.modern-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 0.75rem;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+.modern-checkbox label {
+    margin-bottom: 0;
+    cursor: pointer;
+    font-weight: 500;
+    color: #374151;
+}
+
+/* Sidebar Cards */
+.sidebar-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+    border: 1px solid #e3e6f0;
+    overflow: hidden;
+}
+
+.sidebar-card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.sidebar-card-header h6 {
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 0;
     font-size: 0.9rem;
 }
 
-.form-control {
-    border: 2px solid #e3e6f0;
+.sidebar-card-body {
+    padding: 1.25rem;
+}
+
+.sidebar-card-body ul {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.sidebar-card-body li {
+    margin-bottom: 0.5rem;
+    color: #4b5563;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.sidebar-card-body li:last-child {
+    margin-bottom: 0;
+}
+
+/* Role Badges in Sidebar */
+.role-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.role-item:last-child {
+    border-bottom: none;
+}
+
+.role-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+}
+
+.role-dot.admin { background: linear-gradient(135deg, #dc3545, #c82333); }
+.role-dot.doctor { background: linear-gradient(135deg, #667eea, #764ba2); }
+.role-dot.nurse { background: linear-gradient(135deg, #20c997, #17a2b8); }
+.role-dot.receptionist { background: linear-gradient(135deg, #fd7e14, #e55a00); }
+.role-dot.pharmacist { background: linear-gradient(135deg, #28a745, #218838); }
+.role-dot.technician { background: linear-gradient(135deg, #6c757d, #5a6268); }
+.role-dot.staff { background: linear-gradient(135deg, #17a2b8, #138496); }
+
+.role-name {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.85rem;
+}
+
+.role-desc {
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin-left: auto;
+}
+
+/* Quick Actions */
+.quick-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1rem;
     border-radius: 8px;
-    padding: 0.75rem 1rem;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+}
+
+.quick-action-btn:last-child {
+    margin-bottom: 0;
+}
+
+.quick-action-btn.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.quick-action-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.quick-action-btn.secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+}
+
+.quick-action-btn.secondary:hover {
+    background: #e5e7eb;
+    color: #1f2937;
+}
+
+/* Action Buttons */
+.btn-modern-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 0.85rem 2rem;
+    border-radius: 10px;
+    font-weight: 600;
     font-size: 0.95rem;
     transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.form-control:focus {
-    border-color: #1cc88a;
-    box-shadow: 0 0 0 0.2rem rgba(28, 200, 138, 0.25);
-}
-
-.btn {
-    padding: 0.75rem 2rem;
-    font-weight: 600;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%);
-    border: none;
-    box-shadow: 0 4px 15px rgba(28, 200, 138, 0.3);
-}
-
-.btn-primary:hover {
+.btn-modern-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(28, 200, 138, 0.4);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    color: white;
 }
 
-.form-help {
-    font-size: 0.85rem;
-    color: #6c757d;
-    margin-top: 0.5rem;
-    font-style: italic;
+.btn-modern-secondary {
+    background: #f3f4f6;
+    border: 2px solid #e5e7eb;
+    color: #374151;
+    padding: 0.85rem 2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.info-card {
-    background: #f8f9fc;
-    border: 1px solid #e3e6f0;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+.btn-modern-secondary:hover {
+    background: #e5e7eb;
+    color: #1f2937;
 }
 
-.info-card h6 {
-    color: #5a5c69;
-    margin-bottom: 1rem;
+/* File Input */
+.file-input-wrapper {
+    position: relative;
 }
 
-.info-card ul {
-    margin: 0;
-    padding-left: 1.5rem;
+.file-input-wrapper input[type="file"] {
+    padding: 0.5rem;
 }
 
-.info-card li {
-    margin-bottom: 0.5rem;
-    color: #858796;
+.file-input-wrapper input[type="file"]::file-selector-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-right: 1rem;
+    transition: all 0.2s ease;
+}
+
+.file-input-wrapper input[type="file"]::file-selector-button:hover {
+    opacity: 0.9;
 }
 </style>
 @endpush
 
 @section('content')
 <div class="container-fluid">
-    <div class="page-title mb-4">
-        <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Create New User</h5>
-        <small class="text-muted">Create a new system user</small>
-        <p class="page-subtitle text-muted">Add a new user to the system with comprehensive account details</p>
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4><i class="fas fa-user-plus me-2"></i>Create New User</h4>
+                <p>Add a new staff member to the system with their complete profile details</p>
+            </div>
+            <a href="{{ contextRoute('users.index') }}" class="btn btn-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to Users
+            </a>
+        </div>
     </div>
 
     <div class="row">
+        <!-- Main Form Column -->
         <div class="col-lg-8">
             <form id="createUserForm" method="POST" action="{{ contextRoute('users.store') }}" enctype="multipart/form-data">
                 @csrf
-                
+
                 <!-- Personal Information Section -->
                 <div class="form-section">
                     <div class="form-section-header">
-                        <h4 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h4>
-                        <small class="opacity-75">Basic personal details and contact information</small>
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon personal me-3">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Personal Information</h5>
+                                <small>Basic details and contact information</small>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-section-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="name" class="form-label">
-                                        <i class="fas fa-user me-1"></i>Full Name *
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-user"></i>Full Name<span class="required">*</span>
                                     </label>
-                                    <input type="text" class="form-control @error('name') is-invalid @enderror" 
-                                           id="name" name="name" value="{{ old('name') }}" 
+                                    <input type="text" class="modern-form-control @error('name') is-invalid @enderror"
+                                           id="name" name="name" value="{{ old('name') }}"
                                            placeholder="Enter full name" required>
                                     @error('name')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-
-                                <div class="form-group">
-                                    <label for="email" class="form-label">
-                                        <i class="fas fa-envelope me-1"></i>Email Address *
+                            </div>
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-envelope"></i>Email Address<span class="required">*</span>
                                     </label>
-                                    <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                           id="email" name="email" value="{{ old('email') }}" 
-                                           placeholder="user@hospital.com" required>
+                                    <input type="email" class="modern-form-control @error('email') is-invalid @enderror"
+                                           id="email" name="email" value="{{ old('email') }}"
+                                           placeholder="user@example.com" required>
                                     @error('email')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-
-                                <div class="form-group">
-                                    <label for="phone" class="form-label">
-                                        <i class="fas fa-phone me-1"></i>Phone Number
+                            </div>
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-phone"></i>Phone Number
                                     </label>
-                                    <input type="tel" class="form-control @error('phone') is-invalid @enderror" 
-                                           id="phone" name="phone" value="{{ old('phone') }}" 
-                                           placeholder="+000 123 456 789">
+                                    <input type="tel" class="modern-form-control @error('phone') is-invalid @enderror"
+                                           id="phone" name="phone" value="{{ old('phone') }}"
+                                           placeholder="+44 123 456 7890">
                                     @error('phone')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-
-                                <div class="form-group">
-                                    <label for="employee_id" class="form-label">
-                                        <i class="fas fa-id-badge me-1"></i>Employee ID
+                            </div>
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-id-badge"></i>Employee ID
                                     </label>
-                                    <input type="text" class="form-control @error('employee_id') is-invalid @enderror" 
-                                           id="employee_id" name="employee_id" value="{{ old('employee_id') }}" 
+                                    <input type="text" class="modern-form-control @error('employee_id') is-invalid @enderror"
+                                           id="employee_id" name="employee_id" value="{{ old('employee_id') }}"
                                            placeholder="Leave blank for auto-generation">
-                                    <div class="form-help">Will be auto-generated if left empty</div>
+                                    <div class="form-hint">Will be auto-generated if left empty</div>
                                     @error('employee_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Role & Assignment Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon role me-3">
+                                <i class="fas fa-user-tag"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Role & Assignment</h5>
+                                <small>Define role, specialization and clinic assignments</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section-body">
+                        <div class="row">
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="role" class="form-label">
-                                        <i class="fas fa-user-tag me-1"></i>Role *
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-user-shield"></i>Role<span class="required">*</span>
                                     </label>
-                                    <select class="form-control @error('role') is-invalid @enderror" 
+                                    <select class="modern-form-control @error('role') is-invalid @enderror"
                                             id="role" name="role" required>
                                         <option value="">Select Role</option>
                                         <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrator</option>
@@ -210,12 +512,26 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-
-                                <div class="form-group">
-                                    <label for="department_id" class="form-label">
-                                        <i class="fas fa-building me-1"></i>Primary Clinic
+                            </div>
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-stethoscope"></i>Specialisation
                                     </label>
-                                    <select class="form-control @error('department_id') is-invalid @enderror" 
+                                    <input type="text" class="modern-form-control @error('specialization') is-invalid @enderror"
+                                           id="specialization" name="specialization" value="{{ old('specialization') }}"
+                                           placeholder="e.g., Cardiology, Pediatrics">
+                                    @error('specialization')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-hospital"></i>Primary Clinic
+                                    </label>
+                                    <select class="modern-form-control @error('department_id') is-invalid @enderror"
                                             id="department_id" name="department_id">
                                         <option value="">Select Primary Clinic</option>
                                         @foreach($departments as $department)
@@ -224,17 +540,18 @@
                                             </option>
                                         @endforeach
                                     </select>
+                                    <div class="form-hint">The main clinic this user will work at</div>
                                     @error('department_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-                                    <small class="form-text text-muted">The primary clinic for this user</small>
                                 </div>
-
-                                <div class="form-group">
-                                    <label for="department_ids" class="form-label">
-                                        <i class="fas fa-building me-1"></i>Additional Clinics
+                            </div>
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-building"></i>Additional Clinics
                                     </label>
-                                    <select class="form-control @error('department_ids') is-invalid @enderror" 
+                                    <select class="modern-form-control @error('department_ids') is-invalid @enderror"
                                             id="department_ids" name="department_ids[]" multiple size="4">
                                         @foreach($departments as $department)
                                             <option value="{{ $department->id }}" {{ in_array($department->id, old('department_ids', [])) ? 'selected' : '' }}>
@@ -242,35 +559,24 @@
                                             </option>
                                         @endforeach
                                     </select>
+                                    <div class="form-hint">Hold Ctrl/Cmd to select multiple clinics</div>
                                     @error('department_ids')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-                                    <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple clinics</small>
                                 </div>
-
-                                <div class="form-group">
-                                    <label for="specialization" class="form-label">
-                                        <i class="fas fa-stethoscope me-1"></i>Specialisation
+                            </div>
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-calendar-alt"></i>Hire Date
                                     </label>
-                                    <input type="text" class="form-control @error('specialization') is-invalid @enderror" 
-                                           id="specialization" name="specialization" value="{{ old('specialization') }}" 
-                                           placeholder="e.g., Cardiology, Pediatrics">
-                                    @error('specialization')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="hire_date" class="form-label">
-                                        <i class="fas fa-calendar me-1"></i>Hire Date
-                                    </label>
-                                    <input type="text" class="form-control @error('hire_date') is-invalid @enderror" 
-                                           id="hire_date" name="hire_date" 
+                                    <input type="text" class="modern-form-control @error('hire_date') is-invalid @enderror"
+                                           id="hire_date" name="hire_date"
                                            value="{{ old('hire_date') ? formatDate(old('hire_date')) : '' }}"
-                                           placeholder="dd-mm-yyyy" 
-                                           pattern="\d{2}-\d{2}-\d{4}" 
+                                           placeholder="dd-mm-yyyy"
+                                           pattern="\d{2}-\d{2}-\d{4}"
                                            maxlength="10">
-                                    <small class="form-text text-muted">Format: dd-mm-yyyy (e.g., 15-01-2025)</small>
+                                    <div class="form-hint">Format: dd-mm-yyyy (e.g., 15-01-2025)</div>
                                     @error('hire_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -283,27 +589,34 @@
                 <!-- Address Section -->
                 <div class="form-section">
                     <div class="form-section-header">
-                        <h4 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Address</h4>
-                        <small class="opacity-75">Optional address details for this user</small>
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon address me-3">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Address Information</h5>
+                                <small>Optional address details for this user</small>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-section-body">
                         <div class="row">
                             <div class="col-12">
-                                <div class="form-group">
-                                    <label for="ideal_postcodes_finder" class="form-label">
-                                        <i class="fas fa-search me-1"></i>Find Address
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-search"></i>Find Address
                                     </label>
-                                    <input type="text" class="form-control" id="ideal_postcodes_finder"
-                                           placeholder="Start typing postcode or address…">
-                                    <small class="form-help" id="ideal_postcodes_notice" style="display:none;"></small>
+                                    <input type="text" class="modern-form-control" id="ideal_postcodes_finder"
+                                           placeholder="Start typing postcode or address...">
+                                    <small class="form-hint" id="ideal_postcodes_notice" style="display:none;"></small>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="address" class="form-label">
-                                        <i class="fas fa-home me-1"></i>Address Line 1
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-home"></i>Address Line 1
                                     </label>
-                                    <input type="text" class="form-control @error('address') is-invalid @enderror"
+                                    <input type="text" class="modern-form-control @error('address') is-invalid @enderror"
                                            id="address" name="address" value="{{ old('address') }}">
                                     @error('address')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -311,11 +624,11 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="address_line_2" class="form-label">
-                                        <i class="fas fa-building me-1"></i>Address Line 2
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-building"></i>Address Line 2
                                     </label>
-                                    <input type="text" class="form-control @error('address_line_2') is-invalid @enderror"
+                                    <input type="text" class="modern-form-control @error('address_line_2') is-invalid @enderror"
                                            id="address_line_2" name="address_line_2" value="{{ old('address_line_2') }}">
                                     @error('address_line_2')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -323,11 +636,11 @@
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="city" class="form-label">
-                                        <i class="fas fa-city me-1"></i>Town/City
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-city"></i>Town/City
                                     </label>
-                                    <input type="text" class="form-control @error('city') is-invalid @enderror"
+                                    <input type="text" class="modern-form-control @error('city') is-invalid @enderror"
                                            id="city" name="city" value="{{ old('city') }}">
                                     @error('city')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -335,11 +648,11 @@
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="state" class="form-label">
-                                        <i class="fas fa-map me-1"></i>County
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-map"></i>County
                                     </label>
-                                    <input type="text" class="form-control @error('state') is-invalid @enderror"
+                                    <input type="text" class="modern-form-control @error('state') is-invalid @enderror"
                                            id="state" name="state" value="{{ old('state') }}">
                                     @error('state')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -347,11 +660,11 @@
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="postal_code" class="form-label">
-                                        <i class="fas fa-mail-bulk me-1"></i>Postcode
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-mail-bulk"></i>Postcode
                                     </label>
-                                    <input type="text" class="form-control @error('postal_code') is-invalid @enderror"
+                                    <input type="text" class="modern-form-control @error('postal_code') is-invalid @enderror"
                                            id="postal_code" name="postal_code" value="{{ old('postal_code') }}"
                                            style="text-transform: uppercase;">
                                     @error('postal_code')
@@ -360,11 +673,11 @@
                                 </div>
                             </div>
                             <div class="col-md-12">
-                                <div class="form-group">
-                                    <label for="country" class="form-label">
-                                        <i class="fas fa-flag me-1"></i>Country
+                                <div class="modern-form-group mb-0">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-flag"></i>Country
                                     </label>
-                                    <input type="text" class="form-control @error('country') is-invalid @enderror"
+                                    <input type="text" class="modern-form-control @error('country') is-invalid @enderror"
                                            id="country" name="country" value="{{ old('country', 'United Kingdom') }}">
                                     @error('country')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -375,149 +688,204 @@
                     </div>
                 </div>
 
-                <!-- Account Details Section -->
+                <!-- Account Security Section -->
                 <div class="form-section">
                     <div class="form-section-header">
-                        <h4 class="mb-0"><i class="fas fa-lock me-2"></i>Account Details</h4>
-                        <small class="opacity-75">Password and account settings</small>
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon security me-3">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Account Security</h5>
+                                <small>Password and account settings</small>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-section-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="password" class="form-label">
-                                        <i class="fas fa-lock me-1"></i>Password *
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-lock"></i>Password<span class="required">*</span>
                                     </label>
-                                    <input type="password" class="form-control @error('password') is-invalid @enderror" 
-                                           id="password" name="password" required minlength="8">
-                                    <div class="form-help">Minimum 8 characters</div>
+                                    <input type="password" class="modern-form-control @error('password') is-invalid @enderror"
+                                           id="password" name="password" required minlength="8"
+                                           placeholder="Minimum 8 characters">
                                     @error('password')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-
-                                <div class="form-group">
-                                    <label for="password_confirmation" class="form-label">
-                                        <i class="fas fa-lock me-1"></i>Confirm Password *
+                            </div>
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-lock"></i>Confirm Password<span class="required">*</span>
                                     </label>
-                                    <input type="password" class="form-control" 
-                                           id="password_confirmation" name="password_confirmation" required minlength="8">
+                                    <input type="password" class="modern-form-control"
+                                           id="password_confirmation" name="password_confirmation" required minlength="8"
+                                           placeholder="Re-enter password">
                                 </div>
                             </div>
-
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="avatar" class="form-label">
-                                        <i class="fas fa-camera me-1"></i>Profile Picture
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-camera"></i>Profile Picture
                                     </label>
-                                    <input type="file" class="form-control @error('avatar') is-invalid @enderror" 
-                                           id="avatar" name="avatar" accept="image/*">
-                                    <div class="form-help">JPG, PNG, GIF. Max 2MB</div>
+                                    <div class="file-input-wrapper">
+                                        <input type="file" class="modern-form-control @error('avatar') is-invalid @enderror"
+                                               id="avatar" name="avatar" accept="image/*">
+                                    </div>
+                                    <div class="form-hint">JPG, PNG, GIF. Max 2MB</div>
                                     @error('avatar')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-
-                                <div class="form-group">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       id="is_active" name="is_active" value="1" 
+                            </div>
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-toggle-on"></i>Account Status
+                                    </label>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <div class="modern-checkbox">
+                                                <input type="checkbox" id="is_active" name="is_active" value="1"
                                                        {{ old('is_active', true) ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="is_active">
-                                                    <i class="fas fa-toggle-on me-1"></i>Active
+                                                <label for="is_active">
+                                                    <i class="fas fa-check-circle text-success me-1"></i>Active
                                                 </label>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       id="is_admin" name="is_admin" value="1" 
+                                        <div class="col-6">
+                                            <div class="modern-checkbox">
+                                                <input type="checkbox" id="is_admin" name="is_admin" value="1"
                                                        {{ old('is_admin') ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="is_admin">
-                                                    <i class="fas fa-shield-alt me-1"></i>Admin
+                                                <label for="is_admin">
+                                                    <i class="fas fa-crown text-warning me-1"></i>Admin
                                                 </label>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="bio" class="form-label">
-                                <i class="fas fa-user-edit me-1"></i>Bio/Description
-                            </label>
-                            <textarea class="form-control @error('bio') is-invalid @enderror" 
-                                      id="bio" name="bio" rows="3" 
-                                      placeholder="Brief description about the user...">{{ old('bio') }}</textarea>
-                            @error('bio')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <div class="col-12">
+                                <div class="modern-form-group mb-0">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-align-left"></i>Bio/Description
+                                    </label>
+                                    <textarea class="modern-form-control @error('bio') is-invalid @enderror"
+                                              id="bio" name="bio" rows="3"
+                                              placeholder="Brief description about the user...">{{ old('bio') }}</textarea>
+                                    @error('bio')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-        <!-- Action Buttons -->
-        <div class="form-section">
-            <div class="form-section-body text-center">
-                <button type="submit" class="btn btn-doctor-primary btn-lg me-3">
-                    <i class="fas fa-save me-2"></i>Create User
-                </button>
-                <a href="{{ contextRoute('users.index') }}" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </a>
-            </div>
-        </div>
-    </form>
-</div>
-
-        <!-- Helper Information -->
-        <div class="col-lg-4">
-            <div class="info-card">
-                <h6><i class="fas fa-info-circle me-2"></i>User Creation Guidelines</h6>
-                <ul>
-                    <li>All fields marked with * are required</li>
-                    <li>Employee ID will be auto-generated if left empty</li>
-                    <li>Password must be at least 8 characters long</li>
-                    <li>Profile picture should be professional</li>
-                    <li>Admin privileges should be granted carefully</li>
-                </ul>
-            </div>
-
-            <div class="info-card">
-                <h6><i class="fas fa-lightbulb me-2"></i>Best Practices</h6>
-                <ul>
-                    <li>Keep employee ID unique across the system</li>
-                    <li>Ensure role matches clinic assignment</li>
-                    <li>Update specialisation for medical staff</li>
-                    <li>Set appropriate clinic for each role</li>
-                    <li>Activate accounts only when ready for use</li>
-                </ul>
-            </div>
-
-            <div class="info-card">
-                <h6><i class="fas fa-users me-2"></i>Role Descriptions</h6>
-                <ul>
-                    <li><strong>Administrator:</strong> Full system access</li>
-                    <li><strong>Doctor:</strong> Medical staff with patient access</li>
-                    <li><strong>Nurse:</strong> Patient care and basic medical tasks</li>
-                    <li><strong>Receptionist:</strong> Front desk and scheduling</li>
-                    <li><strong>Pharmacist:</strong> Medication management</li>
-                    <li><strong>Technician:</strong> Equipment and lab work</li>
-                    <li><strong>Staff:</strong> General hospital support</li>
-                </ul>
-            </div>
-
-            <div class="info-card">
-                <h6><i class="fas fa-clock me-2"></i>Quick Actions</h6>
-                <div class="d-grid gap-2">
-                    <a href="{{ contextRoute('users.index') }}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-list me-1"></i>View All Users
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-center gap-3 mb-4">
+                    <button type="submit" class="btn-modern-primary">
+                        <i class="fas fa-user-plus"></i>Create User
+                    </button>
+                    <a href="{{ contextRoute('users.index') }}" class="btn-modern-secondary">
+                        <i class="fas fa-times"></i>Cancel
                     </a>
-                    <a href="{{ contextRoute('users.index') }}" class="btn btn-outline-secondary btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i>Back to Users List
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar Column -->
+        <div class="col-lg-4">
+            <!-- Guidelines Card -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h6><i class="fas fa-info-circle text-primary me-2"></i>Creation Guidelines</h6>
+                </div>
+                <div class="sidebar-card-body">
+                    <ul>
+                        <li>All fields marked with <span class="text-danger">*</span> are required</li>
+                        <li>Employee ID will be auto-generated if left empty</li>
+                        <li>Password must be at least 8 characters long</li>
+                        <li>Profile picture should be professional</li>
+                        <li>Admin privileges should be granted carefully</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Best Practices Card -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h6><i class="fas fa-lightbulb text-warning me-2"></i>Best Practices</h6>
+                </div>
+                <div class="sidebar-card-body">
+                    <ul>
+                        <li>Keep employee ID unique across the system</li>
+                        <li>Ensure role matches clinic assignment</li>
+                        <li>Update specialisation for medical staff</li>
+                        <li>Set appropriate clinic for each role</li>
+                        <li>Activate accounts only when ready for use</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Role Descriptions Card -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h6><i class="fas fa-users text-info me-2"></i>Role Descriptions</h6>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="role-item">
+                        <div class="role-dot admin"></div>
+                        <span class="role-name">Administrator</span>
+                        <span class="role-desc">Full access</span>
+                    </div>
+                    <div class="role-item">
+                        <div class="role-dot doctor"></div>
+                        <span class="role-name">Doctor</span>
+                        <span class="role-desc">Medical staff</span>
+                    </div>
+                    <div class="role-item">
+                        <div class="role-dot nurse"></div>
+                        <span class="role-name">Nurse</span>
+                        <span class="role-desc">Patient care</span>
+                    </div>
+                    <div class="role-item">
+                        <div class="role-dot receptionist"></div>
+                        <span class="role-name">Receptionist</span>
+                        <span class="role-desc">Front desk</span>
+                    </div>
+                    <div class="role-item">
+                        <div class="role-dot pharmacist"></div>
+                        <span class="role-name">Pharmacist</span>
+                        <span class="role-desc">Medication</span>
+                    </div>
+                    <div class="role-item">
+                        <div class="role-dot technician"></div>
+                        <span class="role-name">Technician</span>
+                        <span class="role-desc">Lab & equipment</span>
+                    </div>
+                    <div class="role-item">
+                        <div class="role-dot staff"></div>
+                        <span class="role-name">Staff</span>
+                        <span class="role-desc">General support</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h6><i class="fas fa-bolt text-danger me-2"></i>Quick Actions</h6>
+                </div>
+                <div class="sidebar-card-body">
+                    <a href="{{ contextRoute('users.index') }}" class="quick-action-btn primary">
+                        <i class="fas fa-list me-2"></i>View All Users
+                    </a>
+                    <a href="{{ contextRoute('departments.index') }}" class="quick-action-btn secondary">
+                        <i class="fas fa-hospital me-2"></i>Manage Clinics
                     </a>
                 </div>
             </div>
@@ -595,7 +963,7 @@ $(document).ready(function() {
     $('#password_confirmation').on('input', function() {
         const password = $('#password').val();
         const confirmPassword = $(this).val();
-        
+
         if (confirmPassword && password !== confirmPassword) {
             $(this).addClass('is-invalid');
         } else {
@@ -621,11 +989,16 @@ $(document).ready(function() {
     $('#createUserForm').on('submit', function(e) {
         const password = $('#password').val();
         const confirmPassword = $('#password_confirmation').val();
-        
+
         if (password !== confirmPassword) {
             e.preventDefault();
             $('#password_confirmation').addClass('is-invalid');
-            alert('Passwords do not match');
+            Swal.fire({
+                icon: 'error',
+                title: 'Password Mismatch',
+                text: 'The passwords you entered do not match. Please try again.',
+                confirmButtonColor: '#667eea'
+            });
             return false;
         }
     });
