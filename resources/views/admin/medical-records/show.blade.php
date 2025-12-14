@@ -640,9 +640,10 @@
                                 @php
                                 $iconMap = ['create' => 'plus', 'update' => 'edit', 'delete' => 'trash', 'view' => 'eye', 'login' => 'sign-in-alt', 'logout' => 'sign-out-alt'];
                                 $icon = $iconMap[$activity->action] ?? 'circle';
-                                // Some badge backgrounds are very light (e.g., "light", "warning") so white text becomes unreadable.
-                                $badgeBg = $activity->severity_badge;
-                                $badgeTextClass = in_array($badgeBg, ['light', 'warning', 'info']) ? 'text-dark' : 'text-white';
+                                // severity_badge already returns a full class like "bg-warning" (see UserActivity::getSeverityBadgeAttribute()).
+                                // Some badge backgrounds are light enough that white text becomes unreadable.
+                                $badgeBgClass = $activity->severity_badge; // e.g. "bg-warning"
+                                $badgeTextClass = in_array($badgeBgClass, ['bg-warning', 'bg-light', 'bg-info']) ? 'text-dark' : 'text-white';
                                 @endphp
                                 <tr class="audit-row" style="cursor: pointer;" data-href="{{ route('admin.advanced-reports.audit-trail.show', $activity->id) }}">
                                     <td>
@@ -656,7 +657,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ $badgeBg }} {{ $badgeTextClass }}">
+                                        <span class="badge {{ $badgeBgClass }} {{ $badgeTextClass }}">
                                             @if($activity->action === 'pre_consultation_verified')
                                                 <i class="fas fa-clipboard-check me-1"></i>Pre-consultation Verified
                                             @else
