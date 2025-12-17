@@ -8,6 +8,7 @@ use App\Models\PatientFeedbackSurvey;
 use App\Models\PatientFeedbackSurveyQuestion;
 use App\Models\PatientFeedbackResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
@@ -31,6 +32,11 @@ class PatientFeedbackService
         }, $doctorIds)));
 
         if (empty($doctorIds)) {
+            return [];
+        }
+
+        // If migrations haven't been run yet, don't crash dashboards/pages.
+        if (!Schema::hasTable('patient_feedback_surveys') || !Schema::hasTable('patient_feedback_responses')) {
             return [];
         }
 
