@@ -177,7 +177,7 @@
     let editor;
 
     function normalizeToken(token) {
-        // We use @{{...}} in Blade to render literal {{...}}. Strip the leading '@' before inserting.
+        // Tokens are written with a leading '@' in Blade to avoid parsing; strip the leading '@' before inserting.
         if (!token) return '';
         return (token.startsWith('@{{')) ? token.substring(1) : token;
     }
