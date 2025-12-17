@@ -9,38 +9,8 @@
 @endsection
 
 @push('styles')
+@include('admin.shared.modern-ui')
 <style>
-    .stats-card {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-    }
-    .stats-card h6 {
-        color: #6c757d;
-        font-size: 14px;
-        margin-bottom: 10px;
-    }
-    .stats-card .stat-value {
-        font-size: 32px;
-        font-weight: 700;
-        color: #1a1a2e;
-    }
-    .filter-card {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-    }
-    .log-table {
-        background: white;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
     .audit-cell-meta {
         color: #6c757d;
         font-size: 0.78rem;
@@ -84,125 +54,106 @@
         padding-top: 0.85rem;
         padding-bottom: 0.85rem;
     }
-    
-    /* Pagination styling */
-    .pagination {
-        margin-bottom: 0;
-    }
-    
-    .pagination .page-link {
-        padding: 0.5rem 0.75rem;
-        border-radius: 0.375rem;
-        margin: 0 0.125rem;
-        font-size: 0.875rem;
-        color: #1cc88a;
-        border-color: #e3e6f0;
-    }
-    
-    .pagination .page-link:hover {
-        color: #1cc88a;
-        background-color: #f8f9fc;
-        border-color: #1cc88a;
-    }
-    
-    .pagination .page-item.active .page-link {
-        background-color: #1cc88a;
-        border-color: #1cc88a;
-        color: white;
-    }
-    
-    .pagination .page-item.disabled .page-link {
-        opacity: 0.5;
-        cursor: not-allowed;
-        color: #6c757d;
-    }
-    
-    /* Hide Previous/Next icon buttons */
-    .pagination .page-item:first-child,
-    .pagination .page-item:last-child {
-        display: none !important;
-    }
-    
-    /* Hide pagination arrow SVG icons - multiple selectors for different Laravel versions */
-    .pagination .page-link svg,
-    .pagination svg,
-    nav[aria-label="Pagination Navigation"] svg {
-        display: none !important;
-    }
-    
-    /* Hide aria-hidden elements that contain arrows */
-    .pagination [aria-hidden="true"],
-    .pagination .page-link span:first-child:not(:only-child) {
-        display: none !important;
-    }
 </style>
 @endpush
 
 @section('content')
-<div class="page-title mb-4">
-    <h1><i class="fas fa-history me-2"></i>Audit Trail</h1>
-    <p class="page-subtitle">Track user login and CRUD activities</p>
-</div>
-
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h6><i class="fas fa-list me-2"></i>Total Logs</h6>
-            <div class="stat-value text-primary">{{ number_format($stats['total_logs']) }}</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h6><i class="fas fa-calendar-day me-2"></i>Today's Logs</h6>
-            <div class="stat-value text-success">{{ number_format($stats['today_logs']) }}</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h6><i class="fas fa-users me-2"></i>Unique Users</h6>
-            <div class="stat-value text-info">{{ number_format($stats['unique_users']) }}</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h6><i class="fas fa-sign-in-alt me-2"></i>Logins Today</h6>
-            <div class="stat-value text-warning">{{ number_format($stats['login_count']) }}</div>
-        </div>
-    </div>
-</div>
-
-<!-- Security / Quality Signals -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h6><i class="fas fa-shield-alt me-2"></i>High Risk (7 days)</h6>
-            <div class="stat-value text-danger">{{ number_format($stats['high_risk_7d'] ?? 0) }}</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h6><i class="fas fa-ban me-2"></i>Failed Logins (Today)</h6>
-            <div class="stat-value text-danger">{{ number_format($stats['failed_logins_today'] ?? 0) }}</div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="stats-card">
-            <h6><i class="fas fa-info-circle me-2"></i>Tip</h6>
-            <div class="audit-cell-meta" style="font-size: 0.9rem;">
-                Use filters + search to trace who changed a record, when it happened, and which module/record was affected.
+<div class="fade-in">
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h1 class="modern-page-title"><i class="fas fa-history"></i>Audit Trail</h1>
+                    <p class="modern-page-subtitle">Track logins, record changes, and security-related events</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ route('admin.advanced-reports.audit-trail.export') }}?{{ http_build_query(request()->all()) }}" class="btn-modern btn-modern-outline">
+                        <i class="fas fa-download"></i>Export CSV
+                    </a>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Filters -->
-<div class="filter-card">
-    <form method="GET" action="{{ route('admin.advanced-reports.audit-trail') }}">
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-list"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['total_logs'] ?? 0) }}</div>
+                        <div class="stat-label">Total Logs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-calendar-day"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['today_logs'] ?? 0) }}</div>
+                        <div class="stat-label">Today</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-users"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['unique_users'] ?? 0) }}</div>
+                        <div class="stat-label">Unique Users</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-shield-alt"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['high_risk_7d'] ?? 0) }}</div>
+                        <div class="stat-label">High Risk (7 days)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modern-card mb-4">
+        <div class="modern-card-body">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div class="text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Tip: Use filters + search to trace who changed a record, when it happened, and which module/record was affected.
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-danger">
+                        <i class="fas fa-ban me-1"></i>{{ number_format($stats['failed_logins_today'] ?? 0) }} failed logins today
+                    </span>
+                    <a href="{{ route('admin.advanced-reports.audit-trail') }}" class="btn-modern btn-modern-outline btn-modern-sm">
+                        <i class="fas fa-rotate-right"></i>Reset
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="modern-card mb-4">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0"><i class="fas fa-filter"></i>Filters</h5>
+        </div>
+        <div class="modern-card-body">
+            <form method="GET" action="{{ route('admin.advanced-reports.audit-trail') }}">
         <div class="row g-3">
             <div class="col-md-3">
-                <label class="form-label">Event Type</label>
-                <select name="event_type" class="form-select">
+                <label class="modern-form-label">Event Type</label>
+                <select name="event_type" class="modern-form-select">
                     <option value="">All Events</option>
                     @foreach($eventTypes as $key => $label)
                         <option value="{{ $key }}" {{ request('event_type') == $key ? 'selected' : '' }}>
@@ -212,8 +163,8 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Severity</label>
-                <select name="severity" class="form-select">
+                <label class="modern-form-label">Severity</label>
+                <select name="severity" class="modern-form-select">
                     <option value="">All Severities</option>
                     @foreach(($severities ?? []) as $sev)
                         <option value="{{ $sev }}" {{ request('severity') == $sev ? 'selected' : '' }}>
@@ -223,8 +174,8 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">User</label>
-                <select name="user_id" class="form-select">
+                <label class="modern-form-label">User</label>
+                <select name="user_id" class="modern-form-select">
                     <option value="">All Users</option>
                     @foreach($users as $user)
                         <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>
@@ -234,8 +185,8 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Module</label>
-                <select name="model_type" class="form-select">
+                <label class="modern-form-label">Module</label>
+                <select name="model_type" class="modern-form-select">
                     <option value="">All Modules</option>
                     @foreach(($modelTypes ?? []) as $type => $label)
                         <option value="{{ $type }}" {{ request('model_type') == $type ? 'selected' : '' }}>
@@ -245,49 +196,50 @@
                 </select>
             </div>
             <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-filter me-2"></i>Filter
+                <button type="submit" class="btn-modern btn-modern-primary w-100">
+                    <i class="fas fa-filter"></i>Apply
                 </button>
             </div>
         </div>
         <div class="row g-3 mt-1">
             <div class="col-md-2">
-                <label class="form-label">From Date</label>
-                <input type="text" name="date_from" id="date_from" class="form-control"
+                <label class="modern-form-label">From Date</label>
+                <input type="text" name="date_from" id="date_from" class="modern-form-control"
                        value="{{ request('date_from') ? formatDate(request('date_from')) : '' }}"
                        placeholder="dd-mm-yyyy"
                        pattern="\d{2}-\d{2}-\d{4}"
                        maxlength="10">
-                <small class="form-text text-muted" style="font-size: 0.75rem;">Format: dd-mm-yyyy</small>
+                <small class="form-help-text">Format: dd-mm-yyyy</small>
             </div>
             <div class="col-md-2">
-                <label class="form-label">To Date</label>
-                <input type="text" name="date_to" id="date_to" class="form-control"
+                <label class="modern-form-label">To Date</label>
+                <input type="text" name="date_to" id="date_to" class="modern-form-control"
                        value="{{ request('date_to') ? formatDate(request('date_to')) : '' }}"
                        placeholder="dd-mm-yyyy"
                        pattern="\d{2}-\d{2}-\d{4}"
                        maxlength="10">
-                <small class="form-text text-muted" style="font-size: 0.75rem;">Format: dd-mm-yyyy</small>
+                <small class="form-help-text">Format: dd-mm-yyyy</small>
             </div>
             <div class="col-md-5">
-                <label class="form-label">Search</label>
-                <input type="text" name="search" class="form-control" placeholder="Description, user/email, module, record ID, IP..." value="{{ request('search') }}">
+                <label class="modern-form-label">Search</label>
+                <input type="text" name="search" class="modern-form-control" placeholder="Description, user/email, module, record ID, IP..." value="{{ request('search') }}">
             </div>
             <div class="col-md-3 d-flex align-items-end justify-content-end gap-2">
-                <a href="{{ route('admin.advanced-reports.audit-trail') }}" class="btn btn-secondary">
-                    <i class="fas fa-redo me-2"></i>Reset
-                </a>
-                <a href="{{ route('admin.advanced-reports.audit-trail.export') }}?{{ http_build_query(request()->all()) }}" class="btn btn-success">
-                    <i class="fas fa-download me-2"></i>Export CSV
+                <a href="{{ route('admin.advanced-reports.audit-trail') }}" class="btn-modern btn-modern-outline">
+                    <i class="fas fa-rotate-right"></i>Reset
                 </a>
             </div>
         </div>
     </form>
-</div>
+        </div>
+    </div>
 
-<!-- Audit Logs Table -->
-<div class="log-table">
-    <div class="table-responsive">
+    <!-- Audit Logs Table -->
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0"><i class="fas fa-list"></i>Audit Logs</h5>
+        </div>
+        <div class="modern-card-body">
         @php
             $actionBadge = [
                 'login' => 'success',
@@ -331,8 +283,9 @@
             ];
         @endphp
 
-        <table class="table table-hover mb-0 audit-table">
-            <thead class="table-light">
+        <div class="modern-table-wrapper">
+        <table class="modern-table audit-table">
+            <thead>
                 <tr>
                     <th style="min-width: 160px;">Time</th>
                     <th style="min-width: 220px;">Actor</th>
@@ -458,7 +411,7 @@
                     </td>
                     <td>
                         <a href="{{ route('admin.advanced-reports.audit-trail.show', $log->id) }}" 
-                           class="btn btn-sm btn-outline-primary" 
+                           class="btn-modern btn-modern-outline btn-modern-sm" 
                            title="View Details">
                             <i class="fas fa-eye"></i>
                         </a>
@@ -474,12 +427,14 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3" style="border-top: 1px solid #f1f5f9;">
+            <div class="text-muted small">
+                Showing {{ $logs->firstItem() ?? 0 }} to {{ $logs->lastItem() ?? 0 }} of {{ $logs->total() ?? 0 }} logs
+            </div>
+            {{ $logs->links() }}
+        </div>
     </div>
-</div>
-
-<!-- Pagination -->
-<div class="mt-4">
-    {{ $logs->links() }}
 </div>
 
 @endsection

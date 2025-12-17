@@ -9,25 +9,35 @@
     <li class="breadcrumb-item active">Details</li>
 @endsection
 
+@push('styles')
+@include('admin.shared.modern-ui')
+@endpush
+
 @section('content')
-<!-- Page Header -->
-<div class="page-title mb-4">
-    <h1><i class="fas fa-info-circle me-2"></i>Audit Log Details</h1>
-    <p class="page-subtitle">Detailed view of audit log entry</p>
-</div>
-
-<div class="mb-3">
-    <a href="{{ route('admin.advanced-reports.audit-trail') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Back to Audit Trail
-    </a>
-</div>
-
-    <!-- Audit Log Details Card -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Activity Information</h6>
+<div class="fade-in">
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h1 class="modern-page-title"><i class="fas fa-info-circle"></i>Audit Log Details</h1>
+                    <p class="modern-page-subtitle">Detailed view of this audit log entry</p>
+                </div>
+                <div>
+                    <a href="{{ route('admin.advanced-reports.audit-trail') }}" class="btn-modern btn-modern-outline">
+                        <i class="fas fa-arrow-left"></i>Back to Audit Trail
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
+    </div>
+
+    <!-- Audit Log Details -->
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0"><i class="fas fa-clipboard-list"></i>Activity Information</h5>
+        </div>
+        <div class="modern-card-body">
             <div class="row">
                 <!-- Basic Information -->
                 <div class="col-md-6">
@@ -55,8 +65,10 @@
                                 @php
                                 $iconMap = ['create' => 'plus', 'update' => 'edit', 'delete' => 'trash', 'view' => 'eye', 'login' => 'sign-in-alt', 'logout' => 'sign-out-alt', 'pre_consultation_verified' => 'clipboard-check'];
                                 $icon = $iconMap[$auditLog->action] ?? 'circle';
+                                $sevBg = $auditLog->severity_badge ?? 'bg-secondary';
+                                $sevTextClass = in_array($sevBg, ['bg-warning', 'bg-light', 'bg-info']) ? 'text-dark' : 'text-white';
                                 @endphp
-                                <span class="badge bg-{{ $auditLog->severity_badge }} px-3 py-2">
+                                <span class="badge {{ $sevBg }} {{ $sevTextClass }} px-3 py-2">
                                     <i class="fas fa-{{ $icon }}"></i>
                                     {{ ucfirst(str_replace('_', ' ', $auditLog->action)) }}
                                 </span>
@@ -65,7 +77,7 @@
                         <tr>
                             <th>Severity</th>
                             <td>
-                                <span class="badge {{ $auditLog->severity_badge }} px-3 py-2">
+                                <span class="badge {{ $sevBg }} {{ $sevTextClass }} px-3 py-2">
                                     <i class="{{ $auditLog->severity_icon }}"></i>
                                     {{ ucfirst($auditLog->severity) }}
                                 </span>
@@ -120,8 +132,9 @@
             <div class="row mt-4">
                 <div class="col-12">
                     <h5 class="mb-3">Description</h5>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> {{ $auditLog->description }}
+                    <div class="modern-card" style="padding: 1.25rem;">
+                        <div class="text-muted small mb-1">Message</div>
+                        <div>{{ $auditLog->description }}</div>
                     </div>
                 </div>
             </div>
@@ -134,11 +147,11 @@
                     <div class="row">
                         @if($auditLog->old_values)
                         <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header bg-danger text-white">
-                                    <i class="fas fa-minus-circle"></i> Old Values
+                            <div class="modern-card">
+                                <div class="modern-card-header">
+                                    <h6 class="modern-card-title mb-0"><i class="fas fa-minus-circle"></i>Old Values</h6>
                                 </div>
-                                <div class="card-body">
+                                <div class="modern-card-body">
                                     <pre class="mb-0">{{ json_encode($auditLog->old_values, JSON_PRETTY_PRINT) }}</pre>
                                 </div>
                             </div>
@@ -147,11 +160,11 @@
 
                         @if($auditLog->new_values)
                         <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header bg-success text-white">
-                                    <i class="fas fa-plus-circle"></i> New Values
+                            <div class="modern-card">
+                                <div class="modern-card-header">
+                                    <h6 class="modern-card-title mb-0"><i class="fas fa-plus-circle"></i>New Values</h6>
                                 </div>
-                                <div class="card-body">
+                                <div class="modern-card-body">
                                     <pre class="mb-0">{{ json_encode($auditLog->new_values, JSON_PRETTY_PRINT) }}</pre>
                                 </div>
                             </div>
@@ -166,11 +179,11 @@
 
     <!-- Related Activities -->
     @if($auditLog->user_id)
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Recent Activities by Same User</h6>
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0"><i class="fas fa-user-clock"></i>Recent Activities by Same User</h5>
         </div>
-        <div class="card-body">
+        <div class="modern-card-body">
             @php
                 $recentActivities = \App\Models\UserActivity::where('user_id', $auditLog->user_id)
                     ->where('id', '!=', $auditLog->id)
@@ -180,8 +193,8 @@
             @endphp
 
             @if($recentActivities->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover">
+                <div class="modern-table-wrapper">
+                    <table class="modern-table">
                         <thead>
                             <tr>
                                 <th>Timestamp</th>
@@ -195,13 +208,17 @@
                             <tr>
                                 <td>{{ $activity->created_at->format('d-m-Y H:i:s') }}</td>
                                 <td>
-                                    <span class="badge badge-sm {{ $activity->severity_badge }}">
-                                        {{ ucfirst($activity->action) }}
+                                    @php
+                                        $abg = $activity->severity_badge ?? 'bg-secondary';
+                                        $atxt = in_array($abg, ['bg-warning', 'bg-light', 'bg-info']) ? 'text-dark' : 'text-white';
+                                    @endphp
+                                    <span class="badge {{ $abg }} {{ $atxt }}">
+                                        {{ ucfirst(str_replace('_', ' ', $activity->action)) }}
                                     </span>
                                 </td>
                                 <td>{{ Str::limit($activity->description, 60) }}</td>
                                 <td>
-                                    <a href="{{ route('admin.advanced-reports.audit-trail.show', $activity->id) }}" class="btn btn-sm btn-info">
+                                    <a href="{{ route('admin.advanced-reports.audit-trail.show', $activity->id) }}" class="btn-modern btn-modern-outline btn-modern-sm">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </td>
@@ -216,4 +233,5 @@
         </div>
     </div>
     @endif
+</div>
 @endsection
