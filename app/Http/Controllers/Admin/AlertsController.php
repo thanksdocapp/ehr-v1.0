@@ -23,6 +23,30 @@ class AlertsController extends Controller
     {
         $query = PatientAlert::with(['patient', 'creator', 'updater']);
 
+        // Stats (not filter-dependent; helps the page header cards)
+        $statsBase = clone $query;
+        $stats = [
+            'total' => (clone $statsBase)->count(),
+            'active' => (clone $statsBase)->where('active', true)
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+                })->count(),
+            'inactive' => (clone $statsBase)->where(function ($q) {
+                $q->where('active', false)
+                  ->orWhere(function ($q2) {
+                      $q2->whereNotNull('expires_at')
+                         ->where('expires_at', '<=', now());
+                  });
+            })->count(),
+            'critical_active' => (clone $statsBase)->where('severity', 'critical')
+                ->where('active', true)
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+                })->count(),
+        ];
+
         // Filter by status
         if ($request->filled('status')) {
             if ($request->status === 'active') {
@@ -66,7 +90,7 @@ class AlertsController extends Controller
         $severities = config('alerts.severities', ['critical', 'high', 'medium', 'low', 'info']);
         $patients = Patient::active()->orderBy('first_name')->get();
 
-        return view('admin.alerts.index', compact('alerts', 'alertCategories', 'severities', 'patients'));
+        return view('admin.alerts.index', compact('alerts', 'alertCategories', 'severities', 'patients', 'stats'));
     }
 }
 

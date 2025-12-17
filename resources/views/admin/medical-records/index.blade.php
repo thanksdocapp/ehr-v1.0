@@ -10,31 +10,6 @@
 @push('styles')
 @include('admin.shared.modern-ui')
 <style>
-.stats-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 15px;
-    padding: 1.5rem;
-    color: white;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-}
-
-.stats-card:hover {
-    transform: translateY(-5px);
-}
-
-.stats-number {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.stats-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
-}
-
 .table-actions .btn {
     margin: 0 2px;
     padding: 0.375rem 0.75rem;
@@ -49,15 +24,6 @@
     font-size: 0.7rem;
     padding: 0.2rem 0.6rem;
     border-radius: 12px;
-}
-
-.filter-card {
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 /* Medical records: make stat card icons feel "EHR modern" (override modern-ui's default black icon block) */
@@ -152,11 +118,17 @@
     </div>
 
     <!-- Filters -->
-    <div class="filter-card" style="background: white;">
+    <div class="modern-card mb-4">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-filter"></i>Filters
+            </h5>
+        </div>
+        <div class="modern-card-body">
         <form method="GET" class="row g-3">
             <div class="col-md-3">
-                <label for="patient_id" class="form-label">Patient</label>
-                <select class="form-control" id="patient_id" name="patient_id">
+                <label for="patient_id" class="modern-form-label">Patient</label>
+                <select class="modern-form-select" id="patient_id" name="patient_id">
                     <option value="">All Patients</option>
                     @foreach($patients as $patient)
                         @if($patient && $patient->full_name)
@@ -168,8 +140,8 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label for="doctor_id" class="form-label">Doctor</label>
-                <select class="form-control" id="doctor_id" name="doctor_id">
+                <label for="doctor_id" class="modern-form-label">Doctor</label>
+                <select class="modern-form-select" id="doctor_id" name="doctor_id">
                     <option value="">All Doctors</option>
                     @foreach($doctors as $doctor)
                         @if($doctor && $doctor->full_name)
@@ -181,8 +153,8 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label for="record_type" class="form-label">Type</label>
-                <select class="form-control" id="record_type" name="record_type">
+                <label for="record_type" class="modern-form-label">Type</label>
+                <select class="modern-form-select" id="record_type" name="record_type">
                     <option value="">All Types</option>
                     <option value="consultation" {{ request('record_type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
                     <option value="diagnosis" {{ request('record_type') == 'diagnosis' ? 'selected' : '' }}>Diagnosis</option>
@@ -193,68 +165,67 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label for="date_from" class="form-label">From Date</label>
-                <input type="text" class="form-control" id="date_from" name="date_from" 
+                <label for="date_from" class="modern-form-label">From Date</label>
+                <input type="text" class="modern-form-control" id="date_from" name="date_from" 
                        value="{{ request('date_from') ? formatDate(request('date_from')) : '' }}"
                        placeholder="dd-mm-yyyy" 
                        pattern="\d{2}-\d{2}-\d{4}" 
                        maxlength="10">
-                <small class="form-text text-muted" style="font-size: 0.75rem;">Format: dd-mm-yyyy</small>
+                <small class="form-help-text">Format: dd-mm-yyyy</small>
             </div>
             <div class="col-md-2">
-                <label for="date_to" class="form-label">To Date</label>
-                <input type="text" class="form-control" id="date_to" name="date_to" 
+                <label for="date_to" class="modern-form-label">To Date</label>
+                <input type="text" class="modern-form-control" id="date_to" name="date_to" 
                        value="{{ request('date_to') ? formatDate(request('date_to')) : '' }}"
                        placeholder="dd-mm-yyyy" 
                        pattern="\d{2}-\d{2}-\d{4}" 
                        maxlength="10">
-                <small class="form-text text-muted" style="font-size: 0.75rem;">Format: dd-mm-yyyy</small>
+                <small class="form-help-text">Format: dd-mm-yyyy</small>
             </div>
             <div class="col-md-6">
-                <label for="search" class="form-label">Search</label>
-                <input type="text" class="form-control" id="search" name="search" 
+                <label for="search" class="modern-form-label">Search</label>
+                <input type="text" class="modern-form-control" id="search" name="search" 
                        value="{{ request('search') }}" placeholder="Search by diagnosis, symptoms, treatment, or patient name">
             </div>
             <div class="col-md-6">
-                <label class="form-label">&nbsp;</label>
+                <label class="modern-form-label">&nbsp;</label>
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-doctor-primary">
-                        <i class="fas fa-search me-1"></i>Filter
+                    <button type="submit" class="btn-modern btn-modern-primary">
+                        <i class="fas fa-search"></i>Filter
                     </button>
-                    <a href="{{ contextRoute('medical-records.index') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-refresh me-1"></i>Reset
+                    <a href="{{ contextRoute('medical-records.index') }}" class="btn-modern btn-modern-outline">
+                        <i class="fas fa-rotate-right"></i>Reset
                     </a>
-                    <a href="{{ contextRoute('medical-records.create') }}" class="btn btn-success">
-                        <i class="fas fa-plus me-1"></i>Add Record
+                    <a href="{{ contextRoute('medical-records.create') }}" class="btn-modern btn-modern-primary">
+                        <i class="fas fa-plus"></i>Add Record
                     </a>
                 </div>
             </div>
         </form>
+        </div>
     </div>
 
     <!-- Medical Records Table -->
-    <div class="doctor-card">
-        <div class="doctor-card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="doctor-card-title mb-0">
-                    <i class="fas fa-list me-2"></i>Medical Records List
-                </h5>
-                <div class="dropdown">
-                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" 
-                            id="exportDropdown" data-bs-toggle="dropdown">
-                        <i class="fas fa-download me-1"></i>Export
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><span class="dropdown-item-text text-muted"><i class="fas fa-info-circle me-2"></i>Export coming soon</span></li>
-                    </ul>
-                </div>
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-list"></i>Medical Records List
+            </h5>
+            <div class="dropdown">
+                <button class="btn-modern btn-modern-outline btn-modern-sm dropdown-toggle" type="button"
+                        id="exportDropdown" data-bs-toggle="dropdown">
+                    <i class="fas fa-download"></i>Export
+                </button>
+                <ul class="dropdown-menu">
+                    <li><span class="dropdown-item-text text-muted"><i class="fas fa-info-circle me-2"></i>Export coming soon</span></li>
+                </ul>
             </div>
         </div>
-        <div class="doctor-card-body p-0">
+        <div class="modern-card-body">
             @if($records->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <div class="modern-table-wrapper">
+                    <table class="modern-table">
+                        <thead>
                             <tr>
                                 <th>Patient</th>
                                 <th>Doctor</th>
@@ -356,8 +327,8 @@
                 </div>
 
                 <!-- Pagination -->
-                <div class="d-flex justify-content-between align-items-center p-3 border-top">
-                    <div class="text-muted">
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3" style="border-top: 1px solid #f1f5f9;">
+                    <div class="text-muted small">
                         Showing {{ $records->firstItem() }} to {{ $records->lastItem() }} of {{ $records->total() }} results
                     </div>
                     {{ $records->appends(request()->query())->links() }}
@@ -367,7 +338,7 @@
                     <i class="fas fa-file-medical fa-4x text-muted mb-3"></i>
                     <h5 class="text-muted">No medical records found</h5>
                     <p class="text-muted">No records match your current filters.</p>
-                    <a href="{{ contextRoute('medical-records.create') }}" class="btn btn-doctor-primary">
+                    <a href="{{ contextRoute('medical-records.create') }}" class="btn-modern btn-modern-primary">
                         <i class="fas fa-plus me-1"></i>Add First Record
                     </a>
                 </div>

@@ -39,7 +39,7 @@ use Illuminate\Support\Facades\Storage;
 @endpush
 
 @section('content')
-<div class="container-fluid">
+<div class="fade-in">
     <!-- Modern Page Header -->
     <div class="modern-page-header">
         <div class="modern-page-header-content">

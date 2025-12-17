@@ -2,8 +2,13 @@
 
 @section('title', 'Patient Alerts')
 
+@section('breadcrumb')
+    <li class="breadcrumb-item"><a href="{{ contextRoute('dashboard') }}">Admin</a></li>
+    <li class="breadcrumb-item active">Patient Alerts</li>
+@endsection
+
 @section('content')
-<div class="container-fluid">
+<div class="fade-in">
     <!-- Alert Messages -->
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -12,80 +17,134 @@
         </div>
     @endif
 
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Patient Alerts</h5>
-            <small class="text-muted">View and manage all patient alerts across the system</small>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-danger me-2">
-                <i class="fas fa-exclamation-circle me-1"></i>
-                {{ $alerts->total() }} Total Alerts
-            </span>
-            <div class="dropdown">
-                <button class="btn btn-doctor-primary dropdown-toggle" type="button" id="createAlertBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-plus me-2"></i>Create Alert
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="createAlertBtn" style="max-height: 400px; overflow-y: auto; min-width: 300px; padding: 0;">
-                    <li class="dropdown-header sticky-top bg-white" style="z-index: 10;">
-                        <i class="fas fa-user me-2"></i>Select Patient
-                    </li>
-                    <li>
-                        <div class="px-3 py-2 border-bottom">
-                            <input type="text" class="form-control form-control-sm" id="patientSearchInput" placeholder="Search by name or patient ID..." autocomplete="off" style="border-radius: 0.25rem;">
-                        </div>
-                    </li>
-                    <li><hr class="dropdown-divider my-0"></li>
-                    <div id="patientDropdownList">
-                        @if($patients->count() > 0)
-                            @foreach($patients as $patient)
-                                <li class="patient-dropdown-item" data-search-text="{{ strtolower($patient->full_name . ' ' . $patient->patient_id . ' ' . ($patient->email ?? '')) }}">
-                                    <a class="dropdown-item" href="{{ route('admin.patients.alerts.create', $patient) }}">
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-placeholder bg-info text-white rounded-circle me-2 d-flex align-items-center justify-content-center" 
-                                                 style="width: 32px; height: 32px; font-size: 0.875rem;">
-                                                {{ strtoupper(substr($patient->first_name, 0, 1)) }}
-                                            </div>
-                                            <div>
-                                                <div class="fw-semibold">{{ $patient->full_name }}</div>
-                                                <small class="text-muted">{{ $patient->patient_id }}</small>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </li>
-                            @endforeach
-                        @else
-                            <li>
-                                <span class="dropdown-item-text text-muted">
-                                    <i class="fas fa-info-circle me-2"></i>No patients available
-                                </span>
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="modern-page-title">Patient Alerts</h1>
+                    <p class="modern-page-subtitle">View and manage all patient alerts across the system</p>
+                </div>
+                <div class="mt-3 mt-md-0 d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge-modern badge-modern-danger">
+                        <i class="fas fa-exclamation-circle me-1"></i>{{ number_format($alerts->total()) }} total
+                    </span>
+                    <div class="dropdown">
+                        <button class="btn-modern btn-modern-primary dropdown-toggle" type="button" id="createAlertBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-plus"></i>Create Alert
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="createAlertBtn" style="max-height: 420px; overflow-y: auto; min-width: 340px; padding: 0;">
+                            <li class="dropdown-header sticky-top bg-white" style="z-index: 10;">
+                                <i class="fas fa-user me-2"></i>Select Patient
                             </li>
-                        @endif
+                            <li>
+                                <div class="px-3 py-2 border-bottom">
+                                    <input type="text" class="form-control form-control-sm" id="patientSearchInput" placeholder="Search by name, patient ID, or email..." autocomplete="off">
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider my-0"></li>
+                            <div id="patientDropdownList">
+                                @if($patients->count() > 0)
+                                    @foreach($patients as $patient)
+                                        <li class="patient-dropdown-item" data-search-text="{{ strtolower($patient->full_name . ' ' . $patient->patient_id . ' ' . ($patient->email ?? '')) }}">
+                                            <a class="dropdown-item" href="{{ route('admin.patients.alerts.create', $patient) }}">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-placeholder bg-info text-white rounded-circle me-2 d-flex align-items-center justify-content-center"
+                                                         style="width: 32px; height: 32px; font-size: 0.875rem;">
+                                                        {{ strtoupper(substr($patient->first_name, 0, 1)) }}
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-semibold">{{ $patient->full_name }}</div>
+                                                        <small class="text-muted">{{ $patient->patient_id }}</small>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                @else
+                                    <li>
+                                        <span class="dropdown-item-text text-muted">
+                                            <i class="fas fa-info-circle me-2"></i>No patients available
+                                        </span>
+                                    </li>
+                                @endif
+                            </div>
+                            <li id="noPatientResults" class="dropdown-item-text text-muted" style="display: none;">
+                                <i class="fas fa-search me-2"></i>No patients found
+                            </li>
+                        </ul>
                     </div>
-                    <li id="noPatientResults" class="dropdown-item-text text-muted" style="display: none;">
-                        <i class="fas fa-search me-2"></i>No patients found
-                    </li>
-                </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-bell"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['total'] ?? $alerts->total()) }}</div>
+                        <div class="stat-label">Total Alerts</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['active'] ?? 0) }}</div>
+                        <div class="stat-label">Active</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-clock"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['inactive'] ?? 0) }}</div>
+                        <div class="stat-label">Inactive / Expired</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['critical_active'] ?? 0) }}</div>
+                        <div class="stat-label">Critical (Active)</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" action="{{ route('admin.alerts.index') }}" class="row g-3">
+    <div class="modern-card mb-4">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0"><i class="fas fa-filter"></i>Filters</h5>
+        </div>
+        <div class="modern-card-body">
+            <form method="GET" action="{{ contextRoute('alerts.index') }}" class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label">Filter by Status</label>
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <label class="modern-form-label">Status</label>
+                    <select name="status" class="modern-form-select" onchange="this.form.submit()">
                         <option value="">All Alerts</option>
                         <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active Only</option>
                         <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive Only</option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Filter by Severity</label>
-                    <select name="severity" class="form-select" onchange="this.form.submit()">
+                    <label class="modern-form-label">Severity</label>
+                    <select name="severity" class="modern-form-select" onchange="this.form.submit()">
                         <option value="">All Severities</option>
                         @foreach($severities ?? config('alerts.severities', ['critical', 'high', 'medium', 'low', 'info']) as $severity)
                             <option value="{{ $severity }}" {{ request('severity') === $severity ? 'selected' : '' }}>
@@ -95,8 +154,8 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Filter by Type</label>
-                    <select name="type" class="form-select" onchange="this.form.submit()">
+                    <label class="modern-form-label">Type</label>
+                    <select name="type" class="modern-form-select" onchange="this.form.submit()">
                         <option value="">All Types</option>
                         @foreach(array_keys($alertCategories) as $type)
                             <option value="{{ $type }}" {{ request('type') === $type ? 'selected' : '' }}>
@@ -106,8 +165,8 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Filter by Patient</label>
-                    <select name="patient_id" class="form-select" onchange="this.form.submit()">
+                    <label class="modern-form-label">Patient</label>
+                    <select name="patient_id" class="modern-form-select" onchange="this.form.submit()">
                         <option value="">All Patients</option>
                         @foreach($patients as $patient)
                             <option value="{{ $patient->id }}" {{ request('patient_id') == $patient->id ? 'selected' : '' }}>
@@ -117,7 +176,7 @@
                     </select>
                 </div>
                 <div class="col-md-12">
-                    <a href="{{ route('admin.alerts.index') }}" class="btn btn-outline-secondary">
+                    <a href="{{ contextRoute('alerts.index') }}" class="btn-modern btn-modern-outline">
                         <i class="fas fa-times me-2"></i>Clear Filters
                     </a>
                 </div>
@@ -126,14 +185,14 @@
     </div>
 
     <!-- Alerts List -->
-    <div class="card">
-        <div class="card-header">
-            <h5 class="card-title mb-0">All Patient Alerts</h5>
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0"><i class="fas fa-list"></i>All Patient Alerts</h5>
         </div>
-        <div class="card-body">
+        <div class="modern-card-body">
             @if($alerts->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-hover">
+                <div class="modern-table-wrapper">
+                    <table class="modern-table">
                         <thead>
                             <tr>
                                 <th>Patient</th>
@@ -225,7 +284,10 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="mt-3">
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3" style="border-top: 1px solid #f1f5f9;">
+                    <div class="text-muted small">
+                        Showing {{ $alerts->firstItem() }} to {{ $alerts->lastItem() }} of {{ $alerts->total() }} alerts
+                    </div>
                     {{ $alerts->links() }}
                 </div>
             @else
@@ -233,7 +295,7 @@
                     <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
                     <p class="text-muted">No alerts found matching your filters.</p>
                     @if(request()->anyFilled(['status', 'severity', 'type', 'patient_id']))
-                        <a href="{{ route('admin.alerts.index') }}" class="btn btn-primary">
+                        <a href="{{ contextRoute('alerts.index') }}" class="btn-modern btn-modern-primary">
                             <i class="fas fa-times me-2"></i>Clear Filters
                         </a>
                     @endif

@@ -93,7 +93,7 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
+<div class="fade-in">
     <!-- Modern Page Header -->
     <div class="modern-page-header fade-in-up">
         <div class="modern-page-header-content">

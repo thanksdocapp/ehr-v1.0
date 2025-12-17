@@ -8,18 +8,29 @@
     <li class="breadcrumb-item active">Import CSV</li>
 @endsection
 
+@push('styles')
+@include('admin.shared.modern-ui')
+@endpush
+
 @section('content')
 <div class="fade-in">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-1">Import Medical Records from CSV</h1>
-            <p class="text-muted mb-0">Bulk import medical record data from a CSV file</p>
-        </div>
-        <div>
-            <a href="{{ route('admin.medical-records.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Back to Medical Records
-            </a>
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h1 class="modern-page-title">
+                        <i class="fas fa-file-upload"></i>
+                        Import Medical Records
+                    </h1>
+                    <p class="modern-page-subtitle">Bulk import medical record data from a CSV file</p>
+                </div>
+                <div>
+                    <a href="{{ route('admin.medical-records.index') }}" class="btn-modern btn-modern-outline">
+                        <i class="fas fa-arrow-left"></i>Back to Medical Records
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -77,13 +88,13 @@
     <div class="row">
         <div class="col-lg-8">
             <!-- Import Form -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-file-upload me-2 text-primary"></i>Upload CSV File
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="modern-card-title mb-0">
+                        <i class="fas fa-file-upload"></i>Upload CSV File
                     </h5>
                 </div>
-                <div class="card-body">
+                <div class="modern-card-body">
                     <form action="{{ route('admin.medical-records.import.csv') }}" method="POST" enctype="multipart/form-data" id="importForm">
                         @csrf
 
@@ -91,7 +102,7 @@
                         <div class="mb-4">
                             <label for="csv_file" class="form-label">CSV File <span class="text-danger">*</span></label>
                             <input type="file" 
-                                   class="form-control @error('csv_file') is-invalid @enderror" 
+                                   class="form-control modern-form-control @error('csv_file') is-invalid @enderror" 
                                    id="csv_file" 
                                    name="csv_file" 
                                    accept=".csv,.txt"
@@ -107,7 +118,7 @@
                         <!-- Import Mode -->
                         <div class="mb-4">
                             <label for="import_mode" class="form-label">Import Mode <span class="text-danger">*</span></label>
-                            <select class="form-select @error('import_mode') is-invalid @enderror" 
+                            <select class="form-select modern-form-select @error('import_mode') is-invalid @enderror" 
                                     id="import_mode" 
                                     name="import_mode" 
                                     required>
@@ -143,10 +154,10 @@
 
                         <!-- Submit Button -->
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn-modern btn-modern-primary">
                                 <i class="fas fa-upload me-2"></i>Start Import
                             </button>
-                            <a href="{{ route('admin.medical-records.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('admin.medical-records.index') }}" class="btn-modern btn-modern-outline">
                                 <i class="fas fa-times me-2"></i>Cancel
                             </a>
                         </div>
@@ -157,13 +168,13 @@
 
         <div class="col-lg-4">
             <!-- Instructions Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-info-circle me-2 text-info"></i>Import Instructions
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="modern-card-title mb-0">
+                        <i class="fas fa-info-circle"></i>Import Instructions
                     </h5>
                 </div>
-                <div class="card-body">
+                <div class="modern-card-body">
                     <h6 class="fw-bold mb-3">Required Fields:</h6>
                     <ul class="list-unstyled mb-4">
                         <li><i class="fas fa-check text-success me-2"></i>Patient ID or Patient Email</li>
@@ -200,13 +211,13 @@
             </div>
 
             <!-- CSV Format Example -->
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-table me-2 text-secondary"></i>CSV Format Example
+            <div class="modern-card mt-3">
+                <div class="modern-card-header">
+                    <h5 class="modern-card-title mb-0">
+                        <i class="fas fa-table"></i>CSV Format Example
                     </h5>
                 </div>
-                <div class="card-body">
+                <div class="modern-card-body">
                     <pre class="bg-light p-2 rounded small">Patient Email,Doctor Email,Record Type,Record Date,Presenting Complaint,Diagnosis,Plan
 john.doe@example.com,doctor@example.com,consultation,01/15/2024,Cough and fever,Upper respiratory infection,Rest and medication</pre>
                 </div>
