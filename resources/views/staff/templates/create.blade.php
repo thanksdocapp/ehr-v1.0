@@ -127,19 +127,19 @@
                         <p class="text-muted small mb-2"><strong>Quick Insert (common fields):</strong></p>
                         <div class="d-grid gap-1">
                             <button type="button" class="btn btn-sm btn-outline-secondary quick-field-btn"
-                                    data-field="{{signature:patient_signature:Patient Signature}}">
+                                    data-field="@{{signature:patient_signature:Patient Signature}}">
                                 Patient Signature
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-secondary quick-field-btn"
-                                    data-field="{{input:signature_date:Date:date}}">
+                                    data-field="@{{input:signature_date:Date:date}}">
                                 Signature Date
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-secondary quick-field-btn"
-                                    data-field="{{checkbox:consent_given:I agree to the terms above}}">
+                                    data-field="@{{checkbox:consent_given:I agree to the terms above}}">
                                 Consent Checkbox
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-secondary quick-field-btn"
-                                    data-field="{{textarea:additional_notes:Additional Notes or Comments}}">
+                                    data-field="@{{textarea:additional_notes:Additional Notes or Comments}}">
                                 Additional Notes
                             </button>
                         </div>
@@ -154,7 +154,7 @@
                     </div>
                     <div class="doctor-card-body">
                         <p class="small text-muted mb-2">Form fields use this syntax:</p>
-                        <code class="small d-block mb-2">{{type:name:label}}</code>
+                        <code class="small d-block mb-2">@{{type:name:label}}</code>
                         <ul class="small text-muted ps-3 mb-0">
                             <li><code>input</code> - Text input</li>
                             <li><code>textarea</code> - Multi-line text</li>
@@ -226,11 +226,11 @@
 
             let placeholder;
             if (fieldType === 'date') {
-                placeholder = `{{input:${safeName}:${fieldLabel}:date}}`;
+                placeholder = `@{{input:${safeName}:${fieldLabel}:date}}`;
             } else if (fieldType === 'input') {
-                placeholder = `{{input:${safeName}:${fieldLabel}:text}}`;
+                placeholder = `@{{input:${safeName}:${fieldLabel}:text}}`;
             } else {
-                placeholder = `{{${fieldType}:${safeName}:${fieldLabel}}}`;
+                placeholder = `@{{${fieldType}:${safeName}:${fieldLabel}}}`;
             }
 
             if (editor) {
