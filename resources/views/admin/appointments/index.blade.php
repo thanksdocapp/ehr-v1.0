@@ -30,48 +30,56 @@
     </div>
 
     <!-- Stats Cards Row -->
-    <div class="row g-4 mb-4 fade-in-up" style="animation-delay: 0.1s;">
+    <div class="row g-3 mb-4 fade-in-up" style="animation-delay: 0.1s;">
         <div class="col-xl-3 col-md-6">
-            <div class="modern-stat-card">
-                <div class="modern-stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
-                <div class="modern-stat-content">
-                    <div class="modern-stat-number">{{ $stats['total_appointments'] ?? $appointments->total() }}</div>
-                    <div class="modern-stat-label">Total Appointments</div>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $stats['total_appointments'] ?? $appointments->total() }}</div>
+                        <div class="stat-label">Total Appointments</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="modern-stat-card">
-                <div class="modern-stat-icon" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="modern-stat-content">
-                    <div class="modern-stat-number">{{ $stats['pending_appointments'] ?? 0 }}</div>
-                    <div class="modern-stat-label">Pending</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="modern-stat-card">
-                <div class="modern-stat-icon" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div class="modern-stat-content">
-                    <div class="modern-stat-number">{{ $stats['confirmed_appointments'] ?? 0 }}</div>
-                    <div class="modern-stat-label">Confirmed</div>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $stats['pending_appointments'] ?? 0 }}</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="modern-stat-card">
-                <div class="modern-stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                    <i class="fas fa-calendar-day"></i>
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $stats['confirmed_appointments'] ?? 0 }}</div>
+                        <div class="stat-label">Confirmed</div>
+                    </div>
                 </div>
-                <div class="modern-stat-content">
-                    <div class="modern-stat-number">{{ $stats['today_appointments'] ?? 0 }}</div>
-                    <div class="modern-stat-label">Today's Appointments</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ $stats['today_appointments'] ?? 0 }}</div>
+                        <div class="stat-label">Today</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -170,8 +178,8 @@
                         </h6>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Status</label>
-                        <select name="status" class="form-control">
+                        <label class="modern-form-label">Status</label>
+                        <select name="status" class="modern-form-select">
                             <option value="">All Statuses</option>
                             @foreach(['pending', 'confirmed', 'completed', 'cancelled'] as $status)
                                 <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
@@ -181,8 +189,8 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Appointment Type</label>
-                        <select name="type" class="form-control">
+                        <label class="modern-form-label">Appointment Type</label>
+                        <select name="type" class="modern-form-select">
                             <option value="">All Types</option>
                             <option value="consultation" {{ request('type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
                             <option value="followup" {{ request('type') == 'followup' ? 'selected' : '' }}>Follow Up</option>
@@ -192,17 +200,16 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Consultation Type</label>
-                        <select name="consultation_type" class="form-control">
+                        <label class="modern-form-label">Consultation</label>
+                        <select name="is_online" class="modern-form-select">
                             <option value="">All</option>
-                            <option value="online" {{ request('consultation_type') == 'online' ? 'selected' : '' }}>Online</option>
-                            <option value="in_person" {{ request('consultation_type') == 'in_person' ? 'selected' : '' }}>In-Person</option>
-                            <option value="phone" {{ request('consultation_type') == 'phone' ? 'selected' : '' }}>Phone</option>
+                            <option value="1" {{ request('is_online') === '1' ? 'selected' : '' }}>Online</option>
+                            <option value="0" {{ request('is_online') === '0' ? 'selected' : '' }}>In-Person</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Meeting Platform</label>
-                        <select name="meeting_platform" class="form-control">
+                        <label class="modern-form-label">Meeting Platform</label>
+                        <select name="meeting_platform" class="modern-form-select">
                             <option value="">All Platforms</option>
                             <option value="zoom" {{ request('meeting_platform') == 'zoom' ? 'selected' : '' }}>Zoom</option>
                             <option value="google_meet" {{ request('meeting_platform') == 'google_meet' ? 'selected' : '' }}>Google Meet</option>
@@ -219,12 +226,12 @@
                         </h6>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Patient Name</label>
-                        <input type="text" name="patient_name" class="form-control" value="{{ request('patient_name') }}" placeholder="Search patient...">
+                        <label class="modern-form-label">Patient</label>
+                        <input type="text" name="patient_name" class="modern-form-control" value="{{ request('patient_name') }}" placeholder="Name, email, phone, patient ID...">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Doctor</label>
-                        <select name="doctor_id" class="form-control">
+                        <label class="modern-form-label">Doctor</label>
+                        <select name="doctor_id" class="modern-form-select">
                             <option value="">All Doctors</option>
                             @foreach($doctors ?? [] as $doctor)
                                 <option value="{{ $doctor->id }}" {{ request('doctor_id') == $doctor->id ? 'selected' : '' }}>
@@ -234,8 +241,8 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Department</label>
-                        <select name="department_id" class="form-control">
+                        <label class="modern-form-label">Department</label>
+                        <select name="department_id" class="modern-form-select">
                             <option value="">All Departments</option>
                             @foreach($departments ?? [] as $dept)
                                 <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
@@ -252,8 +259,8 @@
                         </h6>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Quick Date Range</label>
-                        <select name="date_range" class="form-control">
+                        <label class="modern-form-label">Quick Date Range</label>
+                        <select name="date_range" class="modern-form-select">
                             <option value="">Select Range</option>
                             <option value="today" {{ request('date_range') == 'today' ? 'selected' : '' }}>Today</option>
                             <option value="tomorrow" {{ request('date_range') == 'tomorrow' ? 'selected' : '' }}>Tomorrow</option>
@@ -266,32 +273,32 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Date From</label>
-                        <input type="text" name="date_from" id="date_from" class="form-control" 
+                        <label class="modern-form-label">Date From</label>
+                        <input type="text" name="date_from" id="date_from" class="modern-form-control" 
                                value="{{ request('date_from') ? formatDate(request('date_from')) : '' }}"
                                placeholder="dd-mm-yyyy" 
                                pattern="\d{2}-\d{2}-\d{4}" 
                                maxlength="10">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Date To</label>
-                        <input type="text" name="date_to" id="date_to" class="form-control" 
+                        <label class="modern-form-label">Date To</label>
+                        <input type="text" name="date_to" id="date_to" class="modern-form-control" 
                                value="{{ request('date_to') ? formatDate(request('date_to')) : '' }}"
                                placeholder="dd-mm-yyyy" 
                                pattern="\d{2}-\d{2}-\d{4}" 
                                maxlength="10">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Specific Date</label>
-                        <input type="date" name="date" class="form-control" value="{{ request('date') }}">
+                        <label class="modern-form-label">Specific Date</label>
+                        <input type="date" name="date" class="modern-form-control" value="{{ request('date') }}">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Time From</label>
-                        <input type="time" name="time_from" class="form-control" value="{{ request('time_from') }}">
+                        <label class="modern-form-label">Time From</label>
+                        <input type="time" name="time_from" class="modern-form-control" value="{{ request('time_from') }}">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Time To</label>
-                        <input type="time" name="time_to" class="form-control" value="{{ request('time_to') }}">
+                        <label class="modern-form-label">Time To</label>
+                        <input type="time" name="time_to" class="modern-form-control" value="{{ request('time_to') }}">
                     </div>
 
                     <!-- Additional Filters Section -->
@@ -301,70 +308,70 @@
                         </h6>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Has Medical Record</label>
-                        <select name="has_medical_record" class="form-control">
+                        <label class="modern-form-label">Has Medical Record</label>
+                        <select name="has_medical_record" class="modern-form-select">
                             <option value="">All</option>
                             <option value="yes" {{ request('has_medical_record') == 'yes' ? 'selected' : '' }}>Yes</option>
                             <option value="no" {{ request('has_medical_record') == 'no' ? 'selected' : '' }}>No</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Checked In</label>
-                        <select name="checked_in" class="form-control">
+                        <label class="modern-form-label">Checked In</label>
+                        <select name="checked_in" class="modern-form-select">
                             <option value="">All</option>
                             <option value="yes" {{ request('checked_in') == 'yes' ? 'selected' : '' }}>Yes</option>
                             <option value="no" {{ request('checked_in') == 'no' ? 'selected' : '' }}>No</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Checked Out</label>
-                        <select name="checked_out" class="form-control">
+                        <label class="modern-form-label">Checked Out</label>
+                        <select name="checked_out" class="modern-form-select">
                             <option value="">All</option>
                             <option value="yes" {{ request('checked_out') == 'yes' ? 'selected' : '' }}>Yes</option>
                             <option value="no" {{ request('checked_out') == 'no' ? 'selected' : '' }}>No</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Overdue</label>
-                        <select name="overdue" class="form-control">
+                        <label class="modern-form-label">Overdue</label>
+                        <select name="overdue" class="modern-form-select">
                             <option value="">All</option>
                             <option value="1" {{ request('overdue') ? 'selected' : '' }}>Yes</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Has Conflict</label>
-                        <select name="has_conflict" class="form-control">
-                            <option value="">All</option>
-                            <option value="1" {{ request('has_conflict') ? 'selected' : '' }}>Yes</option>
+                        <label class="modern-form-label">Has Conflict</label>
+                        <select name="has_conflict" class="modern-form-select" disabled>
+                            <option value="">Not available</option>
                         </select>
+                        <div class="form-help-text">Conflict detection is not enabled on this deployment.</div>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Fee Range</label>
+                        <label class="modern-form-label">Fee Range</label>
                         <div class="row g-2">
                             <div class="col-6">
-                                <input type="number" name="fee_min" class="form-control" placeholder="Min" value="{{ request('fee_min') }}" min="0" step="0.01">
+                                <input type="number" name="fee_min" class="modern-form-control" placeholder="Min" value="{{ request('fee_min') }}" min="0" step="0.01">
                             </div>
                             <div class="col-6">
-                                <input type="number" name="fee_max" class="form-control" placeholder="Max" value="{{ request('fee_max') }}" min="0" step="0.01">
+                                <input type="number" name="fee_max" class="modern-form-control" placeholder="Max" value="{{ request('fee_max') }}" min="0" step="0.01">
                             </div>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Reason/Symptoms</label>
-                        <input type="text" name="reason" class="form-control" value="{{ request('reason') }}" placeholder="Search reason...">
+                        <label class="modern-form-label">Reason</label>
+                        <input type="text" name="reason" class="modern-form-control" value="{{ request('reason') }}" placeholder="Search reason...">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Symptoms</label>
-                        <input type="text" name="symptoms" class="form-control" value="{{ request('symptoms') }}" placeholder="Search symptoms...">
+                        <label class="modern-form-label">Symptoms</label>
+                        <input type="text" name="symptoms" class="modern-form-control" value="{{ request('symptoms') }}" placeholder="Search symptoms...">
                     </div>
 
                     <!-- Form Actions -->
                     <div class="col-12 mt-3">
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-doctor-primary">
+                            <button type="submit" class="btn-modern btn-modern-primary">
                                 <i class="fas fa-search me-1"></i>Apply Filters
                             </button>
-                            <a href="{{ contextRoute('appointments.index') }}" class="btn btn-outline-secondary">
+                            <a href="{{ contextRoute('appointments.index') }}" class="btn-modern btn-modern-outline">
                                 <i class="fas fa-times me-1"></i>Clear All
                             </a>
                         </div>
@@ -375,23 +382,25 @@
     </div>
 
     <!-- Appointments Table -->
-    <div class="doctor-card">
-        <div class="doctor-card-header d-flex justify-content-between align-items-center">
-            <h5 class="doctor-card-title mb-0">Appointments List</h5>
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-list"></i>Appointments List
+            </h5>
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-secondary" onclick="exportAppointments()">
-                    <i class="fas fa-download me-1"></i>Export
+                <button class="btn-modern btn-modern-outline btn-modern-sm" onclick="exportAppointments()">
+                    <i class="fas fa-download"></i>Export
                 </button>
-                <button class="btn btn-sm btn-outline-primary" onclick="refreshTable()">
-                    <i class="fas fa-sync me-1"></i>Refresh
+                <button class="btn-modern btn-modern-outline btn-modern-sm" onclick="refreshTable()">
+                    <i class="fas fa-sync"></i>Refresh
                 </button>
             </div>
         </div>
-        <div class="doctor-card-body p-0">
+        <div class="modern-card-body">
             @if($appointments->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <div class="modern-table-wrapper">
+                    <table class="modern-table">
+                        <thead>
                             <tr>
                                 <th>
                                     <input type="checkbox" id="selectAll" class="form-check-input">
@@ -532,8 +541,8 @@
                 </div>
                 
                 <!-- Pagination -->
-                <div class="doctor-card-footer d-flex justify-content-between align-items-center">
-                    <div class="text-muted">
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3" style="border-top: 1px solid #f1f5f9;">
+                    <div class="text-muted small">
                         Showing {{ $appointments->firstItem() }} to {{ $appointments->lastItem() }} 
                         of {{ $appointments->total() }} appointments
                     </div>
@@ -544,7 +553,7 @@
                     <i class="fas fa-calendar-alt text-muted mb-3" style="font-size: 3rem;"></i>
                     <h5 class="text-muted">No appointments found</h5>
                     <p class="text-muted mb-4">No appointments match your current filters.</p>
-                    <a href="{{ contextRoute('appointments.create') }}" class="btn btn-doctor-primary">
+                    <a href="{{ contextRoute('appointments.create') }}" class="btn-modern btn-modern-primary">
                         <i class="fas fa-plus me-2"></i>Create First Appointment
                     </a>
                 </div>
@@ -554,8 +563,8 @@
 
     <!-- Bulk Actions -->
     <div class="mt-3" id="bulkActions" style="display: none;">
-        <div class="doctor-card">
-            <div class="doctor-card-body">
+        <div class="modern-card">
+            <div class="modern-card-body">
                 <div class="d-flex align-items-center gap-3">
                     <span class="text-muted">
                         <span id="selectedCount">0</span> appointment(s) selected

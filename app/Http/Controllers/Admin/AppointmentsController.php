@@ -27,9 +27,22 @@ class AppointmentsController extends Controller
             $query->whereRaw('1 = 0'); // No results if no user
         }
 
+        // Stats for the header cards (visibility-aware, not filter-dependent)
+        $statsBase = clone $query;
+        $stats = [
+            'total_appointments' => (clone $statsBase)->count(),
+            'pending_appointments' => (clone $statsBase)->where('status', 'pending')->count(),
+            'confirmed_appointments' => (clone $statsBase)->where('status', 'confirmed')->count(),
+            'today_appointments' => (clone $statsBase)->whereDate('appointment_date', Carbon::today())->count(),
+        ];
+
         // Apply filters
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
         }
 
         if ($request->filled('department_id')) {
@@ -45,26 +58,164 @@ class AppointmentsController extends Controller
             $query->where('is_online', $request->boolean('is_online'));
         }
 
+        if ($request->filled('meeting_platform')) {
+            $query->where('meeting_platform', $request->meeting_platform);
+        }
+
         if ($request->filled('patient_id')) {
             $query->where('patient_id', $request->patient_id);
         }
 
+        // Patient name/email/phone quick filter (separate from global "search")
+        if ($request->filled('patient_name')) {
+            $term = trim((string) $request->patient_name);
+            $query->whereHas('patient', function ($q) use ($term) {
+                $q->where(function ($qq) use ($term) {
+                    $qq->where('first_name', 'like', "%{$term}%")
+                       ->orWhere('last_name', 'like', "%{$term}%")
+                       ->orWhere('email', 'like', "%{$term}%")
+                       ->orWhere('phone', 'like', "%{$term}%")
+                       ->orWhere('patient_id', 'like', "%{$term}%");
+                });
+            });
+        }
+
+        // Date range shortcuts
+        if ($request->filled('date_range')) {
+            $range = (string) $request->date_range;
+            $today = Carbon::today();
+            $start = null;
+            $end = null;
+
+            switch ($range) {
+                case 'today':
+                    $start = $today->copy();
+                    $end = $today->copy();
+                    break;
+                case 'tomorrow':
+                    $start = $today->copy()->addDay();
+                    $end = $today->copy()->addDay();
+                    break;
+                case 'this_week':
+                    $start = $today->copy()->startOfWeek();
+                    $end = $today->copy()->endOfWeek();
+                    break;
+                case 'next_week':
+                    $start = $today->copy()->addWeek()->startOfWeek();
+                    $end = $today->copy()->addWeek()->endOfWeek();
+                    break;
+                case 'this_month':
+                    $start = $today->copy()->startOfMonth();
+                    $end = $today->copy()->endOfMonth();
+                    break;
+                case 'next_month':
+                    $start = $today->copy()->addMonthNoOverflow()->startOfMonth();
+                    $end = $today->copy()->addMonthNoOverflow()->endOfMonth();
+                    break;
+                case 'upcoming':
+                    $start = $today->copy();
+                    break;
+                case 'past':
+                    $end = $today->copy()->subDay();
+                    break;
+            }
+
+            if ($start) {
+                $query->whereDate('appointment_date', '>=', $start);
+            }
+            if ($end) {
+                $query->whereDate('appointment_date', '<=', $end);
+            }
+        }
+
         if ($request->filled('date_from')) {
             $dateFrom = parseDateInput($request->date_from);
-            $query->where('appointment_date', '>=', $dateFrom);
+            $query->whereDate('appointment_date', '>=', $dateFrom);
         }
 
         if ($request->filled('date_to')) {
             $dateTo = parseDateInput($request->date_to);
-            $query->where('appointment_date', '<=', $dateTo);
+            $query->whereDate('appointment_date', '<=', $dateTo);
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('appointment_date', $request->date);
+        }
+
+        if ($request->filled('time_from')) {
+            $query->whereTime('appointment_time', '>=', $request->time_from);
+        }
+
+        if ($request->filled('time_to')) {
+            $query->whereTime('appointment_time', '<=', $request->time_to);
+        }
+
+        if ($request->filled('has_medical_record')) {
+            if ($request->has_medical_record === 'yes') {
+                $query->whereHas('medicalRecord');
+            } elseif ($request->has_medical_record === 'no') {
+                $query->whereDoesntHave('medicalRecord');
+            }
+        }
+
+        if ($request->filled('checked_in')) {
+            if ($request->checked_in === 'yes') {
+                $query->whereNotNull('check_in_time');
+            } elseif ($request->checked_in === 'no') {
+                $query->whereNull('check_in_time');
+            }
+        }
+
+        if ($request->filled('checked_out')) {
+            if ($request->checked_out === 'yes') {
+                $query->whereNotNull('check_out_time');
+            } elseif ($request->checked_out === 'no') {
+                $query->whereNull('check_out_time');
+            }
+        }
+
+        if ($request->filled('overdue')) {
+            $query->whereDate('appointment_date', '<', Carbon::today())
+                ->whereIn('status', ['pending', 'confirmed']);
+        }
+
+        if ($request->filled('fee_min')) {
+            $query->where('fee', '>=', (float) $request->fee_min);
+        }
+        if ($request->filled('fee_max')) {
+            $query->where('fee', '<=', (float) $request->fee_max);
+        }
+
+        if ($request->filled('reason')) {
+            $term = trim((string) $request->reason);
+            $query->where('reason', 'like', "%{$term}%");
+        }
+        if ($request->filled('symptoms')) {
+            $term = trim((string) $request->symptoms);
+            $query->where('symptoms', 'like', "%{$term}%");
         }
 
         if ($request->filled('search')) {
-            $query->whereHas('patient', function($q) use ($request) {
-                $q->where('first_name', 'like', "%{$request->search}%")
-                  ->orWhere('last_name', 'like', "%{$request->search}%")
-                  ->orWhere('patient_id', 'like', "%{$request->search}%");
-            })->orWhere('appointment_number', 'like', "%{$request->search}%");
+            $term = trim((string) $request->search);
+            $query->where(function ($q) use ($term) {
+                $q->where('appointment_number', 'like', "%{$term}%")
+                  ->orWhereHas('patient', function ($pq) use ($term) {
+                      $pq->where(function ($pp) use ($term) {
+                          $pp->where('first_name', 'like', "%{$term}%")
+                             ->orWhere('last_name', 'like', "%{$term}%")
+                             ->orWhere('email', 'like', "%{$term}%")
+                             ->orWhere('phone', 'like', "%{$term}%")
+                             ->orWhere('patient_id', 'like', "%{$term}%");
+                      });
+                  })
+                  ->orWhereHas('doctor', function ($dq) use ($term) {
+                      $dq->where(function ($dd) use ($term) {
+                          $dd->where('first_name', 'like', "%{$term}%")
+                             ->orWhere('last_name', 'like', "%{$term}%")
+                             ->orWhere('name', 'like', "%{$term}%");
+                      });
+                  });
+            });
         }
 
         $appointments = $query->orderBy('appointment_date', 'desc')
@@ -74,7 +225,7 @@ class AppointmentsController extends Controller
         $departments = Department::active()->ordered()->get();
         $doctors = Doctor::ordered()->get();
 
-        return view('admin.appointments.index', compact('appointments', 'departments', 'doctors'));
+        return view('admin.appointments.index', compact('appointments', 'departments', 'doctors', 'stats'));
     }
 
     /**
