@@ -9,6 +9,7 @@ use App\Models\Patient;
 use App\Models\User;
 use App\Models\PasswordResetToken;
 use App\Services\HospitalEmailNotificationService;
+use App\Services\PatientFeedbackService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,7 @@ use Carbon\Carbon;
 
 class DoctorsController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, PatientFeedbackService $patientFeedbackService)
     {
         $query = Doctor::with(['departments', 'department']) // Load both relationships for compatibility
             ->withCount(['appointments']);
@@ -52,7 +53,10 @@ class DoctorsController extends Controller
         $doctors = $query->ordered()->paginate(15);
         $departments = Department::active()->ordered()->get();
 
-        return view('admin.doctors.index', compact('doctors', 'departments'));
+        // Ratings for doctors on this page (submitted surveys only, excludes N/A)
+        $doctorRatings = $patientFeedbackService->getDoctorRatingStats($doctors->pluck('id')->all());
+
+        return view('admin.doctors.index', compact('doctors', 'departments', 'doctorRatings'));
     }
 
     public function create()

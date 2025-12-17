@@ -2143,6 +2143,10 @@
                             $route = route('staff.billing.index');
                             $isActive = request()->routeIs('staff.billing.*');
                             break;
+                        case 'feedback':
+                            $route = route('staff.feedback.index');
+                            $isActive = request()->routeIs('staff.feedback.*');
+                            break;
                         case 'doctor-services':
                         case 'services':
                             $route = route('staff.doctor-services.index');

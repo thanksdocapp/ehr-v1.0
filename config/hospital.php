@@ -94,6 +94,11 @@ return [
             'include_private' => env('NOTIFY_MEDICAL_RECORD_INCLUDE_PRIVATE', false),
             'delay_minutes' => 0, // Send immediately
         ],
+
+        'patient_feedback' => [
+            'enabled' => env('NOTIFY_PATIENT_FEEDBACK', true),
+            'days_after_completion' => (int) env('PATIENT_FEEDBACK_DAYS_AFTER_COMPLETION', 2),
+        ],
     ],
 
     /*

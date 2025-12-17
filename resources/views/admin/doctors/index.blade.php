@@ -160,6 +160,7 @@
                                 </th>
                                 <th>Doctor</th>
                                 <th>Clinic</th>
+                                <th>Ratings</th>
                                 <th>Email</th>
                                 <th>Phone</th>
                                 <th>Status</th>
@@ -227,6 +228,25 @@
                                         @endif
                                     @else
                                         <span class="text-muted">N/A</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @php
+                                        $r = $doctorRatings[$doctor->id] ?? null;
+                                        $avg = is_array($r) && isset($r['avg']) && $r['avg'] !== null ? (float) $r['avg'] : null;
+                                        $cnt = is_array($r) ? (int) ($r['count'] ?? 0) : 0;
+                                    @endphp
+                                    @if($cnt > 0 && $avg !== null)
+                                        <div class="d-flex flex-column">
+                                            <span class="badge bg-warning text-dark align-self-start">
+                                                <i class="fas fa-star me-1"></i>{{ number_format($avg, 1) }}/5
+                                            </span>
+                                            <small class="text-muted mt-1">
+                                                {{ number_format($cnt) }} {{ \Illuminate\Support\Str::plural('rating', $cnt) }}
+                                            </small>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">—</span>
                                     @endif
                                 </td>
                                 <td>

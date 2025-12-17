@@ -147,6 +147,24 @@
                                     <div class="text-truncate" style="max-width: 200px;" title="{{ $log->subject }}">
                                         {{ $log->subject }}
                                     </div>
+                                    <div class="mt-1">
+                                        <a class="small text-decoration-none" data-bs-toggle="collapse" href="#preview-{{ $log->id }}" role="button" aria-expanded="false">
+                                            Preview
+                                        </a>
+                                    </div>
+                                    <div class="collapse mt-2" id="preview-{{ $log->id }}">
+                                        <div class="border rounded p-2 bg-light" style="max-width: 420px;">
+                                            <div class="small text-muted mb-1">Body (preview)</div>
+                                            <div class="small" style="max-height: 120px; overflow:auto; white-space: pre-wrap;">
+                                                {{ Str::limit(strip_tags($log->body ?? ''), 500) }}
+                                            </div>
+                                            <div class="mt-2">
+                                                <a href="{{ route('admin.email-management.show', $log->id) }}" class="small text-decoration-none">
+                                                    View full email
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge bg-secondary">{{ $typeLabel }}</span>

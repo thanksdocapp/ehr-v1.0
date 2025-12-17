@@ -12,6 +12,24 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap">
                 <div>
                     <h2 class="mb-2 fw-bold" style="font-size: 1.75rem; color: #212529;">Welcome back, Dr. {{ Auth::user()->name }}!</h2>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        @php
+                            $ratingAvg = isset($doctorRating['avg']) && $doctorRating['avg'] !== null ? (float) $doctorRating['avg'] : null;
+                            $ratingCount = (int) ($doctorRating['count'] ?? 0);
+                        @endphp
+                        @if($ratingCount > 0 && $ratingAvg !== null)
+                            <span class="badge bg-warning text-dark" style="border-radius: 999px; padding: 8px 12px;">
+                                <i class="fas fa-star me-1"></i>{{ number_format($ratingAvg, 1) }}/5
+                            </span>
+                            <span class="text-muted small">
+                                {{ number_format($ratingCount) }} {{ \Illuminate\Support\Str::plural('rating', $ratingCount) }}
+                            </span>
+                        @else
+                            <span class="text-muted small">
+                                <i class="far fa-star me-1"></i>No patient feedback yet
+                            </span>
+                        @endif
+                    </div>
                     <p class="mb-0" style="font-size: 1rem; color: #6c757d;">
                         <i class="fas fa-calendar-day me-2"></i>{{ \Carbon\Carbon::now()->format('l, F j, Y') }}
                         <span class="ms-3"><i class="fas fa-clock me-2"></i><span id="hero-current-time">{{ \Carbon\Carbon::now()->format('h:i A') }}</span></span>

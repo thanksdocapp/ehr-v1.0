@@ -32,7 +32,9 @@
       "Bash(netstat:*)",
       "Bash(powershell:*)",
       "Bash(taskkill:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git revert:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

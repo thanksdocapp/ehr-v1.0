@@ -189,6 +189,7 @@ class RoleMenuVisibility extends Model
                 'form-submissions' => ['label' => 'Form Submissions', 'icon' => 'fa-clipboard-check', 'order' => 9],
                 'alerts' => ['label' => 'Patient Alerts', 'icon' => 'fa-exclamation-triangle', 'order' => 10],
                 'billing' => ['label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'order' => 11],
+                'feedback' => ['label' => 'Patient Feedback', 'icon' => 'fa-comment-dots', 'order' => 12],
             ];
         } else {
             // Admin menu items
@@ -205,9 +206,10 @@ class RoleMenuVisibility extends Model
                 'staff-management' => ['label' => 'Staffs Management', 'icon' => 'fa-users-cog', 'order' => 9],
                 'communication' => ['label' => 'Communication', 'icon' => 'fa-paper-plane', 'order' => 10],
                 'email-logs' => ['label' => 'Email Logs', 'icon' => 'fa-envelope-open-text', 'order' => 11],
-                'advanced-reports' => ['label' => 'Advanced Reports', 'icon' => 'fa-chart-line', 'order' => 12],
-                'integrations' => ['label' => 'External Integrations', 'icon' => 'fa-plug', 'order' => 13],
-                'system-settings' => ['label' => 'System Settings', 'icon' => 'fa-cog', 'order' => 14],
+                'patient-feedback' => ['label' => 'Patient Feedback', 'icon' => 'fa-comment-dots', 'order' => 12],
+                'advanced-reports' => ['label' => 'Advanced Reports', 'icon' => 'fa-chart-line', 'order' => 13],
+                'integrations' => ['label' => 'External Integrations', 'icon' => 'fa-plug', 'order' => 14],
+                'system-settings' => ['label' => 'System Settings', 'icon' => 'fa-cog', 'order' => 15],
             ];
         }
         
@@ -250,6 +252,7 @@ class RoleMenuVisibility extends Model
                 'staff-management' => true,
                 'communication' => true,
                 'email-logs' => true,
+                'patient-feedback' => true,
                 'advanced-reports' => true,
                 'integrations' => true,
                 'system-settings' => true,
@@ -267,6 +270,7 @@ class RoleMenuVisibility extends Model
                 'form-submissions' => true,
                 'alerts' => true,
                 'billing' => false, // Doctors typically don't manage billing
+                'feedback' => true,
             ],
             'nurse' => [
                 'dashboard' => true,
@@ -279,6 +283,7 @@ class RoleMenuVisibility extends Model
                 'form-submissions' => true,
                 'alerts' => true,
                 'billing' => false,
+                'feedback' => false,
             ],
             'receptionist' => [
                 'dashboard' => true,
@@ -291,6 +296,7 @@ class RoleMenuVisibility extends Model
                 'form-submissions' => true,
                 'alerts' => true,
                 'billing' => true,
+                'feedback' => false,
             ],
             'pharmacist' => [
                 'dashboard' => true,
@@ -302,6 +308,7 @@ class RoleMenuVisibility extends Model
                 'document-templates' => false,
                 'alerts' => true,
                 'billing' => false,
+                'feedback' => false,
             ],
             'technician' => [
                 'dashboard' => true,
@@ -313,6 +320,7 @@ class RoleMenuVisibility extends Model
                 'document-templates' => false,
                 'alerts' => true,
                 'billing' => false,
+                'feedback' => false,
             ],
             'staff' => [
                 // Generic staff sees limited menu
@@ -325,6 +333,7 @@ class RoleMenuVisibility extends Model
                 'document-templates' => false,
                 'alerts' => true,
                 'billing' => false,
+                'feedback' => false,
             ],
         ];
 

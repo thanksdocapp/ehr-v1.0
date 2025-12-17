@@ -9,6 +9,7 @@ use App\Models\Doctor;
 use App\Models\Department;
 use App\Models\IntegrationModule;
 use App\Services\Integrations\QuincyService;
+use App\Services\PatientFeedbackService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -79,7 +80,7 @@ class DashboardController extends Controller
         return $departmentIds;
     }
 
-    public function index()
+    public function index(PatientFeedbackService $patientFeedbackService)
     {
         $user = Auth::user();
         $departmentId = $this->getUserDepartmentId();
@@ -148,6 +149,15 @@ class DashboardController extends Controller
             $doctor = Doctor::where('user_id', $user->id)
                 ->with(['departments', 'department'])
                 ->first();
+
+            // Overall patient feedback rating for this doctor (submitted surveys only, excludes N/A)
+            $doctorRating = ['avg' => null, 'count' => 0];
+            if ($doctor) {
+                $map = $patientFeedbackService->getDoctorRatingStats([$doctor->id]);
+                if (isset($map[$doctor->id])) {
+                    $doctorRating = $map[$doctor->id];
+                }
+            }
             
             // Get Quincy prescription delivery status for this doctor
             $quincyDeliveryStatus = $this->getDoctorQuincyDeliveryStatus($doctor ? $doctor->id : null);
@@ -171,7 +181,7 @@ class DashboardController extends Controller
                 ->limit(5)
                 ->get();
 
-            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'quincyDeliveryStatus', 'upcomingVideoConsultations'));
+            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations'));
         }
 
         return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus'));

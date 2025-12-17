@@ -1737,6 +1737,45 @@ class HospitalEmailNotificationService
     }
 
     /**
+     * Send patient feedback request after a completed consultation.
+     */
+    public function sendPatientFeedbackRequest(Appointment $appointment, string $feedbackUrl)
+    {
+        if (!$appointment->patient || !$appointment->patient->email) {
+            return null;
+        }
+
+        $doctor = $appointment->doctor;
+        $patient = $appointment->patient;
+
+        // Format appointment time properly
+        $appointmentTime = $appointment->appointment_time;
+        if ($appointmentTime) {
+            try {
+                $appointmentTime = \Carbon\Carbon::parse($appointmentTime)->format('g:i A');
+            } catch (\Exception $e) {
+                // Keep original value if parsing fails
+            }
+        }
+
+        $variables = [
+            'patient_name' => $patient->full_name,
+            'doctor_name' => $doctor ? $doctor->name : 'Your clinician',
+            'appointment_date' => $appointment->appointment_date?->format('F d, Y') ?? '',
+            'appointment_time' => $appointmentTime,
+            'department' => $appointment->department ? $appointment->department->name : 'General',
+            'hospital_name' => config('app.name', 'Hospital'),
+            'feedback_url' => $feedbackUrl,
+        ];
+
+        return $this->emailService->sendTemplateEmail(
+            'patient_feedback_request',
+            [$patient->email => $patient->full_name],
+            $variables
+        );
+    }
+
+    /**
      * Send appointment reschedule notification to patient.
      *
      * @param Appointment $appointment

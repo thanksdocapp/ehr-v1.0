@@ -40,6 +40,22 @@ class EmailTemplateSeedController extends Controller
         
         try {
             $templates = $this->getEmailTemplates();
+
+            // Optional: seed only one template (avoid overwriting others)
+            $onlyName = $request->input('template_name');
+            if (is_string($onlyName) && trim($onlyName) !== '' && $onlyName !== '__all__') {
+                $onlyName = trim($onlyName);
+                $templates = array_values(array_filter($templates, function ($t) use ($onlyName) {
+                    return isset($t['name']) && $t['name'] === $onlyName;
+                }));
+
+                if (count($templates) === 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Template '{$onlyName}' is not available in this seeder.",
+                    ], 422);
+                }
+            }
             
             $created = 0;
             $updated = 0;
@@ -476,6 +492,26 @@ class EmailTemplateSeedController extends Controller
                 ],
                 'sender_name' => 'Hospital Appointments',
                 'sender_email' => 'appointments@hospital.com'
+            ],
+            [
+                'name' => 'patient_feedback_request',
+                'subject' => 'How was your consultation? (1 minute) - {{hospital_name}}',
+                'category' => 'feedback',
+                'status' => 'active',
+                'description' => 'Sent to patients 2 days after a completed consultation to request feedback',
+                // Use double quotes so \n becomes real newlines in DB (prevents broken auto-linking in emails)
+                'body' => "Dear {{patient_name}},\n\nThank you for your recent consultation with {{doctor_name}}.\n\nWe would really appreciate your feedback. It takes about 1 minute and helps us improve our service.\n\nPlease complete the feedback form here:\n{{feedback_url}}\n\nYou can choose to submit your feedback anonymously or with your details.\n\nThank you,\n{{hospital_name}} Team",
+                'variables' => [
+                    'patient_name' => 'Patient\'s full name',
+                    'doctor_name' => 'Doctor\'s name',
+                    'appointment_date' => 'Appointment date',
+                    'appointment_time' => 'Appointment time',
+                    'department' => 'Department name',
+                    'feedback_url' => 'Secure feedback form link',
+                    'hospital_name' => 'Hospital name',
+                ],
+                'sender_name' => 'Patient Experience',
+                'sender_email' => 'feedback@hospital.com'
             ]
         ];
     }

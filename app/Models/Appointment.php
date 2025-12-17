@@ -80,6 +80,11 @@ class Appointment extends Model
         return $this->hasOne(MedicalRecord::class);
     }
 
+    public function feedbackSurvey()
+    {
+        return $this->hasOne(\App\Models\PatientFeedbackSurvey::class, 'appointment_id');
+    }
+
     // Scopes
     public function scopeToday($query)
     {

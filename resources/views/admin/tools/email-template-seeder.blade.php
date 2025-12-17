@@ -27,6 +27,26 @@
                     <i class="fas fa-info-circle me-2"></i>
                     <strong>For Shared Hosting Users:</strong> Use this tool to seed email templates when you don't have SSH access to run artisan commands.
                 </div>
+
+                <!-- Seed Options -->
+                <div class="row g-3 align-items-end mb-4">
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold mb-1">Seed mode</label>
+                        <select id="seedTemplateSelect" class="form-select">
+                            <option value="__all__" selected>All templates (may update existing)</option>
+                            <option value="patient_feedback_request">patient_feedback_request (only)</option>
+                        </select>
+                        <div class="form-text">
+                            Select <code>patient_feedback_request</code> to add only the feedback email template without updating other templates.
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary w-100" id="seedFeedbackOnlyBtn">
+                            <i class="fas fa-comment-dots me-2"></i>
+                            Seed feedback template only
+                        </button>
+                    </div>
+                </div>
                 
                 <!-- Action Buttons -->
                 <div class="d-flex gap-3 mb-4">
@@ -34,15 +54,15 @@
                         <i class="fas fa-seedling me-2"></i>
                         Seed Email Templates
                     </button>
-                        <button type="button" class="btn btn-warning" onclick="clearCache()">
-                            <i class="fas fa-trash"></i>
-                            Clear Cache
-                        </button>
+                    <button type="button" class="btn btn-warning" id="clearCacheBtn">
+                        <i class="fas fa-trash me-2"></i>
+                        Clear Cache
+                    </button>
                         
-                        <button type="button" class="btn btn-danger" onclick="repairTemplates()">
-                            <i class="fas fa-tools"></i>
-                            Repair Templates
-                        </button>
+                    <button type="button" class="btn btn-danger" id="repairTemplatesBtn">
+                        <i class="fas fa-tools me-2"></i>
+                        Repair Templates
+                    </button>
                     <button type="button" class="btn btn-info" id="runDiagnosticsBtn">
                         <i class="fas fa-stethoscope me-2"></i>
                         Run Diagnostics
@@ -244,6 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusMessage = document.getElementById('statusMessage');
     const resultsContainer = document.getElementById('resultsContainer');
     const resultsContent = document.getElementById('resultsContent');
+    const seedTemplateSelect = document.getElementById('seedTemplateSelect');
     
     function showStatus(message, type = 'info') {
         statusMessage.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>${message}`;
@@ -270,7 +291,10 @@ document.addEventListener('DOMContentLoaded', function() {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            }
+            },
+            body: JSON.stringify({
+                template_name: seedTemplateSelect ? seedTemplateSelect.value : '__all__'
+            })
         })
         .then(response => response.json())
         .then(data => {
@@ -293,6 +317,15 @@ document.addEventListener('DOMContentLoaded', function() {
             this.disabled = false;
         });
     });
+
+    // Seed Feedback Only quick button
+    const seedFeedbackOnlyBtn = document.getElementById('seedFeedbackOnlyBtn');
+    if (seedFeedbackOnlyBtn) {
+        seedFeedbackOnlyBtn.addEventListener('click', function () {
+            if (seedTemplateSelect) seedTemplateSelect.value = 'patient_feedback_request';
+            document.getElementById('seedTemplatesBtn').click();
+        });
+    }
     
     // Clear Cache Button
     document.getElementById('clearCacheBtn').addEventListener('click', function() {
@@ -353,100 +386,45 @@ document.addEventListener('DOMContentLoaded', function() {
             this.disabled = false;
         });
     });
-});
 
-// Global functions for inline onclick handlers
-function clearCache() {
-    const btn = event.target;
-    btn.disabled = true;
-    
-    const statusMessage = document.getElementById('statusMessage');
-    const resultsContainer = document.getElementById('resultsContainer');
-    
-    statusMessage.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>Clearing cache...`;
-    statusMessage.className = `alert alert-info`;
-    statusMessage.style.display = 'block';
-    
-    fetch('{{ route("admin.tools.email-template-seeder.clear-cache") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            statusMessage.innerHTML = `<i class="fas fa-check me-2"></i>${data.message}`;
-            statusMessage.className = `alert alert-success`;
-            setTimeout(() => location.reload(), 2000);
-        } else {
-            statusMessage.innerHTML = `<i class="fas fa-times me-2"></i>${data.message || 'Error occurred'}`;
-            statusMessage.className = `alert alert-danger`;
-        }
-    })
-    .catch(error => {
-        statusMessage.innerHTML = `<i class="fas fa-times me-2"></i>Network error occurred`;
-        statusMessage.className = `alert alert-danger`;
-        document.getElementById('resultsContent').textContent = error.toString();
-        resultsContainer.style.display = 'block';
-    })
-    .finally(() => {
-        btn.disabled = false;
-    });
-}
+    // Repair Templates Button
+    document.getElementById('repairTemplatesBtn').addEventListener('click', function() {
+        this.disabled = true;
 
-function repairTemplates() {
-    const btn = event.target;
-    btn.disabled = true;
-    
-    if (!confirm('Are you sure you want to repair email templates? This will set all soft-deleted templates back to active.')) {
-        btn.disabled = false;
-        return;
-    }
-    
-    const statusMessage = document.getElementById('statusMessage');
-    const resultsContainer = document.getElementById('resultsContainer');
-    const resultsContent = document.getElementById('resultsContent');
-    
-    statusMessage.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>Repairing email templates...`;
-    statusMessage.className = `alert alert-warning`;
-    statusMessage.style.display = 'block';
-    
-    fetch('{{ route("admin.tools.email-template-seeder.repair") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        if (!confirm('Are you sure you want to repair email templates? This will set all soft-deleted templates back to active.')) {
+            this.disabled = false;
+            return;
         }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            statusMessage.innerHTML = `<i class="fas fa-check me-2"></i>${data.message}`;
-            statusMessage.className = `alert alert-success`;
-            resultsContent.textContent = JSON.stringify(data.details, null, 2);
-            resultsContainer.style.display = 'block';
-            setTimeout(() => location.reload(), 3000);
-        } else {
-            statusMessage.innerHTML = `<i class="fas fa-times me-2"></i>${data.message || 'Error occurred'}`;
-            statusMessage.className = `alert alert-danger`;
-            if (data.trace) {
-                resultsContent.textContent = data.trace;
-                resultsContainer.style.display = 'block';
+
+        showStatus('Repairing email templates...', 'warning');
+
+        fetch('{{ route("admin.tools.email-template-seeder.repair") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             }
-        }
-    })
-    .catch(error => {
-        statusMessage.innerHTML = `<i class="fas fa-times me-2"></i>Network error occurred`;
-        statusMessage.className = `alert alert-danger`;
-        resultsContent.textContent = error.toString();
-        resultsContainer.style.display = 'block';
-    })
-    .finally(() => {
-        btn.disabled = false;
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showStatus(data.message, 'success');
+                showResults(JSON.stringify(data.details, null, 2));
+                setTimeout(() => location.reload(), 3000);
+            } else {
+                showStatus(data.message || 'Error occurred', 'danger');
+                if (data.trace) showResults(data.trace);
+            }
+        })
+        .catch(error => {
+            showStatus('Network error occurred', 'danger');
+            showResults(error.toString());
+        })
+        .finally(() => {
+            this.disabled = false;
+        });
     });
-}
+});
 </script>
 @endpush
 

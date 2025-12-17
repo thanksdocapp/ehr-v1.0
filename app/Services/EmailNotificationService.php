@@ -249,7 +249,12 @@ class EmailNotificationService
             }
 
             return $log;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // For admin/debug tooling: allow caller to surface the real exception
+            if (!empty($options['debug_throw'])) {
+                throw $e;
+            }
+
             // Log the full exception details with maximum detail
             Log::error('CRITICAL: Failed to queue email - Exception caught in sendTemplateEmail', [
                 'template' => $templateName,
@@ -315,7 +320,7 @@ class EmailNotificationService
                         'template_name' => $templateName
                     ]);
                 }
-            } catch (\Exception $logException) {
+            } catch (\Throwable $logException) {
                 Log::error('Failed to create error email log entry', [
                     'original_error' => $e->getMessage(),
                     'log_error' => $logException->getMessage(),
@@ -519,6 +524,11 @@ class EmailNotificationService
      */
     protected function parseContent(string $content, array $variables)
     {
+        // Some deployments/seeders store templates with literal "\n" characters
+        // (e.g. single-quoted PHP strings). Normalize those to real newlines so
+        // email clients don't treat "\n\nNextText" as part of URLs.
+        $content = $this->normalizeEscapedNewlines($content);
+
         // Add default variables if not provided
         if (!isset($variables['hospital_name'])) {
             try {
@@ -623,6 +633,19 @@ class EmailNotificationService
             // Return original content if parsing fails
             return $content;
         }
+    }
+
+    /**
+     * Convert literal escaped newline sequences (\\r\\n, \\n, \\r) into real newlines.
+     * This prevents broken auto-linked URLs in email clients.
+     */
+    private function normalizeEscapedNewlines(string $content): string
+    {
+        // Handle CRLF first, then LF, then CR
+        $content = str_replace('\\r\\n', "\r\n", $content);
+        $content = str_replace('\\n', "\n", $content);
+        $content = str_replace('\\r', "\r", $content);
+        return $content;
     }
     
 

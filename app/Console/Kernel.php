@@ -35,6 +35,14 @@ class Kernel extends ConsoleKernel
                  ->timezone(config('app.timezone', 'UTC'))
                  ->withoutOverlapping()
                  ->runInBackground();
+
+        // Send patient feedback forms 2 days after completed consultations
+        $daysAfterCompletion = (int) config('hospital.notifications.patient_feedback.days_after_completion', 2);
+        $schedule->command('appointments:send-feedback-requests --days=' . $daysAfterCompletion)
+                 ->dailyAt('10:30')
+                 ->timezone(config('app.timezone', 'UTC'))
+                 ->withoutOverlapping()
+                 ->runInBackground();
         
         // Process email queue (ensure emails are sent)
         $schedule->command('queue:work emails --stop-when-empty --max-time=300')

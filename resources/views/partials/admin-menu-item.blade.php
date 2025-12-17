@@ -56,6 +56,25 @@
         </div>
         @break
 
+    @case('patient-feedback')
+        <div class="menu-item">
+            <div class="dropdown">
+                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.patient-feedback.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                    <i class="menu-icon fas {{ $icon }}"></i>
+                    <span class="menu-text">{{ $label }}</span>
+                </a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item {{ request()->routeIs('admin.patient-feedback.index') ? 'active' : '' }}" href="{{ route('admin.patient-feedback.index') }}">
+                        <i class="fas fa-chart-bar me-2"></i>Responses
+                    </a>
+                    <a class="dropdown-item {{ request()->routeIs('admin.patient-feedback.questions.*') ? 'active' : '' }}" href="{{ route('admin.patient-feedback.questions.index') }}">
+                        <i class="fas fa-list-check me-2"></i>Questions
+                    </a>
+                </div>
+            </div>
+        </div>
+        @break
+
     @case('medical-records')
         <div class="menu-item">
             <div class="dropdown">

@@ -33,6 +33,10 @@ Route::get('/forms/{token}', [\App\Http\Controllers\PublicFormController::class,
 Route::post('/forms/{token}', [\App\Http\Controllers\PublicFormController::class, 'submit'])->name('forms.submit');
 Route::post('/forms/{token}/save', [\App\Http\Controllers\PublicFormController::class, 'savePartial'])->name('forms.save');
 
+// Public patient feedback routes (no auth required - patients submit via secure link)
+Route::get('/feedback/{token}', [\App\Http\Controllers\PublicFeedbackController::class, 'show'])->name('feedback.show');
+Route::post('/feedback/{token}', [\App\Http\Controllers\PublicFeedbackController::class, 'submit'])->name('feedback.submit');
+
 // Root Route Handler - Patient Booking Page
 Route::get('/', function () {
     if (!File::exists(storage_path('installed'))) {
@@ -407,6 +411,10 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/form-requests/{formRequest}', [\App\Http\Controllers\Staff\FormRequestsController::class, 'show'])->name('form-requests.show');
         Route::post('/form-requests/{formRequest}/resend', [\App\Http\Controllers\Staff\FormRequestsController::class, 'resend'])->name('form-requests.resend');
 
+        // Patient Feedback (Doctors only - enforced in controller)
+        Route::get('/feedback', [\App\Http\Controllers\Staff\PatientFeedbackController::class, 'index'])->name('feedback.index');
+        Route::get('/feedback/{survey}', [\App\Http\Controllers\Staff\PatientFeedbackController::class, 'show'])->name('feedback.show');
+
         // Patient Documents
         Route::get('/patients/{patient}/documents', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'index'])->name('patients.documents.index');
         Route::get('/patients/{patient}/documents/create', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'create'])->name('patients.documents.create');
@@ -681,6 +689,35 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/form-requests/{formRequest}', [\App\Http\Controllers\Admin\FormRequestsController::class, 'show'])->name('form-requests.show');
         Route::post('/form-requests/{formRequest}/resend', [\App\Http\Controllers\Admin\FormRequestsController::class, 'resend'])->name('form-requests.resend');
         Route::delete('/form-requests/{formRequest}', [\App\Http\Controllers\Admin\FormRequestsController::class, 'destroy'])->name('form-requests.destroy');
+
+        // Patient Feedback
+        Route::prefix('patient-feedback')->name('patient-feedback.')->group(function () {
+            // Question management
+            Route::prefix('questions')->name('questions.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Admin\PatientFeedbackQuestionsController::class, 'index'])->name('index');
+                Route::get('/create', [\App\Http\Controllers\Admin\PatientFeedbackQuestionsController::class, 'create'])->name('create');
+                Route::post('/', [\App\Http\Controllers\Admin\PatientFeedbackQuestionsController::class, 'store'])->name('store');
+                Route::get('/{question}/edit', [\App\Http\Controllers\Admin\PatientFeedbackQuestionsController::class, 'edit'])->name('edit');
+                Route::put('/{question}', [\App\Http\Controllers\Admin\PatientFeedbackQuestionsController::class, 'update'])->name('update');
+                Route::post('/{question}/toggle', [\App\Http\Controllers\Admin\PatientFeedbackQuestionsController::class, 'toggle'])->name('toggle');
+                Route::post('/{question}/move-up', [\App\Http\Controllers\Admin\PatientFeedbackQuestionsController::class, 'moveUp'])->name('move-up');
+                Route::post('/{question}/move-down', [\App\Http\Controllers\Admin\PatientFeedbackQuestionsController::class, 'moveDown'])->name('move-down');
+            });
+
+            // Test email (admin)
+            Route::get('/test-email', [\App\Http\Controllers\Admin\PatientFeedbackController::class, 'testEmailForm'])->name('test-email.form');
+            Route::post('/test-email', [\App\Http\Controllers\Admin\PatientFeedbackController::class, 'sendTestEmail'])->name('test-email.send');
+
+            // Responses
+            Route::get('/', [\App\Http\Controllers\Admin\PatientFeedbackController::class, 'index'])->name('index');
+            Route::post('/{survey}/reset', [\App\Http\Controllers\Admin\PatientFeedbackController::class, 'resetSubmission'])
+                ->whereNumber('survey')
+                ->name('reset');
+            // IMPORTANT: Constrain to numeric IDs so /questions does not get captured here
+            Route::get('/{survey}', [\App\Http\Controllers\Admin\PatientFeedbackController::class, 'show'])
+                ->whereNumber('survey')
+                ->name('show');
+        });
 
         // Document Settings & Categories
         Route::prefix('document-settings')->name('document-settings.')->group(function () {

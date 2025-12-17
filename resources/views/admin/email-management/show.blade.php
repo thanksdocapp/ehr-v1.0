@@ -362,8 +362,9 @@
                             <tr>
                                 <td>Attempts:</td>
                                 <td>
-                                    <span class="badge bg-info">{{ $emailLog->attempts ?? 1 }}</span>
-                                    @if(($emailLog->attempts ?? 1) > 1)
+                                    @php $attempts = (int) data_get($emailLog->metadata, 'attempts', 1); @endphp
+                                    <span class="badge bg-info">{{ $attempts }}</span>
+                                    @if($attempts > 1)
                                         <small class="text-muted ms-1">(Multiple attempts)</small>
                                     @endif
                                 </td>
@@ -378,32 +379,78 @@
                     </div>
                     @endif
 
-                    @if($emailLog->content)
                     <div class="info-section">
-                        <h5><i class="fas fa-file-alt text-info"></i>Email Content</h5>
-                        <div class="email-content">
-                            {!! $emailLog->content !!}
+                        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                            <h5 class="mb-0"><i class="fas fa-file-alt text-info"></i>Email Content</h5>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="copyEmailHtmlBtn">
+                                    <i class="fas fa-copy me-1"></i>Copy HTML
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="copyEmailTextBtn">
+                                    <i class="fas fa-copy me-1"></i>Copy Text
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    @endif
 
-                    @if($emailLog->headers)
-                    <div class="info-section">
-                        <h5><i class="fas fa-code text-warning"></i>Email Headers</h5>
-                        <div class="email-headers">
-                            @php
-                                $headers = is_array($emailLog->headers) ? $emailLog->headers : json_decode($emailLog->headers, true);
-                            @endphp
-                            @if($headers)
-                                @foreach($headers as $header => $value)
-{{ $header }}: {{ $value }}
-                                @endforeach
-                            @else
-No headers available
-                            @endif
+                        @php
+                            $emailHtml = (string) ($emailLog->body ?? '');
+                            // Basic safety for admin log preview: strip script tags so we don't execute arbitrary JS
+                            $emailHtmlSafe = preg_replace('/<script\\b[^>]*>(.*?)<\\/script>/is', '', $emailHtml) ?? $emailHtml;
+                            $emailText = trim(preg_replace('/\\s+/', ' ', strip_tags($emailHtml)));
+                        @endphp
+
+                        <ul class="nav nav-tabs mt-3" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabRendered" type="button" role="tab">
+                                    Rendered
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabHtml" type="button" role="tab">
+                                    HTML Source
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabMeta" type="button" role="tab">
+                                    Variables / Metadata
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="tabRendered" role="tabpanel">
+                                <div class="email-content mt-3">
+                                    @if(trim($emailHtmlSafe) === '')
+                                        <div class="text-muted">No email body stored for this log.</div>
+                                    @else
+                                        {!! $emailHtmlSafe !!}
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tabHtml" role="tabpanel">
+                                <div class="email-headers mt-3" style="background:#111827;color:#e5e7eb;">
+{{ $emailHtml }}
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tabMeta" role="tabpanel">
+                                <div class="email-headers mt-3">
+@php
+    $vars = $emailLog->variables ?? null;
+    $meta = $emailLog->metadata ?? null;
+    $varsJson = is_string($vars) ? $vars : json_encode($vars, JSON_PRETTY_PRINT);
+    $metaJson = is_string($meta) ? $meta : json_encode($meta, JSON_PRETTY_PRINT);
+@endphp
+Variables:
+{{ $varsJson ?: 'null' }}
+
+Metadata:
+{{ $metaJson ?: 'null' }}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    @endif
                 </div>
             </div>
         </div>
@@ -488,6 +535,45 @@ No headers available
 
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const html = @json((string)($emailLog->body ?? ''));
+    const text = @json(trim(preg_replace('/\\s+/', ' ', strip_tags((string)($emailLog->body ?? '')))));
+
+    function copyToClipboard(value) {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(value);
+        }
+        const ta = document.createElement('textarea');
+        ta.value = value;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        ta.remove();
+        return Promise.resolve();
+    }
+
+    const copyHtmlBtn = document.getElementById('copyEmailHtmlBtn');
+    if (copyHtmlBtn) {
+        copyHtmlBtn.addEventListener('click', function () {
+            copyToClipboard(html).then(() => {
+                Swal.fire({ icon: 'success', title: 'Copied', text: 'Email HTML copied to clipboard.', timer: 1500, showConfirmButton: false });
+            });
+        });
+    }
+
+    const copyTextBtn = document.getElementById('copyEmailTextBtn');
+    if (copyTextBtn) {
+        copyTextBtn.addEventListener('click', function () {
+            copyToClipboard(text).then(() => {
+                Swal.fire({ icon: 'success', title: 'Copied', text: 'Email text copied to clipboard.', timer: 1500, showConfirmButton: false });
+            });
+        });
+    }
+});
+
 function resendEmail(emailId) {
     Swal.fire({
         title: 'Resend Email?',
