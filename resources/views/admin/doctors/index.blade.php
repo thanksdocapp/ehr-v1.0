@@ -160,7 +160,7 @@
                                 </th>
                                 <th>Doctor</th>
                                 <th>Clinic</th>
-                                <th>Ratings</th>
+                                <th>Avg Rating</th>
                                 <th>Email</th>
                                 <th>Phone</th>
                                 <th>Status</th>
@@ -239,10 +239,10 @@
                                     @if($cnt > 0 && $avg !== null)
                                         <div class="d-flex flex-column">
                                             <span class="badge bg-warning text-dark align-self-start">
-                                                <i class="fas fa-star me-1"></i>{{ number_format($avg, 1) }}/5
+                                                <i class="fas fa-star me-1"></i>{{ number_format($avg, 1) }}/5 <span class="ms-1">avg</span>
                                             </span>
                                             <small class="text-muted mt-1">
-                                                {{ number_format($cnt) }} {{ \Illuminate\Support\Str::plural('rating', $cnt) }}
+                                                {{ number_format($cnt) }} {{ \Illuminate\Support\Str::plural('feedback', $cnt) }}
                                             </small>
                                         </div>
                                     @else
