@@ -183,8 +183,54 @@
         toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | table | code',
         setup: function(ed) {
             editor = ed;
+
+            // Enable drag/drop insertion into the editor
+            ed.on('dragover', function(e) {
+                if (e && typeof e.preventDefault === 'function') e.preventDefault();
+            });
+
+            ed.on('drop', function(e) {
+                if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+
+                const dt = (e && e.dataTransfer) || (e && e.originalEvent && e.originalEvent.dataTransfer);
+                const token = dt ? (dt.getData('text/plain') || dt.getData('text') || '') : '';
+                if (!token) return;
+
+                try {
+                    // Place caret where the drop occurred, then insert token
+                    if (ed.selection && typeof ed.selection.placeCaretAt === 'function') {
+                        ed.selection.placeCaretAt(e.clientX, e.clientY);
+                    }
+                } catch (err) {
+                    // Ignore caret placement errors; fall back to current selection
+                }
+
+                ed.insertContent(token);
+            });
         }
     });
+
+    function makeTokenDraggable(el, getToken) {
+        if (!el) return;
+        el.setAttribute('draggable', 'true');
+        el.style.cursor = 'grab';
+
+        el.addEventListener('dragstart', function(e) {
+            const token = typeof getToken === 'function' ? (getToken() || '') : '';
+            if (!token) {
+                if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                return;
+            }
+
+            try {
+                e.dataTransfer.effectAllowed = 'copy';
+                e.dataTransfer.setData('text/plain', token);
+            } catch (err) {
+                // Ignore drag payload errors
+            }
+        });
+    }
 
     // Data placeholder buttons
     document.querySelectorAll('.placeholder-btn').forEach(btn => {
@@ -193,6 +239,10 @@
             if (editor) {
                 editor.insertContent(placeholder);
             }
+        });
+
+        makeTokenDraggable(btn, function() {
+            return btn.dataset.placeholder || '';
         });
     });
 
@@ -250,6 +300,10 @@
             if (editor) {
                 editor.insertContent(field);
             }
+        });
+
+        makeTokenDraggable(btn, function() {
+            return btn.dataset.field || '';
         });
     });
 </script>
