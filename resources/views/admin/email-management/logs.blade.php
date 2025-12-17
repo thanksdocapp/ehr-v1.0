@@ -2,71 +2,141 @@
 
 @section('title', 'Email Logs')
 
+@section('breadcrumb')
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.email-management.index') }}">Email Management</a></li>
+    <li class="breadcrumb-item active">Email Logs</li>
+@endsection
+
+@push('styles')
+@include('admin.shared.modern-ui')
+@endpush
+
 @section('content')
-<div class="container-fluid px-4">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-0 text-gray-800">Email Logs</h1>
-            <p class="mb-0 text-muted">View detailed email delivery logs and history</p>
+<div class="fade-in">
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h1 class="modern-page-title"><i class="fas fa-envelope-open-text"></i>Email Logs</h1>
+                    <p class="modern-page-subtitle">View detailed email delivery logs and history</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn-modern btn-modern-outline" id="export-logs" type="button">
+                        <i class="fas fa-download"></i>Export
+                    </button>
+                    <button class="btn-modern btn-modern-outline" id="refresh-logs" type="button">
+                        <i class="fas fa-rotate-right"></i>Refresh
+                    </button>
+                    <a href="{{ route('admin.email-management.index') }}" class="btn-modern btn-modern-primary">
+                        <i class="fas fa-arrow-left"></i>Back to Overview
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" id="export-logs">
-                <i class="fas fa-download"></i> Export
-            </button>
-            <a href="{{ route('admin.email-management.index') }}" class="btn btn-primary">
-                <i class="fas fa-arrow-left"></i> Back to Overview
-            </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-inbox"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['total'] ?? 0) }}</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['sent'] ?? 0) }}</div>
+                        <div class="stat-label">Sent</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-clock"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format(($stats['pending'] ?? 0) + ($stats['queued'] ?? 0)) }}</div>
+                        <div class="stat-label">Pending / Queued</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ number_format($stats['failed'] ?? 0) }}</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
+    <div class="modern-card mb-4">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0"><i class="fas fa-filter"></i>Filters</h5>
+        </div>
+        <div class="modern-card-body">
             <form class="row g-3" id="filter-form">
                 <div class="col-md-3">
-                    <label for="status-filter" class="form-label">Status</label>
-                    <select class="form-select" id="status-filter" name="status">
+                    <label for="status-filter" class="modern-form-label">Status</label>
+                    <select class="modern-form-select" id="status-filter" name="status">
                         <option value="">All Statuses</option>
-                        <option value="sent">Sent</option>
-                        <option value="failed">Failed</option>
-                        <option value="pending">Pending</option>
-                        <option value="queued">Queued</option>
+                        <option value="sent" {{ request('status') === 'sent' ? 'selected' : '' }}>Sent</option>
+                        <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>Failed</option>
+                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="queued" {{ request('status') === 'queued' ? 'selected' : '' }}>Queued</option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label for="type-filter" class="form-label">Type</label>
-                    <select class="form-select" id="type-filter" name="type">
+                    <label for="type-filter" class="modern-form-label">Type</label>
+                    <select class="modern-form-select" id="type-filter" name="type">
                         <option value="">All Types</option>
-                        <option value="patient_welcome">Patient Welcome</option>
-                        <option value="appointment_confirmation">Appointment Confirmation</option>
-                        <option value="appointment_reminder">Appointment Reminder</option>
-                        <option value="test_results">Test Results</option>
-                        <option value="prescription_ready">Prescription Ready</option>
-                        <option value="payment_reminder">Payment Reminder</option>
-                        <option value="staff_notification">Staff Notification</option>
+                        <option value="patient_welcome" {{ request('type') === 'patient_welcome' ? 'selected' : '' }}>Patient Welcome</option>
+                        <option value="appointment_confirmation" {{ request('type') === 'appointment_confirmation' ? 'selected' : '' }}>Appointment Confirmation</option>
+                        <option value="appointment_reminder" {{ request('type') === 'appointment_reminder' ? 'selected' : '' }}>Appointment Reminder</option>
+                        <option value="test_results" {{ request('type') === 'test_results' ? 'selected' : '' }}>Test Results</option>
+                        <option value="prescription_ready" {{ request('type') === 'prescription_ready' ? 'selected' : '' }}>Prescription Ready</option>
+                        <option value="payment_reminder" {{ request('type') === 'payment_reminder' ? 'selected' : '' }}>Payment Reminder</option>
+                        <option value="staff_notification" {{ request('type') === 'staff_notification' ? 'selected' : '' }}>Staff Notification</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label for="date-from" class="form-label">From Date</label>
-                    <input type="text" class="form-control" id="date-from" name="date_from"
+                    <label for="date-from" class="modern-form-label">From Date</label>
+                    <input type="text" class="modern-form-control" id="date-from" name="date_from"
+                           value="{{ request('date_from') }}"
                            placeholder="dd-mm-yyyy" 
                            pattern="\d{2}-\d{2}-\d{4}" 
                            maxlength="10">
-                    <small class="form-text text-muted" style="font-size: 0.75rem;">Format: dd-mm-yyyy</small>
+                    <small class="form-help-text">Format: dd-mm-yyyy</small>
                 </div>
                 <div class="col-md-2">
-                    <label for="date-to" class="form-label">To Date</label>
-                    <input type="text" class="form-control" id="date-to" name="date_to"
+                    <label for="date-to" class="modern-form-label">To Date</label>
+                    <input type="text" class="modern-form-control" id="date-to" name="date_to"
+                           value="{{ request('date_to') }}"
                            placeholder="dd-mm-yyyy" 
                            pattern="\d{2}-\d{2}-\d{4}" 
                            maxlength="10">
-                    <small class="form-text text-muted" style="font-size: 0.75rem;">Format: dd-mm-yyyy</small>
+                    <small class="form-help-text">Format: dd-mm-yyyy</small>
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <div class="w-100">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-filter"></i> Filter
+                        <button type="submit" class="btn-modern btn-modern-primary w-100">
+                            <i class="fas fa-filter"></i>Apply
                         </button>
                     </div>
                 </div>
@@ -75,16 +145,13 @@
     </div>
 
     <!-- Email Logs Table -->
-    <div class="card shadow">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Email Logs</h6>
-            <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary" id="refresh-logs">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="modern-card-title mb-0"><i class="fas fa-list"></i>Email Logs</h5>
+            <div class="d-flex gap-2 flex-wrap">
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-cog"></i> Actions
+                    <button class="btn-modern btn-modern-outline btn-modern-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-gear"></i>Actions
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#" id="bulk-resend"><i class="fas fa-redo text-info"></i> Resend Failed</a></li>
@@ -95,10 +162,10 @@
                 </div>
             </div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover" id="email-logs-table">
-                    <thead class="table-light">
+        <div class="modern-card-body">
+            <div class="modern-table-wrapper">
+                <table class="modern-table" id="email-logs-table">
+                    <thead>
                         <tr>
                             <th width="30">
                                 <div class="form-check">
@@ -182,15 +249,15 @@
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <a href="{{ route('admin.email-management.show', $log->id) }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <a href="{{ route('admin.email-management.show', $log->id) }}" class="btn-modern btn-modern-outline btn-modern-sm" title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         @if(in_array($log->status, ['failed', 'pending']))
-                                            <button class="btn btn-sm btn-outline-success resend-email" data-email-id="{{ $log->id }}" title="Resend">
+                                            <button class="btn-modern btn-modern-outline btn-modern-sm resend-email" data-email-id="{{ $log->id }}" title="Resend">
                                                 <i class="fas fa-paper-plane"></i>
                                             </button>
                                         @endif
-                                        <button class="btn btn-sm btn-outline-danger delete-email" data-email-id="{{ $log->id }}" title="Delete">
+                                        <button class="btn-modern btn-modern-outline btn-modern-sm delete-email" data-email-id="{{ $log->id }}" title="Delete">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -210,15 +277,11 @@
 
             <!-- Pagination -->
             @if($emailLogs->hasPages())
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div>
-                    <span class="text-muted small">
-                        Showing {{ $emailLogs->firstItem() }} to {{ $emailLogs->lastItem() }} of {{ $emailLogs->total() }} entries
-                    </span>
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-3" style="border-top: 1px solid #f1f5f9;">
+                <div class="text-muted small">
+                    Showing {{ $emailLogs->firstItem() }} to {{ $emailLogs->lastItem() }} of {{ $emailLogs->total() }} entries
                 </div>
-                <nav>
-                    {{ $emailLogs->links() }}
-                </nav>
+                {{ $emailLogs->links() }}
             </div>
             @endif
         </div>
@@ -449,7 +512,7 @@ function deleteEmail(emailId) {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: response?.message || 'Failed to delete email log.',
+                text: (response && response.message) ? response.message : 'Failed to delete email log.',
                 confirmButtonText: 'OK'
             });
         }
@@ -482,7 +545,7 @@ function resendEmail(emailId) {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: response?.message || 'Failed to resend email.',
+                text: (response && response.message) ? response.message : 'Failed to resend email.',
                 confirmButtonText: 'OK'
             });
         },

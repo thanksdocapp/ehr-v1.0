@@ -97,9 +97,19 @@ class EmailManagementController extends Controller
             });
         }
         
+        // Lightweight stats for UI cards (global, not filter-scoped)
+        $stats = [
+            'total' => EmailLog::count(),
+            'sent' => EmailLog::where('status', 'sent')->count(),
+            'failed' => EmailLog::where('status', 'failed')->count(),
+            'pending' => EmailLog::where('status', 'pending')->count(),
+            'queued' => EmailLog::where('status', 'queued')->count(),
+            'today' => EmailLog::whereDate('created_at', today())->count(),
+        ];
+
         $emailLogs = $query->paginate(25);
         
-        return view('admin.email-management.logs', compact('emailLogs'));
+        return view('admin.email-management.logs', compact('emailLogs', 'stats'));
     }
 
     /**
