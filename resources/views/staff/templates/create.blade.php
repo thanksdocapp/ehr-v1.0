@@ -175,6 +175,13 @@
 <script src="{{ getTinyMceCdnUrl() }}" referrerpolicy="origin"></script>
 <script>
     let editor;
+
+    function normalizeToken(token) {
+        // We use @{{...}} in Blade to render literal {{...}}. Strip the leading '@' before inserting.
+        if (!token) return '';
+        return (token.startsWith('@{{')) ? token.substring(1) : token;
+    }
+
     tinymce.init({
         selector: '#content',
         height: 500,
@@ -183,29 +190,43 @@
         setup: function(ed) {
             editor = ed;
 
-            // Enable drag/drop insertion into the editor
-            ed.on('dragover', function(e) {
-                if (e && typeof e.preventDefault === 'function') e.preventDefault();
-            });
+            // Cross-browser drag/drop: bind to the editor iframe doc/body, not just TinyMCE events.
+            ed.on('init', function() {
+                const doc = ed.getDoc();
+                const body = ed.getBody();
 
-            ed.on('drop', function(e) {
-                if (e && typeof e.preventDefault === 'function') e.preventDefault();
-                if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+                if (!doc || !body) return;
 
-                const dt = (e && e.dataTransfer) || (e && e.originalEvent && e.originalEvent.dataTransfer);
-                const token = dt ? (dt.getData('text/plain') || dt.getData('text') || '') : '';
-                if (!token) return;
+                const onDragOver = function(e) {
+                    // Needed so drop is allowed in Chrome/Safari/Firefox
+                    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                    try {
+                        if (e && e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+                    } catch (err) {}
+                };
 
-                try {
-                    // Place caret where the drop occurred, then insert token
-                    if (ed.selection && typeof ed.selection.placeCaretAt === 'function') {
-                        ed.selection.placeCaretAt(e.clientX, e.clientY);
-                    }
-                } catch (err) {
-                    // Ignore caret placement errors; fall back to current selection
-                }
+                const onDrop = function(e) {
+                    if (e && typeof e.preventDefault === 'function') e.preventDefault();
 
-                ed.insertContent(token);
+                    let dt = null;
+                    if (e && e.dataTransfer) dt = e.dataTransfer;
+                    const tokenRaw = dt ? (dt.getData('text/plain') || dt.getData('text') || '') : '';
+                    const token = normalizeToken(tokenRaw);
+                    if (!token) return;
+
+                    try {
+                        if (ed.selection && typeof ed.selection.placeCaretAt === 'function') {
+                            ed.selection.placeCaretAt(e.clientX, e.clientY);
+                        }
+                    } catch (err) {}
+
+                    ed.insertContent(token);
+                };
+
+                doc.addEventListener('dragover', onDragOver);
+                body.addEventListener('dragover', onDragOver);
+                doc.addEventListener('drop', onDrop);
+                body.addEventListener('drop', onDrop);
             });
         }
     });
@@ -216,7 +237,7 @@
         el.style.cursor = 'grab';
 
         el.addEventListener('dragstart', function(e) {
-            const token = typeof getToken === 'function' ? (getToken() || '') : '';
+            const token = normalizeToken(typeof getToken === 'function' ? (getToken() || '') : '');
             if (!token) {
                 if (e && typeof e.preventDefault === 'function') e.preventDefault();
                 return;
@@ -225,6 +246,7 @@
             try {
                 e.dataTransfer.effectAllowed = 'copy';
                 e.dataTransfer.setData('text/plain', token);
+                e.dataTransfer.setData('text', token);
             } catch (err) {
                 // Ignore drag payload errors
             }
@@ -234,7 +256,7 @@
     // Data placeholder buttons
     document.querySelectorAll('.placeholder-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const placeholder = this.dataset.placeholder;
+            const placeholder = normalizeToken(this.dataset.placeholder);
             if (editor) {
                 editor.insertContent(placeholder);
             }
@@ -296,7 +318,7 @@
     // Quick field buttons
     document.querySelectorAll('.quick-field-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const field = this.dataset.field;
+            const field = normalizeToken(this.dataset.field);
             if (editor) {
                 editor.insertContent(field);
             }
