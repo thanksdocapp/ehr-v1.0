@@ -263,6 +263,23 @@
                 </div>
             </a>
         </div>
+
+        <!-- Patient Feedback Settings -->
+        <div class="col-lg-4 col-md-6">
+            <a href="{{ route('admin.settings.patient-feedback') }}" class="text-decoration-none">
+                <div class="modern-card fade-in-up stagger-12" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-card-icon" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); width: 60px; height: 60px;">
+                            <i class="fas fa-comment-dots"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">Patient Feedback</h5>
+                            <p class="text-muted mb-0 small">Configure when feedback forms are sent after consultations</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
     <!-- Modern Quick Actions -->

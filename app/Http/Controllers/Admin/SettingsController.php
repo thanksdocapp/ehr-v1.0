@@ -2271,5 +2271,77 @@ class SettingsController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Patient feedback settings.
+     */
+    public function patientFeedback()
+    {
+        $settings = Setting::getGroup('patient_feedback');
+
+        $delayMinutes = (int) ($settings['patient_feedback_delay_minutes'] ?? 0);
+        if ($delayMinutes <= 0) {
+            $delayMinutes = (int) config('hospital.notifications.patient_feedback.delay_minutes', 0);
+        }
+        if ($delayMinutes <= 0) {
+            $days = (int) config('hospital.notifications.patient_feedback.days_after_completion', 2);
+            $delayMinutes = ($days > 0) ? ($days * 1440) : 2880;
+        }
+
+        // Clamp: 1 minute to 3 days
+        $delayMinutes = max(1, min(4320, $delayMinutes));
+
+        return view('admin.settings.patient-feedback', compact('delayMinutes'));
+    }
+
+    /**
+     * Update patient feedback settings.
+     */
+    public function updatePatientFeedback(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'delay_value' => 'required|integer|min:1|max:4320',
+                'delay_unit' => 'required|in:minutes,hours,days',
+            ]);
+
+            if ($validator->fails()) {
+                return back()->withErrors($validator)->withInput();
+            }
+
+            $value = (int) $request->input('delay_value');
+            $unit = (string) $request->input('delay_unit');
+
+            $factor = match ($unit) {
+                'minutes' => 1,
+                'hours' => 60,
+                'days' => 1440,
+                default => 1,
+            };
+
+            $minutes = $value * $factor;
+            if ($minutes < 1 || $minutes > 4320) {
+                return back()
+                    ->withErrors(['delay_value' => 'Delay must be between 1 minute and 3 days.'])
+                    ->withInput();
+            }
+
+            Setting::set(
+                'patient_feedback_delay_minutes',
+                (string) $minutes,
+                'integer',
+                'patient_feedback',
+                'Minutes after consultation completion before sending the patient feedback form'
+            );
+
+            Cache::forget('settings_group_patient_feedback');
+            Cache::forget('setting_patient_feedback_delay_minutes');
+
+            return back()->with('success', 'Patient feedback settings updated successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Failed to update patient feedback settings: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update settings: ' . $e->getMessage())->withInput();
+        }
+    }
 }
 

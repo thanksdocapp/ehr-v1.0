@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Appointment;
+use App\Models\Setting;
 use App\Models\PatientFeedbackSurvey;
 use App\Services\HospitalEmailNotificationService;
 use App\Services\PatientFeedbackService;
@@ -13,7 +14,9 @@ use Illuminate\Support\Facades\Log;
 
 class SendPatientFeedbackRequests extends Command
 {
-    protected $signature = 'appointments:send-feedback-requests {--days=2 : Days after completion to send feedback form}';
+    protected $signature = 'appointments:send-feedback-requests
+                            {--delay-minutes= : Minutes after completion to send feedback form (1..4320)}
+                            {--days= : Days after completion (deprecated; use --delay-minutes)}';
 
     protected $description = 'Send patient feedback forms after completed consultations';
 
@@ -31,75 +34,126 @@ class SendPatientFeedbackRequests extends Command
             return 0;
         }
 
-        $daysAfter = (int) $this->option('days');
-        $targetDate = Carbon::today()->subDays($daysAfter);
+        $delayMinutes = $this->resolveDelayMinutes();
+        $cutoff = Carbon::now()->subMinutes($delayMinutes);
 
-        $this->info("Looking for completed appointments on {$targetDate->format('Y-m-d')} to send feedback...");
-
-        // Completed based on check_out_time; fallback to updated_at for records without check_out_time
-        $appointments = Appointment::with(['patient', 'doctor', 'department'])
-            ->where('status', 'completed')
-            ->where(function ($q) use ($targetDate) {
-                $q->whereDate('check_out_time', $targetDate)
-                  ->orWhere(function ($q2) use ($targetDate) {
-                      $q2->whereNull('check_out_time')
-                         ->whereDate('updated_at', $targetDate);
-                  });
-            })
-            ->get();
-
-        if ($appointments->isEmpty()) {
-            $this->info('No completed appointments found.');
-            return 0;
-        }
+        $this->info("Looking for completed appointments on/before {$cutoff->format('Y-m-d H:i')} (delay: {$delayMinutes} minutes) to send feedback...");
 
         $sent = 0;
         $skipped = 0;
         $failed = 0;
 
-        foreach ($appointments as $appointment) {
-            try {
-                // Require patient email to send
-                if (!$appointment->patient || empty($appointment->patient->email)) {
-                    $skipped++;
-                    continue;
+        // Completed based on check_out_time; fallback to updated_at for records without check_out_time.
+        // Only consider appointments that haven't had a submitted/sent survey yet.
+        $query = Appointment::with(['patient', 'doctor', 'department', 'feedbackSurvey'])
+            ->where('status', 'completed')
+            ->where(function ($q) use ($cutoff) {
+                $q->where(function ($q1) use ($cutoff) {
+                    $q1->whereNotNull('check_out_time')
+                       ->where('check_out_time', '<=', $cutoff);
+                })->orWhere(function ($q2) use ($cutoff) {
+                    $q2->whereNull('check_out_time')
+                       ->where('updated_at', '<=', $cutoff);
+                });
+            })
+            ->where(function ($q) {
+                $q->whereDoesntHave('feedbackSurvey')
+                  ->orWhereHas('feedbackSurvey', function ($sq) {
+                      $sq->whereNull('sent_at')
+                         ->whereNull('submitted_at');
+                  });
+            })
+            ->orderBy('id');
+
+        $foundAny = false;
+        $query->chunkById(200, function ($appointments) use (&$sent, &$skipped, &$failed, &$foundAny) {
+            $foundAny = $foundAny || $appointments->isNotEmpty();
+
+            foreach ($appointments as $appointment) {
+                try {
+                    // Require patient email to send
+                    if (!$appointment->patient || empty($appointment->patient->email)) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    // Create or fetch survey + ensure snapshot exists
+                    $survey = $this->feedbackService->createSurveyForAppointment($appointment);
+                    if (!$survey) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    // Skip if already submitted (don’t bother patients)
+                    if ($survey->submitted_at) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    // Skip if already sent
+                    if ($survey->sent_at) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    $this->sendSurveyEmail($survey);
+                    $survey->sent_at = now();
+                    $survey->save();
+
+                    $sent++;
+                } catch (\Exception $e) {
+                    $failed++;
+                    Log::error('Failed to send feedback request', [
+                        'appointment_id' => $appointment->id,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
-
-                // Create or fetch survey + ensure snapshot exists
-                $survey = $this->feedbackService->createSurveyForAppointment($appointment);
-                if (!$survey) {
-                    $skipped++;
-                    continue;
-                }
-
-                // Skip if already submitted (don’t bother patients)
-                if ($survey->submitted_at) {
-                    $skipped++;
-                    continue;
-                }
-
-                // Skip if already sent
-                if ($survey->sent_at) {
-                    $skipped++;
-                    continue;
-                }
-
-                $this->sendSurveyEmail($survey);
-                $survey->sent_at = now();
-                $survey->save();
-
-                $sent++;
-            } catch (\Exception $e) {
-                $failed++;
-                Log::error('Failed to send feedback request', [
-                    'appointment_id' => $appointment->id,
-                    'error' => $e->getMessage(),
-                ]);
             }
+        });
+
+        if (!$foundAny) {
+            $this->info('No eligible completed appointments found.');
+            return 0;
         }
 
         $this->info("Done. Sent: {$sent}, Skipped: {$skipped}, Failed: {$failed}");
         return 0;
+    }
+
+    protected function resolveDelayMinutes(): int
+    {
+        $optDelay = $this->option('delay-minutes');
+        if ($optDelay !== null && $optDelay !== '') {
+            $m = (int) $optDelay;
+            return max(1, min(4320, $m));
+        }
+
+        $optDays = $this->option('days');
+        if ($optDays !== null && $optDays !== '') {
+            $d = (int) $optDays;
+            $m = max(1, $d) * 1440;
+            return max(1, min(4320, $m));
+        }
+
+        // Admin setting (DB) overrides env/config
+        try {
+            $settings = Setting::getGroup('patient_feedback');
+            $m = (int) ($settings['patient_feedback_delay_minutes'] ?? 0);
+            if ($m > 0) {
+                return max(1, min(4320, $m));
+            }
+        } catch (\Exception $e) {
+            // Ignore DB issues; fall back to config
+        }
+
+        $m = (int) config('hospital.notifications.patient_feedback.delay_minutes', 0);
+        if ($m > 0) {
+            return max(1, min(4320, $m));
+        }
+
+        $days = (int) config('hospital.notifications.patient_feedback.days_after_completion', 2);
+        $m = ($days > 0 ? $days : 2) * 1440;
+        return max(1, min(4320, $m));
     }
 
     protected function sendSurveyEmail(PatientFeedbackSurvey $survey): void

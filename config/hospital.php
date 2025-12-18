@@ -97,6 +97,8 @@ return [
 
         'patient_feedback' => [
             'enabled' => env('NOTIFY_PATIENT_FEEDBACK', true),
+            // Prefer minutes-based delay if set; otherwise fall back to days_after_completion
+            'delay_minutes' => (int) env('PATIENT_FEEDBACK_DELAY_MINUTES', 0),
             'days_after_completion' => (int) env('PATIENT_FEEDBACK_DAYS_AFTER_COMPLETION', 2),
         ],
     ],

@@ -36,10 +36,10 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping()
                  ->runInBackground();
 
-        // Send patient feedback forms 2 days after completed consultations
-        $daysAfterCompletion = (int) config('hospital.notifications.patient_feedback.days_after_completion', 2);
-        $schedule->command('appointments:send-feedback-requests --days=' . $daysAfterCompletion)
-                 ->dailyAt('10:30')
+        // Send patient feedback forms after completed consultations (delay is configurable in Admin > Settings > Patient Feedback)
+        // Run frequently so "1 minute" test delays work.
+        $schedule->command('appointments:send-feedback-requests')
+                 ->everyMinute()
                  ->timezone(config('app.timezone', 'UTC'))
                  ->withoutOverlapping()
                  ->runInBackground();

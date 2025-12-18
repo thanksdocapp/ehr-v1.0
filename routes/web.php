@@ -933,6 +933,10 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/settings/integrations', [\App\Http\Controllers\Admin\SettingsController::class, 'updateIntegrations'])->name('settings.integrations.update');
         Route::post('/settings/whereby/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testWherebyConnection'])->name('settings.whereby.test');
 
+        // Patient Feedback Settings
+        Route::get('/settings/patient-feedback', [\App\Http\Controllers\Admin\SettingsController::class, 'patientFeedback'])->name('settings.patient-feedback');
+        Route::post('/settings/patient-feedback', [\App\Http\Controllers\Admin\SettingsController::class, 'updatePatientFeedback'])->name('settings.patient-feedback.update');
+
         // Role-Based Menu Visibility
         Route::get('/settings/role-menu-visibility', [\App\Http\Controllers\Admin\RoleMenuVisibilityController::class, 'index'])->name('role-menu-visibility.index');
         Route::post('/settings/role-menu-visibility', [\App\Http\Controllers\Admin\RoleMenuVisibilityController::class, 'store'])->name('role-menu-visibility.store');
