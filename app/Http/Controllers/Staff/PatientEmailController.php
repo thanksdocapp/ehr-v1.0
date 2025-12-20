@@ -89,12 +89,23 @@ class PatientEmailController extends Controller
                 'date_sent' => now()->format('F j, Y'),
             ];
 
-            // Send email using Mailable
-            Mail::to($patient->email, $patient->full_name)
-                ->send(new PatientEmail($emailData));
+            // Configure SMTP from database before sending
+            try {
+                $this->configureMailFromDatabase();
+            } catch (Exception $smtpConfigException) {
+                Log::warning('Failed to configure SMTP from database, using default config', [
+                    'error' => $smtpConfigException->getMessage(),
+                ]);
+                // Continue with default mail configuration
+            }
 
-            // Log email
-            $emailLog = EmailLog::create([
+            // Send email using Mailable
+            try {
+                Mail::to($patient->email, $patient->full_name)
+                    ->send(new PatientEmail($emailData));
+
+                // Log email
+                $emailLog = EmailLog::create([
                 'recipient_email' => $patient->email,
                 'recipient_name' => $patient->full_name,
                 'subject' => $request->subject,
@@ -120,8 +131,51 @@ class PatientEmailController extends Controller
                 'email_log_id' => $emailLog->id,
             ]);
 
-            return redirect()->route('staff.patient-email.compose')
-                ->with('success', 'Email sent successfully to ' . $patient->full_name . '.');
+                return redirect()->route('staff.patient-email.compose')
+                    ->with('success', 'Email sent successfully to ' . $patient->full_name . '.');
+
+            } catch (\Symfony\Component\Mailer\Exception\TransportExceptionInterface $transportException) {
+                // SMTP connection error
+                $errorMessage = $transportException->getMessage();
+                
+                // Provide user-friendly error message
+                if (str_contains($errorMessage, 'Connection could not be established') || 
+                    str_contains($errorMessage, 'getaddrinfo') ||
+                    str_contains($errorMessage, 'No such host')) {
+                    $userMessage = 'Email sending failed: Unable to connect to the email server. Please check your SMTP settings in Admin > Settings > Email Configuration and ensure the SMTP host is correct and accessible.';
+                } else {
+                    $userMessage = 'Failed to send email: ' . $errorMessage;
+                }
+
+                // Log failed email attempt
+                try {
+                    EmailLog::create([
+                        'recipient_email' => $patient->email,
+                        'recipient_name' => $patient->full_name,
+                        'subject' => $request->subject,
+                        'body' => $request->body,
+                        'status' => 'failed',
+                        'error_message' => $errorMessage,
+                        'patient_id' => $patient->id,
+                        'metadata' => [
+                            'doctor_id' => $doctor->id,
+                            'error_type' => 'transport_exception',
+                        ],
+                        'email_type' => 'patient_communication',
+                    ]);
+                } catch (Exception $logException) {
+                    // Ignore logging errors
+                }
+
+                Log::error('Failed to send patient email - SMTP transport error', [
+                    'patient_id' => $patient->id,
+                    'doctor_id' => $doctor->id,
+                    'error' => $errorMessage,
+                    'trace' => $transportException->getTraceAsString(),
+                ]);
+
+                return back()->withErrors(['error' => $userMessage])->withInput();
+            }
 
         } catch (Exception $e) {
             Log::error('Failed to send patient email', [
