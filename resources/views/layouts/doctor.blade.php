@@ -2126,9 +2126,13 @@
                             $route = route('staff.lab-reports.index');
                             $isActive = request()->routeIs('staff.lab-reports.*');
                             break;
-                        case 'document-templates':
-                            $route = route('staff.templates.index');
-                            $isActive = request()->routeIs('staff.templates.*') || request()->routeIs('staff.generated-documents.*') || request()->routeIs('staff.document-templates.*') || request()->routeIs('staff.patients.documents.*');
+                        case 'letter-templates':
+                            $route = route('staff.templates.index', ['type' => 'letter']);
+                            $isActive = request()->routeIs('staff.templates.*') && request('type') === 'letter';
+                            break;
+                        case 'form-templates':
+                            $route = route('staff.templates.index', ['type' => 'form']);
+                            $isActive = request()->routeIs('staff.templates.*') && request('type') === 'form';
                             break;
                         case 'form-requests':
                         case 'form-submissions':
