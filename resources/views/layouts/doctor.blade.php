@@ -2085,6 +2085,9 @@
 
         <nav class="doctor-nav-section">
             <div class="doctor-nav-title">Main Menu</div>
+            @php
+                $userRole = auth()->user()->role ?? 'doctor';
+            @endphp
             @foreach($mainMenuItems as $item)
                 @php
                     $menuKey = $item['menu_key'] ?? '';
