@@ -121,7 +121,7 @@
                     <li>
                         <a class="dropdown-item {{ request()->routeIs('staff.generated-documents.*') ? 'active' : '' }}" 
                            href="{{ route('staff.generated-documents.index') }}">
-                            <i class="fas fa-file-pdf me-2"></i>My Documents
+                            <i class="fas fa-file-pdf me-2"></i>View Documents
                         </a>
                     </li>
                     @if($isLetterTemplatesVisible)

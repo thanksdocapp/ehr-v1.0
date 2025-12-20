@@ -2185,13 +2185,12 @@
                                title="{{ $label }}">
                                 <i class="{{ $icon }} doctor-nav-icon" aria-hidden="true"></i>
                                 <span class="doctor-nav-text">{{ $label }}</span>
-                                <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
                             </a>
                             <ul class="dropdown-menu">
                                 <li>
                                     <a class="dropdown-item {{ request()->routeIs('staff.generated-documents.*') ? 'active' : '' }}" 
                                        href="{{ route('staff.generated-documents.index') }}">
-                                        <i class="fas fa-file-pdf me-2"></i>My Documents
+                                        <i class="fas fa-file-pdf me-2"></i>View Documents
                                     </a>
                                 </li>
                                 @if($isLetterTemplatesVisible)
