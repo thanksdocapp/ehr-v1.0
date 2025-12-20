@@ -93,7 +93,7 @@
 
         <!-- Body -->
         <div class="email-body">
-            {!! nl2br(e($emailData['body'])) !!}
+            {!! $emailData['body'] !!}
         </div>
 
         <!-- Footer -->

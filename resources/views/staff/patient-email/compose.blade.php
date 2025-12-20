@@ -192,8 +192,21 @@
 @endsection
 
 @push('scripts')
+<script src="{{ getTinyMceCdnUrl() }}" referrerpolicy="origin"></script>
 <script>
 $(document).ready(function() {
+    // Initialize TinyMCE for rich text email body
+    tinymce.init({
+        selector: '#body',
+        height: 400,
+        menubar: false,
+        plugins: 'lists link table code',
+        toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | table | code',
+        content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }',
+        branding: false,
+        promotion: false,
+    });
+
     // Patient search functionality (client-side filtering)
     (function initPatientSelectSearch() {
         const select = document.getElementById('patient_id');
