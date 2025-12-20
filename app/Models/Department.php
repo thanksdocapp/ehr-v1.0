@@ -17,6 +17,7 @@ class Department extends Model
         'description',
         'icon',
         'image',
+        'logo',
         'color',
         'head_of_department',
         'location',
@@ -130,6 +131,47 @@ class Department extends Model
                 'app/public/departments/' . $imagePath,
                 'app/public/' . $imagePath,
                 'app/public/uploads/departments/' . $imagePath,
+            ];
+            
+            foreach ($storagePaths as $storagePath) {
+                if (file_exists(storage_path($storagePath))) {
+                    return url('storage-access/' . str_replace('app/public/', '', $storagePath));
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Get the logo URL attribute.
+     */
+    public function getLogoUrlAttribute()
+    {
+        if ($this->logo) {
+            // Clean the logo path
+            $logoPath = ltrim($this->logo, '/');
+            
+            // Primary paths with symlink
+            $symlinkPaths = [
+                'storage/departments/logos/' . $logoPath,
+                'storage/departments/' . $logoPath,
+                'storage/' . $logoPath,
+                'storage/uploads/departments/logos/' . $logoPath,
+            ];
+            
+            foreach ($symlinkPaths as $symlinkPath) {
+                if (file_exists(public_path($symlinkPath))) {
+                    return asset($symlinkPath);
+                }
+            }
+            
+            // Fallback for shared hosting without symlinks
+            $storagePaths = [
+                'app/public/departments/logos/' . $logoPath,
+                'app/public/departments/' . $logoPath,
+                'app/public/' . $logoPath,
+                'app/public/uploads/departments/logos/' . $logoPath,
             ];
             
             foreach ($storagePaths as $storagePath) {

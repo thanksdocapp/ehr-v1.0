@@ -194,6 +194,7 @@ class RoleMenuVisibility extends Model
                 'letter-templates' => ['label' => 'Letter Templates', 'icon' => 'fa-envelope', 'order' => 8.1, 'is_submenu' => true, 'parent' => 'my-documents'],
                 'form-templates' => ['label' => 'Form Templates', 'icon' => 'fa-file-alt', 'order' => 8.2, 'is_submenu' => true, 'parent' => 'my-documents'],
                 'form-submissions' => ['label' => 'Form Submissions', 'icon' => 'fa-clipboard-check', 'order' => 9],
+                'patient-email' => ['label' => 'Send Email', 'icon' => 'fa-envelope', 'order' => 10],
                 'alerts' => ['label' => 'Patient Alerts', 'icon' => 'fa-exclamation-triangle', 'order' => 11],
                 'billing' => ['label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'order' => 12],
                 'feedback' => ['label' => 'Patient Feedback', 'icon' => 'fa-comment-dots', 'order' => 13],
@@ -279,6 +280,7 @@ class RoleMenuVisibility extends Model
                 'letter-templates' => true,
                 'form-templates' => true,
                 'form-submissions' => true,
+                'patient-email' => true,
                 'alerts' => true,
                 'billing' => false, // Doctors typically don't manage billing
                 'feedback' => true,

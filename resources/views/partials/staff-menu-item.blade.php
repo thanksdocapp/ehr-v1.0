@@ -145,6 +145,17 @@
         </div>
         @break
 
+    @case('patient-email')
+        <div class="nav-item">
+            <a href="{{ route('staff.patient-email.compose') }}" 
+               class="nav-link {{ request()->routeIs('staff.patient-email.*') ? 'active' : '' }} {{ $isForced2FASetup ? 'disabled' : '' }}"
+               @if($isForced2FASetup) onclick="event.preventDefault(); alert('Navigation is locked. Please complete 2FA setup first.'); return false;" style="opacity: 0.5; cursor: not-allowed; pointer-events: none;" @endif>
+                <i class="nav-icon fas {{ $icon }}"></i>
+                <span class="nav-text">{{ $label }}</span>
+            </a>
+        </div>
+        @break
+
     @case('billing')
         <div class="nav-item">
             <a href="{{ route('staff.billing.index') }}" 
