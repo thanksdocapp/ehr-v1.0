@@ -186,41 +186,21 @@
         </div>
         @break
 
-    @case('document-templates')
+    @case('letter-templates')
         <div class="menu-item">
-            <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.document-templates.*') || request()->routeIs('admin.document-settings.*') || request()->routeIs('admin.patients.documents.*') || request()->routeIs('admin.templates.*') || request()->routeIs('admin.generated-documents.*') || request()->routeIs('admin.form-requests.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-                    <i class="menu-icon fas {{ $icon }}"></i>
-                    <span class="menu-text">{{ $label }}</span>
-                </a>
-                <div class="dropdown-menu">
-                    <h6 class="dropdown-header">Templates</h6>
-                    <a class="dropdown-item {{ request()->routeIs('admin.templates.index') && request('type') === 'letter' ? 'active' : '' }}" href="{{ route('admin.templates.index', ['type' => 'letter']) }}">
-                        <i class="fas fa-envelope me-2"></i>Letters Templates
-                    </a>
-                    <a class="dropdown-item {{ request()->routeIs('admin.templates.index') && request('type') === 'form' ? 'active' : '' }}" href="{{ route('admin.templates.index', ['type' => 'form']) }}">
-                        <i class="fas fa-clipboard-list me-2"></i>Forms Templates
-                    </a>
-                    <a class="dropdown-item {{ request()->routeIs('admin.templates.index') && !request('type') ? 'active' : '' }}" href="{{ route('admin.templates.index') }}">
-                        <i class="fas fa-layer-group me-2"></i>All Templates
-                    </a>
-                    <a class="dropdown-item {{ request()->routeIs('admin.templates.create') ? 'active' : '' }}" href="{{ route('admin.templates.create') }}">Create Template</a>
-                    <div class="dropdown-divider"></div>
-                    <h6 class="dropdown-header">Generated Documents</h6>
-                    <a class="dropdown-item {{ request()->routeIs('admin.generated-documents.index') ? 'active' : '' }}" href="{{ route('admin.generated-documents.index') }}">All Documents</a>
-                    <a class="dropdown-item {{ request()->routeIs('admin.generated-documents.create') ? 'active' : '' }}" href="{{ route('admin.generated-documents.create') }}">Generate Document</a>
-                    <div class="dropdown-divider"></div>
-                    <h6 class="dropdown-header">Form Submissions</h6>
-                    <a class="dropdown-item {{ request()->routeIs('admin.form-requests.*') ? 'active' : '' }}" href="{{ route('admin.form-requests.index') }}">
-                        <i class="fas fa-clipboard-check me-2"></i>View Submissions
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <h6 class="dropdown-header">Patient Documents</h6>
-                    <a class="dropdown-item {{ request()->routeIs('admin.document-templates.index') ? 'active' : '' }}" href="{{ route('admin.document-templates.index') }}">Document Templates</a>
-                    <a class="dropdown-item {{ request()->routeIs('admin.document-settings.categories') ? 'active' : '' }}" href="{{ route('admin.document-settings.categories') }}">Categories</a>
-                    <a class="dropdown-item {{ request()->routeIs('admin.document-settings.index') ? 'active' : '' }}" href="{{ route('admin.document-settings.index') }}">Settings</a>
-                </div>
-            </div>
+            <a href="{{ route('admin.templates.index', ['type' => 'letter']) }}" class="menu-link {{ request()->routeIs('admin.templates.*') && request('type') === 'letter' ? 'active' : '' }}">
+                <i class="menu-icon fas {{ $icon }}"></i>
+                <span class="menu-text">{{ $label }}</span>
+            </a>
+        </div>
+        @break
+
+    @case('form-templates')
+        <div class="menu-item">
+            <a href="{{ route('admin.templates.index', ['type' => 'form']) }}" class="menu-link {{ request()->routeIs('admin.templates.*') && request('type') === 'form' ? 'active' : '' }}">
+                <i class="menu-icon fas {{ $icon }}"></i>
+                <span class="menu-text">{{ $label }}</span>
+            </a>
         </div>
         @break
 
