@@ -316,6 +316,11 @@ $(document).ready(function() {
             return false;
         }
 
+        // Update TinyMCE content to textarea before submit
+        if (typeof tinymce !== 'undefined' && tinymce.get('body')) {
+            tinymce.get('body').save();
+        }
+
         // Show loading state
         const sendBtn = $('#sendBtn');
         const originalHtml = sendBtn.html();
