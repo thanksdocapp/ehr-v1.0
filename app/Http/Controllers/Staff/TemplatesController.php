@@ -29,7 +29,12 @@ class TemplatesController extends Controller
     public function create()
     {
         $this->authorize('create', Template::class);
-        return view('staff.templates.create');
+        $type = request()->get('type', 'letter');
+        if (!in_array($type, ['letter', 'form'], true)) {
+            $type = 'letter';
+        }
+
+        return view('staff.templates.create', compact('type'));
     }
 
     public function store(Request $request)

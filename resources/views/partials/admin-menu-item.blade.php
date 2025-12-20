@@ -195,7 +195,15 @@
                 </a>
                 <div class="dropdown-menu">
                     <h6 class="dropdown-header">Templates</h6>
-                    <a class="dropdown-item {{ request()->routeIs('admin.templates.index') ? 'active' : '' }}" href="{{ route('admin.templates.index') }}">All Templates</a>
+                    <a class="dropdown-item {{ request()->routeIs('admin.templates.index') && request('type') === 'letter' ? 'active' : '' }}" href="{{ route('admin.templates.index', ['type' => 'letter']) }}">
+                        <i class="fas fa-envelope me-2"></i>Letters Templates
+                    </a>
+                    <a class="dropdown-item {{ request()->routeIs('admin.templates.index') && request('type') === 'form' ? 'active' : '' }}" href="{{ route('admin.templates.index', ['type' => 'form']) }}">
+                        <i class="fas fa-clipboard-list me-2"></i>Forms Templates
+                    </a>
+                    <a class="dropdown-item {{ request()->routeIs('admin.templates.index') && !request('type') ? 'active' : '' }}" href="{{ route('admin.templates.index') }}">
+                        <i class="fas fa-layer-group me-2"></i>All Templates
+                    </a>
                     <a class="dropdown-item {{ request()->routeIs('admin.templates.create') ? 'active' : '' }}" href="{{ route('admin.templates.create') }}">Create Template</a>
                     <div class="dropdown-divider"></div>
                     <h6 class="dropdown-header">Generated Documents</h6>

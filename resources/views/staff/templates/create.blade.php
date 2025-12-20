@@ -37,8 +37,9 @@
                         <div class="mb-3">
                             <label for="type" class="form-label">Type <span class="text-danger">*</span></label>
                             <select class="form-control @error('type') is-invalid @enderror" id="type" name="type" required>
-                                <option value="letter" {{ old('type') == 'letter' ? 'selected' : '' }}>Letter</option>
-                                <option value="form" {{ old('type') == 'form' ? 'selected' : '' }}>Form</option>
+                                @php $selectedType = old('type', $type ?? 'letter'); @endphp
+                                <option value="letter" {{ $selectedType == 'letter' ? 'selected' : '' }}>Letter</option>
+                                <option value="form" {{ $selectedType == 'form' ? 'selected' : '' }}>Form</option>
                             </select>
                             @error('type')
                                 <div class="invalid-feedback">{{ $message }}</div>

@@ -19,9 +19,14 @@
                         <i class="fas fa-file-pdf me-2"></i>My Documents
                     </a>
                     @can('create', \App\Models\Template::class)
-                    <a href="{{ route('staff.templates.create') }}" class="btn btn-doctor-primary">
-                        <i class="fas fa-plus me-2"></i>Create Template
-                    </a>
+                    <div class="btn-group">
+                        <a href="{{ route('staff.templates.create', ['type' => 'letter']) }}" class="btn btn-doctor-primary">
+                            <i class="fas fa-plus me-2"></i>Create Letter
+                        </a>
+                        <a href="{{ route('staff.templates.create', ['type' => 'form']) }}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>Create Form
+                        </a>
+                    </div>
                     @endcan
                 </div>
             </div>
@@ -38,6 +43,26 @@
     <!-- Filters -->
     <div class="doctor-card mb-4">
         <div class="doctor-card-body">
+            @php
+                $baseQuery = request()->except(['page', 'type']);
+                $allUrl = route('staff.templates.index', array_merge($baseQuery, ['type' => null]));
+                $lettersUrl = route('staff.templates.index', array_merge($baseQuery, ['type' => 'letter']));
+                $formsUrl = route('staff.templates.index', array_merge($baseQuery, ['type' => 'form']));
+                $activeType = request('type');
+            @endphp
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a href="{{ $allUrl }}" class="btn btn-sm {{ empty($activeType) ? 'btn-doctor-primary' : 'btn-outline-secondary' }}">
+                    <i class="fas fa-layer-group me-1"></i>All
+                </a>
+                <a href="{{ $lettersUrl }}" class="btn btn-sm {{ $activeType === 'letter' ? 'btn-doctor-primary' : 'btn-outline-secondary' }}">
+                    <i class="fas fa-envelope me-1"></i>Letters
+                </a>
+                <a href="{{ $formsUrl }}" class="btn btn-sm {{ $activeType === 'form' ? 'btn-doctor-primary' : 'btn-outline-secondary' }}">
+                    <i class="fas fa-clipboard-list me-1"></i>Forms
+                </a>
+            </div>
+
             <form method="GET" action="{{ route('staff.templates.index') }}" id="templateSearchForm">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-5">
