@@ -36,10 +36,10 @@ class PatientEmail extends Mailable
         
         $senderName = $this->emailData['clinic_name'] ?? config('app.name', 'Clinic');
 
+        // Omit replyTo to prevent replies (no reply-to header will be set)
         return new Envelope(
             subject: $this->emailData['subject'],
             from: $senderEmail,
-            replyTo: null, // Prevent replies by default
         );
     }
 
