@@ -29,6 +29,17 @@ class SendPatientFeedbackRequests extends Command
 
     public function handle(): int
     {
+        // DB toggle overrides env/config (Admin > Settings > Patient Feedback)
+        try {
+            $settings = Setting::getGroup('patient_feedback');
+            if (array_key_exists('patient_feedback_enabled', $settings) && !$settings['patient_feedback_enabled']) {
+                $this->info('Patient feedback requests are disabled in settings.');
+                return 0;
+            }
+        } catch (\Exception $e) {
+            // Ignore DB issues; fall back to config
+        }
+
         if (!config('hospital.notifications.patient_feedback.enabled', true)) {
             $this->info('Patient feedback requests are disabled in configuration.');
             return 0;

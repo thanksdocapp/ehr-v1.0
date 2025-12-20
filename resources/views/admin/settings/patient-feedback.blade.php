@@ -40,7 +40,18 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-8">
+        <div class="col-md-4">
+            <div class="stat-card-enhanced">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper"><i class="fas fa-paper-plane"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ ($enabled ?? true) ? 'On' : 'Off' }}</div>
+                        <div class="stat-label">Auto-send</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
             <div class="modern-card">
                 <div class="modern-card-body">
                     <div class="text-muted small">
@@ -56,15 +67,35 @@
         // Suggest a friendly default in the form
         $formUnit = old('delay_unit', $delayMinutes % 1440 === 0 ? 'days' : ($delayMinutes % 60 === 0 ? 'hours' : 'minutes'));
         $formValue = (int) old('delay_value', $formUnit === 'days' ? max(1, (int) round($delayMinutes / 1440)) : ($formUnit === 'hours' ? max(1, (int) round($delayMinutes / 60)) : max(1, $delayMinutes)));
+        $formEnabled = (bool) old('enabled', ($enabled ?? true) ? '1' : '0');
     @endphp
 
     <div class="modern-card">
         <div class="modern-card-header">
-            <h5 class="modern-card-title mb-0"><i class="fas fa-sliders-h"></i>Automatic Send Delay</h5>
+            <h5 class="modern-card-title mb-0"><i class="fas fa-sliders-h"></i>Automatic Sending</h5>
         </div>
         <div class="modern-card-body">
             <form method="POST" action="{{ route('admin.settings.patient-feedback.update') }}">
                 @csrf
+
+                <input type="hidden" name="enabled" value="0">
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <div>
+                        <div class="fw-semibold">Enable automatic sending</div>
+                        <div class="text-muted small">Turn this off to stop sending feedback emails (existing surveys remain accessible).</div>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input @error('enabled') is-invalid @enderror"
+                               type="checkbox"
+                               role="switch"
+                               id="patient_feedback_enabled"
+                               name="enabled"
+                               value="1"
+                               {{ $formEnabled ? 'checked' : '' }}>
+                        <label class="form-check-label" for="patient_feedback_enabled">Enabled</label>
+                    </div>
+                </div>
 
                 <div class="row g-3 align-items-end">
                     <div class="col-md-4">

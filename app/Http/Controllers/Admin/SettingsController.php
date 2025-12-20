@@ -2279,6 +2279,11 @@ class SettingsController extends Controller
     {
         $settings = Setting::getGroup('patient_feedback');
 
+        $enabled = $settings['patient_feedback_enabled'] ?? null;
+        if ($enabled === null) {
+            $enabled = (bool) config('hospital.notifications.patient_feedback.enabled', true);
+        }
+
         $delayMinutes = (int) ($settings['patient_feedback_delay_minutes'] ?? 0);
         if ($delayMinutes <= 0) {
             $delayMinutes = (int) config('hospital.notifications.patient_feedback.delay_minutes', 0);
@@ -2291,7 +2296,7 @@ class SettingsController extends Controller
         // Clamp: 1 minute to 3 days
         $delayMinutes = max(1, min(4320, $delayMinutes));
 
-        return view('admin.settings.patient-feedback', compact('delayMinutes'));
+        return view('admin.settings.patient-feedback', compact('delayMinutes', 'enabled'));
     }
 
     /**
@@ -2301,6 +2306,7 @@ class SettingsController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
+                'enabled' => 'nullable|in:0,1',
                 'delay_value' => 'required|integer|min:1|max:4320',
                 'delay_unit' => 'required|in:minutes,hours,days',
             ]);
@@ -2309,6 +2315,7 @@ class SettingsController extends Controller
                 return back()->withErrors($validator)->withInput();
             }
 
+            $enabled = $request->input('enabled', '0') === '1';
             $value = (int) $request->input('delay_value');
             $unit = (string) $request->input('delay_unit');
 
@@ -2334,8 +2341,17 @@ class SettingsController extends Controller
                 'Minutes after consultation completion before sending the patient feedback form'
             );
 
+            Setting::set(
+                'patient_feedback_enabled',
+                $enabled ? '1' : '0',
+                'boolean',
+                'patient_feedback',
+                'Enable/disable automatic sending of patient feedback requests'
+            );
+
             Cache::forget('settings_group_patient_feedback');
             Cache::forget('setting_patient_feedback_delay_minutes');
+            Cache::forget('setting_patient_feedback_enabled');
 
             return back()->with('success', 'Patient feedback settings updated successfully.');
         } catch (\Exception $e) {
