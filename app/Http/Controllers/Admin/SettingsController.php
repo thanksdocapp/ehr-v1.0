@@ -13,7 +13,9 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
+use Illuminate\\Support\\Facades\\DB;
+use Illuminate\\Support\\Facades\\Log;
+use Illuminate\\Support\\Facades\\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -120,7 +122,7 @@ class SettingsController extends Controller
             return back()->with('success', 'General settings updated successfully');
 
         } catch (\Exception $e) {
-            \Log::error('Error updating general settings: ' . $e->getMessage());
+            Log::error('Error updating general settings: ' . $e->getMessage());
             return back()->with('error', 'Failed to update settings: ' . $e->getMessage())->withInput();
         }
     }
@@ -140,30 +142,30 @@ class SettingsController extends Controller
                 $logoPath = public_path('assets/images/logos');
             }
             
-            \Log::info('Using logo path: ' . $logoPath);
+            Log::info('Using logo path: ' . $logoPath);
             
             if (!file_exists($logoPath)) {
                 if (!mkdir($logoPath, 0755, true)) {
-                    \Log::error('Failed to create logo directory: ' . $logoPath);
+                    Log::error('Failed to create logo directory: ' . $logoPath);
                     throw new \Exception('Unable to create logo directory');
                 }
             }
             
             // Ensure directory is writable
             if (!is_writable($logoPath)) {
-                \Log::error('Logo directory is not writable: ' . $logoPath);
+                Log::error('Logo directory is not writable: ' . $logoPath);
                 throw new \Exception('Logo directory is not writable');
             }
             
             // Handle light logo upload
             if ($request->hasFile('logo_light')) {
-                \Log::info('Processing light logo upload');
+                Log::info('Processing light logo upload');
                 
                 $lightLogo = $request->file('logo_light');
                 
                 // Validate file
                 if (!$lightLogo->isValid()) {
-                    \Log::error('Light logo file is not valid: ' . $lightLogo->getErrorMessage());
+                    Log::error('Light logo file is not valid: ' . $lightLogo->getErrorMessage());
                     throw new \Exception('Light logo file is invalid: ' . $lightLogo->getErrorMessage());
                 }
                 
@@ -171,7 +173,7 @@ class SettingsController extends Controller
                 $lightLogoPath = 'assets/images/logos/' . $lightLogoName;
                 $fullPath = $logoPath . '/' . $lightLogoName;
                 
-                \Log::info('Light logo details: ' . json_encode([
+                Log::info('Light logo details: ' . json_encode([
                     'original_name' => $lightLogo->getClientOriginalName(),
                     'size' => $lightLogo->getSize(),
                     'mime' => $lightLogo->getMimeType(),
@@ -183,67 +185,67 @@ class SettingsController extends Controller
                 $oldLightLogo = $fullPath;
                 if (file_exists($oldLightLogo)) {
                     if (!unlink($oldLightLogo)) {
-                        \Log::warning('Failed to delete old light logo: ' . $oldLightLogo);
+                        Log::warning('Failed to delete old light logo: ' . $oldLightLogo);
                     } else {
-                        \Log::info('Deleted old light logo: ' . $oldLightLogo);
+                        Log::info('Deleted old light logo: ' . $oldLightLogo);
                     }
                 }
                 
                 // Log pre-move status
-                \Log::info('Pre-move check - Target directory writable: ' . (is_writable($logoPath) ? 'YES' : 'NO'));
-                \Log::info('Pre-move check - Target directory exists: ' . (is_dir($logoPath) ? 'YES' : 'NO'));
-                \Log::info('Pre-move check - Source file exists: ' . (file_exists($lightLogo->getPathname()) ? 'YES' : 'NO'));
-                \Log::info('Pre-move check - Source file size: ' . filesize($lightLogo->getPathname()) . ' bytes');
+                Log::info('Pre-move check - Target directory writable: ' . (is_writable($logoPath) ? 'YES' : 'NO'));
+                Log::info('Pre-move check - Target directory exists: ' . (is_dir($logoPath) ? 'YES' : 'NO'));
+                Log::info('Pre-move check - Source file exists: ' . (file_exists($lightLogo->getPathname()) ? 'YES' : 'NO'));
+                Log::info('Pre-move check - Source file size: ' . filesize($lightLogo->getPathname()) . ' bytes');
                 
                 // Move the uploaded file
                 $moveResult = $lightLogo->move($logoPath, $lightLogoName);
-                \Log::info('Move operation result: ' . ($moveResult ? 'SUCCESS' : 'FAILED'));
+                Log::info('Move operation result: ' . ($moveResult ? 'SUCCESS' : 'FAILED'));
                 
                 if ($moveResult) {
-                    \Log::info('Light logo move operation returned success');
+                    Log::info('Light logo move operation returned success');
                     
                     // Immediate verification
                     clearstatcache(); // Clear file status cache
                     $fileExists = file_exists($fullPath);
-                    \Log::info('Immediate post-move file check: ' . ($fileExists ? 'EXISTS' : 'NOT FOUND'));
+                    Log::info('Immediate post-move file check: ' . ($fileExists ? 'EXISTS' : 'NOT FOUND'));
                     
                     if ($fileExists) {
                         $actualSize = filesize($fullPath);
-                        \Log::info('Light logo file verified, size: ' . $actualSize . ' bytes');
-                        \Log::info('File permissions: ' . decoct(fileperms($fullPath) & 0777));
+                        Log::info('Light logo file verified, size: ' . $actualSize . ' bytes');
+                        Log::info('File permissions: ' . decoct(fileperms($fullPath) & 0777));
                         
                         // Save to both Setting and SiteSetting models for frontend compatibility
                         Setting::set('logo_light', $lightLogoPath, 'string', 'general');
                         \App\Models\SiteSetting::set('site_logo', $lightLogoPath, 'Site Logo');
                         
-                        \Log::info('Light logo settings saved: ' . $lightLogoPath);
+                        Log::info('Light logo settings saved: ' . $lightLogoPath);
                     } else {
                         // Additional debugging for missing file
                         $dirListing = scandir($logoPath);
-                        \Log::error('Light logo file was not created after move');
-                        \Log::error('Directory contents after move: ' . json_encode($dirListing));
-                        \Log::error('Expected file path: ' . $fullPath);
-                        \Log::error('Logo directory: ' . $logoPath);
-                        \Log::error('File name: ' . $lightLogoName);
+                        Log::error('Light logo file was not created after move');
+                        Log::error('Directory contents after move: ' . json_encode($dirListing));
+                        Log::error('Expected file path: ' . $fullPath);
+                        Log::error('Logo directory: ' . $logoPath);
+                        Log::error('File name: ' . $lightLogoName);
                         throw new \Exception('Light logo upload failed - file not found after move');
                     }
                 } else {
                     $phpError = error_get_last();
-                    \Log::error('Failed to move light logo file');
-                    \Log::error('PHP error details: ' . json_encode($phpError));
+                    Log::error('Failed to move light logo file');
+                    Log::error('PHP error details: ' . json_encode($phpError));
                     throw new \Exception('Failed to move light logo file: ' . ($phpError['message'] ?? 'Unknown error'));
                 }
             }
             
             // Handle dark logo upload
             if ($request->hasFile('logo_dark')) {
-                \Log::info('Processing dark logo upload');
+                Log::info('Processing dark logo upload');
                 
                 $darkLogo = $request->file('logo_dark');
                 
                 // Validate file
                 if (!$darkLogo->isValid()) {
-                    \Log::error('Dark logo file is not valid: ' . $darkLogo->getErrorMessage());
+                    Log::error('Dark logo file is not valid: ' . $darkLogo->getErrorMessage());
                     throw new \Exception('Dark logo file is invalid: ' . $darkLogo->getErrorMessage());
                 }
                 
@@ -251,7 +253,7 @@ class SettingsController extends Controller
                 $darkLogoPath = 'assets/images/logos/' . $darkLogoName;
                 $fullPath = $logoPath . '/' . $darkLogoName;
                 
-                \Log::info('Dark logo details: ' . json_encode([
+                Log::info('Dark logo details: ' . json_encode([
                     'original_name' => $darkLogo->getClientOriginalName(),
                     'size' => $darkLogo->getSize(),
                     'mime' => $darkLogo->getMimeType(),
@@ -263,44 +265,44 @@ class SettingsController extends Controller
                 $oldDarkLogo = $fullPath;
                 if (file_exists($oldDarkLogo)) {
                     if (!unlink($oldDarkLogo)) {
-                        \Log::warning('Failed to delete old dark logo: ' . $oldDarkLogo);
+                        Log::warning('Failed to delete old dark logo: ' . $oldDarkLogo);
                     } else {
-                        \Log::info('Deleted old dark logo: ' . $oldDarkLogo);
+                        Log::info('Deleted old dark logo: ' . $oldDarkLogo);
                     }
                 }
                 
                 // Move the uploaded file
                 if ($darkLogo->move($logoPath, $darkLogoName)) {
-                    \Log::info('Dark logo moved successfully to: ' . $fullPath);
+                    Log::info('Dark logo moved successfully to: ' . $fullPath);
                     
                     // Verify file was created
                     if (file_exists($fullPath)) {
-                        \Log::info('Dark logo file verified, size: ' . filesize($fullPath) . ' bytes');
+                        Log::info('Dark logo file verified, size: ' . filesize($fullPath) . ' bytes');
                         
                         // Save to both Setting and SiteSetting models
                         Setting::set('logo_dark', $darkLogoPath, 'string', 'general');
                         \App\Models\SiteSetting::set('site_logo_dark', $darkLogoPath, 'Site Logo Dark');
                         
-                        \Log::info('Dark logo settings saved: ' . $darkLogoPath);
+                        Log::info('Dark logo settings saved: ' . $darkLogoPath);
                     } else {
-                        \Log::error('Dark logo file was not created after move');
+                        Log::error('Dark logo file was not created after move');
                         throw new \Exception('Dark logo upload failed - file not found after move');
                     }
                 } else {
-                    \Log::error('Failed to move dark logo file');
+                    Log::error('Failed to move dark logo file');
                     throw new \Exception('Failed to move dark logo file');
                 }
             }
             
             // Handle favicon upload
             if ($request->hasFile('favicon')) {
-                \Log::info('Processing favicon upload');
+                Log::info('Processing favicon upload');
                 
                 $favicon = $request->file('favicon');
                 
                 // Validate file
                 if (!$favicon->isValid()) {
-                    \Log::error('Favicon file is not valid: ' . $favicon->getErrorMessage());
+                    Log::error('Favicon file is not valid: ' . $favicon->getErrorMessage());
                     throw new \Exception('Favicon file is invalid: ' . $favicon->getErrorMessage());
                 }
                 
@@ -323,7 +325,7 @@ class SettingsController extends Controller
                 
                 $targetPath = $publicPath . '/' . $faviconName;
                 
-                \Log::info('Favicon details: ' . json_encode([
+                Log::info('Favicon details: ' . json_encode([
                     'original_name' => $favicon->getClientOriginalName(),
                     'size' => $favicon->getSize(),
                     'mime' => $favicon->getMimeType(),
@@ -336,28 +338,28 @@ class SettingsController extends Controller
                 
                 // Ensure target directory exists and is writable
                 if (!is_dir($publicPath)) {
-                    \Log::error('Target directory does not exist: ' . $publicPath);
+                    Log::error('Target directory does not exist: ' . $publicPath);
                     throw new \Exception('Target directory does not exist: ' . $publicPath);
                 }
                 
                 if (!is_writable($publicPath)) {
-                    \Log::error('Target directory is not writable: ' . $publicPath);
+                    Log::error('Target directory is not writable: ' . $publicPath);
                     throw new \Exception('Target directory is not writable: ' . $publicPath);
                 }
                 
                 // Delete old favicon if exists
                 if (file_exists($targetPath)) {
                     if (!unlink($targetPath)) {
-                        \Log::warning('Failed to delete old favicon: ' . $targetPath);
+                        Log::warning('Failed to delete old favicon: ' . $targetPath);
                     } else {
-                        \Log::info('Deleted old favicon: ' . $targetPath);
+                        Log::info('Deleted old favicon: ' . $targetPath);
                     }
                 }
                 
                 // Move the uploaded file
                 try {
                     if ($favicon->move($publicPath, $faviconName)) {
-                        \Log::info('Favicon moved successfully to: ' . $targetPath);
+                        Log::info('Favicon moved successfully to: ' . $targetPath);
                         
                         // Verify file was created with a small delay for filesystem
                         clearstatcache(); // Clear file status cache
@@ -365,33 +367,33 @@ class SettingsController extends Controller
                         
                         if (file_exists($targetPath)) {
                             $fileSize = filesize($targetPath);
-                            \Log::info('Favicon file verified, size: ' . $fileSize . ' bytes');
+                            Log::info('Favicon file verified, size: ' . $fileSize . ' bytes');
                             
                             // Save to both Setting and SiteSetting models
                             Setting::set('favicon', $faviconName, 'string', 'general');
                             \App\Models\SiteSetting::set('site_favicon', $faviconName, 'Site Favicon');
                             
-                            \Log::info('Favicon settings saved: ' . $faviconName);
+                            Log::info('Favicon settings saved: ' . $faviconName);
                         } else {
-                            \Log::error('Favicon file was not found after move operation');
-                            \Log::error('Expected path: ' . $targetPath);
-                            \Log::error('Directory contents: ' . json_encode(scandir($publicPath)));
+                            Log::error('Favicon file was not found after move operation');
+                            Log::error('Expected path: ' . $targetPath);
+                            Log::error('Directory contents: ' . json_encode(scandir($publicPath)));
                             throw new \Exception('Favicon upload failed - file not found after move');
                         }
                     } else {
-                        \Log::error('Move operation returned false');
+                        Log::error('Move operation returned false');
                         $phpError = error_get_last();
-                        \Log::error('PHP error: ' . json_encode($phpError));
+                        Log::error('PHP error: ' . json_encode($phpError));
                         throw new \Exception('Failed to move favicon file');
                     }
                 } catch (\Exception $e) {
-                    \Log::error('Exception during favicon move: ' . $e->getMessage());
+                    Log::error('Exception during favicon move: ' . $e->getMessage());
                     throw new \Exception('Favicon upload failed: ' . $e->getMessage());
                 }
             }
             
         } catch (\Exception $e) {
-            \Log::error('Logo upload error: ' . $e->getMessage());
+            Log::error('Logo upload error: ' . $e->getMessage());
             // Don't throw the exception to prevent the entire settings update from failing
             // Instead, you could add a session error message
             session()->flash('warning', 'Logo upload issue: ' . $e->getMessage() . '. Other settings were saved successfully.');
@@ -578,7 +580,7 @@ class SettingsController extends Controller
     {
         try {
             // Log the incoming request for debugging
-            \Log::info('Security settings update request', $request->all());
+            Log::info('Security settings update request', $request->all());
             
             $validator = Validator::make($request->all(), [
                 'login_attempts' => 'required|integer|min:1|max:20',
@@ -601,7 +603,7 @@ class SettingsController extends Controller
             ]);
 
             if ($validator->fails()) {
-                \Log::error('Security settings validation failed', $validator->errors()->toArray());
+                Log::error('Security settings validation failed', $validator->errors()->toArray());
                 return back()->withErrors($validator)->withInput();
             }
 
@@ -625,23 +627,23 @@ class SettingsController extends Controller
                 'enable_device_tracking' => $request->has('enable_device_tracking') ? '1' : '0',
             ];
 
-            \Log::info('Processing security settings', $securitySettings);
+            Log::info('Processing security settings', $securitySettings);
 
             foreach ($securitySettings as $key => $value) {
                 $type = in_array($key, ['login_attempts', 'lockout_duration', 'session_timeout', 'password_expiry', 'min_password_length', 'password_history']) ? 'integer' : 
                        (in_array($key, ['require_uppercase', 'require_lowercase', 'require_numbers', 'require_special_chars', 'force_2fa', 'force_admin_2fa', 'enable_ip_whitelist', 'enable_captcha', 'enable_login_notifications', 'enable_device_tracking']) ? 'boolean' : 'string');
                 
-                \Log::info("Setting: {$key} = {$value} (type: {$type})");
+                Log::info("Setting: {$key} = {$value} (type: {$type})");
                 Setting::set($key, $value, $type, 'security');
             }
 
             Setting::clearCache();
             
-            \Log::info('Security settings updated successfully');
+            Log::info('Security settings updated successfully');
             return back()->with('success', 'Security settings updated successfully!');
             
         } catch (\Exception $e) {
-            \Log::error('Error updating security settings: ' . $e->getMessage());
+            Log::error('Error updating security settings: ' . $e->getMessage());
             return back()->with('error', 'Failed to update security settings: ' . $e->getMessage());
         }
     }
@@ -829,7 +831,7 @@ class SettingsController extends Controller
             return back()->with('success', 'Theme settings updated successfully!');
 
         } catch (\Exception $e) {
-            \Log::error('Error updating appearance settings: ' . $e->getMessage());
+            Log::error('Error updating appearance settings: ' . $e->getMessage());
             return back()->with('error', 'Failed to update theme settings: ' . $e->getMessage());
         }
     }
@@ -871,7 +873,7 @@ class SettingsController extends Controller
             return back()->with('success', 'Maintenance settings updated successfully!');
             
         } catch (\Exception $e) {
-            \Log::error('Error updating maintenance settings: ' . $e->getMessage());
+            Log::error('Error updating maintenance settings: ' . $e->getMessage());
             return back()->with('error', 'Failed to update maintenance settings: ' . $e->getMessage());
         }
     }
@@ -997,7 +999,7 @@ class SettingsController extends Controller
                 ], 500);
             }
         } catch (\Exception $e) {
-            \Log::error('Error creating backup: ' . $e->getMessage());
+            Log::error('Error creating backup: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
@@ -1033,7 +1035,7 @@ class SettingsController extends Controller
             
             if ($returnVar === 0) {
                 // Log the restore operation
-                \DB::table('backup_logs')->insert([
+                DB::table('backup_logs')->insert([
                     'filename' => $filename,
                     'path' => $fullPath,
                     'size' => filesize($fullPath),
@@ -1059,7 +1061,7 @@ class SettingsController extends Controller
     {
         try {
             // Check if backup_logs table exists, if not create basic stats
-            $tableExists = \Schema::hasTable('backup_logs');
+            $tableExists = Schema::hasTable('backup_logs');
             
             if (!$tableExists) {
                 return [
@@ -1070,9 +1072,9 @@ class SettingsController extends Controller
                 ];
             }
             
-            $totalBackups = \DB::table('backup_logs')->where('type', '!=', 'restore')->count();
-            $totalSize = \DB::table('backup_logs')->where('type', '!=', 'restore')->sum('size');
-            $lastBackup = \DB::table('backup_logs')
+            $totalBackups = DB::table('backup_logs')->where('type', '!=', 'restore')->count();
+            $totalSize = DB::table('backup_logs')->where('type', '!=', 'restore')->sum('size');
+            $lastBackup = DB::table('backup_logs')
                 ->where('type', '!=', 'restore')
                 ->orderBy('created_at', 'desc')
                 ->first();
@@ -1097,13 +1099,13 @@ class SettingsController extends Controller
     {
         try {
             // Check if backup_logs table exists
-            $tableExists = \Schema::hasTable('backup_logs');
+            $tableExists = Schema::hasTable('backup_logs');
             
             if (!$tableExists) {
                 return collect([]);
             }
             
-            return \DB::table('backup_logs')
+            return DB::table('backup_logs')
                 ->where('type', '!=', 'restore')
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
@@ -1312,7 +1314,7 @@ class SettingsController extends Controller
 
             return view('admin.settings.system-info', compact('systemInfo'));
         } catch (\Exception $e) {
-            \Log::error('Error in systemInfo method: ' . $e->getMessage());
+            Log::error('Error in systemInfo method: ' . $e->getMessage());
             
             // Return a fallback system info array
             $systemInfo = [
@@ -1732,7 +1734,7 @@ class SettingsController extends Controller
             // 3. Optionally log the termination
             
             // For demo purposes, we'll simulate success
-            \Illuminate\Support\Facades\Log::info("Session {$sessionId} terminated by admin", [
+            \Illuminate\Support\FacadesLog::info("Session {$sessionId} terminated by admin", [
                 'admin_id' => auth('admin')->id(),
                 'session_id' => $sessionId,
                 'timestamp' => now()
@@ -1764,7 +1766,7 @@ class SettingsController extends Controller
             // 2. Delete all sessions except the current admin session
             // 3. Log the mass termination
             
-            \Illuminate\Support\Facades\Log::info('All sessions terminated by admin', [
+            \Illuminate\Support\FacadesLog::info('All sessions terminated by admin', [
                 'admin_id' => auth('admin')->id(),
                 'excluded_session' => $currentAdminSession,
                 'timestamp' => now()
@@ -2019,7 +2021,7 @@ class SettingsController extends Controller
             return back()->with('success', 'Alert settings updated successfully!');
             
         } catch (\Exception $e) {
-            \Log::error('Error updating alert settings: ' . $e->getMessage());
+            Log::error('Error updating alert settings: ' . $e->getMessage());
             return back()->with('error', 'Failed to update alert settings: ' . $e->getMessage());
         }
     }
@@ -2109,7 +2111,7 @@ class SettingsController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            \Log::error('Error generating backup: ' . $e->getMessage());
+            Log::error('Error generating backup: ' . $e->getMessage());
             throw $e;
         }
         
@@ -2126,8 +2128,8 @@ class SettingsController extends Controller
     private function ensureBackupLogsTable()
     {
         try {
-            if (!\Schema::hasTable('backup_logs')) {
-                \Schema::create('backup_logs', function ($table) {
+            if (!Schema::hasTable('backup_logs')) {
+                Schema::create('backup_logs', function ($table) {
                     $table->id();
                     $table->string('filename');
                     $table->string('path');
@@ -2137,10 +2139,10 @@ class SettingsController extends Controller
                     $table->timestamps();
                 });
 
-                \Log::info('Created backup_logs table');
+                Log::info('Created backup_logs table');
             }
         } catch (\Exception $e) {
-            \Log::error('Error creating backup_logs table: ' . $e->getMessage());
+            Log::error('Error creating backup_logs table: ' . $e->getMessage());
             // Continue without the table - we'll just skip logging
         }
     }
@@ -2239,7 +2241,7 @@ class SettingsController extends Controller
 
             return back()->with('success', 'Integration settings updated successfully.');
         } catch (\Exception $e) {
-            \Log::error('Failed to update integration settings: ' . $e->getMessage());
+            Log::error('Failed to update integration settings: ' . $e->getMessage());
             return back()->with('error', 'Failed to update settings: ' . $e->getMessage())->withInput();
         }
     }
@@ -2264,7 +2266,7 @@ class SettingsController extends Controller
 
             return response()->json($result);
         } catch (\Exception $e) {
-            \Log::error('Whereby connection test failed: ' . $e->getMessage());
+            Log::error('Whereby connection test failed: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Connection test failed: ' . $e->getMessage()
@@ -2355,7 +2357,7 @@ class SettingsController extends Controller
 
             return back()->with('success', 'Patient feedback settings updated successfully.');
         } catch (\Exception $e) {
-            \Log::error('Failed to update patient feedback settings: ' . $e->getMessage());
+            Log::error('Failed to update patient feedback settings: ' . $e->getMessage());
             return back()->with('error', 'Failed to update settings: ' . $e->getMessage())->withInput();
         }
     }
