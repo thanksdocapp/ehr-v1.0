@@ -11,7 +11,7 @@
                 <i class="fas fa-arrow-left me-2"></i>Back to Templates
             </a>
             <h1 class="h3 mb-1 mt-2 text-gray-800 fw-bold">
-                <i class="fas fa-plus-circle me-2 text-primary"></i>Create New Template
+                <i class="fas fa-plus-circle me-2 text-primary"></i>Create New {{ ucfirst($type ?? 'Letter') }} Template
             </h1>
         </div>
     </div>
@@ -34,10 +34,20 @@
                             @enderror
                         </div>
 
+                        @php $selectedType = old('type', $type ?? 'letter'); @endphp
+                        @if($selectedType && in_array($selectedType, ['letter', 'form']))
+                            <input type="hidden" name="type" value="{{ $selectedType }}">
+                            <div class="mb-3">
+                                <label class="form-label">Type</label>
+                                <div class="form-control bg-light">
+                                    <i class="fas fa-{{ $selectedType === 'letter' ? 'envelope' : 'clipboard-list' }} me-2"></i>
+                                    <strong>{{ ucfirst($selectedType) }}</strong>
+                                </div>
+                            </div>
+                        @else
                         <div class="mb-3">
                             <label for="type" class="form-label">Type <span class="text-danger">*</span></label>
                             <select class="form-control @error('type') is-invalid @enderror" id="type" name="type" required>
-                                @php $selectedType = old('type', $type ?? 'letter'); @endphp
                                 <option value="letter" {{ $selectedType == 'letter' ? 'selected' : '' }}>Letter</option>
                                 <option value="form" {{ $selectedType == 'form' ? 'selected' : '' }}>Form</option>
                             </select>
@@ -45,6 +55,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        @endif
 
                         <div class="mb-3">
                             <label for="content" class="form-label">Content <span class="text-danger">*</span></label>

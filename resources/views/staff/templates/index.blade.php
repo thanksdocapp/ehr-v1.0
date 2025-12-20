@@ -1,7 +1,13 @@
 @extends(auth()->user()->role === 'doctor' ? 'layouts.doctor' : 'layouts.staff')
 
-@section('title', 'Letters & Forms Templates')
-@section('page-title', 'Letters & Forms Templates')
+@php
+    $activeType = request('type');
+    $pageTitle = empty($activeType) ? 'Letters & Forms Templates' : ($activeType === 'letter' ? 'Letter Templates' : 'Form Templates');
+    $pageIcon = empty($activeType) ? 'fa-file-medical' : ($activeType === 'letter' ? 'fa-envelope' : 'fa-clipboard-list');
+@endphp
+
+@section('title', $pageTitle)
+@section('page-title', $pageTitle)
 
 @section('content')
 <div class="fade-in-up">
@@ -10,7 +16,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="h3 mb-1 text-gray-800 fw-bold">
-                        <i class="fas fa-file-medical me-2 text-primary"></i>Letters & Forms Templates
+                        <i class="fas {{ $pageIcon }} me-2 text-primary"></i>{{ $pageTitle }}
                     </h1>
                     <p class="text-muted mb-0">NHS/CQC compliant document templates</p>
                 </div>
@@ -20,12 +26,16 @@
                     </a>
                     @can('create', \App\Models\Template::class)
                     <div class="btn-group">
+                        @if($activeType !== 'form')
                         <a href="{{ route('staff.templates.create', ['type' => 'letter']) }}" class="btn btn-doctor-primary">
                             <i class="fas fa-plus me-2"></i>Create Letter
                         </a>
+                        @endif
+                        @if($activeType !== 'letter')
                         <a href="{{ route('staff.templates.create', ['type' => 'form']) }}" class="btn btn-success">
                             <i class="fas fa-plus me-2"></i>Create Form
                         </a>
+                        @endif
                     </div>
                     @endcan
                 </div>
@@ -48,9 +58,9 @@
                 $allUrl = route('staff.templates.index', array_merge($baseQuery, ['type' => null]));
                 $lettersUrl = route('staff.templates.index', array_merge($baseQuery, ['type' => 'letter']));
                 $formsUrl = route('staff.templates.index', array_merge($baseQuery, ['type' => 'form']));
-                $activeType = request('type');
             @endphp
 
+            @if(empty($activeType))
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <a href="{{ $allUrl }}" class="btn btn-sm {{ empty($activeType) ? 'btn-doctor-primary' : 'btn-outline-secondary' }}">
                     <i class="fas fa-layer-group me-1"></i>All
@@ -62,15 +72,22 @@
                     <i class="fas fa-clipboard-list me-1"></i>Forms
                 </a>
             </div>
+            @endif
 
             <form method="GET" action="{{ route('staff.templates.index') }}" id="templateSearchForm">
                 <div class="row g-3 align-items-end">
-                    <div class="col-md-5">
+                    @if($activeType)
+                        <input type="hidden" name="type" value="{{ $activeType }}">
+                        <div class="col-md-8">
+                    @else
+                        <div class="col-md-5">
+                    @endif
                         <label class="form-label">Search Templates</label>
                         <input type="text" name="search" id="templateSearchInput" class="form-control"
                                placeholder="Search by name..." value="{{ request('search') }}"
                                autocomplete="off">
                     </div>
+                    @if(!$activeType)
                     <div class="col-md-3">
                         <label class="form-label">Type</label>
                         <select name="type" id="templateTypeSelect" class="form-control">
@@ -79,6 +96,7 @@
                             <option value="form" {{ request('type') == 'form' ? 'selected' : '' }}>Forms</option>
                         </select>
                     </div>
+                    @endif
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-doctor-primary w-100" id="searchButton">
                             <i class="fas fa-search me-1"></i>Search
@@ -86,7 +104,7 @@
                     </div>
                     @if(request()->anyFilled(['search', 'type']))
                     <div class="col-md-2">
-                        <a href="{{ route('staff.templates.index') }}" class="btn btn-outline-secondary w-100" id="clearButton">
+                        <a href="{{ route('staff.templates.index', $activeType ? ['type' => $activeType] : []) }}" class="btn btn-outline-secondary w-100" id="clearButton">
                             <i class="fas fa-times me-1"></i>Clear
                         </a>
                     </div>
