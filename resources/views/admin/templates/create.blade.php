@@ -264,10 +264,10 @@
                     <strong>Signature:</strong> _______________________
                 </div>
                 <div style="margin-top: 10px;">
-                    <strong>Name:</strong> {{doctor_name}}
+                    <strong>Name:</strong> @{{doctor_name}}
                 </div>
                 <div>
-                    <strong>Date:</strong> {{current_date}}
+                    <strong>Date:</strong> @{{current_date}}
                 </div>
             </div>
         `;
@@ -276,7 +276,7 @@
     }
 
     function insertDateLine() {
-        document.execCommand('insertText', false, '{{current_date}}');
+        document.execCommand('insertText', false, '@{{current_date}}');
         editor.focus();
     }
 
