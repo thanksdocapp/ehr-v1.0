@@ -2100,6 +2100,7 @@
                     // Map menu_key to route
                     $route = '#';
                     $isActive = false;
+                    $isDropdown = false;
                     
                     switch($menuKey) {
                         case 'dashboard':
@@ -2126,13 +2127,11 @@
                             $route = route('staff.lab-reports.index');
                             $isActive = request()->routeIs('staff.lab-reports.*');
                             break;
-                        case 'letter-templates':
-                            $route = route('staff.templates.index', ['type' => 'letter']);
-                            $isActive = request()->routeIs('staff.templates.*') && request('type') === 'letter';
-                            break;
-                        case 'form-templates':
-                            $route = route('staff.templates.index', ['type' => 'form']);
-                            $isActive = request()->routeIs('staff.templates.*') && request('type') === 'form';
+                        case 'my-documents':
+                            $route = null; // Dropdown, no direct route
+                            $isActive = request()->routeIs('staff.generated-documents.*') || 
+                                       request()->routeIs('staff.templates.*');
+                            $isDropdown = true;
                             break;
                         case 'form-requests':
                         case 'form-submissions':
@@ -2168,7 +2167,50 @@
                             }
                     }
                 @endphp
-                @if($route !== '#')
+                @if($isDropdown && $menuKey === 'my-documents')
+                    @php
+                        $isLetterTemplatesVisible = \App\Models\RoleMenuVisibility::isVisible($userRole, 'staff', 'letter-templates');
+                        $isFormTemplatesVisible = \App\Models\RoleMenuVisibility::isVisible($userRole, 'staff', 'form-templates');
+                    @endphp
+                    <div class="doctor-nav-item">
+                        <div class="dropdown">
+                            <a href="#" 
+                               class="doctor-nav-link dropdown-toggle {{ $isActive ? 'active' : '' }}"
+                               data-bs-toggle="dropdown"
+                               role="button"
+                               aria-expanded="false"
+                               title="{{ $label }}">
+                                <i class="{{ $icon }} doctor-nav-icon" aria-hidden="true"></i>
+                                <span class="doctor-nav-text">{{ $label }}</span>
+                                <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('staff.generated-documents.*') ? 'active' : '' }}" 
+                                       href="{{ route('staff.generated-documents.index') }}">
+                                        <i class="fas fa-file-pdf me-2"></i>My Documents
+                                    </a>
+                                </li>
+                                @if($isLetterTemplatesVisible)
+                                <li>
+                                    <a class="dropdown-item {{ (request()->routeIs('staff.templates.*') && request('type') === 'letter') ? 'active' : '' }}" 
+                                       href="{{ route('staff.templates.index', ['type' => 'letter']) }}">
+                                        <i class="fas fa-envelope me-2"></i>Letter Templates
+                                    </a>
+                                </li>
+                                @endif
+                                @if($isFormTemplatesVisible)
+                                <li>
+                                    <a class="dropdown-item {{ (request()->routeIs('staff.templates.*') && request('type') === 'form') ? 'active' : '' }}" 
+                                       href="{{ route('staff.templates.index', ['type' => 'form']) }}">
+                                        <i class="fas fa-file-alt me-2"></i>Form Templates
+                                    </a>
+                                </li>
+                                @endif
+                            </ul>
+                        </div>
+                    </div>
+                @elseif($route !== '#')
                 <div class="doctor-nav-item">
                     <a href="{{ $route }}" 
                        class="doctor-nav-link {{ $isActive ? 'active' : '' }}"

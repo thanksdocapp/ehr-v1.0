@@ -100,25 +100,48 @@
         </div>
         @break
 
-    @case('letter-templates')
+    @case('my-documents')
+        @php
+            $isLetterTemplatesVisible = \App\Models\RoleMenuVisibility::isVisible($userRole, 'staff', 'letter-templates');
+            $isFormTemplatesVisible = \App\Models\RoleMenuVisibility::isVisible($userRole, 'staff', 'form-templates');
+            $isMyDocumentsActive = request()->routeIs('staff.generated-documents.*') || 
+                                   (request()->routeIs('staff.templates.*') && ($isLetterTemplatesVisible || $isFormTemplatesVisible));
+        @endphp
         <div class="nav-item">
-            <a href="{{ route('staff.templates.index', ['type' => 'letter']) }}"
-               class="nav-link {{ (request()->routeIs('staff.templates.*') && request('type') === 'letter') ? 'active' : '' }} {{ $isForced2FASetup ? 'disabled' : '' }}"
-               @if($isForced2FASetup) onclick="event.preventDefault(); alert('Navigation is locked. Please complete 2FA setup first.'); return false;" style="opacity: 0.5; cursor: not-allowed; pointer-events: none;" @endif>
-                <i class="nav-icon fas {{ $icon }}"></i>
-                <span class="nav-text">{{ $label }}</span>
-            </a>
-        </div>
-        @break
-
-    @case('form-templates')
-        <div class="nav-item">
-            <a href="{{ route('staff.templates.index', ['type' => 'form']) }}"
-               class="nav-link {{ (request()->routeIs('staff.templates.*') && request('type') === 'form') ? 'active' : '' }} {{ $isForced2FASetup ? 'disabled' : '' }}"
-               @if($isForced2FASetup) onclick="event.preventDefault(); alert('Navigation is locked. Please complete 2FA setup first.'); return false;" style="opacity: 0.5; cursor: not-allowed; pointer-events: none;" @endif>
-                <i class="nav-icon fas {{ $icon }}"></i>
-                <span class="nav-text">{{ $label }}</span>
-            </a>
+            <div class="dropdown">
+                <a href="#" class="nav-link dropdown-toggle {{ $isMyDocumentsActive ? 'active' : '' }} {{ $isForced2FASetup ? 'disabled' : '' }}" 
+                   data-bs-toggle="dropdown" 
+                   role="button" 
+                   aria-expanded="false"
+                   @if($isForced2FASetup) onclick="event.preventDefault(); alert('Navigation is locked. Please complete 2FA setup first.'); return false;" style="opacity: 0.5; cursor: not-allowed; pointer-events: none;" @endif>
+                    <i class="nav-icon fas {{ $icon }}"></i>
+                    <span class="nav-text">{{ $label }}</span>
+                </a>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item {{ request()->routeIs('staff.generated-documents.*') ? 'active' : '' }}" 
+                           href="{{ route('staff.generated-documents.index') }}">
+                            <i class="fas fa-file-pdf me-2"></i>My Documents
+                        </a>
+                    </li>
+                    @if($isLetterTemplatesVisible)
+                    <li>
+                        <a class="dropdown-item {{ (request()->routeIs('staff.templates.*') && request('type') === 'letter') ? 'active' : '' }}" 
+                           href="{{ route('staff.templates.index', ['type' => 'letter']) }}">
+                            <i class="fas fa-envelope me-2"></i>Letter Templates
+                        </a>
+                    </li>
+                    @endif
+                    @if($isFormTemplatesVisible)
+                    <li>
+                        <a class="dropdown-item {{ (request()->routeIs('staff.templates.*') && request('type') === 'form') ? 'active' : '' }}" 
+                           href="{{ route('staff.templates.index', ['type' => 'form']) }}">
+                            <i class="fas fa-file-alt me-2"></i>Form Templates
+                        </a>
+                    </li>
+                    @endif
+                </ul>
+            </div>
         </div>
         @break
 

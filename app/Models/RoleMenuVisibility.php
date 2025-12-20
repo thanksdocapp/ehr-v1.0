@@ -104,6 +104,11 @@ class RoleMenuVisibility extends Model
                 $order = (int)$roleSettings[$menuKey]['order'];
             }
             
+            // Skip submenu items from top-level menu (they'll be rendered as part of their parent)
+            if (!empty($menuItem['is_submenu'])) {
+                continue;
+            }
+            
             $menuItems[] = [
                 'menu_key' => $menuKey,
                 'label' => $menuItem['label'],
@@ -185,9 +190,10 @@ class RoleMenuVisibility extends Model
                 'medical-records' => ['label' => 'Medical Records', 'icon' => 'fa-file-medical', 'order' => 5],
                 'prescriptions' => ['label' => 'Prescriptions', 'icon' => 'fa-prescription-bottle-alt', 'order' => 6],
                 'lab-reports' => ['label' => 'Lab Reports', 'icon' => 'fa-vial', 'order' => 7],
-                'letter-templates' => ['label' => 'Letter Templates', 'icon' => 'fa-envelope', 'order' => 8],
-                'form-templates' => ['label' => 'Form Templates', 'icon' => 'fa-file-alt', 'order' => 9],
-                'form-submissions' => ['label' => 'Form Submissions', 'icon' => 'fa-clipboard-check', 'order' => 10],
+                'my-documents' => ['label' => 'My Documents', 'icon' => 'fa-file-pdf', 'order' => 8],
+                'letter-templates' => ['label' => 'Letter Templates', 'icon' => 'fa-envelope', 'order' => 8.1, 'is_submenu' => true, 'parent' => 'my-documents'],
+                'form-templates' => ['label' => 'Form Templates', 'icon' => 'fa-file-alt', 'order' => 8.2, 'is_submenu' => true, 'parent' => 'my-documents'],
+                'form-submissions' => ['label' => 'Form Submissions', 'icon' => 'fa-clipboard-check', 'order' => 9],
                 'alerts' => ['label' => 'Patient Alerts', 'icon' => 'fa-exclamation-triangle', 'order' => 11],
                 'billing' => ['label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'order' => 12],
                 'feedback' => ['label' => 'Patient Feedback', 'icon' => 'fa-comment-dots', 'order' => 13],
@@ -269,6 +275,7 @@ class RoleMenuVisibility extends Model
                 'medical-records' => true,
                 'prescriptions' => true,
                 'lab-reports' => true,
+                'my-documents' => true,
                 'letter-templates' => true,
                 'form-templates' => true,
                 'form-submissions' => true,
@@ -283,6 +290,7 @@ class RoleMenuVisibility extends Model
                 'medical-records' => true,
                 'prescriptions' => false,
                 'lab-reports' => true,
+                'my-documents' => true,
                 'letter-templates' => true,
                 'form-templates' => true,
                 'form-submissions' => true,
@@ -297,6 +305,7 @@ class RoleMenuVisibility extends Model
                 'medical-records' => false,
                 'prescriptions' => false,
                 'lab-reports' => false,
+                'my-documents' => true,
                 'letter-templates' => true,
                 'form-templates' => true,
                 'form-submissions' => true,
@@ -311,6 +320,7 @@ class RoleMenuVisibility extends Model
                 'medical-records' => true,
                 'prescriptions' => true,
                 'lab-reports' => false,
+                'my-documents' => false,
                 'letter-templates' => false,
                 'form-templates' => false,
                 'alerts' => true,
@@ -324,6 +334,7 @@ class RoleMenuVisibility extends Model
                 'medical-records' => true,
                 'prescriptions' => false,
                 'lab-reports' => true,
+                'my-documents' => false,
                 'letter-templates' => false,
                 'form-templates' => false,
                 'alerts' => true,
@@ -338,6 +349,7 @@ class RoleMenuVisibility extends Model
                 'medical-records' => false,
                 'prescriptions' => false,
                 'lab-reports' => false,
+                'my-documents' => false,
                 'letter-templates' => false,
                 'form-templates' => false,
                 'alerts' => true,
