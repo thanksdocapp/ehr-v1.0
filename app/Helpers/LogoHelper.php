@@ -126,7 +126,20 @@ if (!function_exists('getTinyMceApiKey')) {
     function getTinyMceApiKey()
     {
         $settings = \App\Models\Setting::getGroup('integrations');
-        return $settings['tinymce_api_key'] ?? 'no-api-key';
+        $apiKey = $settings['tinymce_api_key'] ?? 'no-api-key';
+
+        // TinyMCE Cloud API keys can be domain-restricted. For local/dev (localhost/127.0.0.1),
+        // fall back to a non-restricted key so the editor keeps working.
+        try {
+            $host = request()->getHost();
+            if (in_array($host, ['localhost', '127.0.0.1'], true)) {
+                return $settings['tinymce_api_key_local'] ?? 'no-api-key';
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return $apiKey;
     }
 }
 
@@ -139,6 +152,18 @@ if (!function_exists('getTinyMceCdnUrl')) {
     function getTinyMceCdnUrl()
     {
         $apiKey = getTinyMceApiKey();
+
+        // TinyMCE Cloud now requires a valid API key. In local/dev, if no key is configured,
+        // return null so pages can gracefully fall back to a plain textarea.
+        try {
+            $host = request()->getHost();
+            if (in_array($host, ['localhost', '127.0.0.1'], true) && ($apiKey === '' || $apiKey === 'no-api-key')) {
+                return null;
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
         return "https://cdn.tiny.cloud/1/{$apiKey}/tinymce/6/tinymce.min.js";
     }
 }

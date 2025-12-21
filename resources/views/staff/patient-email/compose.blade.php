@@ -197,9 +197,16 @@
 @endsection
 
 @push('scripts')
-<script src="{{ getTinyMceCdnUrl() }}" referrerpolicy="origin"></script>
+@php($tinymceCdnUrl = getTinyMceCdnUrl())
+@if($tinymceCdnUrl)
+<script src="{{ $tinymceCdnUrl }}" referrerpolicy="origin"></script>
+@endif
 <script>
 $(document).ready(function() {
+    if (typeof tinymce === 'undefined') {
+        console.warn('TinyMCE is not available; falling back to plain textarea.');
+        return;
+    }
     // Initialize TinyMCE for rich text email body with full formatting options
     tinymce.init({
         selector: '#body',
