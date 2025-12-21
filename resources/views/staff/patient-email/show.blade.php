@@ -137,15 +137,20 @@
     <!-- Email Content (Full Layout) -->
     <div class="doctor-card">
         <div class="doctor-card-header">
-            <h5 class="doctor-card-title mb-0"><i class="fas fa-envelope me-2"></i>Email Content</h5>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <h5 class="doctor-card-title mb-0"><i class="fas fa-envelope me-2"></i>Email Content</h5>
+                <a href="{{ route('staff.patient-email.preview', $emailLog->id) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-up-right-from-square me-2"></i>Open preview
+                </a>
+            </div>
         </div>
         <div class="doctor-card-body p-0">
             <div class="p-3 p-md-4" style="background: #f5f5f5;">
                 <iframe
-                    id="emailPreviewFrame"
                     title="Email Preview"
                     style="width: 100%; border: 0; border-radius: 10px; min-height: 780px; background: #fff;"
                     sandbox="allow-same-origin"
+                    src="{{ route('staff.patient-email.preview', $emailLog->id) }}"
                 ></iframe>
             </div>
         </div>
@@ -158,19 +163,5 @@
 </style>
 @endpush
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    try {
-        const frame = document.getElementById('emailPreviewFrame');
-        if (!frame) return;
-        const html = @json($emailHtml ?? '');
-        frame.srcdoc = html;
-    } catch (e) {
-        // ignore
-    }
-});
-</script>
-@endpush
 @endsection
 

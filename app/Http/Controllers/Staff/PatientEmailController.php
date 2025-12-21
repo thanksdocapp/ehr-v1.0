@@ -106,27 +106,90 @@ class PatientEmailController extends Controller
             ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
             ->findOrFail($id);
 
-        // Render the exact email HTML (same Blade view used for sending) for accurate preview in staff UI.
-        // IMPORTANT: Do not include tracking variables here; staff preview should not count as "patient opened".
+        return view('staff.patient-email.show', compact('emailLog', 'doctor'));
+    }
+
+    /**
+     * Render the exact HTML that was sent to the patient (for iframe preview).
+     * IMPORTANT: this is staff-authenticated and must NOT count as an "open".
+     */
+    public function preview($id)
+    {
+        $user = Auth::user();
+        $doctor = Doctor::where('user_id', $user->id)->first();
+
+        if (!$doctor) {
+            abort(403);
+        }
+
+        $emailLog = EmailLog::with('patient')
+            ->where('email_type', 'patient_communication')
+            ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
+            ->findOrFail($id);
+
         $metadata = $emailLog->metadata ?? [];
-        $emailData = [
-            'subject' => $emailLog->subject,
-            'body' => $emailLog->body,
-            'doctor_name' => $metadata['doctor_name'] ?? ($doctor->name ?? $user->name),
-            'doctor_specialization' => $metadata['doctor_specialization'] ?? ($doctor->specialization ?? 'General Practitioner'),
-            'clinic_name' => $metadata['clinic_name'] ?? (config('app.name', 'Clinic')),
-            'department_name' => $metadata['department_name'] ?? null,
-            'department_logo' => $metadata['department_logo'] ?? null,
-            'date_sent' => $metadata['date_sent'] ?? ($emailLog->sent_at?->format('F j, Y') ?? $emailLog->created_at->format('F j, Y')),
-        ];
+        $html = null;
 
-        $emailHtml = view('emails.patient-email', [
-            'emailData' => $emailData,
-            'trackingToken' => null,
-            'emailLogId' => null,
-        ])->render();
+        // Prefer stored preview HTML (frozen at send-time, without tracking pixel)
+        if (!empty($metadata['rendered_html_preview']) && is_string($metadata['rendered_html_preview'])) {
+            $html = $metadata['rendered_html_preview'];
+        } elseif (!empty($metadata['rendered_html']) && is_string($metadata['rendered_html'])) {
+            // Backward compat: if only sent HTML exists, use it (we will strip pixel below).
+            $html = $metadata['rendered_html'];
+        } else {
+            // Fallback: re-render using current template + stored payload,
+            // then freeze it so future views are consistent.
+            $departmentName = $metadata['department_name'] ?? null;
+            $departmentLogo = $metadata['department_logo'] ?? null;
+            $departmentId = $metadata['department_id'] ?? null;
+            if ((!$departmentName || !$departmentLogo) && $departmentId) {
+                $dept = Department::find($departmentId);
+                if ($dept) {
+                    $departmentName = $departmentName ?: $dept->name;
+                    $departmentLogo = $departmentLogo ?: ($dept->logo_url ?? null);
+                }
+            }
 
-        return view('staff.patient-email.show', compact('emailLog', 'doctor', 'emailHtml'));
+            $clinicName = $metadata['clinic_name']
+                ?? \App\Models\SiteSetting::where('key', 'hospital_name')->value('value')
+                ?? config('app.name', 'Clinic');
+
+            $emailData = [
+                'subject' => $emailLog->subject,
+                'body' => $emailLog->body,
+                'doctor_name' => $metadata['doctor_name'] ?? ($doctor->name ?? $user->name),
+                'doctor_specialization' => $metadata['doctor_specialization'] ?? ($doctor->specialization ?? 'General Practitioner'),
+                'clinic_name' => $clinicName,
+                'department_name' => $departmentName,
+                'department_logo' => $departmentLogo,
+                'date_sent' => $metadata['date_sent'] ?? ($emailLog->sent_at ? $emailLog->sent_at->format('F j, Y') : $emailLog->created_at->format('F j, Y')),
+            ];
+
+            // Do not include tracking pixel in staff preview
+            $html = (string) view('emails.patient-email', [
+                'emailData' => $emailData,
+                'trackingToken' => null,
+                'emailLogId' => null,
+            ])->render();
+
+            // Freeze preview HTML for emails that were sent before we stored it.
+            try {
+                $emailLog->update([
+                    'metadata' => array_merge($metadata, [
+                        'rendered_html_preview' => $html,
+                    ]),
+                ]);
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        // Safety: ensure staff preview never triggers open tracking even if the stored HTML contains a pixel.
+        $html = preg_replace('/<img\\b[^>]*\\bsrc\\s*=\\s*([\"\\\'])[^\"\\\']*\\/track\\/email\\/open\\/[^\"\\\']*\\1[^>]*>/i', '', (string) $html) ?? (string) $html;
+
+        return response($html, 200)
+            ->header('Content-Type', 'text/html; charset=UTF-8')
+            ->header('X-Frame-Options', 'SAMEORIGIN');
     }
 
     /**
@@ -231,6 +294,20 @@ class PatientEmailController extends Controller
 
             // Send email using Mailable
             try {
+                // Render and store the exact HTML we are about to send (for future viewing/audit)
+                $renderedHtml = view('emails.patient-email', [
+                    'emailData' => $emailData,
+                    'trackingToken' => $trackingToken,
+                    'emailLogId' => $emailLog->id,
+                ])->render();
+
+                // Also store a preview-safe version (no tracking pixel) for staff viewing.
+                $renderedHtmlPreview = view('emails.patient-email', [
+                    'emailData' => $emailData,
+                    'trackingToken' => null,
+                    'emailLogId' => null,
+                ])->render();
+
                 Mail::to($patient->email, $patient->full_name)
                     ->send(new PatientEmail($emailData));
 
@@ -248,6 +325,8 @@ class PatientEmailController extends Controller
                         'department_logo' => $emailData['department_logo'] ?? null,
                         'date_sent' => $emailData['date_sent'],
                         'tracking_token' => $trackingToken,
+                        'rendered_html' => $renderedHtml,
+                        'rendered_html_preview' => $renderedHtmlPreview,
                     ]),
                 ]);
 
