@@ -71,6 +71,14 @@ class EmailLog extends Model
     }
 
     /**
+     * Get the patient associated with this email log.
+     */
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    /**
      * Get the status badge class.
      *
      * @return string
