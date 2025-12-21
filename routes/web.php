@@ -257,6 +257,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/patient-email', [\App\Http\Controllers\Staff\PatientEmailController::class, 'index'])->name('patient-email.index');
         Route::get('/patient-email/compose', [\App\Http\Controllers\Staff\PatientEmailController::class, 'compose'])->name('patient-email.compose');
         Route::post('/patient-email/send', [\App\Http\Controllers\Staff\PatientEmailController::class, 'send'])->name('patient-email.send');
+        Route::get('/patient-email/track/{token}/{id}', [\App\Http\Controllers\Staff\PatientEmailController::class, 'track'])->name('patient-email.track');
         Route::get('/patient-email/{id}', [\App\Http\Controllers\Staff\PatientEmailController::class, 'show'])->name('patient-email.show')->whereNumber('id');
         
         // Note: Staff cannot delete patients

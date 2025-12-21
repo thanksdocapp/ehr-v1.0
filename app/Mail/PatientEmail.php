@@ -52,6 +52,8 @@ class PatientEmail extends Mailable
             view: 'emails.patient-email',
             with: [
                 'emailData' => $this->emailData,
+                'trackingToken' => $this->emailData['tracking_token'] ?? null,
+                'emailLogId' => $this->emailData['email_log_id'] ?? null,
             ],
         );
     }

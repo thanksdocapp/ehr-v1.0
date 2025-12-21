@@ -119,14 +119,26 @@
         </div>
     </div>
 
-    <!-- Email Content -->
+    <!-- Email Content (Full Layout) -->
     <div class="doctor-card">
         <div class="doctor-card-header">
             <h5 class="doctor-card-title mb-0"><i class="fas fa-envelope me-2"></i>Email Content</h5>
         </div>
-        <div class="doctor-card-body">
-            <div class="email-content-preview" style="border: 1px solid #e3e6f0; border-radius: 8px; padding: 2rem; background: #f8f9fc; min-height: 200px;">
-                {!! $emailLog->body !!}
+        <div class="doctor-card-body" style="padding: 0;">
+            @php
+                $metadata = $emailLog->metadata ?? [];
+                $emailPreviewData = [
+                    'clinic_name' => $metadata['clinic_name'] ?? 'Clinic',
+                    'department_logo' => $metadata['department_logo'] ?? null,
+                    'body' => $emailLog->body,
+                    'doctor_name' => $metadata['doctor_name'] ?? 'Doctor',
+                    'doctor_specialization' => $metadata['doctor_specialization'] ?? null,
+                    'department_name' => $metadata['department_name'] ?? null,
+                    'date_sent' => $metadata['date_sent'] ?? $emailLog->created_at->format('F j, Y'),
+                ];
+            @endphp
+            <div style="background: #f5f5f5; padding: 20px;">
+                @include('emails.patient-email-preview', ['emailData' => $emailPreviewData])
             </div>
         </div>
     </div>

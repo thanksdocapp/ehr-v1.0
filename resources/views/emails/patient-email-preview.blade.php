@@ -1,22 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $emailData['subject'] }}</title>
-    <style>
+<style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
             color: #333;
             max-width: 600px;
             margin: 0 auto;
-            padding: 0;
+            padding: 20px;
             background-color: #f5f5f5;
         }
         .email-container {
             background-color: #ffffff;
-            margin: 20px auto;
+            margin: 0 auto;
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -80,9 +74,8 @@
             border-top: 1px solid #e2e8f0;
         }
     </style>
-</head>
-<body>
-    <div class="email-container">
+
+<div class="email-container">
         <!-- Header -->
         <div class="email-header">
             @if(!empty($emailData['department_logo']))
@@ -117,15 +110,4 @@
             </div>
         </div>
     </div>
-
-    <!-- Email Open Tracking Pixel -->
-    @if(isset($trackingToken) && isset($emailLogId))
-        <img src="{{ route('staff.patient-email.track', ['token' => $trackingToken, 'id' => $emailLogId]) }}" 
-             width="1" 
-             height="1" 
-             style="display:none;" 
-             alt="" />
-    @endif
-</body>
-</html>
 

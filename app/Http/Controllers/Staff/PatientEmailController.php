@@ -167,7 +167,25 @@ class PatientEmailController extends Controller
             $clinicName = \App\Models\SiteSetting::where('key', 'hospital_name')
                 ->value('value') ?? config('app.name', 'Clinic');
 
-            // Prepare email data
+            // Generate tracking token
+            $trackingToken = \Illuminate\Support\Str::random(32);
+
+            // Create email log first to get ID for tracking
+            $emailLog = EmailLog::create([
+                'recipient_email' => $patient->email,
+                'recipient_name' => $patient->full_name,
+                'subject' => $request->subject,
+                'body' => $request->body,
+                'status' => 'pending',
+                'patient_id' => $patient->id,
+                'metadata' => [
+                    'doctor_id' => $doctor->id,
+                    'tracking_token' => $trackingToken,
+                ],
+                'email_type' => 'patient_communication',
+            ]);
+
+            // Prepare email data (including tracking info)
             $emailData = [
                 'subject' => $request->subject,
                 'body' => $request->body,
@@ -177,6 +195,8 @@ class PatientEmailController extends Controller
                 'department_name' => $department ? $department->name : null,
                 'department_logo' => $department ? $department->logo_url : null,
                 'date_sent' => now()->format('F j, Y'),
+                'tracking_token' => $trackingToken,
+                'email_log_id' => $emailLog->id,
             ];
 
             // Configure SMTP from database before sending
@@ -194,26 +214,22 @@ class PatientEmailController extends Controller
                 Mail::to($patient->email, $patient->full_name)
                     ->send(new PatientEmail($emailData));
 
-                // Log email
-                $emailLog = EmailLog::create([
-                'recipient_email' => $patient->email,
-                'recipient_name' => $patient->full_name,
-                'subject' => $request->subject,
-                'body' => $emailData['body'], // Store the doctor's message body
-                'status' => 'sent',
-                'sent_at' => now(),
-                'patient_id' => $patient->id,
-                'metadata' => [
-                    'doctor_id' => $doctor->id,
-                    'doctor_name' => $emailData['doctor_name'],
-                    'doctor_specialization' => $emailData['doctor_specialization'],
-                    'clinic_name' => $emailData['clinic_name'],
-                    'department_name' => $emailData['department_name'],
-                    'department_id' => $department ? $department->id : null,
-                    'date_sent' => $emailData['date_sent'],
-                ],
-                'email_type' => 'patient_communication',
-            ]);
+                // Update email log with full metadata and mark as sent
+                $emailLog->update([
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                    'metadata' => array_merge($emailLog->metadata ?? [], [
+                        'doctor_id' => $doctor->id,
+                        'doctor_name' => $emailData['doctor_name'],
+                        'doctor_specialization' => $emailData['doctor_specialization'],
+                        'clinic_name' => $emailData['clinic_name'],
+                        'department_name' => $emailData['department_name'],
+                        'department_id' => $department ? $department->id : null,
+                        'department_logo' => $emailData['department_logo'] ?? null,
+                        'date_sent' => $emailData['date_sent'],
+                        'tracking_token' => $trackingToken,
+                    ]),
+                ]);
 
             Log::info('Patient email sent successfully', [
                 'patient_id' => $patient->id,
@@ -294,6 +310,42 @@ class PatientEmailController extends Controller
             }
 
             return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()])->withInput();
+        }
+    }
+
+    /**
+     * Track email open (called by tracking pixel).
+     */
+    public function track($token, $id)
+    {
+        try {
+            $emailLog = EmailLog::find($id);
+            
+            if (!$emailLog) {
+                // Return 1x1 transparent pixel even if email log not found
+                return response(base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), 200)
+                    ->header('Content-Type', 'image/gif')
+                    ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+            }
+
+            // Verify tracking token matches
+            $metadata = $emailLog->metadata ?? [];
+            if (isset($metadata['tracking_token']) && $metadata['tracking_token'] === $token) {
+                // Mark as opened if not already opened
+                if (!$emailLog->wasOpened()) {
+                    $emailLog->markAsOpened();
+                }
+            }
+
+            // Return 1x1 transparent GIF pixel
+            return response(base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), 200)
+                ->header('Content-Type', 'image/gif')
+                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        } catch (\Exception $e) {
+            // Return pixel even on error to prevent breaking email rendering
+            return response(base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), 200)
+                ->header('Content-Type', 'image/gif')
+                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         }
     }
 }
