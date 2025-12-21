@@ -10,6 +10,31 @@ use Exception;
 trait ConfiguresSmtp
 {
     /**
+     * Normalize/repair SMTP host for common local setups.
+     * In many dev environments (esp. Windows without Docker DNS), "mailpit" won't resolve.
+     */
+    protected function normalizeSmtpHost(): void
+    {
+        try {
+            $host = (string) Config::get('mail.mailers.smtp.host', '');
+            if ($host === '') {
+                return;
+            }
+
+            // If MAIL_HOST is "mailpit" but DNS doesn't resolve, fall back to localhost.
+            if (strtolower($host) === 'mailpit') {
+                $resolved = @gethostbyname($host);
+                if ($resolved === $host) {
+                    Config::set('mail.mailers.smtp.host', '127.0.0.1');
+                    Log::warning('SMTP host "mailpit" not resolvable; falling back to 127.0.0.1');
+                }
+            }
+        } catch (Exception $e) {
+            // Never break sending due to normalization.
+        }
+    }
+
+    /**
      * Configure mail settings from database.
      * This ensures all emails use the correct SMTP settings.
      *
@@ -20,17 +45,17 @@ trait ConfiguresSmtp
         try {
             // Get mail settings from database
             $settings = SiteSetting::getSettings();
-            
+
             if (isset($settings['smtp_host']) && $settings['smtp_host']) {
                 // Set default mailer to smtp
                 Config::set('mail.default', 'smtp');
-                
+
                 // Configure SMTP settings
                 Config::set('mail.mailers.smtp.host', $settings['smtp_host']);
                 Config::set('mail.mailers.smtp.port', $settings['smtp_port'] ?? 587);
                 Config::set('mail.mailers.smtp.username', $settings['smtp_username'] ?? '');
                 Config::set('mail.mailers.smtp.password', $settings['smtp_password'] ?? '');
-                
+
                 // Handle encryption - 'none' means no encryption
                 $encryption = $settings['smtp_encryption'] ?? 'tls';
                 if ($encryption === 'none') {
@@ -38,13 +63,13 @@ trait ConfiguresSmtp
                 } else {
                     Config::set('mail.mailers.smtp.encryption', $encryption);
                 }
-                
+
                 // Set from email address
                 if (isset($settings['from_email']) && $settings['from_email']) {
                     Config::set('mail.from.address', $settings['from_email']);
                     Config::set('mail.from.name', $settings['from_name'] ?? $settings['hospital_name'] ?? config('app.name'));
                 }
-                
+
                 Log::info('Mail configuration updated from database', [
                     'host' => $settings['smtp_host'],
                     'port' => $settings['smtp_port'] ?? 587,
@@ -55,6 +80,9 @@ trait ConfiguresSmtp
             } else {
                 Log::warning('SMTP host not configured in database settings');
             }
+
+            // Always normalize host after applying DB settings (or leaving env defaults).
+            $this->normalizeSmtpHost();
         } catch (Exception $e) {
             Log::error('Failed to configure mail from database', [
                 'error' => $e->getMessage(),
@@ -63,4 +91,3 @@ trait ConfiguresSmtp
         }
     }
 }
-
