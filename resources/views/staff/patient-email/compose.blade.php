@@ -195,16 +195,41 @@
 <script src="{{ getTinyMceCdnUrl() }}" referrerpolicy="origin"></script>
 <script>
 $(document).ready(function() {
-    // Initialize TinyMCE for rich text email body
+    // Initialize TinyMCE for rich text email body with full formatting options
     tinymce.init({
         selector: '#body',
-        height: 400,
+        height: 450,
         menubar: false,
-        plugins: 'lists link table code',
-        toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | table | code',
-        content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }',
+        plugins: [
+            'lists', 'link', 'table', 'code', 'colorpicker', 
+            'textcolor', 'charmap', 'hr', 'nonbreaking', 
+            'paste', 'wordcount'
+        ],
+        toolbar: 'undo redo | formatselect fontselect fontsizeselect | ' +
+                 'bold italic underline strikethrough | forecolor backcolor | ' +
+                 'alignleft aligncenter alignright alignjustify | ' +
+                 'bullist numlist | outdent indent | ' +
+                 'link table charmap hr nonbreaking | code | removeformat',
+        content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; }',
         branding: false,
         promotion: false,
+        font_formats: 'Arial=arial,helvetica,sans-serif;' +
+                     'Courier New=courier new,courier;' +
+                     'Georgia=georgia,palatino;' +
+                     'Helvetica=helvetica;' +
+                     'Impact=impact,chicago;' +
+                     'Times New Roman=times new roman,times;' +
+                     'Trebuchet MS=trebuchet ms,geneva;' +
+                     'Verdana=verdana,geneva',
+        fontsize_formats: '8pt 9pt 10pt 11pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt',
+        paste_as_text: false,
+        paste_auto_cleanup_on_paste: true,
+        paste_remove_styles: false,
+        paste_remove_styles_if_webkit: false,
+        paste_strip_class_attributes: 'none',
+        paste_merge_formats: true,
+        invalid_elements: 'script,iframe,object,embed',
+        extended_valid_elements: 'span[*],div[*],table[*],thead[*],tbody[*],tr[*],td[*],th[*]',
     });
 
     // Patient search functionality (client-side filtering)
