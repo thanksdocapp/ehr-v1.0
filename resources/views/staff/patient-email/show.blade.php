@@ -139,7 +139,7 @@
         <div class="doctor-card-header">
             <h5 class="doctor-card-title mb-0"><i class="fas fa-envelope me-2"></i>Email Content</h5>
         </div>
-        <div class="doctor-card-body" style="padding: 0;">
+        <div class="doctor-card-body p-0">
             @php
                 $metadata = $emailLog->metadata ?? [];
                 $emailPreviewData = [
@@ -152,7 +152,7 @@
                     'date_sent' => $metadata['date_sent'] ?? $emailLog->created_at->format('F j, Y'),
                 ];
             @endphp
-            <div style="background: #f5f5f5; padding: 20px;">
+            <div class="p-3 p-md-4" style="background: #f5f5f5;">
                 @include('emails.patient-email-preview', ['emailData' => $emailPreviewData])
             </div>
         </div>
@@ -161,27 +161,7 @@
 
 @push('styles')
 <style>
-.email-content-preview {
-    font-family: Arial, sans-serif;
-    line-height: 1.6;
-    color: #2d3748;
-}
-
-.email-content-preview p {
-    margin-bottom: 1rem;
-}
-
-.email-content-preview table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1rem 0;
-}
-
-.email-content-preview table td,
-.email-content-preview table th {
-    padding: 0.5rem;
-    border: 1px solid #e3e6f0;
-}
+/* email preview styling is fully scoped inside `emails.patient-email-preview` */
 </style>
 @endpush
 @endsection

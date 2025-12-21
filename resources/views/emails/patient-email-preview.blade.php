@@ -1,71 +1,70 @@
 <style>
-        body {
+        /* IMPORTANT: Scope all preview styles so they don't affect the staff/admin page layout */
+        .patient-email-preview {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
             color: #333;
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
         }
-        .email-container {
+        .patient-email-preview .email-container {
             background-color: #ffffff;
             margin: 0 auto;
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .email-header {
+        .patient-email-preview .email-header {
             background-color: #ffffff;
             padding: 30px 20px;
             text-align: center;
             border-bottom: 2px solid #f0f0f0;
         }
-        .email-header img {
+        .patient-email-preview .email-header img {
             max-width: 200px;
             max-height: 80px;
             height: auto;
             margin-bottom: 15px;
         }
-        .clinic-name {
+        .patient-email-preview .clinic-name {
             font-size: 24px;
             font-weight: 600;
             color: #1a202c;
             margin: 0;
         }
-        .email-body {
+        .patient-email-preview .email-body {
             padding: 30px 20px;
             font-size: 16px;
             color: #2d3748;
         }
-        .email-body p {
+        .patient-email-preview .email-body p {
             margin: 0 0 15px 0;
         }
-        .email-body p:last-child {
+        .patient-email-preview .email-body p:last-child {
             margin-bottom: 0;
         }
-        .email-footer {
+        .patient-email-preview .email-footer {
             background-color: #f8f9fa;
             padding: 25px 20px;
             border-top: 1px solid #e2e8f0;
             font-size: 14px;
             color: #4a5568;
         }
-        .email-footer p {
+        .patient-email-preview .email-footer p {
             margin: 8px 0;
         }
-        .footer-section {
+        .patient-email-preview .footer-section {
             margin-bottom: 20px;
         }
-        .footer-section:last-child {
+        .patient-email-preview .footer-section:last-child {
             margin-bottom: 0;
         }
-        .footer-divider {
+        .patient-email-preview .footer-divider {
             border-top: 1px solid #e2e8f0;
             margin: 20px 0;
             padding-top: 20px;
         }
-        .disclaimer {
+        .patient-email-preview .disclaimer {
             font-size: 12px;
             color: #718096;
             font-style: italic;
@@ -73,8 +72,14 @@
             padding-top: 15px;
             border-top: 1px solid #e2e8f0;
         }
-    </style>
+        /* Basic content hygiene for rich text */
+        .patient-email-preview .email-body img { max-width: 100%; height: auto; }
+        .patient-email-preview .email-body table { width: 100%; border-collapse: collapse; }
+        .patient-email-preview .email-body table td,
+        .patient-email-preview .email-body table th { border: 1px solid #e3e6f0; padding: 8px; }
+</style>
 
+<div class="patient-email-preview">
 <div class="email-container">
         <!-- Header -->
         <div class="email-header">
@@ -110,4 +115,4 @@
             </div>
         </div>
     </div>
-
+</div>
