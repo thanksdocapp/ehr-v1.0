@@ -101,11 +101,10 @@ class PatientEmailController extends Controller
                 ->with('error', 'Doctor profile not found.');
         }
 
-        $emailLog = EmailLog::where('email_type', 'patient_communication')
+        $emailLog = EmailLog::with('patient')
+            ->where('email_type', 'patient_communication')
             ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
             ->findOrFail($id);
-
-        $emailLog->load('patient');
 
         return view('staff.patient-email.show', compact('emailLog', 'doctor'));
     }
