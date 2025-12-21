@@ -140,20 +140,13 @@
             <h5 class="doctor-card-title mb-0"><i class="fas fa-envelope me-2"></i>Email Content</h5>
         </div>
         <div class="doctor-card-body p-0">
-            @php
-                $metadata = $emailLog->metadata ?? [];
-                $emailPreviewData = [
-                    'clinic_name' => $metadata['clinic_name'] ?? 'Clinic',
-                    'department_logo' => $metadata['department_logo'] ?? null,
-                    'body' => $emailLog->body,
-                    'doctor_name' => $metadata['doctor_name'] ?? 'Doctor',
-                    'doctor_specialization' => $metadata['doctor_specialization'] ?? null,
-                    'department_name' => $metadata['department_name'] ?? null,
-                    'date_sent' => $metadata['date_sent'] ?? $emailLog->created_at->format('F j, Y'),
-                ];
-            @endphp
             <div class="p-3 p-md-4" style="background: #f5f5f5;">
-                @include('emails.patient-email-preview', ['emailData' => $emailPreviewData])
+                <iframe
+                    id="emailPreviewFrame"
+                    title="Email Preview"
+                    style="width: 100%; border: 0; border-radius: 10px; min-height: 780px; background: #fff;"
+                    sandbox="allow-same-origin"
+                ></iframe>
             </div>
         </div>
     </div>
@@ -163,6 +156,21 @@
 <style>
 /* email preview styling is fully scoped inside `emails.patient-email-preview` */
 </style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    try {
+        const frame = document.getElementById('emailPreviewFrame');
+        if (!frame) return;
+        const html = @json($emailHtml ?? '');
+        frame.srcdoc = html;
+    } catch (e) {
+        // ignore
+    }
+});
+</script>
 @endpush
 @endsection
 

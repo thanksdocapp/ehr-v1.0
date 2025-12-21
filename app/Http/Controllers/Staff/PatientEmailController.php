@@ -106,7 +106,27 @@ class PatientEmailController extends Controller
             ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
             ->findOrFail($id);
 
-        return view('staff.patient-email.show', compact('emailLog', 'doctor'));
+        // Render the exact email HTML (same Blade view used for sending) for accurate preview in staff UI.
+        // IMPORTANT: Do not include tracking variables here; staff preview should not count as "patient opened".
+        $metadata = $emailLog->metadata ?? [];
+        $emailData = [
+            'subject' => $emailLog->subject,
+            'body' => $emailLog->body,
+            'doctor_name' => $metadata['doctor_name'] ?? ($doctor->name ?? $user->name),
+            'doctor_specialization' => $metadata['doctor_specialization'] ?? ($doctor->specialization ?? 'General Practitioner'),
+            'clinic_name' => $metadata['clinic_name'] ?? (config('app.name', 'Clinic')),
+            'department_name' => $metadata['department_name'] ?? null,
+            'department_logo' => $metadata['department_logo'] ?? null,
+            'date_sent' => $metadata['date_sent'] ?? ($emailLog->sent_at?->format('F j, Y') ?? $emailLog->created_at->format('F j, Y')),
+        ];
+
+        $emailHtml = view('emails.patient-email', [
+            'emailData' => $emailData,
+            'trackingToken' => null,
+            'emailLogId' => null,
+        ])->render();
+
+        return view('staff.patient-email.show', compact('emailLog', 'doctor', 'emailHtml'));
     }
 
     /**

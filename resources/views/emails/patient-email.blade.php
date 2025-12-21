@@ -120,7 +120,7 @@
 
     <!-- Email Open Tracking Pixel -->
     @if(isset($trackingToken) && isset($emailLogId))
-        <img src="{{ route('staff.patient-email.track', ['token' => $trackingToken, 'id' => $emailLogId]) }}" 
+        <img src="{{ route('email.track', ['token' => $trackingToken, 'id' => $emailLogId]) }}" 
              width="1" 
              height="1" 
              style="display:none;" 

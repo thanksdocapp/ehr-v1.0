@@ -28,6 +28,11 @@ Route::get('/css/dynamic-theme.css', [\App\Http\Controllers\ThemeController::cla
 Route::get('/track/document/open/{token}', [\App\Http\Controllers\DocumentTrackingController::class, 'trackOpen'])->name('document.track.open');
 Route::get('/track/document/click/{token}', [\App\Http\Controllers\DocumentTrackingController::class, 'trackClick'])->name('document.track.click');
 
+// Email tracking routes (no auth required for tracking pixels)
+Route::get('/track/email/open/{token}/{id}', [\App\Http\Controllers\PublicEmailTrackingController::class, 'track'])
+    ->name('email.track')
+    ->whereNumber('id');
+
 // Public form routes (no auth required - patients fill forms via link)
 Route::get('/forms/{token}', [\App\Http\Controllers\PublicFormController::class, 'show'])->name('forms.fill');
 Route::post('/forms/{token}', [\App\Http\Controllers\PublicFormController::class, 'submit'])->name('forms.submit');
@@ -257,7 +262,6 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/patient-email', [\App\Http\Controllers\Staff\PatientEmailController::class, 'index'])->name('patient-email.index');
         Route::get('/patient-email/compose', [\App\Http\Controllers\Staff\PatientEmailController::class, 'compose'])->name('patient-email.compose');
         Route::post('/patient-email/send', [\App\Http\Controllers\Staff\PatientEmailController::class, 'send'])->name('patient-email.send');
-        Route::get('/patient-email/track/{token}/{id}', [\App\Http\Controllers\Staff\PatientEmailController::class, 'track'])->name('patient-email.track');
         Route::get('/patient-email/{id}', [\App\Http\Controllers\Staff\PatientEmailController::class, 'show'])->name('patient-email.show')->whereNumber('id');
         
         // Note: Staff cannot delete patients
