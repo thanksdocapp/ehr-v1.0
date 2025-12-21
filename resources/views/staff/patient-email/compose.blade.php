@@ -14,9 +14,14 @@
                     </h1>
                     <p class="text-muted mb-0">Compose and send an email to a patient</p>
                 </div>
-                <a href="{{ route('staff.patients.index') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left me-2"></i>Back to Patients
-                </a>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('staff.patient-email.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-inbox me-2"></i>View Sent Emails
+                    </a>
+                    <a href="{{ route('staff.patients.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Patients
+                    </a>
+                </div>
             </div>
         </div>
     </div>

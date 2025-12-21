@@ -19,6 +19,97 @@ use Exception;
 class PatientEmailController extends Controller
 {
     use ConfiguresSmtp;
+    
+    /**
+     * Display a listing of emails sent by the current doctor.
+     */
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+        $doctor = Doctor::where('user_id', $user->id)->first();
+        
+        if (!$doctor) {
+            return redirect()->route('staff.dashboard')
+                ->with('error', 'Doctor profile not found.');
+        }
+
+        // Get emails sent by this doctor (filter by doctor_id in metadata)
+        // Use whereRaw for JSON path query that works across MySQL versions
+        $query = EmailLog::where('email_type', 'patient_communication')
+            ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
+            ->orderBy('created_at', 'desc');
+
+        // Apply filters
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('patient_id')) {
+            $query->where('patient_id', $request->patient_id);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('recipient_email', 'like', "%{$request->search}%")
+                  ->orWhere('subject', 'like', "%{$request->search}%")
+                  ->orWhere('recipient_name', 'like', "%{$request->search}%");
+            });
+        }
+
+        $emailLogs = $query->with('patient')->paginate(15)->appends($request->query());
+
+        // Get statistics
+        $stats = [
+            'total_emails' => EmailLog::where('email_type', 'patient_communication')
+                ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])->count(),
+            'sent_emails' => EmailLog::where('email_type', 'patient_communication')
+                ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
+                ->where('status', 'sent')->count(),
+            'failed_emails' => EmailLog::where('email_type', 'patient_communication')
+                ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
+                ->where('status', 'failed')->count(),
+        ];
+
+        // Get patients for filter
+        $patients = Patient::active()
+            ->visibleTo($user)
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
+
+        return view('staff.patient-email.index', compact('emailLogs', 'stats', 'patients', 'doctor'));
+    }
+
+    /**
+     * Display the specified email.
+     */
+    public function show($id)
+    {
+        $user = Auth::user();
+        $doctor = Doctor::where('user_id', $user->id)->first();
+        
+        if (!$doctor) {
+            return redirect()->route('staff.dashboard')
+                ->with('error', 'Doctor profile not found.');
+        }
+
+        $emailLog = EmailLog::where('email_type', 'patient_communication')
+            ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
+            ->findOrFail($id);
+
+        $emailLog->load('patient');
+
+        return view('staff.patient-email.show', compact('emailLog', 'doctor'));
+    }
+
     /**
      * Show the email composer form.
      */
