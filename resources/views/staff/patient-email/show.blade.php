@@ -83,6 +83,21 @@
                                 @endif
                             </td>
                         </tr>
+                        <tr>
+                            <td><strong>Opened:</strong></td>
+                            <td>
+                                @if($emailLog->opened_at)
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i>Opened
+                                    </span>
+                                    <br><small class="text-muted">{{ $emailLog->opened_at->format('F j, Y g:i A') }}</small>
+                                @else
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-envelope me-1"></i>Not Opened
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
                     </table>
                 </div>
                 <div class="col-md-6">
