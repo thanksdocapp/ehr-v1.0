@@ -22,22 +22,12 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .email-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: {{ $emailData['primary_color'] ?? '#007bff' }};
             padding: 40px 20px;
             text-align: center;
             color: #ffffff;
             position: relative;
             overflow: hidden;
-        }
-        .email-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.1);
-            opacity: 0.3;
         }
         .email-header-content {
             position: relative;
@@ -152,9 +142,9 @@
                     <div class="patient-info-item">
                         <strong>Name:</strong> {{ $emailData['patient_name'] ?? 'N/A' }}
                     </div>
-                    @if(!empty($emailData['patient_id']))
+                    @if(!empty($emailData['patient_dob']))
                     <div class="patient-info-item">
-                        <strong>Patient ID:</strong> {{ $emailData['patient_id'] }}
+                        <strong>Date of Birth:</strong> {{ $emailData['patient_dob'] }}
                     </div>
                     @endif
                 </div>

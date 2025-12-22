@@ -75,6 +75,11 @@ Thumbs.db
 *.swo
 *~
 
+# Cursor / local scratch files
+.cursor/
+tmp_*
+_tmp_*
+
 # Zip files (unless specifically needed)
 *.zip
 !/install-files/*.zip

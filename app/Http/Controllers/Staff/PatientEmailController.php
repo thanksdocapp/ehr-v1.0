@@ -9,12 +9,14 @@ use App\Models\Department;
 use App\Mail\PatientEmail;
 use App\Models\EmailLog;
 use App\Models\EmailAttachment;
+use App\Models\Setting;
 use App\Traits\ConfiguresSmtp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Exception;
@@ -22,6 +24,19 @@ use Exception;
 class PatientEmailController extends Controller
 {
     use ConfiguresSmtp;
+
+    /**
+     * Some deployments may not have all optional columns on `email_logs` yet.
+     * Guard reads/writes so features degrade gracefully instead of crashing.
+     */
+    private function emailLogHasColumn(string $column): bool
+    {
+        try {
+            return Schema::hasColumn('email_logs', $column);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
     
     /**
      * Display a listing of emails sent by the current doctor.
@@ -38,16 +53,21 @@ class PatientEmailController extends Controller
 
         // Get emails sent by this doctor (filter by doctor_id in metadata)
         // Use whereRaw for JSON path query that works across MySQL versions
-        $query = EmailLog::where('email_type', 'patient_communication')
+        $query = EmailLog::query()
             ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
             ->orderBy('created_at', 'desc');
+
+        // Filter to patient communications if column exists; otherwise rely on metadata doctor_id filter.
+        if ($this->emailLogHasColumn('email_type')) {
+            $query->where('email_type', 'patient_communication');
+        }
 
         // Apply filters
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('patient_id')) {
+        if ($request->filled('patient_id') && $this->emailLogHasColumn('patient_id')) {
             $query->where('patient_id', $request->patient_id);
         }
 
@@ -71,14 +91,25 @@ class PatientEmailController extends Controller
 
         // Get statistics
         $stats = [
-            'total_emails' => EmailLog::where('email_type', 'patient_communication')
-                ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])->count(),
-            'sent_emails' => EmailLog::where('email_type', 'patient_communication')
-                ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
-                ->where('status', 'sent')->count(),
-            'failed_emails' => EmailLog::where('email_type', 'patient_communication')
-                ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
-                ->where('status', 'failed')->count(),
+            'total_emails' => (function () use ($doctor) {
+                $q = EmailLog::query()->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id]);
+                if ($this->emailLogHasColumn('email_type')) $q->where('email_type', 'patient_communication');
+                return $q->count();
+            })(),
+            'sent_emails' => (function () use ($doctor) {
+                $q = EmailLog::query()
+                    ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
+                    ->where('status', 'sent');
+                if ($this->emailLogHasColumn('email_type')) $q->where('email_type', 'patient_communication');
+                return $q->count();
+            })(),
+            'failed_emails' => (function () use ($doctor) {
+                $q = EmailLog::query()
+                    ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
+                    ->where('status', 'failed');
+                if ($this->emailLogHasColumn('email_type')) $q->where('email_type', 'patient_communication');
+                return $q->count();
+            })(),
         ];
 
         // Get patients for filter
@@ -104,10 +135,12 @@ class PatientEmailController extends Controller
                 ->with('error', 'Doctor profile not found.');
         }
 
-        $emailLog = EmailLog::with('patient')
-            ->where('email_type', 'patient_communication')
-            ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
-            ->findOrFail($id);
+        $emailLogQuery = EmailLog::with('patient')
+            ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id]);
+        if ($this->emailLogHasColumn('email_type')) {
+            $emailLogQuery->where('email_type', 'patient_communication');
+        }
+        $emailLog = $emailLogQuery->findOrFail($id);
 
         return view('staff.patient-email.show', compact('emailLog', 'doctor'));
     }
@@ -125,10 +158,12 @@ class PatientEmailController extends Controller
             abort(403);
         }
 
-        $emailLog = EmailLog::with('patient')
-            ->where('email_type', 'patient_communication')
-            ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id])
-            ->findOrFail($id);
+        $emailLogQuery = EmailLog::with('patient')
+            ->whereRaw('JSON_EXTRACT(metadata, "$.doctor_id") = ?', [$doctor->id]);
+        if ($this->emailLogHasColumn('email_type')) {
+            $emailLogQuery->where('email_type', 'patient_communication');
+        }
+        $emailLog = $emailLogQuery->findOrFail($id);
 
         $metadata = $emailLog->metadata ?? [];
         $html = null;
@@ -183,12 +218,15 @@ class PatientEmailController extends Controller
             $patient = $emailLog->patient;
             $patientName = $metadata['patient_name'] ?? ($patient ? $patient->full_name : 'N/A');
             $patientId = $metadata['patient_id'] ?? ($patient ? ($patient->patient_id ?? $patient->id) : null);
+            $patientDob = $metadata['patient_dob'] ?? ($patient && $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : null);
+            $primaryColor = $metadata['primary_color'] ?? Setting::get('primary_color', '#007bff');
 
             $emailData = [
                 'subject' => $emailLog->subject,
                 'body' => $emailLog->body,
                 'patient_name' => $patientName,
                 'patient_id' => $patientId,
+                'patient_dob' => $patientDob,
                 'patient_email' => $metadata['patient_email'] ?? ($patient ? $patient->email : null),
                 'doctor_name' => $metadata['doctor_name'] ?? ($doctor->name ?? $user->name),
                 'doctor_specialization' => $metadata['doctor_specialization'] ?? ($doctor->specialization ?? 'General Practitioner'),
@@ -197,6 +235,7 @@ class PatientEmailController extends Controller
                 'clinic_logo' => $logoUrl,
                 'department_name' => $departmentName,
                 'department_logo' => $logoUrl,
+                'primary_color' => $primaryColor,
                 'date_sent' => $metadata['date_sent'] ?? ($emailLog->sent_at ? $emailLog->sent_at->format('F j, Y') : $emailLog->created_at->format('F j, Y')),
             ];
 
@@ -332,19 +371,24 @@ class PatientEmailController extends Controller
             }
 
             // Create email log first to get ID for tracking
-            $emailLog = EmailLog::create([
+            $logData = [
                 'recipient_email' => $patient->email,
                 'recipient_name' => $patient->full_name,
                 'subject' => $request->subject,
                 'body' => $request->body,
                 'status' => 'pending',
-                'patient_id' => $patient->id,
                 'metadata' => [
                     'doctor_id' => $doctor->id,
                     'tracking_token' => $trackingToken,
                 ],
-                'email_type' => 'patient_communication',
-            ]);
+            ];
+            if ($this->emailLogHasColumn('patient_id')) {
+                $logData['patient_id'] = $patient->id;
+            }
+            if ($this->emailLogHasColumn('email_type')) {
+                $logData['email_type'] = 'patient_communication';
+            }
+            $emailLog = EmailLog::create($logData);
 
             // Save attachments to database
             foreach ($attachmentPaths as $attachmentData) {
@@ -366,6 +410,7 @@ class PatientEmailController extends Controller
                 'body' => $request->body,
                 'patient_name' => $patient->full_name,
                 'patient_id' => $patient->patient_id ?? $patient->id,
+                'patient_dob' => $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : null,
                 'patient_email' => $patient->email,
                 'doctor_name' => $doctor->name ?? $user->name,
                 'doctor_specialization' => $doctor->specialization ?? 'General Practitioner',
@@ -374,6 +419,7 @@ class PatientEmailController extends Controller
                 'clinic_logo' => $logoUrl,
                 'department_name' => $department ? $department->name : null,
                 'department_logo' => $logoUrl,
+                'primary_color' => Setting::get('primary_color', '#007bff'),
                 'date_sent' => now()->format('F j, Y'),
                 'tracking_token' => $trackingToken,
                 'email_log_id' => $emailLog->id,
@@ -436,12 +482,14 @@ class PatientEmailController extends Controller
                         'doctor_phone' => $emailData['doctor_phone'],
                         'patient_name' => $emailData['patient_name'],
                         'patient_id' => $emailData['patient_id'],
+                        'patient_dob' => $emailData['patient_dob'] ?? null,
                         'patient_email' => $emailData['patient_email'],
                         'clinic_name' => $emailData['clinic_name'],
                         'clinic_logo' => $emailData['clinic_logo'] ?? null,
                         'department_name' => $emailData['department_name'],
                         'department_id' => $department ? $department->id : null,
                         'department_logo' => $emailData['department_logo'] ?? null,
+                        'primary_color' => $emailData['primary_color'] ?? null,
                         'date_sent' => $emailData['date_sent'],
                         'tracking_token' => $trackingToken,
                         'rendered_html' => $renderedHtml,
@@ -473,20 +521,25 @@ class PatientEmailController extends Controller
 
                 // Log failed email attempt
                 try {
-                    EmailLog::create([
+                    $failedLogData = [
                         'recipient_email' => $patient->email,
                         'recipient_name' => $patient->full_name,
                         'subject' => $request->subject,
                         'body' => $request->body,
                         'status' => 'failed',
                         'error_message' => $errorMessage,
-                        'patient_id' => $patient->id,
                         'metadata' => [
                             'doctor_id' => $doctor->id,
                             'error_type' => 'transport_exception',
                         ],
-                        'email_type' => 'patient_communication',
-                    ]);
+                    ];
+                    if ($this->emailLogHasColumn('patient_id')) {
+                        $failedLogData['patient_id'] = $patient->id;
+                    }
+                    if ($this->emailLogHasColumn('email_type')) {
+                        $failedLogData['email_type'] = 'patient_communication';
+                    }
+                    EmailLog::create($failedLogData);
                 } catch (Exception $logException) {
                     // Ignore logging errors
                 }
@@ -510,19 +563,24 @@ class PatientEmailController extends Controller
 
             // Log failed email attempt
             try {
-                EmailLog::create([
+                $failedLogData = [
                     'recipient_email' => $patient->email ?? null,
                     'recipient_name' => $patient->full_name ?? null,
                     'subject' => $request->subject,
                     'body' => $request->body,
                     'status' => 'failed',
                     'error_message' => $e->getMessage(),
-                    'patient_id' => $request->patient_id,
                     'metadata' => [
                         'doctor_id' => $doctor->id ?? null,
                     ],
-                    'email_type' => 'patient_communication',
-                ]);
+                ];
+                if ($this->emailLogHasColumn('patient_id')) {
+                    $failedLogData['patient_id'] = $request->patient_id;
+                }
+                if ($this->emailLogHasColumn('email_type')) {
+                    $failedLogData['email_type'] = 'patient_communication';
+                }
+                EmailLog::create($failedLogData);
             } catch (Exception $logException) {
                 // Ignore logging errors
             }

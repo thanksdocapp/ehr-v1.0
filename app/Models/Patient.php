@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\PatientResetPasswordNotification;
+use App\Casts\SafeEncrypted;
 
 class Patient extends Authenticatable
 {
@@ -72,10 +73,11 @@ class Patient extends Authenticatable
         'password' => 'hashed',
         'notification_preferences' => 'array',
         // PHI/PII Encryption (HIPAA Compliance)
-        'insurance_number' => 'encrypted',
-        'emergency_contact' => 'encrypted',
-        'emergency_phone' => 'encrypted',
-        'notes' => 'encrypted', // May contain sensitive medical information
+        // Use SafeEncrypted to avoid runtime crashes when legacy/plaintext values exist.
+        'insurance_number' => SafeEncrypted::class,
+        'emergency_contact' => SafeEncrypted::class,
+        'emergency_phone' => SafeEncrypted::class,
+        'notes' => SafeEncrypted::class, // May contain sensitive medical information
     ];
 
     // Relationships

@@ -4,10 +4,49 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class EmailLog extends Model
 {
     use HasFactory;
+
+    /**
+     * Cache of existing columns for the current connection.
+     * This prevents repeated schema queries when logging emails.
+     *
+     * @var array<string, bool>|null
+     */
+    protected static $existingColumns = null;
+
+    protected static function booted()
+    {
+        $sanitize = function (EmailLog $model): void {
+            // Lazily cache column map; if schema introspection fails, do nothing (avoid breaking logging).
+            if (static::$existingColumns === null) {
+                try {
+                    $cols = Schema::getColumnListing($model->getTable());
+                    static::$existingColumns = array_fill_keys($cols, true);
+                } catch (\Throwable $e) {
+                    static::$existingColumns = [];
+                }
+            }
+
+            // If we couldn't load columns (e.g., DB error), don't mutate attributes.
+            if (empty(static::$existingColumns)) {
+                return;
+            }
+
+            // Remove any attributes that don't exist as columns to avoid SQL "unknown column" errors.
+            foreach (array_keys($model->getAttributes()) as $key) {
+                if (!isset(static::$existingColumns[$key])) {
+                    unset($model->{$key});
+                }
+            }
+        };
+
+        static::creating($sanitize);
+        static::updating($sanitize);
+    }
 
     /**
      * The attributes that are mass assignable.
