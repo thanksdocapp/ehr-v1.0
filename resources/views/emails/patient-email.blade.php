@@ -163,7 +163,7 @@
                 @if(!empty($emailData['doctor_specialization']))
                     <p>{{ $emailData['doctor_specialization'] }}</p>
                 @endif
-                <p>{{ $emailData['clinic_name'] }}</p>
+                <p>{{ $emailData['department_name'] ?? $emailData['clinic_name'] }}</p>
                 <p>{{ $emailData['date_sent'] }}</p>
             </div>
 
