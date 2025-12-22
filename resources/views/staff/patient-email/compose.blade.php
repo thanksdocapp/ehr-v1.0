@@ -254,10 +254,45 @@
 <!-- Quill Editor JS -->
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <!-- Shared Quill Initialization -->
-<script src="{{ asset('js/quill-init.js') }}"></script>
+<script src="{{ asset('js/quill-init.js') }}" onerror="console.warn('quill-init.js failed to load, using fallback initialization')"></script>
 <script>
 $(document).ready(function() {
     let quillEmail;
+
+    // Fallback initialization if quill-init.js didn't load
+    if (typeof window.initQuillEditor === 'undefined') {
+        window.initQuillEditor = function(selector, options) {
+            if (typeof Quill === 'undefined') {
+                console.error('Quill is not loaded');
+                return null;
+            }
+            const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
+            if (!element) {
+                console.error('Quill editor container not found: ' + selector);
+                return null;
+            }
+            try {
+                return new Quill(element, options || {});
+            } catch (error) {
+                console.error('Failed to initialize Quill editor:', error);
+                return null;
+            }
+        };
+        window.setQuillContent = function(quill, html) {
+            if (quill && quill.root) {
+                quill.root.innerHTML = html || '';
+            }
+        };
+        window.syncQuillToTextarea = function(quill, textareaSelector) {
+            if (!quill || !quill.root) return;
+            const textarea = typeof textareaSelector === 'string' ? document.querySelector(textareaSelector) : textareaSelector;
+            if (!textarea) return;
+            textarea.value = quill.root.innerHTML;
+            quill.on('text-change', function() {
+                textarea.value = quill.root.innerHTML;
+            });
+        };
+    }
 
     // Initialize Quill for rich text email body with full formatting options
     quillEmail = window.initQuillEditor('#quill-email-editor', {
