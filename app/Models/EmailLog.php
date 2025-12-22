@@ -51,7 +51,9 @@ class EmailLog extends Model
         'sent_at' => 'datetime',
         'opened_at' => 'datetime',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
+        // PHI Encryption - Email content may contain sensitive medical information
+        'body' => 'encrypted',
     ];
 
     /**
@@ -76,6 +78,14 @@ class EmailLog extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    /**
+     * Get the attachments for this email log.
+     */
+    public function attachments()
+    {
+        return $this->hasMany(EmailAttachment::class);
     }
 
     /**

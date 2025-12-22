@@ -18,19 +18,74 @@ class PublicBillingController extends Controller
 {
     /**
      * Show invoice and payment form using payment token (no authentication required)
+     * Supports both routes: /pay/{token} and /{clinic}/{service}/pay/{token}
      */
-    public function showInvoice(string $token): View|RedirectResponse
+    public function showInvoice(Request $request, ...$args): View|RedirectResponse
     {
+        // Get token from route parameter (handles both route patterns)
+        // For /{clinic}/{service}/pay/{token}: route params will be ['clinic' => ..., 'service' => ..., 'token' => ...]
+        // For /pay/{token}: route params will be ['token' => ...]
+        $token = $request->route('token');
+        
+        // If not found in route, try the last argument (for backward compatibility)
+        if (!$token && !empty($args)) {
+            $token = end($args);
+        }
+        
+        // Get clinic and service from route if present
+        $clinic = $request->route('clinic');
+        $service = $request->route('service');
+        
+        Log::info('Public billing showInvoice called', [
+            'token' => $token,
+            'clinic' => $clinic,
+            'service' => $service,
+            'route_name' => $request->route() ? $request->route()->getName() : 'NO ROUTE',
+            'all_route_params' => $request->route() ? $request->route()->parameters() : [],
+            'url' => $request->fullUrl(),
+            'path' => $request->path(),
+            'method' => $request->method(),
+        ]);
+        
+        // Debug: Check if this is the clinic/service route
+        if ($clinic && $service) {
+            Log::info('Clinic/Service route detected', [
+                'clinic' => $clinic,
+                'service' => $service,
+                'token' => $token,
+            ]);
+        }
+        
+        if (!$token) {
+            Log::error('Payment token missing from route', [
+                'route_params' => $request->route()->parameters(),
+                'args' => $args,
+            ]);
+            return redirect(route('public.billing.invalid', [], false))
+                ->with('error', 'Invalid payment link: token missing.');
+        }
+        
         $invoice = Invoice::where('payment_token', $token)->first();
 
         if (!$invoice) {
-            return redirect()->route('public.billing.invalid')
+            Log::warning('Invoice not found for token', [
+                'token' => $token,
+                'token_length' => strlen($token),
+                'recent_tokens' => Invoice::latest()->take(3)->pluck('payment_token')->toArray(),
+            ]);
+            return redirect(route('public.billing.invalid', [], false))
                 ->with('error', 'Invalid or expired payment link.');
         }
+        
+        Log::info('Invoice found', [
+            'invoice_id' => $invoice->id,
+            'invoice_number' => $invoice->invoice_number,
+            'status' => $invoice->status,
+        ]);
 
-        // Check if token is expired
-        if ($invoice->payment_token_expires_at && $invoice->payment_token_expires_at->isPast()) {
-            return redirect()->route('public.billing.invalid')
+        // Check if token is expired (only if expiration is set)
+        if ($invoice->payment_token_expires_at !== null && $invoice->payment_token_expires_at->isPast()) {
+            return redirect(route('public.billing.invalid', [], false))
                 ->with('error', 'This payment link has expired. Please contact the hospital for a new link.');
         }
 
@@ -46,23 +101,76 @@ class PublicBillingController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('public.billing.show', compact('invoice', 'gateways', 'token'));
+        // Pass route information to view so it can use the correct route pattern
+        // Always ensure we use the token from the route, not from anywhere else
+        $routeType = ($clinic && $service) ? 'service' : 'billing';
+        $routeParams = ($clinic && $service) ? [
+            'clinic' => $clinic,
+            'service' => $service,
+            'token' => $token // Use the token extracted from the route
+        ] : ['token' => $token]; // Use the token extracted from the route
+
+        Log::info('Passing route info to view', [
+            'routeType' => $routeType,
+            'routeParams' => $routeParams,
+            'token' => $token,
+            'invoice_id' => $invoice->id,
+        ]);
+
+        return view('public.billing.show', compact('invoice', 'gateways', 'token', 'routeType', 'routeParams'));
     }
 
     /**
      * Show payment form with selected gateway
      */
-    public function showPaymentForm(Request $request, string $token): View|RedirectResponse
+    public function showPaymentForm(Request $request, ...$args): View|RedirectResponse
     {
+        // IMPORTANT: Laravel passes route params positionally, so for
+        // /{clinic}/{service}/pay/{token}/... the first argument would otherwise be "clinic".
+        // Always read the token from the route parameters.
+        $token = $request->route('token');
+        if (!$token && !empty($args)) {
+            $token = end($args);
+        }
+        
+        if (!$token) {
+            \Log::error('ShowPaymentForm: Token not found', [
+                'route_params' => $request->route()->parameters(),
+                'all_params' => $request->all(),
+            ]);
+            return redirect(route('public.billing.invalid', [], false))
+                ->with('error', 'Invalid payment link: token missing.');
+        }
+        
         $invoice = Invoice::where('payment_token', $token)->first();
 
-        if (!$invoice || !$invoice->isPaymentTokenValid($token)) {
-            return redirect()->route('public.billing.invalid')
-                ->with('error', 'Invalid or expired payment link.');
+        if (!$invoice || $invoice->payment_token !== $token) {
+            return redirect(route('public.billing.invalid', [], false))
+                ->with('error', 'Invalid payment link.');
+        }
+        
+        // Check expiration only if set
+        if ($invoice->payment_token_expires_at !== null && $invoice->payment_token_expires_at->isPast()) {
+            return redirect(route('public.billing.invalid', [], false))
+                ->with('error', 'This payment link has expired.');
         }
 
         if ($invoice->status === 'paid') {
-            return redirect()->route('public.billing.pay', ['token' => $token])
+            // Use the same route pattern as the current request
+            $clinic = $request->route('clinic');
+            $service = $request->route('service');
+            
+            if ($clinic && $service) {
+                $redirectRoute = route('public.service.payment', [
+                    'clinic' => $clinic,
+                    'service' => $service,
+                    'token' => $token
+                ], false);
+            } else {
+                $redirectRoute = route('public.billing.pay', ['token' => $token], false);
+            }
+            
+            return redirect($redirectRoute)
                 ->with('info', 'This invoice has already been paid.');
         }
 
@@ -76,18 +184,47 @@ class PublicBillingController extends Controller
 
         $invoice->load(['invoiceItems', 'patient']);
 
-        return view('public.billing.payment-form', compact('invoice', 'selectedGateway', 'token'));
+        // Pass route information to view so it can use the correct route pattern
+        $clinic = $request->route('clinic');
+        $service = $request->route('service');
+        $routeType = ($clinic && $service) ? 'service' : 'billing';
+        $routeParams = ($clinic && $service) ? [
+            'clinic' => $clinic,
+            'service' => $service,
+            'token' => $token
+        ] : ['token' => $token];
+
+        return view('public.billing.payment-form', compact('invoice', 'selectedGateway', 'token', 'routeType', 'routeParams'));
     }
 
     /**
      * Process payment for invoice
      */
-    public function processPayment(Request $request, string $token)
+    public function processPayment(Request $request, ...$args)
     {
+        // Always read token from route params (see note in showPaymentForm)
+        $token = $request->route('token');
+        if (!$token && !empty($args)) {
+            $token = end($args);
+        }
+        
+        if (!$token) {
+            \Log::error('ProcessPayment: Token not found', [
+                'route_params' => $request->route()->parameters(),
+                'all_params' => $request->all(),
+            ]);
+            return back()->withErrors(['error' => 'Invalid payment link: token missing.']);
+        }
+        
         $invoice = Invoice::where('payment_token', $token)->first();
 
-        if (!$invoice || !$invoice->isPaymentTokenValid($token)) {
-            return back()->withErrors(['error' => 'Invalid or expired payment link.']);
+        if (!$invoice || $invoice->payment_token !== $token) {
+            return back()->withErrors(['error' => 'Invalid payment link.']);
+        }
+        
+        // Check expiration only if set
+        if ($invoice->payment_token_expires_at !== null && $invoice->payment_token_expires_at->isPast()) {
+            return back()->withErrors(['error' => 'This payment link has expired.']);
         }
 
         if ($invoice->status === 'paid') {
@@ -158,8 +295,27 @@ class PublicBillingController extends Controller
             
             $stripeGateway->initialize($credentials);
 
-            // Build success URL - ensure it doesn't have query params already
-            $successUrl = route('public.billing.success', ['token' => $token]);
+            // Build success and cancel URLs.
+            // Stripe requires ABSOLUTE URLs; build them off the CURRENT request host (not APP_URL).
+            $clinic = $request->route('clinic');
+            $service = $request->route('service');
+            $baseUrl = $request->getSchemeAndHttpHost();
+            
+            if ($clinic && $service) {
+                $successUrl = $baseUrl . route('public.service.success', [
+                    'clinic' => $clinic,
+                    'service' => $service,
+                    'token' => $token
+                ], false);
+                $cancelUrl = $baseUrl . route('public.service.payment', [
+                    'clinic' => $clinic,
+                    'service' => $service,
+                    'token' => $token
+                ], false);
+            } else {
+                $successUrl = $baseUrl . route('public.billing.success', ['token' => $token], false);
+                $cancelUrl = $baseUrl . route('public.billing.pay', ['token' => $token], false);
+            }
             
             // Get currency - check invoice/billing currency, then system settings, then default to GBP for UK
             $currency = $this->getCurrencyForPayment($invoice, $gateway);
@@ -171,7 +327,7 @@ class PublicBillingController extends Controller
                 'customer_email' => $invoice->patient->email ?? 'customer@example.com',
                 'description' => 'Invoice #' . $invoice->invoice_number,
                 'success_url' => $successUrl,
-                'cancel_url' => route('public.billing.pay', ['token' => $token]) . '?payment_cancelled=1',
+                'cancel_url' => $cancelUrl . '?payment_cancelled=1',
                 'is_public_payment' => true,
             ];
 
@@ -240,12 +396,27 @@ class PublicBillingController extends Controller
     /**
      * Show payment success page
      */
-    public function paymentSuccess(string $token, Request $request): View|RedirectResponse
+    public function paymentSuccess(Request $request, ...$args): View|RedirectResponse
     {
+        // Always read token from route params (see note in showPaymentForm)
+        $token = $request->route('token');
+        if (!$token && !empty($args)) {
+            $token = end($args);
+        }
+        
+        if (!$token) {
+            \Log::error('PaymentSuccess: Token not found', [
+                'route_params' => $request->route()->parameters(),
+                'all_params' => $request->all(),
+            ]);
+            return redirect(route('public.billing.invalid', [], false))
+                ->with('error', 'Invalid payment link: token missing.');
+        }
+        
         $invoice = Invoice::where('payment_token', $token)->first();
 
         if (!$invoice) {
-            return redirect()->route('public.billing.invalid')
+            return redirect(route('public.billing.invalid', [], false))
                 ->with('error', 'Invalid payment link.');
         }
 

@@ -21,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS in production for security and compliance
+        if ($this->app->environment('production')) {
+            \URL::forceScheme('https');
+        }
+        
         // Register model observers
         User::observe(UserObserver::class);
         

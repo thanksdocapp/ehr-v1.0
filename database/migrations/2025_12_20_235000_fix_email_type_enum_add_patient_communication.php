@@ -22,9 +22,12 @@ return new class extends Migration
             return;
         }
 
-        // Modify the ENUM to include 'patient_communication'
+        // Modify the ENUM to include 'patient_communication', 'two_factor', and 'password_reset'
+        // First, check if there are any values that don't match the new enum
         // MySQL requires MODIFY COLUMN with full enum definition
         try {
+            // For MySQL, we need to update any invalid values first, or include all possible values
+            // Let's include all values that might exist: 'two_factor' and 'password_reset'
             DB::statement("
                 ALTER TABLE `email_logs` 
                 MODIFY COLUMN `email_type` ENUM(
@@ -33,7 +36,9 @@ return new class extends Migration
                     'appointment', 
                     'prescription', 
                     'lab_result', 
-                    'patient_communication'
+                    'patient_communication',
+                    'two_factor',
+                    'password_reset'
                 ) NOT NULL DEFAULT 'general'
             ");
             
@@ -63,7 +68,7 @@ return new class extends Migration
         }
 
         // Revert the ENUM back to original values
-        // Note: This will fail if there are existing records with 'patient_communication'
+        // Note: This will fail if there are existing records with new enum values
         try {
             DB::statement("
                 ALTER TABLE `email_logs` 

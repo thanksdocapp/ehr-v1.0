@@ -193,6 +193,27 @@ class PublicBookingService
             'gp_address' => $data['gp_address'] ?? null,
         ];
 
+        /**
+         * IMPORTANT:
+         * The `invoices.patient_id` column is NOT NULL in this codebase, so we must
+         * have a real patient before creating an invoice.
+         *
+         * We still keep a PendingBooking record so appointment/billing can be created
+         * after payment, but we create (or find) the guest patient up-front.
+         */
+        $patient = $this->guestPatientService->findOrCreateGuest([
+            'first_name' => $patientData['first_name'],
+            'last_name' => $patientData['last_name'],
+            'email' => $patientData['email'],
+            'phone' => $patientData['phone'],
+            'date_of_birth' => $patientData['date_of_birth'] ?? null,
+            'gender' => $patientData['gender'] ?? null,
+            'address' => $patientData['address'] ?? null,
+        ]);
+
+        // Update patient with any additional data we captured in the booking flow
+        $this->updatePatientData($patient, $patientData, $departmentId);
+
         // Create pending booking
         $pendingBooking = PendingBooking::create([
             'booking_token' => PendingBooking::generateBookingToken(),
@@ -209,10 +230,10 @@ class PublicBookingService
             'expires_at' => now()->addHours(24), // Booking expires in 24 hours
         ]);
 
-        // Create invoice for payment (without patient_id yet)
+        // Create invoice for payment (patient exists even though appointment/billing is deferred)
         $invoice = Invoice::create([
             'billing_id' => null, // No billing yet
-            'patient_id' => null, // No patient yet
+            'patient_id' => $patient->id,
             'appointment_id' => null, // No appointment yet
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'invoice_date' => now(),
@@ -282,16 +303,22 @@ class PublicBookingService
             $service = $pendingBooking->service;
             $invoice = $pendingBooking->invoice;
 
-            // Create patient
-            $patient = $this->guestPatientService->findOrCreateGuest([
-                'first_name' => $patientData['first_name'],
-                'last_name' => $patientData['last_name'],
-                'email' => $patientData['email'],
-                'phone' => $patientData['phone'],
-                'date_of_birth' => $patientData['date_of_birth'] ?? null,
-                'gender' => $patientData['gender'] ?? null,
-                'address' => $patientData['address'] ?? null,
-            ]);
+            // Prefer patient already linked to invoice (new flow); fallback to old flow if missing
+            $patient = null;
+            if ($invoice && !empty($invoice->patient_id)) {
+                $patient = Patient::find($invoice->patient_id);
+            }
+            if (!$patient) {
+                $patient = $this->guestPatientService->findOrCreateGuest([
+                    'first_name' => $patientData['first_name'],
+                    'last_name' => $patientData['last_name'],
+                    'email' => $patientData['email'],
+                    'phone' => $patientData['phone'],
+                    'date_of_birth' => $patientData['date_of_birth'] ?? null,
+                    'gender' => $patientData['gender'] ?? null,
+                    'address' => $patientData['address'] ?? null,
+                ]);
+            }
 
             // Update patient with additional data
             $this->updatePatientData($patient, $patientData, $pendingBooking->department_id);

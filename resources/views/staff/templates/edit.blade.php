@@ -46,14 +46,39 @@
                             @enderror
                         </div>
 
-                        <div class="mb-3">
-                            <label for="content" class="form-label">Content <span class="text-danger">*</span></label>
-                            <textarea class="form-control @error('content') is-invalid @enderror"
-                                      id="content" name="content" rows="20">{{ old('content', $template->content) }}</textarea>
-                            @error('content')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        @php $isForm = $template->type === 'form'; @endphp
+                        
+                        @if($isForm)
+                            <!-- Formeo Form Builder for Forms -->
+                            <div class="mb-3">
+                                <label class="form-label">Form Design <span class="text-danger">*</span></label>
+                                <div id="formeo-builder" style="min-height: 500px; border: 1px solid #dee2e6; border-radius: 4px;"></div>
+                                <!-- Hidden input for Formeo schema -->
+                                <input type="hidden" id="formeo_schema" name="formeo_schema" value="{{ old('formeo_schema', $template->formeo_schema ? json_encode($template->formeo_schema) : '') }}">
+                                <!-- Hidden content field (will store minimal HTML for backward compatibility) -->
+                                <textarea class="d-none" id="content" name="content">{{ old('content', $template->content ?: '<!-- Formeo Form -->') }}</textarea>
+                                @error('formeo_schema')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted d-block mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Use the drag-and-drop form builder to create your form. Add fields, configure labels, and set validation rules.
+                                </small>
+                            </div>
+                        @else
+                            <!-- Quill Editor for Letters -->
+                            <div class="mb-3">
+                                <label for="content" class="form-label">Content <span class="text-danger">*</span></label>
+                                <!-- Quill Editor Container -->
+                                <div id="quill-editor" style="min-height: 400px;"></div>
+                                <!-- Hidden textarea for form submission -->
+                                <textarea class="form-control @error('content') is-invalid @enderror d-none"
+                                          id="content" name="content" required>{{ old('content', $template->content) }}</textarea>
+                                @error('content')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -147,14 +172,35 @@
                     </div>
                 </div>
 
-                <div class="doctor-card" id="formFieldsHelp" style="{{ $template->type === 'form' ? '' : 'display: none;' }}">
-                    <div class="doctor-card-header">
+                <!-- Form Builder Info (shown when type is 'form') -->
+                <div class="doctor-card mb-3" id="formBuilderInfo" style="{{ $isForm ? '' : 'display: none;' }}">
+                    <div class="doctor-card-header bg-success text-white">
                         <h5 class="doctor-card-title mb-0">
-                            <i class="fas fa-info-circle me-2"></i>Field Syntax
+                            <i class="fas fa-wand-magic-sparkles me-2"></i>Form Builder
                         </h5>
                     </div>
                     <div class="doctor-card-body">
-                        <p class="small text-muted mb-2">Form fields use this syntax:</p>
+                        <p class="text-muted small mb-2">
+                            Use the drag-and-drop form builder on the left to design your form.
+                        </p>
+                        <ul class="small text-muted ps-3 mb-0">
+                            <li>Drag fields from the sidebar to add them</li>
+                            <li>Click fields to edit their properties</li>
+                            <li>Configure labels, placeholders, and validation</li>
+                            <li>Set required fields as needed</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Legacy Form Fields Helper (hidden when using Formeo) -->
+                <div class="doctor-card" id="formFieldsHelp" style="display: none;">
+                    <div class="doctor-card-header">
+                        <h5 class="doctor-card-title mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Field Syntax (Legacy)
+                        </h5>
+                    </div>
+                    <div class="doctor-card-body">
+                        <p class="small text-muted mb-2">Old form fields used this syntax:</p>
                         <code class="small d-block mb-2">@{{type:name:label}}</code>
                         <ul class="small text-muted ps-3 mb-0">
                             <li><code>input</code> - Text input</li>
@@ -172,10 +218,35 @@
 </div>
 @endsection
 
+@push('styles')
+@if(!$isForm)
+<!-- Quill Editor CSS (only for letters) -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+@else
+<!-- Formeo Form Builder CSS -->
+<link rel="stylesheet" href="https://unpkg.com/formeo@latest/dist/formeo.min.css">
+@endif
+@endpush
+
 @push('scripts')
-<script src="{{ getTinyMceCdnUrl() }}" referrerpolicy="origin"></script>
+@if(!$isForm)
+<!-- Quill Editor JS (only for letters) -->
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<!-- Shared Quill Initialization -->
+<script src="{{ asset('js/quill-init.js') }}"></script>
+@else
+<!-- Formeo Form Builder JS -->
+<script src="https://unpkg.com/formeo@latest/dist/formeo.umd.js"></script>
+<!-- Formeo Initialization -->
+<script src="{{ asset('js/formeo-init.js') }}"></script>
+@endif
+
 <script>
-    let editor;
+    @if($isForm)
+    let formeoBuilder;
+    @else
+    let quill;
+    @endif
 
     function normalizeToken(token) {
         // Tokens are written with a leading '@' in Blade to avoid parsing; strip the leading '@' before inserting.
@@ -183,150 +254,139 @@
         return (token.startsWith('@{{')) ? token.substring(1) : token;
     }
 
-    tinymce.init({
-        selector: '#content',
-        height: 500,
-        plugins: 'lists link table code',
-        toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | table | code',
-        setup: function(ed) {
-            editor = ed;
-
-            // Cross-browser drag/drop: bind to the editor iframe doc/body, not just TinyMCE events.
-            ed.on('init', function() {
-                const doc = ed.getDoc();
-                const body = ed.getBody();
-
-                if (!doc || !body) return;
-
-                const onDragOver = function(e) {
-                    // Needed so drop is allowed in Chrome/Safari/Firefox
-                    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-                    try {
-                        if (e && e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-                    } catch (err) {}
-                };
-
-                const onDrop = function(e) {
-                    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-
-                    let dt = null;
-                    if (e && e.dataTransfer) dt = e.dataTransfer;
-                    const tokenRaw = dt ? (dt.getData('text/plain') || dt.getData('text') || '') : '';
-                    const token = normalizeToken(tokenRaw);
-                    if (!token) return;
-
-                    try {
-                        if (ed.selection && typeof ed.selection.placeCaretAt === 'function') {
-                            ed.selection.placeCaretAt(e.clientX, e.clientY);
-                        }
-                    } catch (err) {}
-
-                    ed.insertContent(token);
-                };
-
-                doc.addEventListener('dragover', onDragOver);
-                body.addEventListener('dragover', onDragOver);
-                doc.addEventListener('drop', onDrop);
-                body.addEventListener('drop', onDrop);
+    document.addEventListener('DOMContentLoaded', async function() {
+        @if($isForm)
+        // Initialize Formeo form builder for forms
+        const existingSchema = document.getElementById('formeo_schema').value;
+        const schemaData = existingSchema ? JSON.parse(existingSchema) : null;
+        
+        formeoBuilder = await window.initFormeoBuilder('#formeo-builder', schemaData);
+        
+        if (formeoBuilder) {
+            // Listen for form changes and update hidden field
+            formeoBuilder.on('update', function() {
+                const schema = window.getFormeoSchema(formeoBuilder);
+                if (schema) {
+                    document.getElementById('formeo_schema').value = JSON.stringify(schema);
+                    document.getElementById('content').value = '<!-- Formeo Form -->';
+                }
             });
         }
-    });
-
-    function makeTokenDraggable(el, getToken) {
-        if (!el) return;
-        el.setAttribute('draggable', 'true');
-        el.style.cursor = 'grab';
-
-        el.addEventListener('dragstart', function(e) {
-            const token = normalizeToken(typeof getToken === 'function' ? (getToken() || '') : '');
-            if (!token) {
-                if (e && typeof e.preventDefault === 'function') e.preventDefault();
-                return;
-            }
-
-            try {
-                e.dataTransfer.effectAllowed = 'copy';
-                e.dataTransfer.setData('text/plain', token);
-                e.dataTransfer.setData('text', token);
-            } catch (err) {
-                // Ignore drag payload errors
-            }
-        });
-    }
-
-    // Data placeholder buttons
-    document.querySelectorAll('.placeholder-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const placeholder = normalizeToken(this.dataset.placeholder);
-            if (editor) {
-                editor.insertContent(placeholder);
-            }
+        @else
+        // Initialize Quill editor for letters
+        quill = window.initQuillEditor('#quill-editor', {
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Start typing your template content...'
         });
 
-        makeTokenDraggable(btn, function() {
-            return btn.dataset.placeholder || '';
+        // Load existing content
+        const textarea = document.getElementById('content');
+        if (textarea && textarea.value) {
+            window.setQuillContent(quill, textarea.value);
+        }
+
+        // Sync Quill content to hidden textarea
+        window.syncQuillToTextarea(quill, '#content');
+        
+        // Create editor reference for placeholder insertion
+        const editor = {
+            insertContent: function(content) {
+                const range = quill.getSelection(true);
+                quill.insertText(range.index, content, 'user');
+                quill.setSelection(range.index + content.length);
+            }
+        };
+        @endif
+
+        function makeTokenDraggable(el, getToken) {
+            if (!el) return;
+            el.setAttribute('draggable', 'true');
+            el.style.cursor = 'grab';
+
+            el.addEventListener('dragstart', function(e) {
+                const token = normalizeToken(typeof getToken === 'function' ? (getToken() || '') : '');
+                if (!token) {
+                    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                    return;
+                }
+
+                try {
+                    e.dataTransfer.effectAllowed = 'copy';
+                    e.dataTransfer.setData('text/plain', token);
+                    e.dataTransfer.setData('text', token);
+                } catch (err) {
+                    // Ignore drag payload errors
+                }
+            });
+        }
+
+        // Data placeholder buttons (only for letters)
+        @if(!$isForm)
+        document.querySelectorAll('.placeholder-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const placeholder = normalizeToken(this.dataset.placeholder);
+                if (quill && editor) {
+                    editor.insertContent(placeholder);
+                }
+            });
+
+            makeTokenDraggable(btn, function() {
+                return btn.dataset.placeholder || '';
+            });
         });
-    });
+        @endif
 
-    // Show/hide form fields panel based on type selection
-    const typeSelect = document.getElementById('type');
-    const formFieldsCard = document.getElementById('formFieldsCard');
-    const formFieldsHelp = document.getElementById('formFieldsHelp');
+        // Show/hide form builder info (for dynamic type switching if type select exists)
+        const typeSelect = document.getElementById('type');
+        if (typeSelect) {
+            const formBuilderInfo = document.getElementById('formBuilderInfo');
+            const formFieldsCard = document.getElementById('formFieldsCard');
+            const formFieldsHelp = document.getElementById('formFieldsHelp');
 
-    function toggleFormFields() {
-        const isForm = typeSelect.value === 'form';
-        formFieldsCard.style.display = isForm ? 'block' : 'none';
-        formFieldsHelp.style.display = isForm ? 'block' : 'none';
-    }
-
-    typeSelect.addEventListener('change', toggleFormFields);
-
-    // Insert field buttons
-    document.querySelectorAll('.insert-field-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const fieldType = this.dataset.type;
-            const fieldName = document.getElementById('fieldName').value.trim();
-            const fieldLabel = document.getElementById('fieldLabel').value.trim();
-
-            if (!fieldName || !fieldLabel) {
-                alert('Please enter both Field Name and Field Label');
-                return;
+            function toggleFormFields() {
+                const isFormType = typeSelect.value === 'form';
+                if (formBuilderInfo) formBuilderInfo.style.display = isFormType ? 'block' : 'none';
+                if (formFieldsCard) formFieldsCard.style.display = 'none'; // Legacy helper, always hidden with Formeo
+                if (formFieldsHelp) formFieldsHelp.style.display = 'none'; // Legacy helper, always hidden with Formeo
             }
 
-            // Convert field name to snake_case
-            const safeName = fieldName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+            typeSelect.addEventListener('change', toggleFormFields);
+        }
 
-            let placeholder;
-            if (fieldType === 'date') {
-                placeholder = `@{{input:${safeName}:${fieldLabel}:date}}`;
-            } else if (fieldType === 'input') {
-                placeholder = `@{{input:${safeName}:${fieldLabel}:text}}`;
-            } else {
-                placeholder = `@{{${fieldType}:${safeName}:${fieldLabel}}}`;
-            }
-
-            if (editor) {
-                editor.insertContent(placeholder);
-            }
-
-            // Clear inputs
-            document.getElementById('fieldName').value = '';
-            document.getElementById('fieldLabel').value = '';
-        });
-    });
-
-    // Quick field buttons
-    document.querySelectorAll('.quick-field-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const field = normalizeToken(this.dataset.field);
-            if (editor) {
-                editor.insertContent(field);
-            }
-        });
-
-        makeTokenDraggable(btn, function() {
-            return btn.dataset.field || '';
-        });
+        // Sync content before form submission
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                @if($isForm)
+                // For forms, ensure Formeo schema is saved
+                if (formeoBuilder) {
+                    const schema = window.getFormeoSchema(formeoBuilder);
+                    if (schema) {
+                        document.getElementById('formeo_schema').value = JSON.stringify(schema);
+                        document.getElementById('content').value = '<!-- Formeo Form -->';
+                    } else {
+                        e.preventDefault();
+                        alert('Please add at least one field to your form.');
+                        return false;
+                    }
+                }
+                @else
+                // For letters, sync Quill content
+                if (quill) {
+                    const html = window.getQuillContent(quill);
+                    document.getElementById('content').value = html;
+                }
+                @endif
+            });
+        }
     });
 </script>
 @endpush

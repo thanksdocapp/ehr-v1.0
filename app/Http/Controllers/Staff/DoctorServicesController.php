@@ -6,10 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\BookingService;
 use App\Models\Doctor;
 use App\Models\DoctorServicePrice;
+use App\Models\Billing;
+use App\Models\Invoice;
+use App\Models\Patient;
+use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class DoctorServicesController extends Controller
 {
@@ -245,5 +250,132 @@ class DoctorServicesController extends Controller
             return back()->with('error', 'Failed to remove service override: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Generate a payment link for a service.
+     */
+    public function generatePaymentLink(Request $request)
+    {
+        $user = Auth::user();
+        $doctor = Doctor::where('user_id', $user->id)->with('department')->firstOrFail();
+
+        $request->validate([
+            'service_id' => 'required|exists:booking_services,id',
+        ]);
+
+        try {
+            $service = BookingService::findOrFail($request->service_id);
+
+            // Get the price for this doctor
+            $servicePrice = $service->getPriceForDoctor($doctor->id);
+            
+            if (!$servicePrice || $servicePrice <= 0) {
+                return back()->with('error', 'Service does not have a valid price set.');
+            }
+
+            // Get clinic/department slug
+            $department = $doctor->department;
+            if (!$department || !$department->slug) {
+                return back()->with('error', 'Doctor must be associated with a clinic/department that has a slug.');
+            }
+            $clinicSlug = $department->slug;
+
+            // Generate service slug
+            $serviceSlug = Str::slug($service->name);
+
+            // Create a placeholder guest patient for this payment link
+            // The actual payer information will be collected when they use the link
+            $guestEmail = 'guest.' . time() . '.' . $service->id . '@payment-link.temp';
+            $patient = Patient::create([
+                'first_name' => 'Guest',
+                'last_name' => 'Patient',
+                'email' => $guestEmail,
+                'phone' => null,
+                'patient_id' => Patient::generatePatientId(),
+                'is_guest' => true,
+                'is_active' => true,
+                'department_id' => $department->id,
+                'assigned_doctor_id' => $doctor->id,
+                'created_by_doctor_id' => $doctor->id,
+            ]);
+
+            // Create billing record
+            // Set due_date far in the future (100 years) to effectively make it non-expiring
+            $billing = Billing::create([
+                'bill_number' => Billing::generateBillNumber(),
+                'patient_id' => $patient->id,
+                'doctor_id' => $doctor->id,
+                'billing_date' => now(),
+                'due_date' => now()->addYears(100), // Far future date for no expiration
+                'type' => 'procedure', // Service payment
+                'description' => 'Service Payment: ' . $service->name,
+                'subtotal' => $servicePrice,
+                'discount' => 0,
+                'tax' => 0,
+                'total_amount' => $servicePrice,
+                'paid_amount' => 0,
+                'balance' => $servicePrice,
+                'status' => 'pending',
+                'notes' => 'Direct payment link for service: ' . $service->name . ' (Clinic: ' . $department->name . ')',
+                'created_by' => $user->id,
+            ]);
+
+            // Create invoice linked to billing
+            // Set due_date far in the future (100 years) to effectively make it non-expiring
+            $invoice = Invoice::create([
+                'billing_id' => $billing->id,
+                'patient_id' => $patient->id,
+                'invoice_number' => Invoice::generateInvoiceNumber(),
+                'invoice_date' => now(),
+                'due_date' => now()->addYears(100), // Far future date for no expiration
+                'subtotal' => $servicePrice,
+                'tax_amount' => 0,
+                'discount_amount' => 0,
+                'total_amount' => $servicePrice,
+                'status' => 'pending',
+                'description' => 'Service Payment: ' . $service->name,
+                'payment_token' => Str::random(32),
+                'payment_token_expires_at' => null, // No expiration for token
+            ]);
+
+            // Generate payment link with clinic/service structure: /{clinic-slug}/{service-slug}/pay/{token}
+            $paymentLink = route('public.service.payment', [
+                'clinic' => $clinicSlug,
+                'service' => $serviceSlug,
+                'token' => $invoice->payment_token
+            ]);
+
+            Log::info('Service payment link generated', [
+                'service_id' => $service->id,
+                'doctor_id' => $doctor->id,
+                'department_id' => $department->id,
+                'clinic_slug' => $clinicSlug,
+                'service_slug' => $serviceSlug,
+                'patient_id' => $patient->id,
+                'billing_id' => $billing->id,
+                'invoice_id' => $invoice->id,
+                'invoice_token' => $invoice->payment_token,
+                'payment_link' => $paymentLink,
+            ]);
+
+            // Return to doctor services page with payment link
+            return redirect()->route('staff.doctor-services.index')
+                ->with('success', 'Payment link generated successfully for ' . $service->name . '. Ready to use on websites!')
+                ->with('payment_link', $paymentLink)
+                ->with('invoice_number', $invoice->invoice_number)
+                ->with('billing_number', $billing->bill_number)
+                ->with('service_name', $service->name);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating service payment link: ' . $e->getMessage(), [
+                'doctor_id' => $doctor->id,
+                'service_id' => $request->service_id,
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Failed to generate payment link: ' . $e->getMessage());
+        }
+    }
+
 }
 

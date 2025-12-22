@@ -48,7 +48,24 @@
                         <p class="mb-0 fs-4 fw-bold text-primary">{{ $currencySymbol }}{{ number_format($invoice->outstanding_amount, 2) }}</p>
                     </div>
 
-                    <form method="POST" action="{{ route('public.billing.process-payment', ['token' => $token]) }}" id="proceed-payment-form">
+                    @php
+                        // Ensure routeType and routeParams are set (backward compatibility)
+                        // Always use the current $token to prevent token mismatches
+                        $routeType = $routeType ?? 'billing';
+                        if (!isset($routeParams) || !isset($routeParams['token'])) {
+                            $routeParams = ['token' => $token];
+                        } else {
+                            $routeParams['token'] = $token;
+                        }
+
+                        // IMPORTANT: Use RELATIVE URLs so local environments don't get forced to APP_URL domain.
+                        if ($routeType === 'service' && isset($routeParams['clinic']) && isset($routeParams['service'])) {
+                            $formAction = '/' . $routeParams['clinic'] . '/' . $routeParams['service'] . '/pay/' . $token . '/process-payment';
+                        } else {
+                            $formAction = '/pay/' . $token . '/process-payment';
+                        }
+                    @endphp
+                    <form method="POST" action="{{ $formAction }}" id="proceed-payment-form">
                         @csrf
                         <input type="hidden" name="payment_gateway" value="{{ $selectedGateway->provider }}">
                         <input type="hidden" name="payment_method" value="card">
@@ -59,7 +76,15 @@
                                 <i class="fas fa-lock me-2"></i>
                                 Proceed to {{ $selectedGateway->name }} Secure Payment
                             </button>
-                            <a href="{{ route('public.billing.pay', ['token' => $token]) }}" class="btn btn-outline-secondary">
+                            @php
+                                $routeType = $routeType ?? 'billing';
+                                if ($routeType === 'service' && isset($routeParams['clinic']) && isset($routeParams['service'])) {
+                                    $backUrl = '/' . $routeParams['clinic'] . '/' . $routeParams['service'] . '/pay/' . $token;
+                                } else {
+                                    $backUrl = '/pay/' . $token;
+                                }
+                            @endphp
+                            <a href="{{ $backUrl }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-2"></i>
                                 Back to Invoice
                             </a>

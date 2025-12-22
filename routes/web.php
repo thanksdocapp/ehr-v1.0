@@ -204,10 +204,25 @@ Route::group(['middleware' => 'installed'], function () {
     // Flutterwave callback route (public, no auth required)
     Route::get('/payment/flutterwave/callback', [PaymentController::class, 'flutterwaveCallback'])->name('payment.flutterwave.callback');
     
-    // Public Billing Routes (no authentication required - uses secure token)
+    // Public Service Payment Routes (clinic/service structure - more specific, comes first)
+    // Using explicit route patterns to avoid conflicts
+    Route::get('{clinic}/{service}/pay/{token}', [\App\Http\Controllers\PublicBillingController::class, 'showInvoice'])
+        ->where(['clinic' => '[a-z0-9-]+', 'service' => '[a-z0-9-]+', 'token' => '[a-zA-Z0-9]+'])
+        ->name('public.service.payment');
+    Route::match(['get','post'], '{clinic}/{service}/pay/{token}/select-gateway', [\App\Http\Controllers\PublicBillingController::class, 'showPaymentForm'])
+        ->where(['clinic' => '[a-z0-9-]+', 'service' => '[a-z0-9-]+', 'token' => '[a-zA-Z0-9]+'])
+        ->name('public.service.select-gateway');
+    Route::post('{clinic}/{service}/pay/{token}/process-payment', [\App\Http\Controllers\PublicBillingController::class, 'processPayment'])
+        ->where(['clinic' => '[a-z0-9-]+', 'service' => '[a-z0-9-]+', 'token' => '[a-zA-Z0-9]+'])
+        ->name('public.service.process-payment');
+    Route::get('{clinic}/{service}/pay/{token}/success', [\App\Http\Controllers\PublicBillingController::class, 'paymentSuccess'])
+        ->where(['clinic' => '[a-z0-9-]+', 'service' => '[a-z0-9-]+', 'token' => '[a-zA-Z0-9]+'])
+        ->name('public.service.success');
+
+    // Public Billing Routes (no authentication required - uses secure token, fallback route)
     Route::prefix('pay')->name('public.billing.')->group(function () {
         Route::get('/{token}', [\App\Http\Controllers\PublicBillingController::class, 'showInvoice'])->name('pay');
-        Route::post('/{token}/select-gateway', [\App\Http\Controllers\PublicBillingController::class, 'showPaymentForm'])->name('select-gateway');
+        Route::match(['get','post'], '/{token}/select-gateway', [\App\Http\Controllers\PublicBillingController::class, 'showPaymentForm'])->name('select-gateway');
         Route::post('/{token}/process-payment', [\App\Http\Controllers\PublicBillingController::class, 'processPayment'])->name('process-payment');
         Route::get('/{token}/success', [\App\Http\Controllers\PublicBillingController::class, 'paymentSuccess'])->name('success');
         Route::get('/invalid', [\App\Http\Controllers\PublicBillingController::class, 'invalid'])->name('invalid');
@@ -372,6 +387,7 @@ Route::group(['middleware' => 'installed'], function () {
             Route::put('/{bookingService}', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'update'])->name('update');
             Route::post('/{bookingService}/toggle-status', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'toggleStatus'])->name('toggle-status');
             Route::delete('/{bookingService}', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'destroy'])->name('destroy');
+            Route::post('/generate-payment-link', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'generatePaymentLink'])->name('generate-payment-link');
         });
 
         // Doctor Schedule / Availability Management

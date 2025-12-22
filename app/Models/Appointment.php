@@ -51,7 +51,14 @@ class Appointment extends Model
         'check_out_time' => 'datetime',
         'vital_signs' => 'array',
         'fee' => 'decimal:2',
-        'is_online' => 'boolean'
+        'is_online' => 'boolean',
+        // PHI Encryption (HIPAA Compliance)
+        'reason' => 'encrypted',
+        'symptoms' => 'encrypted',
+        'notes' => 'encrypted',
+        'diagnosis' => 'encrypted',
+        'prescription' => 'encrypted',
+        'follow_up_instructions' => 'encrypted',
     ];
 
     // Relationships

@@ -51,6 +51,10 @@ class Prescription extends Model
         'pharmacist_id' => 'integer',
         'created_by' => 'integer',
         'updated_by' => 'integer',
+        // PHI Encryption (HIPAA Compliance)
+        'diagnosis' => 'encrypted',
+        'notes' => 'encrypted',
+        'pharmacist_notes' => 'encrypted',
     ];
 
     // Relationships

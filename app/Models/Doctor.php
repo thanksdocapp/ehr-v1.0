@@ -25,6 +25,7 @@ class Doctor extends Model
         'bio',
         'photo',
         'image',          // Added for compatibility
+        'department_logo', // Logo for department/clinic in patient emails
         'qualification',
         'experience_years',
         'languages',
@@ -195,6 +196,35 @@ class Doctor extends Model
     public function getExperienceTextAttribute()
     {
         return $this->experience_years . '+ years experience';
+    }
+
+    /**
+     * Get department logo URL
+     */
+    public function getDepartmentLogoUrlAttribute()
+    {
+        if (!$this->department_logo) {
+            return null;
+        }
+
+        $logoPath = 'uploads/doctors/' . $this->department_logo;
+        
+        // Get the storage URL - this uses the 'url' config from filesystems.php
+        // which is set to '/storage-access' for this application
+        $url = Storage::disk('public')->url($logoPath);
+        
+        // Storage::url() returns full URL if APP_URL is set in config, otherwise relative path
+        // The config has: 'url' => env('APP_URL') ? env('APP_URL').'/storage-access' : '/storage-access'
+        // So if APP_URL is set, it returns full URL like 'https://domain.com/storage-access/...'
+        // Otherwise it returns '/storage-access/...' which we need to convert
+        
+        if (!str_starts_with($url, 'http')) {
+            // Relative path, make it absolute
+            return url($url);
+        }
+        
+        // Already absolute URL
+        return $url;
     }
 
     // Helper methods

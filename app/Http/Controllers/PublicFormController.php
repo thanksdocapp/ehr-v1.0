@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FormRequest;
 use App\Mail\FormSubmissionNotification;
+use App\Services\FormeoRenderer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -35,14 +36,22 @@ class PublicFormController extends Controller
             }
         }
 
-        // Get the content to parse - use rendered_content if available, otherwise from template
-        $content = $formRequest->rendered_content;
-        if (empty($content) && $formRequest->template) {
-            $content = $formRequest->template->content ?? '';
-        }
+        // Check if template uses Formeo schema
+        $template = $formRequest->template;
+        $formFields = [];
 
-        // Parse the template content to extract form fields
-        $formFields = $this->extractFormFields($content);
+        if ($template && $template->type === 'form' && !empty($template->formeo_schema)) {
+            // Use Formeo renderer for Formeo-based forms
+            $formeoRenderer = new FormeoRenderer();
+            $formFields = $formeoRenderer->renderFormFields($template->formeo_schema);
+        } else {
+            // Fall back to legacy field syntax parsing
+            $content = $formRequest->rendered_content;
+            if (empty($content) && $template) {
+                $content = $template->content ?? '';
+            }
+            $formFields = $this->extractFormFields($content);
+        }
 
         return view('forms.fill', compact('formRequest', 'formFields'));
     }
@@ -62,15 +71,25 @@ class PublicFormController extends Controller
                 ->with('error', 'This form can no longer be submitted.');
         }
 
-        // Get the content to parse - use rendered_content if available, otherwise from template
-        $content = $formRequest->rendered_content;
-        if (empty($content) && $formRequest->template) {
-            $content = $formRequest->template->content ?? '';
-        }
+        // Check if template uses Formeo schema
+        $template = $formRequest->template;
+        $formFields = [];
+        $rules = [];
 
-        // Validate the submitted data
-        $formFields = $this->extractFormFields($content);
-        $rules = $this->buildValidationRules($formFields);
+        if ($template && $template->type === 'form' && !empty($template->formeo_schema)) {
+            // Use Formeo renderer for Formeo-based forms
+            $formeoRenderer = new FormeoRenderer();
+            $formFields = $formeoRenderer->renderFormFields($template->formeo_schema);
+            $rules = $formeoRenderer->buildValidationRules($template->formeo_schema);
+        } else {
+            // Fall back to legacy field syntax parsing
+            $content = $formRequest->rendered_content;
+            if (empty($content) && $template) {
+                $content = $template->content ?? '';
+            }
+            $formFields = $this->extractFormFields($content);
+            $rules = $this->buildValidationRules($formFields);
+        }
 
         $validated = $request->validate($rules);
 

@@ -46,7 +46,7 @@
         </div>
     @endif
 
-    <form action="{{ route('staff.patient-email.send') }}" method="POST" id="emailForm">
+    <form action="{{ route('staff.patient-email.send') }}" method="POST" id="emailForm" enctype="multipart/form-data">
         @csrf
 
         <div class="row">
@@ -123,19 +123,40 @@
                             <label for="body" class="form-label">
                                 Message <span class="text-danger">*</span>
                             </label>
-                            <textarea class="form-control @error('body') is-invalid @enderror" 
+                            <!-- Quill Rich Text Editor Container -->
+                            <div id="quill-email-editor" style="min-height: 350px;"></div>
+                            <!-- Hidden textarea for form submission -->
+                            <textarea class="form-control @error('body') is-invalid @enderror d-none" 
                                       id="body" 
-                                      name="body" 
-                                      rows="12"
-                                      placeholder="Enter your message to the patient..."
+                                      name="body"
                                       required>{{ old('body') }}</textarea>
                             @error('body')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                             <small class="text-muted mt-2 d-block">
                                 <i class="fas fa-info-circle me-1"></i>
-                                The email will automatically include your name, specialization, clinic name, and department in the footer.
+                                The email will automatically include your name, specialisation, clinic name, and date sent in the footer.
                             </small>
+                        </div>
+
+                        <!-- Attachments -->
+                        <div class="mb-3">
+                            <label for="attachments" class="form-label">
+                                <i class="fas fa-paperclip me-1"></i>Attachments
+                            </label>
+                            <input type="file" 
+                                   name="attachments[]" 
+                                   id="attachments" 
+                                   class="form-control @error('attachments.*') is-invalid @enderror" 
+                                   multiple
+                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt,.rtf">
+                            @error('attachments.*')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted d-block mt-1">
+                                You can attach multiple files (PDF, DOC, DOCX, images, TXT, RTF). Maximum file size: 10MB per file.
+                            </small>
+                            <div id="attachment-list" class="mt-2"></div>
                         </div>
                     </div>
                 </div>
@@ -175,9 +196,8 @@
                                 Your email will automatically include:
                                 <ul class="mb-0 mt-2">
                                     <li>Your full name</li>
-                                    <li>Your role/specialization</li>
+                                    <li>Your role/specialisation</li>
                                     <li>Clinic name</li>
-                                    <li>Department (if applicable)</li>
                                     <li>Date sent</li>
                                     <li>Standard disclaimer</li>
                                 </ul>
@@ -196,53 +216,107 @@
 </div>
 @endsection
 
+@push('styles')
+<!-- Quill Editor CSS -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+    /* Ensure Quill color picker is visible and properly styled */
+    .ql-toolbar .ql-color .ql-picker-label,
+    .ql-toolbar .ql-background .ql-picker-label {
+        width: 28px;
+        height: 24px;
+    }
+    
+    .ql-toolbar .ql-color .ql-picker-options,
+    .ql-toolbar .ql-background .ql-picker-options {
+        min-width: 152px;
+        z-index: 1050;
+    }
+    
+    .ql-toolbar .ql-color .ql-picker-item,
+    .ql-toolbar .ql-background .ql-picker-item {
+        width: 16px;
+        height: 16px;
+        border: 1px solid transparent;
+        margin: 2px;
+    }
+    
+    /* Ensure Quill editor inline color styles are preserved and displayed */
+    /* Inline styles should work by default, but we ensure no parent rules interfere */
+    #quill-email-editor .ql-editor [style*="color"] {
+        /* Inline styles have highest CSS specificity - no override needed */
+        /* This rule ensures parent color rules don't interfere */
+    }
+</style>
+@endpush
+
 @push('scripts')
-@php($tinymceCdnUrl = getTinyMceCdnUrl())
-@if($tinymceCdnUrl)
-<script src="{{ $tinymceCdnUrl }}" referrerpolicy="origin"></script>
-@endif
+<!-- Quill Editor JS -->
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<!-- Shared Quill Initialization -->
+<script src="{{ asset('js/quill-init.js') }}"></script>
 <script>
 $(document).ready(function() {
-    if (typeof tinymce === 'undefined') {
-        console.warn('TinyMCE is not available; falling back to plain textarea.');
-        return;
-    }
-    // Initialize TinyMCE for rich text email body with full formatting options
-    tinymce.init({
-        selector: '#body',
-        height: 450,
-        menubar: false,
-        plugins: [
-            'lists', 'link', 'table', 'code', 'colorpicker', 
-            'textcolor', 'charmap', 'hr', 'nonbreaking', 
-            'paste', 'wordcount'
-        ],
-        toolbar: 'undo redo | formatselect fontselect fontsizeselect | ' +
-                 'bold italic underline strikethrough | forecolor backcolor | ' +
-                 'alignleft aligncenter alignright alignjustify | ' +
-                 'bullist numlist | outdent indent | ' +
-                 'link table charmap hr nonbreaking | code | removeformat',
-        content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; }',
-        branding: false,
-        promotion: false,
-        font_formats: 'Arial=arial,helvetica,sans-serif;' +
-                     'Courier New=courier new,courier;' +
-                     'Georgia=georgia,palatino;' +
-                     'Helvetica=helvetica;' +
-                     'Impact=impact,chicago;' +
-                     'Times New Roman=times new roman,times;' +
-                     'Trebuchet MS=trebuchet ms,geneva;' +
-                     'Verdana=verdana,geneva',
-        fontsize_formats: '8pt 9pt 10pt 11pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt',
-        paste_as_text: false,
-        paste_auto_cleanup_on_paste: true,
-        paste_remove_styles: false,
-        paste_remove_styles_if_webkit: false,
-        paste_strip_class_attributes: 'none',
-        paste_merge_formats: true,
-        invalid_elements: 'script,iframe,object,embed',
-        extended_valid_elements: 'span[*],div[*],table[*],thead[*],tbody[*],tr[*],td[*],th[*]',
+    let quillEmail;
+
+    // Initialize Quill for rich text email body with full formatting options
+    quillEmail = window.initQuillEditor('#quill-email-editor', {
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                [{ 'size': ['small', false, 'large', 'huge'] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'align': [] }],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                ['link'],
+                ['clean']
+            ]
+        },
+        formats: ['bold', 'italic', 'underline', 'strike', 'header', 'size', 'color', 'background', 'align', 'list', 'indent', 'link'],
+        placeholder: 'Enter your message to the patient...'
     });
+
+    // Load existing content if any
+    const textarea = document.getElementById('body');
+    if (textarea && textarea.value) {
+        window.setQuillContent(quillEmail, textarea.value);
+    }
+
+    // Sync Quill content to hidden textarea
+    window.syncQuillToTextarea(quillEmail, '#body');
+
+    // Handle file attachment display
+    (function initAttachmentDisplay() {
+        const attachmentInput = document.getElementById('attachments');
+        const attachmentList = document.getElementById('attachment-list');
+        
+        if (attachmentInput && attachmentList) {
+            attachmentInput.addEventListener('change', function(e) {
+                attachmentList.innerHTML = '';
+                const files = Array.from(e.target.files);
+                
+                if (files.length > 0) {
+                    const listHtml = files.map(file => {
+                        const sizeKB = (file.size / 1024).toFixed(2);
+                        return `
+                            <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light rounded">
+                                <div>
+                                    <i class="fas fa-file me-2"></i>
+                                    <span>${file.name}</span>
+                                    <small class="text-muted ms-2">(${sizeKB} KB)</small>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    attachmentList.innerHTML = listHtml;
+                } else {
+                    attachmentList.innerHTML = '';
+                }
+            });
+        }
+    })();
 
     // Patient search functionality (client-side filtering)
     (function initPatientSelectSearch() {
@@ -353,9 +427,13 @@ $(document).ready(function() {
             return false;
         }
 
-        // Update TinyMCE content to textarea before submit
-        if (typeof tinymce !== 'undefined' && tinymce.get('body')) {
-            tinymce.get('body').save();
+        // Update Quill content to textarea before submit
+        if (quillEmail) {
+            const html = window.getQuillContent(quillEmail);
+            const textarea = document.getElementById('body');
+            if (textarea) {
+                textarea.value = html;
+            }
         }
 
         // Show loading state

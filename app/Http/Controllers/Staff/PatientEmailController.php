@@ -8,12 +8,15 @@ use App\Models\Doctor;
 use App\Models\Department;
 use App\Mail\PatientEmail;
 use App\Models\EmailLog;
+use App\Models\EmailAttachment;
 use App\Traits\ConfiguresSmtp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Exception;
 
 class PatientEmailController extends Controller
@@ -153,15 +156,47 @@ class PatientEmailController extends Controller
             $clinicName = $metadata['clinic_name']
                 ?? \App\Models\SiteSetting::where('key', 'hospital_name')->value('value')
                 ?? config('app.name', 'Clinic');
+            
+            // Get logo URL with priority: stored logo > department logo > site settings logo
+            $logoUrl = $metadata['department_logo'] ?? $metadata['clinic_logo'] ?? null;
+            if (!$logoUrl) {
+                if ($departmentLogo) {
+                    $logoUrl = $departmentLogo;
+                } else {
+                    // Fallback to site settings clinic logo
+                    $clinicLogoPath = \App\Models\SiteSetting::where('key', 'site_logo')->value('value');
+                    if ($clinicLogoPath) {
+                        if (str_starts_with($clinicLogoPath, 'http')) {
+                            $logoUrl = $clinicLogoPath;
+                        } elseif (str_starts_with($clinicLogoPath, 'uploads/settings/') || str_starts_with($clinicLogoPath, 'settings/')) {
+                            $logoUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($clinicLogoPath);
+                        } elseif (str_starts_with($clinicLogoPath, 'storage/')) {
+                            $logoUrl = asset($clinicLogoPath);
+                        } elseif (file_exists(public_path($clinicLogoPath))) {
+                            $logoUrl = asset($clinicLogoPath);
+                        }
+                    }
+                }
+            }
+
+            // Get patient information
+            $patient = $emailLog->patient;
+            $patientName = $metadata['patient_name'] ?? ($patient ? $patient->full_name : 'N/A');
+            $patientId = $metadata['patient_id'] ?? ($patient ? ($patient->patient_id ?? $patient->id) : null);
 
             $emailData = [
                 'subject' => $emailLog->subject,
                 'body' => $emailLog->body,
+                'patient_name' => $patientName,
+                'patient_id' => $patientId,
+                'patient_email' => $metadata['patient_email'] ?? ($patient ? $patient->email : null),
                 'doctor_name' => $metadata['doctor_name'] ?? ($doctor->name ?? $user->name),
                 'doctor_specialization' => $metadata['doctor_specialization'] ?? ($doctor->specialization ?? 'General Practitioner'),
+                'doctor_phone' => $metadata['doctor_phone'] ?? ($doctor->phone ?? $user->phone ?? null),
                 'clinic_name' => $clinicName,
+                'clinic_logo' => $logoUrl,
                 'department_name' => $departmentName,
-                'department_logo' => $departmentLogo,
+                'department_logo' => $logoUrl,
                 'date_sent' => $metadata['date_sent'] ?? ($emailLog->sent_at ? $emailLog->sent_at->format('F j, Y') : $emailLog->created_at->format('F j, Y')),
             ];
 
@@ -227,6 +262,7 @@ class PatientEmailController extends Controller
             'patient_id' => 'required|exists:patients,id',
             'subject' => 'required|string|max:255',
             'body' => 'required|string',
+            'attachments.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png,gif,txt,rtf',
         ]);
 
         try {
@@ -249,9 +285,51 @@ class PatientEmailController extends Controller
             // Get clinic name (hospital name from settings)
             $clinicName = \App\Models\SiteSetting::where('key', 'hospital_name')
                 ->value('value') ?? config('app.name', 'Clinic');
+            
+            // Get logo URL with priority: doctor's department logo > department logo > site settings logo
+            $logoUrl = null;
+            if ($doctor->department_logo) {
+                // Use doctor's department logo first
+                $logoUrl = $doctor->department_logo_url;
+            } elseif ($department && $department->logo_url) {
+                // Fallback to department's logo
+                $logoUrl = $department->logo_url;
+            } else {
+                // Fallback to site settings clinic logo
+                $clinicLogoPath = \App\Models\SiteSetting::where('key', 'site_logo')->value('value');
+                if ($clinicLogoPath) {
+                    if (str_starts_with($clinicLogoPath, 'http')) {
+                        $logoUrl = $clinicLogoPath;
+                    } elseif (str_starts_with($clinicLogoPath, 'uploads/settings/') || str_starts_with($clinicLogoPath, 'settings/')) {
+                        $logoUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($clinicLogoPath);
+                    } elseif (str_starts_with($clinicLogoPath, 'storage/')) {
+                        $logoUrl = asset($clinicLogoPath);
+                    } elseif (file_exists(public_path($clinicLogoPath))) {
+                        $logoUrl = asset($clinicLogoPath);
+                    }
+                }
+            }
 
             // Generate tracking token
-            $trackingToken = \Illuminate\Support\Str::random(32);
+            $trackingToken = Str::random(32);
+
+            // Handle file uploads
+            $attachmentPaths = [];
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    if ($file->isValid()) {
+                        $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+                        $path = $file->storeAs('uploads/email-attachments', $filename, 'public');
+                        $attachmentPaths[] = [
+                            'path' => $path,
+                            'original_name' => $file->getClientOriginalName(),
+                            'mime_type' => $file->getMimeType(),
+                            'size' => $file->getSize(),
+                            'extension' => $file->getClientOriginalExtension(),
+                        ];
+                    }
+                }
+            }
 
             // Create email log first to get ID for tracking
             $emailLog = EmailLog::create([
@@ -268,15 +346,34 @@ class PatientEmailController extends Controller
                 'email_type' => 'patient_communication',
             ]);
 
+            // Save attachments to database
+            foreach ($attachmentPaths as $attachmentData) {
+                EmailAttachment::create([
+                    'email_log_id' => $emailLog->id,
+                    'file_name' => $attachmentData['original_name'],
+                    'file_path' => $attachmentData['path'],
+                    'file_type' => $attachmentData['mime_type'],
+                    'file_extension' => $attachmentData['extension'],
+                    'file_size' => $attachmentData['size'],
+                    'storage_disk' => 'public',
+                    'attachment_type' => 'file',
+                ]);
+            }
+
             // Prepare email data (including tracking info)
             $emailData = [
                 'subject' => $request->subject,
                 'body' => $request->body,
+                'patient_name' => $patient->full_name,
+                'patient_id' => $patient->patient_id ?? $patient->id,
+                'patient_email' => $patient->email,
                 'doctor_name' => $doctor->name ?? $user->name,
                 'doctor_specialization' => $doctor->specialization ?? 'General Practitioner',
+                'doctor_phone' => $doctor->phone ?? $user->phone ?? 'N/A',
                 'clinic_name' => $clinicName,
+                'clinic_logo' => $logoUrl,
                 'department_name' => $department ? $department->name : null,
-                'department_logo' => $department ? $department->logo_url : null,
+                'department_logo' => $logoUrl,
                 'date_sent' => now()->format('F j, Y'),
                 'tracking_token' => $trackingToken,
                 'email_log_id' => $emailLog->id,
@@ -308,8 +405,25 @@ class PatientEmailController extends Controller
                     'emailLogId' => null,
                 ])->render();
 
+                // Send email with attachments
+                $mailable = new PatientEmail($emailData);
+                
+                // Attach files to email (reload attachments in case they were just created)
+                $emailLog->load('attachments');
+                if ($emailLog->attachments && $emailLog->attachments->count() > 0) {
+                    foreach ($emailLog->attachments as $attachment) {
+                        $filePath = Storage::disk($attachment->storage_disk)->path($attachment->file_path);
+                        if (file_exists($filePath)) {
+                            $mailable->attach($filePath, [
+                                'as' => $attachment->file_name,
+                                'mime' => $attachment->file_type,
+                            ]);
+                        }
+                    }
+                }
+                
                 Mail::to($patient->email, $patient->full_name)
-                    ->send(new PatientEmail($emailData));
+                    ->send($mailable);
 
                 // Update email log with full metadata and mark as sent
                 $emailLog->update([
@@ -319,7 +433,12 @@ class PatientEmailController extends Controller
                         'doctor_id' => $doctor->id,
                         'doctor_name' => $emailData['doctor_name'],
                         'doctor_specialization' => $emailData['doctor_specialization'],
+                        'doctor_phone' => $emailData['doctor_phone'],
+                        'patient_name' => $emailData['patient_name'],
+                        'patient_id' => $emailData['patient_id'],
+                        'patient_email' => $emailData['patient_email'],
                         'clinic_name' => $emailData['clinic_name'],
+                        'clinic_logo' => $emailData['clinic_logo'] ?? null,
                         'department_name' => $emailData['department_name'],
                         'department_id' => $department ? $department->id : null,
                         'department_logo' => $emailData['department_logo'] ?? null,

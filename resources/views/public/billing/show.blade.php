@@ -256,8 +256,26 @@
                     <div class="border-top pt-4">
                         <h5 class="mb-3">Pay Invoice</h5>
                         @if($gateways->count() > 0)
-                        <form method="POST" action="{{ route('public.billing.select-gateway', ['token' => $token]) }}">
-                            @csrf
+                        @php
+                            // Ensure routeType and routeParams are set (backward compatibility)
+                            // Always use the current $token to prevent token mismatches
+                            $routeType = $routeType ?? 'billing';
+                            if (!isset($routeParams) || !isset($routeParams['token'])) {
+                                $routeParams = ['token' => $token];
+                            } else {
+                                // Ensure the token in routeParams matches the current token
+                                $routeParams['token'] = $token;
+                            }
+                        @endphp
+                        @php
+                            // IMPORTANT: Use RELATIVE URLs so local environments don't get forced to APP_URL domain.
+                            if ($routeType === 'service' && isset($routeParams['clinic']) && isset($routeParams['service'])) {
+                                $formAction = '/' . $routeParams['clinic'] . '/' . $routeParams['service'] . '/pay/' . $token . '/select-gateway';
+                            } else {
+                                $formAction = '/pay/' . $token . '/select-gateway';
+                            }
+                        @endphp
+                        <form method="GET" action="{{ $formAction }}">
                             <div class="row g-3">
                                 @foreach($gateways as $index => $gateway)
                                 <div class="col-md-6 mb-3">

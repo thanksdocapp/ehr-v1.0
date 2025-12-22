@@ -71,6 +71,11 @@ class Patient extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'notification_preferences' => 'array',
+        // PHI/PII Encryption (HIPAA Compliance)
+        'insurance_number' => 'encrypted',
+        'emergency_contact' => 'encrypted',
+        'emergency_phone' => 'encrypted',
+        'notes' => 'encrypted', // May contain sensitive medical information
     ];
 
     // Relationships

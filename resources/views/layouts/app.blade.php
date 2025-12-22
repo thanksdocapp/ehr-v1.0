@@ -31,12 +31,13 @@
         <!-- Custom Dynamic Theme CSS -->
         <link rel="stylesheet" href="{{ route('theme.css') }}?v={{ time() }}">
         
-        <!-- Scripts -->
+        <!-- App Assets (Vite) -->
         @if(app()->environment('local') && file_exists(public_path('hot')))
+            {{-- Vite dev server (local) --}}
             @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @else
-            <link rel="stylesheet" href="{{ asset('build/assets/app-Bke7m33k.css') }}">
-            <script src="{{ asset('build/assets/app-DaBYqt0m.js') }}" defer></script>
+        @elseif(file_exists(public_path('build/manifest.json')))
+            {{-- Vite build (production/staging) --}}
+            @vite(['resources/css/app.css', 'resources/js/app.js'])
         @endif
         
         <!-- Bootstrap JS -->

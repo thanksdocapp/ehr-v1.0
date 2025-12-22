@@ -1,0 +1,61 @@
+# ============================================
+# ENCRYPTION & SECURITY CONFIGURATION
+# ============================================
+# Add these to your .env file for production
+
+# Application Encryption Key (CRITICAL - DO NOT SHARE)
+# Generate with: php artisan key:generate
+APP_KEY=base64:YOUR_GENERATED_KEY_HERE
+
+# Force HTTPS in Production
+APP_ENV=production
+APP_URL=https://your-domain.com
+
+# Database SSL/TLS Encryption (Optional but Recommended)
+# Get certificate from your MySQL hosting provider
+MYSQL_ATTR_SSL_CA=/path/to/mysql-ca-cert.pem
+MYSQL_ATTR_SSL_VERIFY_SERVER_CERT=false  # Set to true with valid cert
+
+# For PostgreSQL (if used instead of MySQL)
+DB_SSLMODE=require  # Options: disable, allow, prefer, require, verify-ca, verify-full
+
+# Session Security (Production)
+SESSION_DRIVER=database  # Or redis for better performance
+SESSION_LIFETIME=120  # 2 hours
+SESSION_SECURE_COOKIE=true  # Requires HTTPS
+SESSION_SAME_SITE=strict
+
+# Cookie Encryption
+COOKIE_ENCRYPTION=true
+
+# ============================================
+# ENCRYPTED FIELDS REFERENCE
+# ============================================
+# The following fields are automatically encrypted at rest:
+#
+# PATIENTS:
+#   - insurance_number
+#   - emergency_contact
+#   - emergency_phone
+#   - notes
+#
+# MEDICAL_RECORDS:
+#   - presenting_complaint, history_of_presenting_complaint
+#   - past_medical_history, drug_history
+#   - allergies, social_history, family_history
+#   - ideas_concerns_expectations, plan
+#   - diagnosis, symptoms, treatment, notes
+#
+# APPOINTMENTS:
+#   - reason, symptoms, notes
+#   - diagnosis, prescription, follow_up_instructions
+#
+# PRESCRIPTIONS:
+#   - diagnosis, notes, pharmacist_notes
+#
+# EMAIL_LOGS:
+#   - body (may contain PHI)
+#
+# PAYMENT_GATEWAYS:
+#   - credentials (API keys, secrets)
+

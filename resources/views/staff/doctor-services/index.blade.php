@@ -20,8 +20,47 @@
 
     @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="d-flex align-items-start">
+            <i class="fas fa-check-circle me-2 mt-1"></i>
+            <div class="flex-grow-1">
+                <div>{{ session('success') }}</div>
+                @if(session('payment_link'))
+                <div class="mt-3 p-3 bg-white rounded border">
+                    <div class="mb-2">
+                        <strong class="d-block mb-2">
+                            <i class="fas fa-link me-2"></i>Payment Link:
+                        </strong>
+                        <div class="input-group">
+                            <input type="text" class="form-control font-monospace" id="paymentLinkInput" value="{{ session('payment_link') }}" readonly style="font-size: 0.875rem;">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyPaymentLink(event)" title="Copy to clipboard">
+                                <i class="fas fa-copy me-1"></i>Copy
+                            </button>
+                            <a href="{{ session('payment_link') }}" target="_blank" class="btn btn-primary" title="Open payment link">
+                                <i class="fas fa-external-link-alt me-1"></i>Open
+                            </a>
+                        </div>
+                    </div>
+                    @if(session('invoice_number'))
+                    <div class="mt-2 pt-2 border-top">
+                        <small class="text-muted">
+                            <strong>Invoice:</strong> #{{ session('invoice_number') }}
+                            @if(session('billing_number'))
+                            | <strong>Bill:</strong> #{{ session('billing_number') }}
+                            @endif
+                            @if(session('service_name'))
+                            | <strong>Service:</strong> {{ session('service_name') }}
+                            @endif
+                            @if(session('patient_name'))
+                            | <strong>Patient:</strong> {{ session('patient_name') }}
+                            @endif
+                        </small>
+                    </div>
+                    @endif
+                </div>
+                @endif
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     </div>
     @endif
 
@@ -51,7 +90,7 @@
                                     <th style="width: 15%;">Price</th>
                                     <th style="width: 15%;">Status</th>
                                     <th style="width: 15%;">Override</th>
-                                    <th style="width: 15%;" class="text-end">Actions</th>
+                                    <th style="width: 20%;" class="text-end">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -101,6 +140,14 @@
                                         </td>
                                         <td class="text-end">
                                             <div class="btn-group" role="group">
+                                                @if($service['is_active_for_doctor'] && ($service['custom_price'] ?? $service['default_price']))
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-success" 
+                                                        title="Get Payment Link"
+                                                        onclick="showPaymentLinkModal({{ $service['id'] }}, '{{ addslashes($service['name']) }}', {{ $service['custom_price'] ?? $service['default_price'] ?? 0 }})">
+                                                    <i class="fas fa-link me-1"></i>Payment Link
+                                                </button>
+                                                @endif
                                                 <a href="{{ route('staff.doctor-services.edit', $service['id']) }}" 
                                                    class="btn btn-sm btn-outline-primary" 
                                                    title="Edit Service">
@@ -149,5 +196,90 @@
         </div>
     </div>
 </div>
+
+<!-- Payment Link Modal -->
+<div class="modal fade" id="paymentLinkModal" tabindex="-1" aria-labelledby="paymentLinkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentLinkModalLabel">
+                    <i class="fas fa-link me-2"></i>Generate Payment Link
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="paymentLinkForm" method="POST" action="{{ route('staff.doctor-services.generate-payment-link') }}">
+                @csrf
+                <input type="hidden" name="service_id" id="modal_service_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Service</label>
+                        <input type="text" class="form-control" id="modal_service_name" readonly>
+                        <small class="text-muted" id="modal_service_price"></small>
+                    </div>
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> A payment link will be generated that can be used on websites. 
+                        Patient information will be collected when the payment is made.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-link me-2"></i>Generate Payment Link
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showPaymentLinkModal(serviceId, serviceName, price) {
+    document.getElementById('modal_service_id').value = serviceId;
+    document.getElementById('modal_service_name').value = serviceName;
+    document.getElementById('modal_service_price').textContent = 'Price: £' + parseFloat(price).toFixed(2);
+    
+    const modal = new bootstrap.Modal(document.getElementById('paymentLinkModal'));
+    modal.show();
+}
+
+function copyPaymentLink(event) {
+    event.preventDefault();
+    const input = document.getElementById('paymentLinkInput');
+    if (input) {
+        input.select();
+        input.setSelectionRange(0, 99999); // For mobile devices
+        
+        try {
+            // Try modern clipboard API first
+            navigator.clipboard.writeText(input.value).then(() => {
+                showCopyFeedback(event.target);
+            }).catch(() => {
+                // Fallback to execCommand
+                document.execCommand('copy');
+                showCopyFeedback(event.target);
+            });
+        } catch (e) {
+            // Fallback to execCommand if clipboard API fails
+            document.execCommand('copy');
+            showCopyFeedback(event.target);
+        }
+    }
+}
+
+function showCopyFeedback(button) {
+    const btn = button.closest('button');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+    btn.classList.add('btn-success');
+    btn.classList.remove('btn-outline-secondary');
+    
+    setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+</script>
 @endsection
 

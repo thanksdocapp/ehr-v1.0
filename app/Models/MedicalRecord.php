@@ -47,6 +47,20 @@ class MedicalRecord extends Model
         'record_date' => 'date',
         'follow_up_date' => 'date',
         'is_private' => 'boolean',
+        // PHI Encryption (HIPAA Compliance) - All clinical data
+        'presenting_complaint' => 'encrypted',
+        'history_of_presenting_complaint' => 'encrypted',
+        'past_medical_history' => 'encrypted',
+        'drug_history' => 'encrypted',
+        'allergies' => 'encrypted',
+        'social_history' => 'encrypted',
+        'family_history' => 'encrypted',
+        'ideas_concerns_expectations' => 'encrypted',
+        'plan' => 'encrypted',
+        'diagnosis' => 'encrypted',
+        'symptoms' => 'encrypted',
+        'treatment' => 'encrypted',
+        'notes' => 'encrypted',
     ];
 
     // Relationships

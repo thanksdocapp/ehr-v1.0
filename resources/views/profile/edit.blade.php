@@ -23,7 +23,7 @@
                         @csrf
                     </form>
 
-                    <form method="post" action="{{ route('profile.update') }}" id="profileForm">
+                    <form method="post" action="{{ route('profile.update') }}" id="profileForm" enctype="multipart/form-data">
                         @csrf
                         @method('patch')
 
@@ -279,7 +279,6 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => passwordSaved.remove(), 300);
         }, 3000);
     }
-
 });
 </script>
 

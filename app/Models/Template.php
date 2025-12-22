@@ -15,6 +15,7 @@ class Template extends Model
         'name',
         'type',
         'content',
+        'formeo_schema',
         'placeholders',
         'description',
         'is_active',
@@ -25,6 +26,7 @@ class Template extends Model
 
     protected $casts = [
         'placeholders' => 'array',
+        'formeo_schema' => 'array',
         'is_active' => 'boolean',
         'is_system' => 'boolean',
     ];

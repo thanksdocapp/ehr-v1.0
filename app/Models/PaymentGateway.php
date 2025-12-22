@@ -74,7 +74,23 @@ class PaymentGateway extends Model
     protected function credentials(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => $value ? json_decode(Crypt::decryptString($value), true) : [],
+            get: function ($value) {
+                if (!$value) {
+                    return [];
+                }
+                
+                try {
+                    return json_decode(Crypt::decryptString($value), true) ?? [];
+                } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+                    // If decryption fails (e.g., MAC invalid, APP_KEY changed), log and return empty
+                    \Log::warning('Failed to decrypt payment gateway credentials', [
+                        'gateway_id' => $this->id,
+                        'provider' => $this->provider,
+                        'error' => $e->getMessage()
+                    ]);
+                    return [];
+                }
+            },
             set: fn ($value) => Crypt::encryptString(json_encode($value))
         );
     }

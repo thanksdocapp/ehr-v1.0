@@ -261,6 +261,13 @@ class PaymentGatewayController extends Controller
     public function testConnection(PaymentGateway $paymentGateway)
     {
         try {
+            // Check if credentials can be decrypted
+            $credentials = $paymentGateway->credentials;
+            
+            if (empty($credentials)) {
+                throw new \Exception('Gateway credentials are missing or could not be decrypted. Please re-enter the credentials.');
+            }
+            
             // Create gateway instance and test actual connection
             $gateway = \App\Services\PaymentGateway\PaymentGatewayFactory::createFromModel($paymentGateway);
             $connectionTest = $gateway->testConnection();
@@ -282,6 +289,22 @@ class PaymentGatewayController extends Controller
             }
 
             return response()->json($testResult);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            \Log::error('Payment gateway credentials decryption failed', [
+                'gateway' => $paymentGateway->provider,
+                'error' => $e->getMessage(),
+                'hint' => 'APP_KEY may have changed'
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'The credentials could not be decrypted. This usually happens when the APP_KEY has changed. Please re-enter the gateway credentials.',
+                'details' => [
+                    'gateway' => $paymentGateway->display_name,
+                    'provider' => $paymentGateway->provider,
+                    'error_type' => 'Decryption Error'
+                ]
+            ], 400);
         } catch (\Exception $e) {
             \Log::error('Payment gateway connection test failed', [
                 'gateway' => $paymentGateway->provider,

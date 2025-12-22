@@ -60,6 +60,7 @@ class PatientEmail extends Mailable
 
     /**
      * Get the attachments for the message.
+     * Note: Attachments are added via the controller before sending.
      */
     public function attachments(): array
     {

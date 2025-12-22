@@ -16,8 +16,14 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+        // Ensure doctor relationship is loaded with fresh data
+        if ($user->role === 'doctor') {
+            $user->load('doctor');
+        }
+        
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
         ]);
     }
 
@@ -39,10 +45,16 @@ class ProfileController extends Controller
         $user->save();
 
         // Sync specialization with doctor record if user is a doctor
-        if ($user->role === 'doctor' && isset($validated['specialization']) && $user->doctor) {
-            $user->doctor->update([
-                'specialization' => $validated['specialization'] ?: 'GP'
-            ]);
+        if ($user->role === 'doctor' && $user->doctor) {
+            $doctorData = [];
+            
+            if (isset($validated['specialization'])) {
+                $doctorData['specialization'] = $validated['specialization'] ?: 'GP';
+            }
+            
+            if (!empty($doctorData)) {
+                $user->doctor->update($doctorData);
+            }
         }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');

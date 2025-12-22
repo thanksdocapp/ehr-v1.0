@@ -45,16 +45,27 @@ class TemplatesController extends Controller
             'name' => 'required|string|max:255',
             'type' => 'required|in:letter,form',
             'content' => 'required|string',
+            'formeo_schema' => 'nullable|string',
         ]);
 
-        $template = Template::create([
+        $templateData = [
             'name' => $validated['name'],
             'type' => $validated['type'],
             'content' => $validated['content'],
             'created_by' => auth()->id(),
             'is_system' => false,
             'is_active' => true,
-        ]);
+        ];
+
+        // Store Formeo schema for form templates
+        if ($validated['type'] === 'form' && !empty($validated['formeo_schema'])) {
+            $decoded = json_decode($validated['formeo_schema'], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $templateData['formeo_schema'] = $decoded;
+            }
+        }
+
+        $template = Template::create($templateData);
 
         return redirect()->route('staff.templates.show', $template)
             ->with('success', 'Template created successfully.');
@@ -80,9 +91,30 @@ class TemplatesController extends Controller
             'name' => 'required|string|max:255',
             'type' => 'required|in:letter,form',
             'content' => 'required|string',
+            'formeo_schema' => 'nullable|string',
         ]);
 
-        $template->update($validated);
+        $updateData = [
+            'name' => $validated['name'],
+            'type' => $validated['type'],
+            'content' => $validated['content'],
+        ];
+
+        // Update Formeo schema for form templates
+        if ($validated['type'] === 'form' && !empty($validated['formeo_schema'])) {
+            $decoded = json_decode($validated['formeo_schema'], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $updateData['formeo_schema'] = $decoded;
+            }
+        } elseif ($validated['type'] === 'form' && empty($validated['formeo_schema'])) {
+            // If form type but no schema provided, keep existing schema
+            // (don't overwrite it)
+        } else {
+            // For letter type, clear formeo_schema
+            $updateData['formeo_schema'] = null;
+        }
+
+        $template->update($updateData);
 
         return redirect()->route('staff.templates.show', $template)
             ->with('success', 'Template updated successfully.');
