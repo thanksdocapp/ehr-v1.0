@@ -161,18 +161,19 @@
                     } else {
                         $previewHtml = null;
                     }
+
+                    // Use a data: URL to avoid iframe navigation / CSP / X-Frame-Options issues and
+                    // ensure the content renders as HTML (not as escaped text).
+                    $previewSrc = $previewHtml
+                        ? ('data:text/html;charset=utf-8;base64,' . base64_encode($previewHtml))
+                        : null;
                 @endphp
 
                 <iframe
                     title="Email Preview"
                     style="width: 100%; border: 0; border-radius: 10px; min-height: 780px; background: #fff;"
                     sandbox=""
-                    @if($previewHtml)
-                        src="about:blank"
-                        srcdoc="{{ e($previewHtml) }}"
-                    @else
-                        src="{{ route('staff.patient-email.preview', $emailLog->id) }}"
-                    @endif
+                    src="{{ $previewSrc ?: route('staff.patient-email.preview', $emailLog->id) }}"
                 ></iframe>
             </div>
         </div>
