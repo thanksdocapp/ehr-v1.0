@@ -146,35 +146,8 @@
         </div>
         <div class="doctor-card-body p-0">
             <div class="p-3 p-md-4" style="background: #f5f5f5;">
-                @php
-                    // Prefer the frozen preview HTML (no tracking pixel). Fall back to sent HTML if needed.
-                    $previewHtml = data_get($emailLog->metadata, 'rendered_html_preview')
-                        ?? data_get($emailLog->metadata, 'rendered_html');
-
-                    // Safety: strip tracking pixel if we fell back to sent HTML.
-                    if (is_string($previewHtml) && $previewHtml !== '') {
-                        $previewHtml = preg_replace(
-                            '/<img\\b[^>]*\\bsrc\\s*=\\s*([\"\\\'])[^\"\\\']*\\/track\\/email\\/open\\/[^\"\\\']*\\1[^>]*>/i',
-                            '',
-                            $previewHtml
-                        ) ?? $previewHtml;
-                    } else {
-                        $previewHtml = null;
-                    }
-
-                    // Use a data: URL to avoid iframe navigation / CSP / X-Frame-Options issues and
-                    // ensure the content renders as HTML (not as escaped text).
-                    $previewSrc = $previewHtml
-                        ? ('data:text/html;charset=utf-8;base64,' . base64_encode($previewHtml))
-                        : null;
-                @endphp
-
-                <iframe
-                    title="Email Preview"
-                    style="width: 100%; border: 0; border-radius: 10px; min-height: 780px; background: #fff;"
-                    sandbox=""
-                    src="{{ $previewSrc ?: route('staff.patient-email.preview', $emailLog->id) }}"
-                ></iframe>
+                {{-- Render a scoped preview inline (avoids iframe being blocked by CSP/X-Frame-Options). --}}
+                {!! $previewHtml ?? '' !!}
             </div>
         </div>
     </div>

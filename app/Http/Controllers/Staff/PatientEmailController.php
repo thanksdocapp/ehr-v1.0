@@ -142,7 +142,41 @@ class PatientEmailController extends Controller
         }
         $emailLog = $emailLogQuery->findOrFail($id);
 
-        return view('staff.patient-email.show', compact('emailLog', 'doctor'));
+        // Build a scoped preview HTML (no iframe) to avoid CSP/X-Frame-Options blocks.
+        $metadata = $emailLog->metadata ?? [];
+        $patient = $emailLog->patient;
+
+        $clinicName = $metadata['clinic_name']
+            ?? \App\Models\SiteSetting::where('key', 'hospital_name')->value('value')
+            ?? config('app.name', 'Clinic');
+
+        $departmentName = $metadata['department_name']
+            ?? ($doctor->department_id ? (Department::find($doctor->department_id)?->name) : null);
+
+        $logoUrl = $metadata['department_logo'] ?? $metadata['clinic_logo'] ?? null;
+
+        $emailData = [
+            'subject' => $emailLog->subject,
+            'body' => $emailLog->body,
+            'patient_name' => $metadata['patient_name'] ?? ($patient ? $patient->full_name : ($emailLog->recipient_name ?? 'N/A')),
+            'patient_dob' => $metadata['patient_dob'] ?? ($patient && $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : null),
+            'doctor_name' => $metadata['doctor_name'] ?? ($doctor->name ?? $user->name),
+            'doctor_specialization' => $metadata['doctor_specialization'] ?? ($doctor->specialization ?? 'GP'),
+            'doctor_phone' => $metadata['doctor_phone'] ?? ($doctor->phone ?? $user->phone ?? null),
+            'clinic_name' => $clinicName,
+            'clinic_logo' => $metadata['clinic_logo'] ?? null,
+            'department_name' => $departmentName,
+            'department_logo' => $logoUrl,
+            'primary_color' => $metadata['primary_color'] ?? Setting::get('primary_color', '#007bff'),
+            'date_sent' => $metadata['date_sent']
+                ?? ($emailLog->sent_at ? $emailLog->sent_at->format('F j, Y') : $emailLog->created_at->format('F j, Y')),
+        ];
+
+        $previewHtml = (string) view('emails.patient-email-preview', [
+            'emailData' => $emailData,
+        ])->render();
+
+        return view('staff.patient-email.show', compact('emailLog', 'doctor', 'previewHtml'));
     }
 
     /**
