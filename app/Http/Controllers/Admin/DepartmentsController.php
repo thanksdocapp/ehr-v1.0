@@ -115,6 +115,7 @@ class DepartmentsController extends Controller
             'head_of_department' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
+            'website' => 'nullable|string|max:255',
             'services' => 'nullable|array',
             'services.*' => 'nullable|string|max:255',
             'operating_hours' => 'nullable|string|max:255',
@@ -129,6 +130,15 @@ class DepartmentsController extends Controller
         $data = $request->except(['image', 'status']);
         $data['slug'] = Str::slug($request->name);
         $data['is_active'] = ($request->status === 'active');
+
+        // Normalize website if provided (allow users to omit scheme)
+        if (!empty($data['website']) && is_string($data['website'])) {
+            $website = trim($data['website']);
+            if ($website !== '' && !preg_match('#^https?://#i', $website)) {
+                $website = 'https://' . $website;
+            }
+            $data['website'] = $website;
+        }
         
         // Filter out empty services
         if (isset($data['services']) && is_array($data['services'])) {
@@ -293,6 +303,7 @@ class DepartmentsController extends Controller
             'head_of_department' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
+            'website' => 'nullable|string|max:255',
             'services' => 'nullable|string',
             'operating_hours' => 'nullable|string|max:255',
             'icon' => 'nullable|string',
@@ -306,6 +317,15 @@ class DepartmentsController extends Controller
         $data = $request->except(['image', 'status']);
         $data['slug'] = Str::slug($request->name);
         $data['is_active'] = ($request->status === 'active');
+
+        // Normalize website if provided (allow users to omit scheme)
+        if (!empty($data['website']) && is_string($data['website'])) {
+            $website = trim($data['website']);
+            if ($website !== '' && !preg_match('#^https?://#i', $website)) {
+                $website = 'https://' . $website;
+            }
+            $data['website'] = $website;
+        }
         
         // Convert services from textarea to array if it's a string
         if (isset($data['services']) && is_string($data['services'])) {

@@ -184,6 +184,18 @@ use Illuminate\Support\Facades\Storage;
                                     @endif
                                 </dd>
 
+                                <dt class="col-sm-5">Website:</dt>
+                                <dd class="col-sm-7">
+                                    @if($department->website)
+                                        <a href="{{ $department->website }}" target="_blank" rel="noopener noreferrer">
+                                            {{ $department->website }}
+                                            <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75rem;"></i>
+                                        </a>
+                                    @else
+                                        Not specified
+                                    @endif
+                                </dd>
+
                                 @if($department->operating_hours)
                                 <dt class="col-sm-5">Operating Hours:</dt>
                                 <dd class="col-sm-7">{{ $department->operating_hours }}</dd>

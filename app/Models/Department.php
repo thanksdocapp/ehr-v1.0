@@ -23,6 +23,7 @@ class Department extends Model
         'location',
         'phone',
         'email',
+        'website',
         'services',
         'working_hours',
         'sort_order',

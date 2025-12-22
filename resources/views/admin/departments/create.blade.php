@@ -189,6 +189,12 @@
                                         <i class="fas fa-map-marker-alt me-1"></i>Location
                                     </label>
                                     <input type="text"
+                                           class="form-control modern-form-control mb-2"
+                                           id="ideal_postcodes_finder_department"
+                                           placeholder="Search postcode/address (UK)"
+                                           autocomplete="off">
+                                    <div id="ideal_postcodes_notice_department" class="form-text text-muted" style="display:none;"></div>
+                                    <input type="text"
                                            class="form-control modern-form-control @error('location') is-invalid @enderror"
                                            id="location"
                                            name="location"
@@ -197,6 +203,7 @@
                                     @error('location')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                    <div class="form-help-text">Use postcode lookup to fill location, or enter manually.</div>
                                 </div>
                             </div>
                         </div>
@@ -261,6 +268,20 @@
                                     @enderror
                                 </div>
                             </div>
+                        </div>
+                        <div class="modern-form-group">
+                            <label class="modern-form-label">
+                                <i class="fas fa-globe me-1"></i>Clinic Website
+                            </label>
+                            <input type="url"
+                                   class="form-control modern-form-control @error('website') is-invalid @enderror"
+                                   id="website"
+                                   name="website"
+                                   value="{{ old('website') }}"
+                                   placeholder="e.g., https://exampleclinic.co.uk">
+                            @error('website')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="modern-form-group">
@@ -434,6 +455,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder-bundled@5/dist/address-finder.js" defer></script>
 <script>
 $(document).ready(function() {
     // Image preview
@@ -475,6 +497,16 @@ $(document).ready(function() {
         if (email && !emailRegex.test(email)) {
             $('#email').addClass('is-invalid');
             isValid = false;
+        }
+
+        // Validate website URL format
+        const website = $('#website').val();
+        if (website) {
+            const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+            if (!urlRegex.test(website)) {
+                $('#website').addClass('is-invalid');
+                isValid = false;
+            }
         }
 
         if (!isValid) {
@@ -525,6 +557,76 @@ $(document).ready(function() {
 
     // Initialize remove buttons on page load
     updateRemoveButtons();
+
+    // Ideal Postcodes Address Finder (maps selected address to the Location field)
+    (function initIdealPostcodesForDepartment() {
+        const apiKey = @json(\App\Models\Setting::get('ideal_postcodes_api_key') ?: config('services.ideal_postcodes.api_key'));
+        const input = document.getElementById('ideal_postcodes_finder_department');
+        const notice = document.getElementById('ideal_postcodes_notice_department');
+        if (!input || !notice) return;
+
+        function hideNotice() {
+            notice.style.display = 'none';
+            notice.textContent = '';
+        }
+
+        function showNotice(msg) {
+            notice.style.display = 'block';
+            notice.innerHTML = `<i class="fas fa-info-circle me-1"></i>${msg}`;
+        }
+
+        function getAF() {
+            if (typeof AddressFinder !== 'undefined' && AddressFinder) return AddressFinder;
+            if (window.IdealPostcodes && window.IdealPostcodes.AddressFinder) return window.IdealPostcodes.AddressFinder;
+            return null;
+        }
+
+        function ensureAFScript() {
+            if (getAF()) return;
+            if (document.querySelector('script[data-ideal-postcodes-af="1"]')) return;
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder-bundled@5/dist/address-finder.js';
+            s.async = true;
+            s.setAttribute('data-ideal-postcodes-af', '1');
+            document.head.appendChild(s);
+        }
+
+        function waitForAF(timeoutMs) {
+            return new Promise((resolve, reject) => {
+                const start = Date.now();
+                ensureAFScript();
+                (function tick() {
+                    const AF = getAF();
+                    if (AF && typeof AF.setup === 'function') return resolve(AF);
+                    if (Date.now() - start > timeoutMs) return reject(new Error('Ideal Postcodes AddressFinder load timeout'));
+                    setTimeout(tick, 50);
+                })();
+            });
+        }
+
+        if (!apiKey) {
+            showNotice('Postcode lookup is unavailable (missing API key). Please enter location manually.');
+            return;
+        }
+        hideNotice();
+        waitForAF(8000)
+            .then((AF) => {
+                AF.setup({
+                    apiKey: apiKey,
+                    inputField: input,
+                    outputFields: {
+                        line_1: '#location',
+                    },
+                    onCheckFailed: function() {
+                        showNotice('Postcode lookup is unavailable right now. Please enter location manually.');
+                    },
+                });
+            })
+            .catch((e) => {
+                console.error('Ideal Postcodes load/init failed:', e);
+                showNotice('Postcode lookup failed to load. Please enter location manually.');
+            });
+    })();
 });
 </script>
 @endpush
