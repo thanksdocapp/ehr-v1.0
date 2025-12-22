@@ -250,7 +250,7 @@
 <!-- Formeo Form Builder JS -->
 <script src="https://unpkg.com/formeo@latest/dist/formeo.umd.js"></script>
 <!-- Formeo Initialization -->
-<script src="{{ asset('js/formeo-init.js') }}"></script>
+<script src="{{ asset('js/formeo-init.js') }}" onerror="console.warn('formeo-init.js failed to load, using fallback initialization')"></script>
 @endif
 
 <script>
@@ -265,6 +265,82 @@
         if (!token) return '';
         return (token.startsWith('@{{')) ? token.substring(1) : token;
     }
+
+    @if($isForm)
+    // Fallback Formeo initialization if formeo-init.js didn't load
+    if (typeof window.initFormeoBuilder === 'undefined') {
+        window.initFormeoBuilder = async function(containerSelector, formData = null) {
+            // Formeo UMD exposes FormeoEditor globally
+            let FormeoEditorClass = null;
+            
+            if (typeof FormeoEditor !== 'undefined') {
+                FormeoEditorClass = FormeoEditor;
+            } else if (typeof window.FormeoEditor !== 'undefined') {
+                FormeoEditorClass = window.FormeoEditor;
+            } else if (typeof Formeo !== 'undefined' && Formeo.FormeoEditor) {
+                FormeoEditorClass = Formeo.FormeoEditor;
+            } else {
+                console.error('FormeoEditor is not loaded. Please include Formeo JS library.');
+                return null;
+            }
+
+            const container = typeof containerSelector === 'string' 
+                ? document.querySelector(containerSelector) 
+                : containerSelector;
+
+            if (!container) {
+                console.error('Formeo container not found: ' + containerSelector);
+                return null;
+            }
+
+            try {
+                const editorOptions = {
+                    editorContainer: containerSelector,
+                };
+                const formeo = new FormeoEditorClass(editorOptions);
+                
+                if (formData) {
+                    try {
+                        const schema = typeof formData === 'string' ? JSON.parse(formData) : formData;
+                        if (typeof formeo.render === 'function') {
+                            formeo.render(schema);
+                        } else if (formeo.formData !== undefined) {
+                            formeo.formData = schema;
+                        }
+                    } catch (error) {
+                        console.error('Error loading Formeo form data:', error);
+                    }
+                }
+                return formeo;
+            } catch (error) {
+                console.error('Failed to initialize Formeo builder:', error);
+                return null;
+            }
+        };
+        
+        window.getFormeoSchema = function(formeo) {
+            if (!formeo) return null;
+            try {
+                return formeo.formData || null;
+            } catch (error) {
+                console.error('Error getting Formeo schema:', error);
+                return null;
+            }
+        };
+        
+        window.setFormeoSchema = function(formeo, schema) {
+            if (!formeo) return;
+            try {
+                const formSchema = typeof schema === 'string' ? JSON.parse(schema) : schema;
+                if (typeof formeo.render === 'function') {
+                    formeo.render(formSchema);
+                }
+            } catch (error) {
+                console.error('Error setting Formeo schema:', error);
+            }
+        };
+    }
+    @endif
 
     document.addEventListener('DOMContentLoaded', async function() {
         @if($isForm)
