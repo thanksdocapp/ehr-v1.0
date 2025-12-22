@@ -259,11 +259,26 @@
 $(document).ready(function() {
     let quillEmail;
 
-    // Fallback initialization if quill-init.js didn't load
+    // Fallback initialization if quill-init.js didn't load (complete implementation)
     if (typeof window.initQuillEditor === 'undefined') {
+        const defaultQuillConfig = {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            formats: ['bold', 'italic', 'underline', 'header', 'list', 'link'],
+            placeholder: 'Start typing...'
+        };
+        
         window.initQuillEditor = function(selector, options) {
             if (typeof Quill === 'undefined') {
-                console.error('Quill is not loaded');
+                console.error('Quill is not loaded. Please include quill.min.js before this script.');
                 return null;
             }
             const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
@@ -271,26 +286,58 @@ $(document).ready(function() {
                 console.error('Quill editor container not found: ' + selector);
                 return null;
             }
+            const config = Object.assign({}, defaultQuillConfig, options || {});
             try {
-                return new Quill(element, options || {});
+                return new Quill(element, config);
             } catch (error) {
                 console.error('Failed to initialize Quill editor:', error);
                 return null;
             }
         };
+        
         window.setQuillContent = function(quill, html) {
-            if (quill && quill.root) {
-                quill.root.innerHTML = html || '';
+            if (!quill || !quill.root) {
+                console.error('Invalid Quill instance');
+                return;
+            }
+            if (html) {
+                quill.root.innerHTML = html;
+            } else {
+                quill.setText('');
             }
         };
-        window.syncQuillToTextarea = function(quill, textareaSelector) {
-            if (!quill || !quill.root) return;
+        
+        window.syncQuillToTextarea = function(quill, textareaSelector, debounceMs) {
+            if (!quill || !quill.root) {
+                console.error('Invalid Quill instance');
+                return;
+            }
+            debounceMs = debounceMs || 300;
             const textarea = typeof textareaSelector === 'string' ? document.querySelector(textareaSelector) : textareaSelector;
-            if (!textarea) return;
+            if (!textarea) {
+                console.error('Textarea not found: ' + textareaSelector);
+                return;
+            }
             textarea.value = quill.root.innerHTML;
-            quill.on('text-change', function() {
-                textarea.value = quill.root.innerHTML;
-            });
+            let debounceTimer;
+            const updateTextarea = function() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(function() {
+                    textarea.value = quill.root.innerHTML;
+                }, debounceMs);
+            };
+            quill.on('text-change', updateTextarea);
+            quill.on('selection-change', updateTextarea);
+        };
+        
+        window.getQuillContent = function(quill) {
+            if (!quill || !quill.root) return '';
+            return quill.root.innerHTML;
+        };
+        
+        window.getQuillText = function(quill) {
+            if (!quill) return '';
+            return quill.getText();
         };
     }
 
