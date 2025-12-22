@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
+use App\Casts\SafeEncrypted;
 
 class EmailLog extends Model
 {
@@ -92,7 +93,8 @@ class EmailLog extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         // PHI Encryption - Email content may contain sensitive medical information
-        'body' => 'encrypted',
+        // Use SafeEncrypted so legacy/plaintext rows don't crash admin email logs.
+        'body' => SafeEncrypted::class,
     ];
 
     /**
