@@ -1,0 +1,10 @@
+# Copy ONLY the lines below (without this comment) into Plesk "Additional nginx directives"
+
+location ~* \.(css|js|jpg|jpeg|gif|png|ico|xml|svg|woff|woff2|ttf|eot|otf|json)$ {
+    root /var/www/vhosts/notes.thanksdoc.co.uk/httpdocs;
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    access_log off;
+    try_files $uri =404;
+}
+
