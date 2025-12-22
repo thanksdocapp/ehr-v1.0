@@ -146,11 +146,33 @@
         </div>
         <div class="doctor-card-body p-0">
             <div class="p-3 p-md-4" style="background: #f5f5f5;">
+                @php
+                    // Prefer the frozen preview HTML (no tracking pixel). Fall back to sent HTML if needed.
+                    $previewHtml = data_get($emailLog->metadata, 'rendered_html_preview')
+                        ?? data_get($emailLog->metadata, 'rendered_html');
+
+                    // Safety: strip tracking pixel if we fell back to sent HTML.
+                    if (is_string($previewHtml) && $previewHtml !== '') {
+                        $previewHtml = preg_replace(
+                            '/<img\\b[^>]*\\bsrc\\s*=\\s*([\"\\\'])[^\"\\\']*\\/track\\/email\\/open\\/[^\"\\\']*\\1[^>]*>/i',
+                            '',
+                            $previewHtml
+                        ) ?? $previewHtml;
+                    } else {
+                        $previewHtml = null;
+                    }
+                @endphp
+
                 <iframe
                     title="Email Preview"
                     style="width: 100%; border: 0; border-radius: 10px; min-height: 780px; background: #fff;"
-                    sandbox="allow-same-origin"
-                    src="{{ route('staff.patient-email.preview', $emailLog->id) }}"
+                    sandbox=""
+                    @if($previewHtml)
+                        src="about:blank"
+                        srcdoc="{{ e($previewHtml) }}"
+                    @else
+                        src="{{ route('staff.patient-email.preview', $emailLog->id) }}"
+                    @endif
                 ></iframe>
             </div>
         </div>
