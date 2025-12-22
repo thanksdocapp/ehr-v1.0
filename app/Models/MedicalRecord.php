@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Casts\SafeEncrypted;
 
 class MedicalRecord extends Model
 {
@@ -48,19 +49,20 @@ class MedicalRecord extends Model
         'follow_up_date' => 'date',
         'is_private' => 'boolean',
         // PHI Encryption (HIPAA Compliance) - All clinical data
-        'presenting_complaint' => 'encrypted',
-        'history_of_presenting_complaint' => 'encrypted',
-        'past_medical_history' => 'encrypted',
-        'drug_history' => 'encrypted',
-        'allergies' => 'encrypted',
-        'social_history' => 'encrypted',
-        'family_history' => 'encrypted',
-        'ideas_concerns_expectations' => 'encrypted',
-        'plan' => 'encrypted',
-        'diagnosis' => 'encrypted',
-        'symptoms' => 'encrypted',
-        'treatment' => 'encrypted',
-        'notes' => 'encrypted',
+        // Use SafeEncrypted to avoid runtime crashes when legacy/plaintext values exist.
+        'presenting_complaint' => SafeEncrypted::class,
+        'history_of_presenting_complaint' => SafeEncrypted::class,
+        'past_medical_history' => SafeEncrypted::class,
+        'drug_history' => SafeEncrypted::class,
+        'allergies' => SafeEncrypted::class,
+        'social_history' => SafeEncrypted::class,
+        'family_history' => SafeEncrypted::class,
+        'ideas_concerns_expectations' => SafeEncrypted::class,
+        'plan' => SafeEncrypted::class,
+        'diagnosis' => SafeEncrypted::class,
+        'symptoms' => SafeEncrypted::class,
+        'treatment' => SafeEncrypted::class,
+        'notes' => SafeEncrypted::class,
     ];
 
     // Relationships
