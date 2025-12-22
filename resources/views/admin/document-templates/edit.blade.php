@@ -924,6 +924,13 @@ $(document).ready(function() {
         const block = builderBlocks.find(b => b.id === blockId);
         if (!block) return;
         
+        // Check if Quill is loaded
+        if (typeof Quill === 'undefined') {
+            console.error('Quill is not loaded. Please ensure the Quill CDN script is included.');
+            editorElement.innerHTML = '<p style="color: red;">Error: Rich text editor failed to load. Please refresh the page.</p>';
+            return;
+        }
+        
         const quill = new Quill(editorElement, {
             theme: 'snow',
             modules: {
