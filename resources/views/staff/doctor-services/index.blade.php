@@ -76,9 +76,9 @@
             <div class="doctor-card">
                 <div class="doctor-card-header">
                     <h5 class="doctor-card-title mb-0">
-                        <i class="fas fa-briefcase-medical me-2"></i>Available Services
+                        <i class="fas fa-briefcase-medical me-2"></i>My Services
                     </h5>
-                    <small class="text-muted">Customize pricing and duration for each service, or use global defaults</small>
+                    <small class="text-muted">Create and manage your private services. Only you can see and edit services you create.</small>
                 </div>
                 <div class="doctor-card-body p-0">
                     <div class="table-responsive">

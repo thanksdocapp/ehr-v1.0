@@ -190,11 +190,37 @@ class DoctorsController extends Controller
         // Note: Testimonials relationship might not exist, so we'll skip it for now
         $recentTestimonials = collect();
 
+        // Load doctor's services (services created by this doctor's user account)
+        $doctorServices = collect();
+        if ($doctor->user_id) {
+            $doctorServices = \App\Models\BookingService::where('created_by', $doctor->user_id)
+                ->orderBy('name')
+                ->get()
+                ->map(function ($service) use ($doctor) {
+                    $override = \App\Models\DoctorServicePrice::where('doctor_id', $doctor->id)
+                        ->where('service_id', $service->id)
+                        ->first();
+                    return [
+                        'id' => $service->id,
+                        'name' => $service->name,
+                        'description' => $service->description,
+                        'default_price' => $service->default_price,
+                        'default_duration_minutes' => $service->default_duration_minutes,
+                        'is_active' => $service->is_active,
+                        'has_override' => $override !== null,
+                        'custom_price' => $override ? $override->custom_price : null,
+                        'custom_duration_minutes' => $override ? $override->custom_duration_minutes : null,
+                        'is_active_for_doctor' => $override ? $override->is_active : $service->is_active,
+                    ];
+                });
+        }
+
         return view('admin.doctors.show', compact(
             'doctor', 
             'upcomingAppointments', 
             'todayAppointments', 
-            'recentTestimonials'
+            'recentTestimonials',
+            'doctorServices'
         ));
     }
 

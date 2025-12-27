@@ -224,6 +224,86 @@ use Illuminate\Support\Facades\Storage;
                 </div>
             </div>
 
+            <!-- Department Services (from all doctors) -->
+            @if(isset($departmentServices) && $departmentServices->count() > 0)
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title">
+                        <i class="fas fa-briefcase-medical"></i>
+                        Department Services ({{ $departmentServices->count() }})
+                    </h6>
+                    <small class="text-muted">Services created by doctors in this department</small>
+                </div>
+                <div class="modern-card-body">
+                    <div class="modern-table-wrapper">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Service Name</th>
+                                    <th>Doctor</th>
+                                    <th>Duration</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($departmentServices as $service)
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">{{ $service['name'] }}</div>
+                                            @if($service['description'])
+                                                <small class="text-muted">{{ Str::limit($service['description'], 60) }}</small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('admin.doctors.show', $service['doctor_id']) }}" class="text-decoration-none">
+                                                {{ $service['doctor_name'] }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            @if($service['has_override'] && $service['custom_duration_minutes'])
+                                                <span class="badge bg-info text-dark">{{ $service['custom_duration_minutes'] }} min</span>
+                                            @else
+                                                <span class="badge bg-light text-dark">{{ $service['default_duration_minutes'] ?? 60 }} min</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($service['has_override'] && $service['custom_price'] !== null)
+                                                <strong>£{{ number_format($service['custom_price'], 2) }}</strong>
+                                            @elseif($service['default_price'])
+                                                <strong>£{{ number_format($service['default_price'], 2) }}</strong>
+                                            @else
+                                                <span class="text-muted">On request</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($service['is_active_for_doctor'])
+                                                <span class="badge bg-success">Active</span>
+                                            @else
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            @elseif(isset($departmentServices))
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="modern-card-title">
+                        <i class="fas fa-briefcase-medical"></i>
+                        Department Services
+                    </h6>
+                </div>
+                <div class="modern-card-body">
+                    <p class="text-muted mb-0">No services have been created by doctors in this department yet.</p>
+                </div>
+            </div>
+            @endif
+
             <!-- Detailed Statistics -->
             <div class="row mb-4">
                 <!-- Appointments Statistics -->

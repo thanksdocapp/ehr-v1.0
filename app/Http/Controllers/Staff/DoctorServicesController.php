@@ -43,8 +43,10 @@ class DoctorServicesController extends Controller
                 ->with('error', 'Doctor service prices table not found. Please create the doctor_service_prices table. See create_booking_tables.sql');
         }
 
-        // Get all global services
-        $globalServices = BookingService::active()->orderBy('name')->get();
+        // Get only services created by this doctor (private by default)
+        $globalServices = BookingService::where('created_by', $user->id)
+            ->orderBy('name')
+            ->get();
 
         // Get doctor's service overrides
         $doctorServicePrices = DoctorServicePrice::where('doctor_id', $doctor->id)
@@ -146,6 +148,11 @@ class DoctorServicesController extends Controller
         $user = Auth::user();
         $doctor = Doctor::where('user_id', $user->id)->firstOrFail();
 
+        // Ensure doctor can only edit their own services
+        if ($bookingService->created_by !== $user->id) {
+            abort(403, 'You can only edit services you created.');
+        }
+
         // Get or create override
         $override = DoctorServicePrice::firstOrNew([
             'doctor_id' => $doctor->id,
@@ -162,6 +169,11 @@ class DoctorServicesController extends Controller
     {
         $user = Auth::user();
         $doctor = Doctor::where('user_id', $user->id)->firstOrFail();
+
+        // Ensure doctor can only update their own services
+        if ($bookingService->created_by !== $user->id) {
+            abort(403, 'You can only update services you created.');
+        }
 
         $request->validate([
             'custom_price' => 'nullable|numeric|min:0',
@@ -202,6 +214,11 @@ class DoctorServicesController extends Controller
         $user = Auth::user();
         $doctor = Doctor::where('user_id', $user->id)->firstOrFail();
 
+        // Ensure doctor can only toggle their own services
+        if ($bookingService->created_by !== $user->id) {
+            abort(403, 'You can only toggle services you created.');
+        }
+
         try {
             $override = DoctorServicePrice::firstOrNew([
                 'doctor_id' => $doctor->id,
@@ -235,6 +252,11 @@ class DoctorServicesController extends Controller
     {
         $user = Auth::user();
         $doctor = Doctor::where('user_id', $user->id)->firstOrFail();
+
+        // Ensure doctor can only delete their own services
+        if ($bookingService->created_by !== $user->id) {
+            abort(403, 'You can only delete services you created.');
+        }
 
         try {
             DoctorServicePrice::where('doctor_id', $doctor->id)

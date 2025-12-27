@@ -187,6 +187,68 @@ use Illuminate\Support\Facades\Storage;
                                     </div>
                                 </div>
                             @endif
+
+                            @if(isset($doctorServices) && $doctorServices->count() > 0)
+                                <div class="mb-4">
+                                    <h5 class="text-primary">
+                                        <i class="fas fa-briefcase-medical me-2"></i>Doctor Services ({{ $doctorServices->count() }})
+                                    </h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Service Name</th>
+                                                    <th>Duration</th>
+                                                    <th>Price</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($doctorServices as $service)
+                                                    <tr>
+                                                        <td>
+                                                            <div class="fw-semibold">{{ $service['name'] }}</div>
+                                                            @if($service['description'])
+                                                                <small class="text-muted">{{ Str::limit($service['description'], 50) }}</small>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($service['has_override'] && $service['custom_duration_minutes'])
+                                                                <span class="badge bg-info text-dark">{{ $service['custom_duration_minutes'] }} min</span>
+                                                            @else
+                                                                <span class="badge bg-light text-dark">{{ $service['default_duration_minutes'] ?? 60 }} min</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($service['has_override'] && $service['custom_price'] !== null)
+                                                                <strong>£{{ number_format($service['custom_price'], 2) }}</strong>
+                                                            @elseif($service['default_price'])
+                                                                <strong>£{{ number_format($service['default_price'], 2) }}</strong>
+                                                            @else
+                                                                <span class="text-muted">On request</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($service['is_active_for_doctor'])
+                                                                <span class="badge bg-success">Active</span>
+                                                            @else
+                                                                <span class="badge bg-secondary">Inactive</span>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @elseif(isset($doctorServices))
+                                <div class="mb-4">
+                                    <h5 class="text-primary">
+                                        <i class="fas fa-briefcase-medical me-2"></i>Doctor Services
+                                    </h5>
+                                    <p class="text-muted">This doctor has not created any services yet.</p>
+                                </div>
+                            @endif
                         </div>
                         
                         <div class="col-md-4">

@@ -274,6 +274,39 @@ class DepartmentsController extends Controller
             ->limit(5)
             ->get();
 
+        // Get all services from doctors in this department
+        $departmentDoctors = $department->doctors()->with('user')->get();
+        $departmentServices = collect();
+        
+        foreach ($departmentDoctors as $deptDoctor) {
+            if ($deptDoctor->user_id) {
+                $doctorServices = \App\Models\BookingService::where('created_by', $deptDoctor->user_id)
+                    ->orderBy('name')
+                    ->get();
+                
+                foreach ($doctorServices as $service) {
+                    $override = \App\Models\DoctorServicePrice::where('doctor_id', $deptDoctor->id)
+                        ->where('service_id', $service->id)
+                        ->first();
+                    
+                    $departmentServices->push([
+                        'id' => $service->id,
+                        'name' => $service->name,
+                        'description' => $service->description,
+                        'default_price' => $service->default_price,
+                        'default_duration_minutes' => $service->default_duration_minutes,
+                        'is_active' => $service->is_active,
+                        'has_override' => $override !== null,
+                        'custom_price' => $override ? $override->custom_price : null,
+                        'custom_duration_minutes' => $override ? $override->custom_duration_minutes : null,
+                        'is_active_for_doctor' => $override ? $override->is_active : $service->is_active,
+                        'doctor_name' => $deptDoctor->full_name,
+                        'doctor_id' => $deptDoctor->id,
+                    ]);
+                }
+            }
+        }
+
         return view('admin.departments.show', compact(
             'department',
             'todayAppointments',
@@ -285,7 +318,8 @@ class DepartmentsController extends Controller
             'prescriptionStats',
             'labReportStats',
             'recentPatients',
-            'topDoctors'
+            'topDoctors',
+            'departmentServices'
         ));
     }
 
