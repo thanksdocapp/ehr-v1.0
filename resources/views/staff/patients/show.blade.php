@@ -47,14 +47,14 @@
                     <h5 class="alert-heading mb-2">
                         <i class="fas fa-user-slash me-2"></i>
                         @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                            <strong class="text-danger">URGENT: Placeholder Information Detected</strong>
+                            <strong class="text-danger">URGENT: Patient Identification Incomplete</strong>
                         @else
                             Incomplete Patient Information
                         @endif
                     </h5>
                     <p class="mb-2">
                         @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                            <strong class="text-danger">This patient has placeholder information that MUST be fixed:</strong>
+                            <strong class="text-danger">This patient record contains temporary placeholder information that must be updated with accurate patient details before proceeding with care:</strong>
                         @else
                             <strong>This guest patient has missing information that should be completed:</strong>
                         @endif
@@ -62,7 +62,7 @@
                     <ul class="mb-3">
                         @foreach($patientInfoCheck['missing_fields'] as $field)
                             <li>
-                                @if(strpos($field, 'placeholder') !== false || strpos($field, '@payment-link.temp') !== false)
+                                @if(strpos($field, 'Requires completion') !== false || strpos($field, 'Requires valid email') !== false || strpos($field, 'placeholder') !== false || strpos($field, '@payment-link.temp') !== false)
                                     <strong class="text-danger">{{ $field }}</strong>
                                 @else
                                     {{ $field }}
@@ -73,11 +73,11 @@
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{{ route('staff.patients.edit', $patient->id) }}" class="btn {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'btn-danger' : 'btn-warning' }} btn-sm">
                             <i class="fas fa-edit me-1"></i>
-                            @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                                Fix Placeholder Information
-                            @else
-                                Complete Patient Information
-                            @endif
+                                    @if($patientInfoCheck['has_placeholder_info'] ?? false)
+                                        Update Patient Information
+                                    @else
+                                        Complete Patient Information
+                                    @endif
                         </a>
                         <span class="badge bg-info align-self-center">
                             <i class="fas fa-info-circle me-1"></i>Guest Patient (Created via Payment Link)

@@ -215,13 +215,12 @@ class Patient extends Authenticatable
         $hasPlaceholderEmail = $this->email && strpos($this->email, '@payment-link.temp') !== false;
         
         if ($hasPlaceholderName) {
-            $missingFields[] = 'First Name (currently "Guest" - placeholder)';
-            $missingFields[] = 'Last Name (currently "Patient" - placeholder)';
+            $missingFields[] = 'Patient Name - Requires completion (currently using placeholder values)';
             $isIncomplete = true;
         }
         
         if ($hasPlaceholderEmail) {
-            $missingFields[] = 'Email (currently placeholder: ' . $this->email . ')';
+            $missingFields[] = 'Contact Email - Requires valid email address (currently using temporary placeholder)';
             $isIncomplete = true;
         }
 
