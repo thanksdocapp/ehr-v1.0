@@ -521,12 +521,13 @@ class PublicBookingController extends Controller
         $services = $this->getServicesForDoctor($doctor->id);
         
         $servicesData = $services->map(function($service) use ($doctor) {
+            // Use getPriceForDoctor and getDurationForDoctor to get custom prices if set
             return [
                 'id' => $service->id,
                 'name' => $service->name,
                 'description' => $service->description,
-                'duration' => $service->default_duration_minutes ?? 60,
-                'price' => $service->default_price ?? 0,
+                'duration' => $service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 60,
+                'price' => $service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0,
             ];
         });
 

@@ -263,13 +263,45 @@ class DoctorServicesController extends Controller
                 ->where('service_id', $bookingService->id)
                 ->delete();
 
-            return back()->with('success', 'Service override removed. Using global settings.');
+            return back()->with('success', 'Custom settings removed. Service now uses default values.');
         } catch (\Exception $e) {
             Log::error('Error removing doctor service override: ' . $e->getMessage(), [
                 'doctor_id' => $doctor->id,
                 'service_id' => $bookingService->id
             ]);
-            return back()->with('error', 'Failed to remove service override: ' . $e->getMessage());
+            return back()->with('error', 'Failed to remove custom settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a service completely.
+     */
+    public function deleteService(BookingService $bookingService)
+    {
+        $user = Auth::user();
+        $doctor = Doctor::where('user_id', $user->id)->firstOrFail();
+
+        // Ensure doctor can only delete their own services
+        if ($bookingService->created_by !== $user->id) {
+            abort(403, 'You can only delete services you created.');
+        }
+
+        try {
+            // Delete the override first
+            DoctorServicePrice::where('doctor_id', $doctor->id)
+                ->where('service_id', $bookingService->id)
+                ->delete();
+
+            // Delete the service itself
+            $bookingService->delete();
+
+            return back()->with('success', 'Service deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error deleting doctor service: ' . $e->getMessage(), [
+                'doctor_id' => $doctor->id,
+                'service_id' => $bookingService->id
+            ]);
+            return back()->with('error', 'Failed to delete service: ' . $e->getMessage());
         }
     }
 

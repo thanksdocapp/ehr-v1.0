@@ -159,7 +159,7 @@
                                                     @csrf
                                                     <button type="submit" 
                                                             class="btn btn-sm btn-outline-{{ $service['is_active_for_doctor'] ? 'warning' : 'success' }}"
-                                                            title="{{ $service['is_active_for_doctor'] ? 'Deactivate' : 'Activate' }}">
+                                                            title="{{ $service['is_active_for_doctor'] ? 'Deactivate Service' : 'Activate Service' }}">
                                                         <i class="fas fa-{{ $service['is_active_for_doctor'] ? 'eye-slash' : 'eye' }}"></i>
                                                     </button>
                                                 </form>
@@ -167,16 +167,28 @@
                                                 <form action="{{ route('staff.doctor-services.destroy', $service['id']) }}" 
                                                       method="POST" 
                                                       class="d-inline"
-                                                      onsubmit="return confirm('Remove custom settings and use global defaults?');">
+                                                      onsubmit="return confirm('Remove custom price/duration settings and revert to default values?');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" 
-                                                            class="btn btn-sm btn-outline-danger"
-                                                            title="Remove Override">
+                                                            class="btn btn-sm btn-outline-info"
+                                                            title="Remove Custom Settings (Revert to Defaults)">
                                                         <i class="fas fa-undo"></i>
                                                     </button>
                                                 </form>
                                                 @endif
+                                                <form action="{{ route('staff.doctor-services.delete-service', $service['id']) }}" 
+                                                      method="POST" 
+                                                      class="d-inline"
+                                                      onsubmit="return confirm('Are you sure you want to delete this service? This action cannot be undone.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" 
+                                                            class="btn btn-sm btn-outline-danger"
+                                                            title="Delete Service">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
                                             </div>
                                         </td>
                                     </tr>

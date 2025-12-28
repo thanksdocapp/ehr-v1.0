@@ -80,6 +80,7 @@
                 </div>
                 <div class="service-details-col" id="service-details" style="display: none;">
                     <div class="summary-card-compact">
+                        <div class="summary-description-compact" id="service-description"></div>
                         <div class="summary-row-compact">
                             <span class="summary-label-compact">Duration:</span>
                             <span class="summary-value-compact" id="service-duration">-</span>
@@ -296,6 +297,15 @@
         font-weight: 600;
     }
 
+    .summary-description-compact {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        line-height: 1.4;
+    }
+
     @media (max-width: 768px) {
         .service-selection-row {
             flex-direction: column;
@@ -408,6 +418,7 @@
                         option.textContent = `${service.name} - £${parseFloat(service.price).toFixed(2)}`;
                         option.dataset.duration = service.duration;
                         option.dataset.price = service.price;
+                        option.dataset.description = service.description || '';
                         serviceSelect.appendChild(option);
                     });
                     serviceSelect.disabled = false;
@@ -425,8 +436,20 @@
         function updateServiceDetails() {
             const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
             if (selectedOption && selectedOption.value) {
-                document.getElementById('service-duration').textContent = selectedOption.dataset.duration + ' minutes';
-                document.getElementById('service-price').textContent = '£' + parseFloat(selectedOption.dataset.price).toFixed(2);
+                const description = selectedOption.dataset.description || '';
+                const duration = selectedOption.dataset.duration + ' minutes';
+                const price = '£' + parseFloat(selectedOption.dataset.price).toFixed(2);
+                
+                const descriptionEl = document.getElementById('service-description');
+                if (description && description.trim()) {
+                    descriptionEl.textContent = description;
+                    descriptionEl.style.display = 'block';
+                } else {
+                    descriptionEl.style.display = 'none';
+                }
+                
+                document.getElementById('service-duration').textContent = duration;
+                document.getElementById('service-price').textContent = price;
                 serviceDetails.style.display = 'block';
             }
         }

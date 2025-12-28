@@ -388,6 +388,7 @@ Route::group(['middleware' => 'installed'], function () {
             Route::put('/{bookingService}', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'update'])->name('update');
             Route::post('/{bookingService}/toggle-status', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'toggleStatus'])->name('toggle-status');
             Route::delete('/{bookingService}', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'destroy'])->name('destroy');
+            Route::delete('/{bookingService}/delete-service', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'deleteService'])->name('delete-service');
             Route::post('/generate-payment-link', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'generatePaymentLink'])->name('generate-payment-link');
         });
 
