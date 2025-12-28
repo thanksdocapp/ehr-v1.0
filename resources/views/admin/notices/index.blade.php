@@ -126,7 +126,7 @@
                                            title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <form action="{{ route('admin.notices.toggle-active', $notice) }}" 
+                                        <form action="{{ route('admin.notices.toggle-status', $notice) }}" 
                                               method="POST" 
                                               class="d-inline">
                                             @csrf

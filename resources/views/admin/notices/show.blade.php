@@ -224,7 +224,7 @@
                         <a href="{{ route('admin.notices.edit', $notice) }}" class="btn btn-warning">
                             <i class="fas fa-edit me-2"></i>Edit Notice
                         </a>
-                        <form action="{{ route('admin.notices.toggle-active', $notice) }}" 
+                        <form action="{{ route('admin.notices.toggle-status', $notice) }}" 
                               method="POST" 
                               class="d-inline">
                             @csrf
