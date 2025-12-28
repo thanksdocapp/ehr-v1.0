@@ -71,30 +71,27 @@
 
         <!-- Service Selection (Dropdown) - Shown when doctor is selected -->
         <div class="form-card" id="service-selection-card" style="display: {{ (isset($doctor) && $doctors->count() == 1) ? 'block' : 'none' }};">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                <label class="form-label mb-0">Select Service <span class="text-danger">*</span></label>
-                <div class="consultation-type-compact">
-                    <select name="consultation_type" id="consultation-type-select" class="form-select form-select-sm consultation-type-select" required>
-                        <option value="in_person">In-Person</option>
-                        <option value="online">Online</option>
+            <label class="form-label">Select Service <span class="text-danger">*</span></label>
+            <div class="service-selection-row">
+                <div class="service-dropdown-col">
+                    <select name="service_id" id="service-select" class="form-control form-control-sm" required {{ (isset($doctor) && $doctors->count() == 1) ? '' : 'disabled' }}>
+                        <option value="">Select a service...</option>
                     </select>
                 </div>
-            </div>
-            <select name="service_id" id="service-select" class="form-control form-control-lg" required {{ (isset($doctor) && $doctors->count() == 1) ? '' : 'disabled' }}>
-                <option value="">Select a service...</option>
-            </select>
-            <div id="service-details" class="mt-3" style="display: none;">
-                <div class="summary-card">
-                    <div class="summary-row">
-                        <span class="summary-label">Duration:</span>
-                        <span class="summary-value" id="service-duration">-</span>
-                    </div>
-                    <div class="summary-row">
-                        <span class="summary-label">Price:</span>
-                        <span class="summary-value" id="service-price">-</span>
+                <div class="service-details-col" id="service-details" style="display: none;">
+                    <div class="summary-card-compact">
+                        <div class="summary-row-compact">
+                            <span class="summary-label-compact">Duration:</span>
+                            <span class="summary-value-compact" id="service-duration">-</span>
+                        </div>
+                        <div class="summary-row-compact">
+                            <span class="summary-label-compact">Price:</span>
+                            <span class="summary-value-compact" id="service-price">-</span>
+                        </div>
                     </div>
                 </div>
             </div>
+            <input type="hidden" name="consultation_type" value="in_person">
         </div>
 
         <!-- Schedule Selection - Shown when service is selected -->
@@ -252,44 +249,61 @@
         }
     }
 
-    /* Compact Consultation Type Selector */
-    .consultation-type-compact {
+    /* Compact Service Selection Row */
+    .service-selection-row {
         display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
+        align-items: flex-start;
     }
 
-    .consultation-type-select {
-        min-width: 140px;
-        font-size: 0.875rem;
-        padding: 0.375rem 0.75rem;
-        border: 1px solid #ced4da;
+    .service-dropdown-col {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .service-details-col {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .summary-card-compact {
+        background: #f8f9fa;
+        border: 1px solid #e2e8f0;
         border-radius: 6px;
-        background-color: #ffffff;
-        transition: all 0.2s ease;
+        padding: 0.5rem;
     }
 
-    .consultation-type-select:focus {
-        border-color: var(--booking-primary, #007bff);
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        outline: 0;
+    .summary-row-compact {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.25rem;
     }
 
-    .consultation-type-select:hover {
-        border-color: #adb5bd;
+    .summary-row-compact:last-child {
+        margin-bottom: 0;
     }
 
-    @media (max-width: 576px) {
-        .consultation-type-compact {
-            width: 100%;
-            margin-top: 0.5rem;
-        }
-        .consultation-type-select {
-            width: 100%;
-        }
-        .d-flex.justify-content-between.align-items-center {
+    .summary-label-compact {
+        font-size: 0.75rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .summary-value-compact {
+        font-size: 0.8125rem;
+        color: #1a202c;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .service-selection-row {
             flex-direction: column;
-            align-items: flex-start !important;
+            gap: 0.5rem;
+        }
+        .service-dropdown-col,
+        .service-details-col {
+            width: 100%;
         }
     }
 </style>

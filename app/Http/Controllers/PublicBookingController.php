@@ -268,7 +268,7 @@ class PublicBookingController extends Controller
             'phone' => 'required|string|max:20',
             'date_of_birth' => 'required|date|before:today',
             'gender' => 'required|in:male,female,other',
-            'consultation_type' => 'required|in:in_person,online',
+            'consultation_type' => 'nullable|in:in_person,online',
             'consent' => 'required|accepted',
             'consent_share_with_gp' => 'nullable|boolean',
             'gp_name' => 'required_if:consent_share_with_gp,1|nullable|string|max:255',
@@ -276,6 +276,11 @@ class PublicBookingController extends Controller
             'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
             'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
         ]);
+
+        // Set default consultation type to in_person (doctors will decide later)
+        if (!$request->has('consultation_type') || !$request->consultation_type) {
+            $request->merge(['consultation_type' => 'in_person']);
+        }
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
@@ -368,7 +373,7 @@ class PublicBookingController extends Controller
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
-            'consultation_type' => 'required|in:in_person,online',
+            'consultation_type' => 'nullable|in:in_person,online',
             'consent_share_with_gp' => 'nullable|boolean',
             'gp_name' => 'required_if:consent_share_with_gp,1|nullable|string|max:255',
             'gp_email' => 'required_if:consent_share_with_gp,1|nullable|email|max:255',
@@ -390,6 +395,11 @@ class PublicBookingController extends Controller
         } else {
             // If not provided, make it nullable (for backward compatibility)
             $rules['gender'] = 'nullable|in:male,female,other';
+        }
+
+        // Set default consultation type to in_person (doctors will decide later)
+        if (!$request->has('consultation_type') || !$request->consultation_type) {
+            $request->merge(['consultation_type' => 'in_person']);
         }
 
         $validator = Validator::make($request->all(), $rules);
