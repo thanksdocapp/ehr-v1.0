@@ -139,13 +139,13 @@
                                             @endif
                                         </td>
                                         <td class="text-end">
-                                            <div class="btn-group" role="group">
+                                            <div class="d-flex gap-1 justify-content-end">
                                                 @if($service['is_active_for_doctor'] && ($service['custom_price'] ?? $service['default_price']))
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success" 
                                                         title="Get Payment Link"
                                                         onclick="showPaymentLinkModal({{ $service['id'] }}, '{{ addslashes($service['name']) }}', {{ $service['custom_price'] ?? $service['default_price'] ?? 0 }})">
-                                                    <i class="fas fa-link me-1"></i>Payment Link
+                                                    <i class="fas fa-link"></i>
                                                 </button>
                                                 @endif
                                                 <a href="{{ route('staff.doctor-services.edit', $service['id']) }}" 
