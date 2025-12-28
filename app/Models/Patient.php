@@ -209,12 +209,27 @@ class Patient extends Authenticatable
             $isIncomplete = true;
         }
 
-        if (!$this->emergency_contact) {
+        // Safely check encrypted emergency contact fields
+        try {
+            $emergencyContact = $this->emergency_contact;
+            if (!$emergencyContact || $emergencyContact === '') {
+                $missingFields[] = 'Emergency Contact Name';
+                $isIncomplete = true;
+            }
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            // If decryption fails, field is missing
             $missingFields[] = 'Emergency Contact Name';
             $isIncomplete = true;
         }
 
-        if (!$this->emergency_phone) {
+        try {
+            $emergencyPhone = $this->emergency_phone;
+            if (!$emergencyPhone || $emergencyPhone === '') {
+                $missingFields[] = 'Emergency Contact Phone';
+                $isIncomplete = true;
+            }
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            // If decryption fails, field is missing
             $missingFields[] = 'Emergency Contact Phone';
             $isIncomplete = true;
         }

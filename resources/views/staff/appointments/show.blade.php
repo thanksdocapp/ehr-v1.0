@@ -370,18 +370,31 @@
                         </div>
                     @endif
 
-                    @if($appointment->patient->emergency_contact_name || $appointment->patient->emergency_contact_phone)
+                    @php
+                        // Safely get emergency contact info (handles encrypted fields)
+                        $emergencyContact = null;
+                        $emergencyPhone = null;
+                        try {
+                            $emergencyContact = $appointment->patient->emergency_contact;
+                            $emergencyPhone = $appointment->patient->emergency_phone;
+                        } catch (\Exception $e) {
+                            // If decryption fails, fields are null
+                            $emergencyContact = null;
+                            $emergencyPhone = null;
+                        }
+                    @endphp
+                    @if($emergencyContact || $emergencyPhone)
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label text-muted"><i class="fas fa-user-shield me-1"></i>Emergency Contact</label>
-                                <div class="fw-bold">{{ $appointment->patient->emergency_contact_name ?? 'N/A' }}</div>
+                                <div class="fw-bold">{{ $emergencyContact ?? 'N/A' }}</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label text-muted"><i class="fas fa-phone-alt me-1"></i>Emergency Phone</label>
                                 <div class="fw-bold">
-                                    @if($appointment->patient->emergency_contact_phone)
-                                        <a href="tel:{{ $appointment->patient->emergency_contact_phone }}" class="text-decoration-none">
-                                            {{ $appointment->patient->emergency_contact_phone }}
+                                    @if($emergencyPhone)
+                                        <a href="tel:{{ $emergencyPhone }}" class="text-decoration-none">
+                                            {{ $emergencyPhone }}
                                         </a>
                                     @else
                                         <span class="text-muted">N/A</span>
