@@ -71,7 +71,15 @@
 
         <!-- Service Selection (Dropdown) - Shown when doctor is selected -->
         <div class="form-card" id="service-selection-card" style="display: {{ (isset($doctor) && $doctors->count() == 1) ? 'block' : 'none' }};">
-            <label class="form-label">Select Service <span class="text-danger">*</span></label>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                <label class="form-label mb-0">Select Service <span class="text-danger">*</span></label>
+                <div class="consultation-type-compact">
+                    <select name="consultation_type" id="consultation-type-select" class="form-select form-select-sm consultation-type-select" required>
+                        <option value="in_person">In-Person</option>
+                        <option value="online">Online</option>
+                    </select>
+                </div>
+            </div>
             <select name="service_id" id="service-select" class="form-control form-control-lg" required {{ (isset($doctor) && $doctors->count() == 1) ? '' : 'disabled' }}>
                 <option value="">Select a service...</option>
             </select>
@@ -91,18 +99,10 @@
 
         <!-- Schedule Selection - Shown when service is selected -->
         <div class="form-card" id="schedule-selection-card" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <label class="form-label mb-0">Select Date & Time <span class="text-danger">*</span></label>
-                <div class="consultation-type-compact">
-                    <select name="consultation_type" id="consultation-type-select" class="form-select form-select-sm consultation-type-select" required>
-                        <option value="in_person">In-Person</option>
-                        <option value="online">Online</option>
-                    </select>
-                </div>
-            </div>
+            <label class="form-label">Select Date & Time <span class="text-danger">*</span></label>
             
             <!-- Date Display (5 days) -->
-            <div class="date-navigation mb-3">
+            <div class="date-navigation mb-2">
                 <div class="date-display" id="date-display"></div>
             </div>
 
@@ -156,12 +156,12 @@
     }
 
     .date-item {
-        padding: 0.5rem 1rem;
+        padding: 0.375rem 0.75rem;
         border: 2px solid #e2e8f0;
-        border-radius: 8px;
+        border-radius: 6px;
         cursor: pointer;
         transition: all 0.2s;
-        min-width: 120px;
+        min-width: 100px;
         text-align: center;
     }
 
@@ -176,59 +176,62 @@
     }
 
     .date-item .date-day {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
         text-transform: uppercase;
     }
 
     .date-item .date-date {
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
+        font-size: 0.8rem;
+        margin-top: 0.2rem;
     }
 
-    /* Calendar-style time slots */
+    /* Calendar-style time slots - Compact */
     .time-slots-calendar {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
-        gap: 1.5rem;
-        margin-top: 1rem;
+        gap: 0.75rem;
+        margin-top: 0.75rem;
     }
 
     .date-column {
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 1rem;
+        border-radius: 6px;
+        padding: 0.625rem;
     }
 
     .date-column-header {
         font-weight: 600;
         color: #1a202c;
-        margin-bottom: 0.75rem;
-        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.375rem;
         border-bottom: 1px solid #e2e8f0;
+        font-size: 0.8125rem;
     }
 
     .date-column-slots {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.375rem;
     }
 
     .date-column .time-slot-btn {
         width: 100%;
         margin: 0;
+        padding: 0.375rem 0.5rem;
+        font-size: 0.8125rem;
     }
 
     .date-column .more-slots {
-        margin-top: 0.5rem;
-        padding: 0.5rem;
+        margin-top: 0.375rem;
+        padding: 0.375rem;
         text-align: center;
         color: var(--booking-primary);
-        font-size: 0.875rem;
+        font-size: 0.75rem;
         cursor: pointer;
         border: 1px dashed #e2e8f0;
-        border-radius: 6px;
+        border-radius: 4px;
         transition: all 0.2s;
     }
 
@@ -279,6 +282,7 @@
     @media (max-width: 576px) {
         .consultation-type-compact {
             width: 100%;
+            margin-top: 0.5rem;
         }
         .consultation-type-select {
             width: 100%;
