@@ -257,7 +257,7 @@ class NotificationController extends Controller
     public function show(UserNotification $notification)
     {
         if ($notification->user_id !== Auth::id()) {
-            abort(403);
+            abort(403, 'Access denied. You can only view your own notifications.');
         }
 
         if (!$notification->is_read) {

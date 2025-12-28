@@ -14,12 +14,12 @@ class PatientFeedbackController extends Controller
     {
         $user = auth()->user();
         if (!$user) {
-            abort(403);
+            abort(403, 'Access denied. You must be logged in to access patient feedback.');
         }
 
         $doctor = Doctor::where('user_id', $user->id)->first();
         if (!$doctor) {
-            abort(403);
+            abort(403, 'Access denied. You must be a registered doctor to access patient feedback.');
         }
 
         return $doctor;
@@ -55,7 +55,7 @@ class PatientFeedbackController extends Controller
 
         $doctor = $this->currentDoctor();
         if ((int) $survey->doctor_id !== (int) $doctor->id) {
-            abort(403);
+            abort(403, 'Access denied. You can only view patient feedback surveys assigned to you.');
         }
 
         $survey->load(['patient', 'appointment', 'questions', 'responses.surveyQuestion']);

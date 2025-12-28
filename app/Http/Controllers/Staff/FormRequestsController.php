@@ -59,7 +59,7 @@ class FormRequestsController extends Controller
     {
         // Ensure the user can only view their own form requests
         if ($formRequest->requested_by !== auth()->id()) {
-            abort(403);
+            abort(403, 'Access denied. You can only view form requests that you created.');
         }
 
         $formRequest->load(['template', 'patient', 'requester', 'generatedDocument']);
@@ -74,7 +74,7 @@ class FormRequestsController extends Controller
     {
         // Ensure the user can only resend their own form requests
         if ($formRequest->requested_by !== auth()->id()) {
-            abort(403);
+            abort(403, 'Access denied. You can only resend form requests that you created.');
         }
 
         // Only resend if not completed

@@ -26,7 +26,7 @@ class NotificationController extends Controller
         $patient = Auth::guard('patient')->user();
         
         if ($notification->patient_id !== $patient->id) {
-            abort(403);
+            abort(403, 'Access denied. You can only view your own notifications.');
         }
 
         if (!$notification->read_at) {

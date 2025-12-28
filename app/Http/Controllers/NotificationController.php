@@ -19,7 +19,7 @@ class NotificationController extends Controller
     {
         // Ensure the user can only view their own notifications
         if ($notification->user_id !== Auth::id()) {
-            abort(403);
+            abort(403, 'Access denied. You can only view your own notifications.');
         }
 
         if (!$notification->is_read) {
@@ -54,7 +54,7 @@ class NotificationController extends Controller
     public function destroy(UserNotification $notification)
     {
         if ($notification->user_id !== Auth::id()) {
-            abort(403);
+            abort(403, 'Access denied. You can only delete your own notifications.');
         }
 
         $notification->delete();

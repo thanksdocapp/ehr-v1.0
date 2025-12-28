@@ -189,7 +189,7 @@ class PatientEmailController extends Controller
         $doctor = Doctor::where('user_id', $user->id)->first();
 
         if (!$doctor) {
-            abort(403);
+            abort(403, 'Access denied. You must be a registered doctor to preview patient emails.');
         }
 
         $emailLogQuery = EmailLog::with('patient')
