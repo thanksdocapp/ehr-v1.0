@@ -176,12 +176,19 @@ class DoctorServicesController extends Controller
         }
 
         $request->validate([
+            'description' => 'nullable|string|max:1000',
             'custom_price' => 'nullable|numeric|min:0',
             'custom_duration_minutes' => 'nullable|integer|min:1',
             'is_active' => 'boolean',
         ]);
 
         try {
+            // Update service description (since doctor owns this service)
+            $bookingService->update([
+                'description' => $request->description,
+            ]);
+
+            // Update or create doctor service override
             DoctorServicePrice::updateOrCreate(
                 [
                     'doctor_id' => $doctor->id,

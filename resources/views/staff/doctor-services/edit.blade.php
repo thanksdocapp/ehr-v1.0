@@ -48,12 +48,6 @@
                                 <span class="badge bg-secondary">Inactive</span>
                                 @endif
                             </div>
-                            @if($bookingService->description)
-                            <div class="col-12 mt-2">
-                                <small class="text-muted d-block">Description</small>
-                                <p class="mb-0">{{ $bookingService->description }}</p>
-                            </div>
-                            @endif
                         </div>
                     </div>
 
@@ -62,7 +56,24 @@
                         @csrf
                         @method('PUT')
 
-                        <h6 class="fw-semibold mb-3">Your Custom Settings</h6>
+                        <h6 class="fw-semibold mb-3">Service Details</h6>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                Description <span class="text-muted">(optional)</span>
+                            </label>
+                            <textarea class="form-control @error('description') is-invalid @enderror"
+                                      id="description"
+                                      name="description"
+                                      rows="3"
+                                      placeholder="Enter service description...">{{ old('description', $bookingService->description) }}</textarea>
+                            <small class="text-muted">This description will be shown to patients when booking</small>
+                            @error('description')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <h6 class="fw-semibold mb-3 mt-4">Your Custom Settings</h6>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
