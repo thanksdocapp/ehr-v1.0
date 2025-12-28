@@ -3,191 +3,356 @@
 @section('title', 'Edit Notice')
 
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.notices.index') }}">Notices</a></li>
+    <li class="breadcrumb-item"><a href="{{ contextRoute('dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.notices.index') }}">System Notices</a></li>
     <li class="breadcrumb-item active">Edit Notice</li>
 @endsection
 
+@push('styles')
+@include('admin.shared.modern-ui')
+<style>
+    .role-checkbox-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .role-checkbox-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .role-checkbox-item:hover {
+        background-color: #f8f9fc;
+        border-color: #667eea;
+    }
+
+    .role-checkbox-item input[type="checkbox"] {
+        margin-right: 0.5rem;
+    }
+
+    .form-help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="fade-in">
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="doctor-card">
-                <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0">
-                        <i class="fas fa-edit me-2"></i>Edit Notice
-                    </h5>
+    <!-- Modern Page Header -->
+    <div class="modern-page-header fade-in-up">
+        <div class="modern-page-header-content">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h1 class="modern-page-title">
+                        <i class="fas fa-edit"></i>
+                        Edit System Notice
+                    </h1>
+                    <p class="modern-page-subtitle">Update notice details and settings</p>
                 </div>
-                <div class="doctor-card-body">
-                    <form action="{{ route('admin.notices.update', $notice) }}" method="POST">
-                        @csrf
-                        @method('PUT')
-
-                        <div class="mb-3">
-                            <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
-                            <input type="text" 
-                                   class="form-control @error('title') is-invalid @enderror" 
-                                   id="title" 
-                                   name="title" 
-                                   value="{{ old('title', $notice->title) }}" 
-                                   required>
-                            @error('title')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="message" class="form-label">Message <span class="text-danger">*</span></label>
-                            <textarea class="form-control @error('message') is-invalid @enderror" 
-                                      id="message" 
-                                      name="message" 
-                                      rows="5" 
-                                      required>{{ old('message', $notice->message) }}</textarea>
-                            @error('message')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="type" class="form-label">Type <span class="text-danger">*</span></label>
-                                <select class="form-select @error('type') is-invalid @enderror" 
-                                        id="type" 
-                                        name="type" 
-                                        required>
-                                    <option value="info" {{ old('type', $notice->type) == 'info' ? 'selected' : '' }}>Info</option>
-                                    <option value="warning" {{ old('type', $notice->type) == 'warning' ? 'selected' : '' }}>Warning</option>
-                                    <option value="success" {{ old('type', $notice->type) == 'success' ? 'selected' : '' }}>Success</option>
-                                    <option value="danger" {{ old('type', $notice->type) == 'danger' ? 'selected' : '' }}>Danger</option>
-                                </select>
-                                @error('type')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
-                                <select class="form-select @error('priority') is-invalid @enderror" 
-                                        id="priority" 
-                                        name="priority" 
-                                        required>
-                                    <option value="low" {{ old('priority', $notice->priority) == 'low' ? 'selected' : '' }}>Low</option>
-                                    <option value="medium" {{ old('priority', $notice->priority) == 'medium' ? 'selected' : '' }}>Medium</option>
-                                    <option value="high" {{ old('priority', $notice->priority) == 'high' ? 'selected' : '' }}>High</option>
-                                    <option value="urgent" {{ old('priority', $notice->priority) == 'urgent' ? 'selected' : '' }}>Urgent</option>
-                                </select>
-                                @error('priority')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Target Roles</label>
-                            <div class="form-check">
-                                <input class="form-check-input" 
-                                       type="checkbox" 
-                                       id="target_all" 
-                                       name="target_all"
-                                       {{ !$notice->target_roles || count($notice->target_roles) == 0 ? 'checked' : '' }}
-                                       onchange="toggleTargetRoles()">
-                                <label class="form-check-label" for="target_all">
-                                    All Users (leave unchecked to select specific roles)
-                                </label>
-                            </div>
-                            <div id="target_roles_container" style="display: {{ $notice->target_roles && count($notice->target_roles) > 0 ? 'block' : 'none' }}; margin-top: 10px;">
-                                <div class="form-check">
-                                    <input class="form-check-input" 
-                                           type="checkbox" 
-                                           id="target_doctor" 
-                                           name="target_roles[]" 
-                                           value="doctor"
-                                           {{ old('target_roles', $notice->target_roles) && in_array('doctor', old('target_roles', $notice->target_roles ?? [])) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="target_doctor">Doctors</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" 
-                                           type="checkbox" 
-                                           id="target_nurse" 
-                                           name="target_roles[]" 
-                                           value="nurse"
-                                           {{ old('target_roles', $notice->target_roles) && in_array('nurse', old('target_roles', $notice->target_roles ?? [])) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="target_nurse">Nurses</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" 
-                                           type="checkbox" 
-                                           id="target_receptionist" 
-                                           name="target_roles[]" 
-                                           value="receptionist"
-                                           {{ old('target_roles', $notice->target_roles) && in_array('receptionist', old('target_roles', $notice->target_roles ?? [])) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="target_receptionist">Receptionists</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" 
-                                           type="checkbox" 
-                                           id="target_staff" 
-                                           name="target_roles[]" 
-                                           value="staff"
-                                           {{ old('target_roles', $notice->target_roles) && in_array('staff', old('target_roles', $notice->target_roles ?? [])) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="target_staff">Staff</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="starts_at" class="form-label">Start Date (Optional)</label>
-                                <input type="datetime-local" 
-                                       class="form-control @error('starts_at') is-invalid @enderror" 
-                                       id="starts_at" 
-                                       name="starts_at" 
-                                       value="{{ old('starts_at', $notice->starts_at ? $notice->starts_at->format('Y-m-d\TH:i') : '') }}">
-                                @error('starts_at')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label for="expires_at" class="form-label">Expiry Date (Optional)</label>
-                                <input type="datetime-local" 
-                                       class="form-control @error('expires_at') is-invalid @enderror" 
-                                       id="expires_at" 
-                                       name="expires_at" 
-                                       value="{{ old('expires_at', $notice->expires_at ? $notice->expires_at->format('Y-m-d\TH:i') : '') }}">
-                                @error('expires_at')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" 
-                                       type="checkbox" 
-                                       id="is_active" 
-                                       name="is_active" 
-                                       value="1"
-                                       {{ old('is_active', $notice->is_active) ? 'checked' : '' }}>
-                                <label class="form-check-label" for="is_active">
-                                    Active
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>Update Notice
-                            </button>
-                            <a href="{{ route('admin.notices.index') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-2"></i>Cancel
-                            </a>
-                        </div>
-                    </form>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('admin.notices.show', $notice) }}" class="btn btn-light">
+                        <i class="fas fa-eye me-2"></i>View Notice
+                    </a>
+                    <a href="{{ route('admin.notices.index') }}" class="btn btn-light">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Notices
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+
+    <form action="{{ route('admin.notices.update', $notice) }}" method="POST">
+        @csrf
+        @method('PUT')
+
+        <div class="row">
+            <!-- Main Form Column -->
+            <div class="col-lg-8">
+                <!-- Notice Content -->
+                <div class="modern-card fade-in-up">
+                    <div class="modern-card-header">
+                        <h6 class="modern-card-title">
+                            <i class="fas fa-file-alt"></i>
+                            Notice Content
+                        </h6>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="modern-form-group">
+                            <label class="modern-form-label">
+                                <i class="fas fa-heading me-1"></i>Title <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control modern-form-control @error('title') is-invalid @enderror"
+                                   id="title"
+                                   name="title"
+                                   value="{{ old('title', $notice->title) }}"
+                                   placeholder="e.g., System Maintenance Scheduled"
+                                   required>
+                            @error('title')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-help-text">A clear, concise title for the notice</div>
+                        </div>
+
+                        <div class="modern-form-group">
+                            <label class="modern-form-label">
+                                <i class="fas fa-align-left me-1"></i>Message <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control modern-form-control modern-form-textarea @error('message') is-invalid @enderror"
+                                      id="message"
+                                      name="message"
+                                      rows="6"
+                                      placeholder="Enter the notice message that will be displayed to users..."
+                                      required>{{ old('message', $notice->message) }}</textarea>
+                            @error('message')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-help-text">This message will be displayed to all targeted users on their dashboards</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notice Settings -->
+                <div class="modern-card fade-in-up">
+                    <div class="modern-card-header">
+                        <h6 class="modern-card-title">
+                            <i class="fas fa-cog"></i>
+                            Notice Settings
+                        </h6>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-tag me-1"></i>Type <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select modern-form-select @error('type') is-invalid @enderror"
+                                            id="type"
+                                            name="type"
+                                            required>
+                                        <option value="info" {{ old('type', $notice->type) == 'info' ? 'selected' : '' }}>Info (Blue)</option>
+                                        <option value="warning" {{ old('type', $notice->type) == 'warning' ? 'selected' : '' }}>Warning (Yellow)</option>
+                                        <option value="success" {{ old('type', $notice->type) == 'success' ? 'selected' : '' }}>Success (Green)</option>
+                                        <option value="danger" {{ old('type', $notice->type) == 'danger' ? 'selected' : '' }}>Danger (Red)</option>
+                                    </select>
+                                    @error('type')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-help-text">Visual style of the notice</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-exclamation-circle me-1"></i>Priority <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select modern-form-select @error('priority') is-invalid @enderror"
+                                            id="priority"
+                                            name="priority"
+                                            required>
+                                        <option value="low" {{ old('priority', $notice->priority) == 'low' ? 'selected' : '' }}>Low</option>
+                                        <option value="medium" {{ old('priority', $notice->priority) == 'medium' ? 'selected' : '' }}>Medium</option>
+                                        <option value="high" {{ old('priority', $notice->priority) == 'high' ? 'selected' : '' }}>High</option>
+                                        <option value="urgent" {{ old('priority', $notice->priority) == 'urgent' ? 'selected' : '' }}>Urgent</option>
+                                    </select>
+                                    @error('priority')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-help-text">Priority level affects display order</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modern-form-group">
+                            <label class="modern-form-label">
+                                <i class="fas fa-users me-1"></i>Target Audience
+                            </label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="target_all"
+                                       name="target_all"
+                                       {{ !$notice->target_roles || count($notice->target_roles) == 0 ? 'checked' : '' }}
+                                       onchange="toggleTargetRoles()">
+                                <label class="form-check-label" for="target_all">
+                                    <strong>All Users</strong> (leave checked to show to everyone)
+                                </label>
+                            </div>
+                            <div id="target_roles_container" style="display: {{ $notice->target_roles && count($notice->target_roles) > 0 ? 'block' : 'none' }};">
+                                <div class="role-checkbox-group">
+                                    @foreach($roles as $roleKey => $roleLabel)
+                                        <div class="role-checkbox-item">
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   id="target_{{ $roleKey }}"
+                                                   name="target_roles[]"
+                                                   value="{{ $roleKey }}"
+                                                   {{ old('target_roles', $notice->target_roles) && in_array($roleKey, old('target_roles', $notice->target_roles ?? [])) ? 'checked' : '' }}>
+                                            <label class="form-check-label mb-0" for="target_{{ $roleKey }}">
+                                                {{ $roleLabel }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="form-help-text">Select specific roles to target, or leave "All Users" checked</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule -->
+                <div class="modern-card fade-in-up">
+                    <div class="modern-card-header">
+                        <h6 class="modern-card-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            Schedule (Optional)
+                        </h6>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-play-circle me-1"></i>Start Date & Time
+                                    </label>
+                                    <input type="datetime-local"
+                                           class="form-control modern-form-control @error('starts_at') is-invalid @enderror"
+                                           id="starts_at"
+                                           name="starts_at"
+                                           value="{{ old('starts_at', $notice->starts_at ? $notice->starts_at->format('Y-m-d\TH:i') : '') }}">
+                                    @error('starts_at')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-help-text">Notice will be visible from this date (leave blank for immediate)</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="modern-form-group">
+                                    <label class="modern-form-label">
+                                        <i class="fas fa-stop-circle me-1"></i>Expiry Date & Time
+                                    </label>
+                                    <input type="datetime-local"
+                                           class="form-control modern-form-control @error('expires_at') is-invalid @enderror"
+                                           id="expires_at"
+                                           name="expires_at"
+                                           value="{{ old('expires_at', $notice->expires_at ? $notice->expires_at->format('Y-m-d\TH:i') : '') }}">
+                                    @error('expires_at')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-help-text">Notice will be hidden after this date (leave blank for no expiry)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modern-form-group">
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="is_active"
+                                       name="is_active"
+                                       value="1"
+                                       {{ old('is_active', $notice->is_active) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="is_active">
+                                    <strong>Active</strong> - Notice will be visible immediately (if within schedule)
+                                </label>
+                            </div>
+                            <div class="form-help-text">Uncheck to create the notice in inactive state</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="modern-card fade-in-up">
+                    <div class="modern-card-body">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Update Notice
+                                </button>
+                                <a href="{{ route('admin.notices.index') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Quick Info -->
+                <div class="modern-card fade-in-up">
+                    <div class="modern-card-header">
+                        <h6 class="modern-card-title">
+                            <i class="fas fa-info-circle"></i>
+                            Notice Information
+                        </h6>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-2"><i class="fas fa-calendar me-2"></i>Created</h6>
+                            <p class="mb-0">{{ $notice->created_at->format('M d, Y H:i') }}</p>
+                            @if($notice->creator)
+                                <small class="text-muted">by {{ $notice->creator->name }}</small>
+                            @endif
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-2"><i class="fas fa-clock me-2"></i>Last Updated</h6>
+                            <p class="mb-0">{{ $notice->updated_at->format('M d, Y H:i') }}</p>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-2"><i class="fas fa-lightbulb me-2"></i>Best Practices</h6>
+                            <ul class="list-unstyled mb-0 small">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Keep titles concise and clear</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Use appropriate priority levels</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Set expiry dates for time-sensitive notices</li>
+                                <li class="mb-0"><i class="fas fa-check text-success me-2"></i>Target specific roles when needed</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notice Types Guide -->
+                <div class="modern-card fade-in-up">
+                    <div class="modern-card-header">
+                        <h6 class="modern-card-title">
+                            <i class="fas fa-palette"></i>
+                            Notice Types
+                        </h6>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="mb-2">
+                            <span class="badge bg-info me-2">Info</span>
+                            <small class="text-muted">General information</small>
+                        </div>
+                        <div class="mb-2">
+                            <span class="badge bg-warning me-2">Warning</span>
+                            <small class="text-muted">Important alerts</small>
+                        </div>
+                        <div class="mb-2">
+                            <span class="badge bg-success me-2">Success</span>
+                            <small class="text-muted">Positive updates</small>
+                        </div>
+                        <div class="mb-0">
+                            <span class="badge bg-danger me-2">Danger</span>
+                            <small class="text-muted">Critical issues</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
 <script>
@@ -206,4 +371,3 @@ function toggleTargetRoles() {
 }
 </script>
 @endsection
-
