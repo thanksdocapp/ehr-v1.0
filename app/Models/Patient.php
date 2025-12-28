@@ -225,7 +225,6 @@ class Patient extends Authenticatable
             'missing_count' => count($missingFields)
         ];
     }
-    }
 
     public function alerts(): HasMany
     {
