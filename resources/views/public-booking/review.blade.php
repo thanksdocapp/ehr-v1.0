@@ -258,4 +258,9 @@
         });
     });
 </script>
+
+    <!-- Footer -->
+    <div class="text-center mt-5 mb-3">
+        <small class="text-muted">Powered by ThanksDoc{{ $doctor->primaryDepartment() ? ' (' . $doctor->primaryDepartment()->name . ')' : '' }}</small>
+    </div>
 @endsection

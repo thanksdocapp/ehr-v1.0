@@ -123,8 +123,9 @@ Route::group(['middleware' => 'installed'], function () {
     });
     
     // Public Booking API Routes
-    Route::prefix('api')->name('public.api.')->group(function () {
-        Route::get('/doctor/{id}/available-slots', [\App\Http\Controllers\PublicBookingController::class, 'getAvailableSlots'])->name('available-slots');
+    Route::prefix('api/public')->name('public.api.')->group(function () {
+        Route::get('/doctors/{id}/services', [\App\Http\Controllers\PublicBookingController::class, 'getDoctorServices'])->name('doctor-services');
+        Route::get('/doctors/{id}/slots', [\App\Http\Controllers\PublicBookingController::class, 'getAvailableSlots'])->name('available-slots');
     });
     
     // Patient Management API Routes

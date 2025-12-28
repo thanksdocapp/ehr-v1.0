@@ -42,12 +42,10 @@ class PublicBookingController extends Controller
 
         $doctor = Doctor::where('slug', $slug)->active()->firstOrFail();
         
-        // Get active services for this doctor
-        $services = $this->getServicesForDoctor($doctor->id);
-
+        // For single doctor link, show that doctor pre-selected
         return view('public-booking.service-selection', [
             'doctor' => $doctor,
-            'services' => $services,
+            'doctors' => collect([$doctor]), // Single doctor in collection
             'step' => 1
         ]);
     }
@@ -61,12 +59,14 @@ class PublicBookingController extends Controller
 
         $department = Department::where('slug', $slug)->active()->firstOrFail();
         
-        // Get active services for this department
-        $services = BookingService::active()->get();
+        // Get active doctors for this department
+        $doctors = Doctor::byDepartment($department->id)
+            ->active()
+            ->get();
 
         return view('public-booking.service-selection', [
             'department' => $department,
-            'services' => $services,
+            'doctors' => $doctors,
             'step' => 1
         ]);
     }
@@ -168,6 +168,7 @@ class PublicBookingController extends Controller
             'service' => $service,
             'appointment_date' => $request->appointment_date,
             'appointment_time' => $request->appointment_time,
+            'consultation_type' => $request->consultation_type ?? 'in_person',
             'department_id' => $departmentId,
             'step' => 3
         ]);
@@ -497,6 +498,29 @@ class PublicBookingController extends Controller
 
         return view('public-booking.success', [
             'appointment' => $appointment
+        ]);
+    }
+
+    /**
+     * API: Get services for a doctor
+     */
+    public function getDoctorServices($doctorId)
+    {
+        $doctor = Doctor::findOrFail($doctorId);
+        $services = $this->getServicesForDoctor($doctor->id);
+        
+        $servicesData = $services->map(function($service) use ($doctor) {
+            return [
+                'id' => $service->id,
+                'name' => $service->name,
+                'description' => $service->description,
+                'duration' => $service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 60,
+                'price' => $service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0,
+            ];
+        });
+
+        return response()->json([
+            'services' => $servicesData
         ]);
     }
 

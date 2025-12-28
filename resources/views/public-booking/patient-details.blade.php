@@ -116,13 +116,13 @@
                 <label class="form-label">Consultation Type <span class="text-danger">*</span></label>
                 <div class="d-flex gap-3">
                     <div class="form-check form-check-inline consultation-option" style="flex: 1;">
-                        <input class="form-check-input @error('consultation_type') is-invalid @enderror" type="radio" id="consultation_in_person" name="consultation_type" value="in_person" {{ old('consultation_type', 'in_person') === 'in_person' ? 'checked' : '' }} required>
+                        <input class="form-check-input @error('consultation_type') is-invalid @enderror" type="radio" id="consultation_in_person" name="consultation_type" value="in_person" {{ old('consultation_type', $consultation_type ?? 'in_person') === 'in_person' ? 'checked' : '' }} required>
                         <label class="form-check-label" for="consultation_in_person" style="cursor: pointer; width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px; text-align: center; transition: all 0.2s;">
                             <i class="fas fa-hospital me-2"></i>In-Person Consultation
                         </label>
                     </div>
                     <div class="form-check form-check-inline consultation-option" style="flex: 1;">
-                        <input class="form-check-input @error('consultation_type') is-invalid @enderror" type="radio" id="consultation_online" name="consultation_type" value="online" {{ old('consultation_type') === 'online' ? 'checked' : '' }} required>
+                        <input class="form-check-input @error('consultation_type') is-invalid @enderror" type="radio" id="consultation_online" name="consultation_type" value="online" {{ old('consultation_type', $consultation_type ?? 'in_person') === 'online' ? 'checked' : '' }} required>
                         <label class="form-check-label" for="consultation_online" style="cursor: pointer; width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px; text-align: center; transition: all 0.2s;">
                             <i class="fas fa-video me-2"></i>Online Consultation
                         </label>
@@ -260,4 +260,9 @@
         }
     })();
 </script>
+
+    <!-- Footer -->
+    <div class="text-center mt-5 mb-3">
+        <small class="text-muted">Powered by ThanksDoc{{ isset($department_id) && $doctor->primaryDepartment() ? ' (' . $doctor->primaryDepartment()->name . ')' : ($doctor->primaryDepartment() ? ' (' . $doctor->primaryDepartment()->name . ')' : '') }}</small>
+    </div>
 @endsection
