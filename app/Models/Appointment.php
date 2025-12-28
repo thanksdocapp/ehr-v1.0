@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
+use App\Casts\SafeEncrypted;
 
 class Appointment extends Model
 {
@@ -53,12 +54,13 @@ class Appointment extends Model
         'fee' => 'decimal:2',
         'is_online' => 'boolean',
         // PHI Encryption (HIPAA Compliance)
-        'reason' => 'encrypted',
-        'symptoms' => 'encrypted',
-        'notes' => 'encrypted',
-        'diagnosis' => 'encrypted',
-        'prescription' => 'encrypted',
-        'follow_up_instructions' => 'encrypted',
+        // Use SafeEncrypted to avoid runtime crashes when legacy/plaintext values exist.
+        'reason' => SafeEncrypted::class,
+        'symptoms' => SafeEncrypted::class,
+        'notes' => SafeEncrypted::class,
+        'diagnosis' => SafeEncrypted::class,
+        'prescription' => SafeEncrypted::class,
+        'follow_up_instructions' => SafeEncrypted::class,
     ];
 
     // Relationships
