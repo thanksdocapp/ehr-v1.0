@@ -167,6 +167,7 @@
                 </a>
                 <div class="dropdown-menu">
                     <a class="dropdown-item {{ request()->routeIs('admin.advanced-reports.index') ? 'active' : '' }}" href="{{ route('admin.advanced-reports.index') }}">Reports Dashboard</a>
+                    <a class="dropdown-item {{ request()->routeIs('admin.consultations-report.*') ? 'active' : '' }}" href="{{ route('admin.consultations-report.index') }}">Consultations Report</a>
                     <a class="dropdown-item {{ request()->routeIs('admin.advanced-reports.custom-reports') ? 'active' : '' }}" href="{{ route('admin.advanced-reports.custom-reports') }}">Custom Reports</a>
                     <a class="dropdown-item {{ request()->routeIs('admin.advanced-reports.financial-analytics') ? 'active' : '' }}" href="{{ route('admin.advanced-reports.financial-analytics') }}">Financial Analytics</a>
                     <a class="dropdown-item {{ request()->routeIs('admin.advanced-reports.patient-analytics') ? 'active' : '' }}" href="{{ route('admin.advanced-reports.patient-analytics') }}">Patient Analytics</a>

@@ -1018,6 +1018,13 @@ Route::group(['middleware' => 'installed'], function () {
         Route::delete('/notifications/{notification}', [\App\Http\Controllers\Admin\NotificationController::class, 'destroy'])->name('notifications.destroy');
         
         // Advanced Reports Management
+        // Consultations Report
+        Route::prefix('consultations-report')->name('consultations-report.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\ConsultationsReportController::class, 'index'])->name('index');
+            Route::get('/export-excel', [\App\Http\Controllers\Admin\ConsultationsReportController::class, 'exportExcel'])->name('export-excel');
+            Route::get('/export-pdf', [\App\Http\Controllers\Admin\ConsultationsReportController::class, 'exportPdf'])->name('export-pdf');
+        });
+
         Route::prefix('advanced-reports')->name('advanced-reports.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\AdvancedReportsController::class, 'index'])->name('index');
             Route::get('/custom-reports', [\App\Http\Controllers\Admin\AdvancedReportsController::class, 'customReports'])->name('custom-reports');
