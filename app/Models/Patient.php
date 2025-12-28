@@ -209,27 +209,45 @@ class Patient extends Authenticatable
             $isIncomplete = true;
         }
 
-        // Safely check encrypted emergency contact fields
-        try {
-            $emergencyContact = $this->emergency_contact;
-            if (!$emergencyContact || $emergencyContact === '') {
-                $missingFields[] = 'Emergency Contact Name';
-                $isIncomplete = true;
+        // Safely check encrypted emergency contact fields using raw attributes to avoid cast exceptions
+        $attributes = $this->getAttributes();
+        $emergencyContactRaw = $attributes['emergency_contact'] ?? null;
+        $emergencyPhoneRaw = $attributes['emergency_phone'] ?? null;
+
+        // Try to decrypt, but if it fails, treat as missing
+        $emergencyContact = null;
+        $emergencyPhone = null;
+
+        if ($emergencyContactRaw) {
+            try {
+                $emergencyContact = \Illuminate\Support\Facades\Crypt::decryptString($emergencyContactRaw);
+            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+                // If decryption fails, it might be plaintext - check if it's a valid string
+                $emergencyContact = is_string($emergencyContactRaw) && trim($emergencyContactRaw) !== '' ? $emergencyContactRaw : null;
+            } catch (\Throwable $e) {
+                // Any other error - treat as missing
+                $emergencyContact = null;
             }
-        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            // If decryption fails, field is missing
+        }
+
+        if ($emergencyPhoneRaw) {
+            try {
+                $emergencyPhone = \Illuminate\Support\Facades\Crypt::decryptString($emergencyPhoneRaw);
+            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+                // If decryption fails, it might be plaintext - check if it's a valid string
+                $emergencyPhone = is_string($emergencyPhoneRaw) && trim($emergencyPhoneRaw) !== '' ? $emergencyPhoneRaw : null;
+            } catch (\Throwable $e) {
+                // Any other error - treat as missing
+                $emergencyPhone = null;
+            }
+        }
+
+        if (!$emergencyContact || $emergencyContact === '') {
             $missingFields[] = 'Emergency Contact Name';
             $isIncomplete = true;
         }
 
-        try {
-            $emergencyPhone = $this->emergency_phone;
-            if (!$emergencyPhone || $emergencyPhone === '') {
-                $missingFields[] = 'Emergency Contact Phone';
-                $isIncomplete = true;
-            }
-        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            // If decryption fails, field is missing
+        if (!$emergencyPhone || $emergencyPhone === '') {
             $missingFields[] = 'Emergency Contact Phone';
             $isIncomplete = true;
         }
