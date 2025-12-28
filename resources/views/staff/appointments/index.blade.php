@@ -466,8 +466,23 @@
                                                 {{ strtoupper(substr($appointment->patient->first_name, 0, 1)) }}
                                             </div>
                                         </div>
-                                        <div>
-                                            <div class="fw-bold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="fw-bold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
+                                                @php
+                                                    $patientInfoCheck = $appointment->patient->hasIncompleteInformation();
+                                                @endphp
+                                                @if($patientInfoCheck['is_incomplete'] && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
+                                                    <span class="badge bg-warning text-dark" title="Incomplete patient information - {{ implode(', ', $patientInfoCheck['missing_fields']) }}">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>Incomplete Info
+                                                    </span>
+                                                @endif
+                                                @if($appointment->patient->is_guest)
+                                                    <span class="badge bg-secondary" title="Guest patient created via payment link">
+                                                        <i class="fas fa-user-clock me-1"></i>Guest
+                                                    </span>
+                                                @endif
+                                            </div>
                                             <small class="text-muted">{{ $appointment->patient->phone ?? 'No phone' }}</small>
                                         </div>
                                     </div>

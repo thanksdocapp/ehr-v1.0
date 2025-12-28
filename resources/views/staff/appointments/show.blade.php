@@ -252,10 +252,51 @@
                 </div>
             </div>
 
+            <!-- Patient Information Incomplete Warning -->
+            @php
+                $patientInfoCheck = $appointment->patient->hasIncompleteInformation();
+            @endphp
+            @if($patientInfoCheck['is_incomplete'] && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
+                <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading mb-2">
+                                <i class="fas fa-user-slash me-2"></i>Incomplete Patient Information
+                            </h5>
+                            <p class="mb-2">
+                                <strong>This patient has missing information that should be completed before consultation:</strong>
+                            </p>
+                            <ul class="mb-3">
+                                @foreach($patientInfoCheck['missing_fields'] as $field)
+                                    <li>{{ $field }}</li>
+                                @endforeach
+                            </ul>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="{{ route('staff.patients.edit', $appointment->patient->id) }}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-edit me-1"></i>Complete Patient Information
+                                </a>
+                                @if($appointment->patient->is_guest)
+                                    <span class="badge bg-info align-self-center">
+                                        <i class="fas fa-info-circle me-1"></i>Guest Patient (Created via Payment Link)
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+            @endif
+
             <!-- Patient Information -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
                     <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Patient Information</h5>
+                    @if($appointment->patient->is_guest)
+                        <span class="badge bg-secondary ms-2">
+                            <i class="fas fa-user-clock me-1"></i>Guest Patient
+                        </span>
+                    @endif
                 </div>
                 <div class="doctor-card-body">
                     <div class="row mb-3">

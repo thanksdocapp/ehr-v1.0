@@ -179,6 +179,54 @@ class Patient extends Authenticatable
         return $this->hasMany(PatientNotification::class)->where('is_read', false);
     }
 
+    /**
+     * Check if patient has incomplete information (for guest patients from payment links)
+     * Returns array of missing fields and a boolean indicating if info is incomplete
+     */
+    public function hasIncompleteInformation(): array
+    {
+        $missingFields = [];
+        $isIncomplete = false;
+
+        // Critical fields for consultations
+        if (!$this->date_of_birth) {
+            $missingFields[] = 'Date of Birth';
+            $isIncomplete = true;
+        }
+
+        if (!$this->gender) {
+            $missingFields[] = 'Gender';
+            $isIncomplete = true;
+        }
+
+        if (!$this->phone || $this->phone === 'Not specified') {
+            $missingFields[] = 'Phone Number';
+            $isIncomplete = true;
+        }
+
+        if (!$this->address) {
+            $missingFields[] = 'Address';
+            $isIncomplete = true;
+        }
+
+        if (!$this->emergency_contact) {
+            $missingFields[] = 'Emergency Contact Name';
+            $isIncomplete = true;
+        }
+
+        if (!$this->emergency_phone) {
+            $missingFields[] = 'Emergency Contact Phone';
+            $isIncomplete = true;
+        }
+
+        return [
+            'is_incomplete' => $isIncomplete,
+            'missing_fields' => $missingFields,
+            'missing_count' => count($missingFields)
+        ];
+    }
+    }
+
     public function alerts(): HasMany
     {
         return $this->hasMany(PatientAlert::class);
