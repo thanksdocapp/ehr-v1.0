@@ -186,6 +186,15 @@
         </div>
         @break
 
+    @case('notices')
+        <div class="menu-item">
+            <a href="{{ route('admin.notices.index') }}" class="menu-link {{ request()->routeIs('admin.notices.*') ? 'active' : '' }}">
+                <i class="menu-icon fas {{ $icon }}"></i>
+                <span class="menu-text">{{ $label }}</span>
+            </a>
+        </div>
+        @break
+
     @case('letter-templates')
         <div class="menu-item">
             <a href="{{ route('admin.templates.index', ['type' => 'letter']) }}" class="menu-link {{ request()->routeIs('admin.templates.*') && request('type') === 'letter' ? 'active' : '' }}">
