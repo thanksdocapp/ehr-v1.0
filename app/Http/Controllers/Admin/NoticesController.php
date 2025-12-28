@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Notice;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -27,7 +28,8 @@ class NoticesController extends Controller
      */
     public function create()
     {
-        return view('admin.notices.create');
+        $roles = User::getRoles();
+        return view('admin.notices.create', compact('roles'));
     }
 
     /**
@@ -75,7 +77,8 @@ class NoticesController extends Controller
      */
     public function edit(Notice $notice)
     {
-        return view('admin.notices.edit', compact('notice'));
+        $roles = User::getRoles();
+        return view('admin.notices.edit', compact('notice', 'roles'));
     }
 
     /**
