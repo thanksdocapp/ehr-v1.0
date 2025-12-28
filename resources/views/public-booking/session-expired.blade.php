@@ -18,4 +18,9 @@
             <i class="fas fa-home me-2"></i>Return to Homepage
         </a>
     </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-5 mb-3">
+        <small class="text-muted">Powered by ThanksDoc</small>
+    </div>
 @endsection

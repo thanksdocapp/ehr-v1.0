@@ -83,7 +83,7 @@
 
     <!-- Footer -->
     <div class="text-center mt-5 mb-3">
-        <small class="text-muted">Powered by ThanksDoc{{ isset($department_id) && $doctor->primaryDepartment() ? ' (' . $doctor->primaryDepartment()->name . ')' : (isset($doctor) && $doctor->primaryDepartment() ? ' (' . $doctor->primaryDepartment()->name . ')' : '') }}</small>
+        <small class="text-muted">Powered by ThanksDoc</small>
     </div>
 @endsection
 

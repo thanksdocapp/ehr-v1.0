@@ -49,42 +49,30 @@
         <input type="hidden" name="department_id" value="{{ $department->id }}">
         @endif
 
-        <!-- Doctor Selection (Radio Buttons) -->
+        <!-- Doctor Selection (Dropdown) -->
         <div class="form-card">
             <label class="form-label">Select Doctor <span class="text-danger">*</span></label>
             @if($doctors->isEmpty())
-            <div class="empty-state">
+        <div class="empty-state">
                 <i class="fas fa-user-md"></i>
                 <p>No doctors available at this time.</p>
-            </div>
-            @else
-            <div class="doctors-grid">
+        </div>
+        @else
+            <select name="doctor_id" id="doctor-select" class="form-control form-control-lg" required>
+                <option value="">Select a doctor...</option>
                 @foreach($doctors as $doc)
-                <label class="doctor-card" data-doctor-id="{{ $doc->id }}">
-                    <input type="radio" name="doctor_id" value="{{ $doc->id }}" class="doctor-radio" required>
-                    <div class="doctor-info">
-                        <div class="doctor-avatar">
-                            @if($doc->photo)
-                            <img src="{{ \Illuminate\Support\Facades\Storage::url($doc->photo) }}" alt="{{ $doc->full_name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                            @else
-                            <i class="fas fa-user-md"></i>
-                            @endif
-                        </div>
-                        <div class="doctor-details">
-                            <h4>{{ $doc->full_name }}</h4>
-                            <p>{{ $doc->specialization ?? 'General Practitioner' }}</p>
-                        </div>
-                    </div>
-                </label>
+                <option value="{{ $doc->id }}" {{ (isset($doctor) && $doctor->id == $doc->id) ? 'selected' : '' }}>
+                    {{ $doc->full_name }} - {{ $doc->specialization ?? 'General Practitioner' }}
+                </option>
                 @endforeach
-            </div>
-            @endif
+            </select>
+                    @endif
         </div>
 
         <!-- Service Selection (Dropdown) - Shown when doctor is selected -->
-        <div class="form-card" id="service-selection-card" style="display: none;">
+        <div class="form-card" id="service-selection-card" style="display: {{ (isset($doctor) && $doctors->count() == 1) ? 'block' : 'none' }};">
             <label class="form-label">Select Service <span class="text-danger">*</span></label>
-            <select name="service_id" id="service-select" class="form-control form-control-lg" required disabled>
+            <select name="service_id" id="service-select" class="form-control form-control-lg" required {{ (isset($doctor) && $doctors->count() == 1) ? '' : 'disabled' }}>
                 <option value="">Select a service...</option>
             </select>
             <div id="service-details" class="mt-3" style="display: none;">
@@ -103,33 +91,17 @@
 
         <!-- Schedule Selection - Shown when service is selected -->
         <div class="form-card" id="schedule-selection-card" style="display: none;">
-            <label class="form-label">Select Consultation Type</label>
-            <div class="d-flex gap-3 mb-3">
-                <div class="form-check consultation-option">
-                    <input class="form-check-input" type="radio" name="consultation_type" id="consultation_in_person" value="in_person" checked>
-                    <label class="form-check-label" for="consultation_in_person">
-                        <i class="fas fa-hospital me-2"></i>In-Clinic
-                    </label>
-                </div>
-                <div class="form-check consultation-option">
-                    <input class="form-check-input" type="radio" name="consultation_type" id="consultation_online" value="online">
-                    <label class="form-check-label" for="consultation_online">
-                        <i class="fas fa-video me-2"></i>Online
-                    </label>
-                </div>
-            </div>
+            <label class="form-label">Select Consultation Type <span class="text-danger">*</span></label>
+            <select name="consultation_type" id="consultation-type-select" class="form-control form-control-lg mb-3" required>
+                <option value="in_person">In-Clinic Consultation</option>
+                <option value="online">Online Consultation</option>
+            </select>
 
             <label class="form-label">Select Date & Time <span class="text-danger">*</span></label>
             
-            <!-- Date Navigation -->
+            <!-- Date Display (5 days) -->
             <div class="date-navigation mb-3">
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="prev-dates">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
                 <div class="date-display" id="date-display"></div>
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="next-dates">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
             </div>
 
             <!-- Time Slots Grid - Calendar Style -->
@@ -160,7 +132,7 @@
 
     <!-- Footer -->
     <div class="text-center mt-5 mb-3">
-        <small class="text-muted">Powered by ThanksDoc{{ isset($department) ? ' (' . $department->name . ')' : (isset($doctor) ? ' (' . ($doctor->primaryDepartment()->name ?? 'EHR') . ')' : '') }}</small>
+        <small class="text-muted">Powered by ThanksDoc</small>
     </div>
 @endsection
 
@@ -212,34 +184,10 @@
         margin-top: 0.25rem;
     }
 
-    .consultation-option {
-        flex: 1;
-        padding: 1rem;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .consultation-option:hover {
-        border-color: var(--booking-primary);
-    }
-
-    .consultation-option .form-check-input {
-        margin-top: 0.25rem;
-    }
-
-    .consultation-option .form-check-label {
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        font-weight: 500;
-    }
-
     /* Calendar-style time slots */
     .time-slots-calendar {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 1.5rem;
         margin-top: 1rem;
     }
@@ -287,6 +235,12 @@
         background-color: color-mix(in srgb, var(--booking-primary) 5%, white);
     }
 
+    @media (max-width: 1200px) {
+        .time-slots-calendar {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
     @media (max-width: 768px) {
         .time-slots-calendar {
             grid-template-columns: 1fr;
@@ -298,14 +252,14 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const doctorCards = document.querySelectorAll('.doctor-card');
+        const doctorSelect = document.getElementById('doctor-select');
         const serviceSelectionCard = document.getElementById('service-selection-card');
         const scheduleSelectionCard = document.getElementById('schedule-selection-card');
         const serviceSelect = document.getElementById('service-select');
         const serviceDetails = document.getElementById('service-details');
         const continueBtn = document.getElementById('continue-btn');
         const form = document.getElementById('service-form');
-        
+
         let selectedDoctorId = null;
         let selectedServiceId = null;
         let selectedDate = null;
@@ -313,27 +267,32 @@
         let currentDates = [];
         let currentDateIndex = 0;
 
-        // Doctor selection
-        doctorCards.forEach(card => {
-            card.addEventListener('click', function() {
-                doctorCards.forEach(c => c.classList.remove('selected'));
-                this.classList.add('selected');
-                const radio = this.querySelector('.doctor-radio');
-                if (radio) {
-                    radio.checked = true;
-                    selectedDoctorId = radio.value;
-                    loadDoctorServices(selectedDoctorId);
-                }
-            });
-        });
-
-        // If single doctor is pre-selected (from doctor link)
+        // If single doctor is pre-selected (from doctor link) or only one doctor available, load services immediately
         @if(isset($doctor) && $doctors->count() == 1)
-        const preSelectedDoctor = document.querySelector('.doctor-card[data-doctor-id="{{ $doctor->id }}"]');
-        if (preSelectedDoctor) {
-            preSelectedDoctor.click();
+        selectedDoctorId = {{ $doctor->id }};
+        doctorSelect.value = {{ $doctor->id }};
+        loadDoctorServices(selectedDoctorId);
+        @elseif($doctors->count() == 1)
+        // Auto-select if only one doctor
+        const singleDoctor = doctorSelect.options[1]; // First option after "Select..."
+        if (singleDoctor) {
+            selectedDoctorId = singleDoctor.value;
+            doctorSelect.value = selectedDoctorId;
+            loadDoctorServices(selectedDoctorId);
         }
         @endif
+
+        // Doctor selection
+        doctorSelect.addEventListener('change', function() {
+            selectedDoctorId = this.value;
+            if (selectedDoctorId) {
+                loadDoctorServices(selectedDoctorId);
+            } else {
+                serviceSelectionCard.style.display = 'none';
+                scheduleSelectionCard.style.display = 'none';
+                continueBtn.disabled = true;
+            }
+        });
 
         // Service selection
         serviceSelect.addEventListener('change', function() {
@@ -358,7 +317,7 @@
         });
 
         document.getElementById('next-dates').addEventListener('click', function() {
-            if (currentDateIndex < currentDates.length - 3) {
+            if (currentDateIndex < currentDates.length - 5) {
                 currentDateIndex++;
                 renderDates();
                 loadTimeSlotsForDate(currentDates[currentDateIndex]);
@@ -418,27 +377,27 @@
 
             scheduleSelectionCard.style.display = 'block';
             
-            // Generate next 7 days
+            // Generate next 5 days
             currentDates = [];
             const today = new Date();
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 5; i++) {
                 const date = new Date(today);
                 date.setDate(today.getDate() + i);
                 currentDates.push(date.toISOString().split('T')[0]);
             }
             currentDateIndex = 0;
             renderDates();
-            // Load slots for all visible dates
+            // Load slots for all visible dates (5 days)
             loadTimeSlotsForDate(currentDates[0]);
         }
 
-        // Render date navigation
+        // Render date navigation (5 days)
         function renderDates() {
             const dateDisplay = document.getElementById('date-display');
             dateDisplay.innerHTML = '';
             
-            const visibleDates = currentDates.slice(currentDateIndex, currentDateIndex + 3);
-            visibleDates.forEach((dateStr, index) => {
+            // Show all 5 days (no pagination needed since we only have 5 days)
+            currentDates.forEach((dateStr, index) => {
                 const date = new Date(dateStr);
                 const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
                 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -459,12 +418,12 @@
                 dateDisplay.appendChild(dateItem);
             });
 
-            // Update navigation buttons
-            document.getElementById('prev-dates').disabled = currentDateIndex === 0;
-            document.getElementById('next-dates').disabled = currentDateIndex >= currentDates.length - 3;
+            // Hide navigation buttons since we only show 5 days
+            document.getElementById('prev-dates').style.display = 'none';
+            document.getElementById('next-dates').style.display = 'none';
         }
 
-        // Load time slots for all visible dates
+        // Load time slots for all visible dates (5 days)
         function loadTimeSlotsForDate(date) {
             if (!selectedDoctorId || !selectedServiceId) return;
 
@@ -482,8 +441,8 @@
             timeSlotsCalendar.innerHTML = '';
             noSlotsMessage.style.display = 'none';
 
-            // Load slots for all visible dates
-            const visibleDates = currentDates.slice(currentDateIndex, currentDateIndex + 3);
+            // Load slots for all 5 dates
+            const visibleDates = currentDates;
             const datePromises = visibleDates.map(dateStr => {
                 return fetch(`{{ url('/api/public/doctors') }}/${selectedDoctorId}/slots?date=${dateStr}&service_id=${selectedServiceId}`, {
                     headers: {

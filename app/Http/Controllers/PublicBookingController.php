@@ -503,6 +503,7 @@ class PublicBookingController extends Controller
 
     /**
      * API: Get services for a doctor
+     * Only returns services created by the doctor (private services).
      */
     public function getDoctorServices($doctorId)
     {
@@ -514,8 +515,8 @@ class PublicBookingController extends Controller
                 'id' => $service->id,
                 'name' => $service->name,
                 'description' => $service->description,
-                'duration' => $service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 60,
-                'price' => $service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0,
+                'duration' => $service->default_duration_minutes ?? 60,
+                'price' => $service->default_price ?? 0,
             ];
         });
 
@@ -554,16 +555,17 @@ class PublicBookingController extends Controller
 
     /**
      * Get services available for a doctor.
+     * Only returns services created by the doctor (private services).
      */
     private function getServicesForDoctor($doctorId)
     {
-        // Get all active global services
-        $globalServices = BookingService::active()->get();
-
-        // Filter services that are available for this doctor
-        return $globalServices->filter(function ($service) use ($doctorId) {
-            return $service->isAvailableForDoctor($doctorId);
-        });
+        $doctor = Doctor::findOrFail($doctorId);
+        
+        // Only get services created by this doctor's user account
+        return BookingService::where('created_by', $doctor->user_id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
     }
 }
 
