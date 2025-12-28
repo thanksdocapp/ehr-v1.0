@@ -676,6 +676,10 @@ Route::group(['middleware' => 'installed'], function () {
         // Patient Alerts - All Alerts List
         Route::get('/alerts', [\App\Http\Controllers\Admin\AlertsController::class, 'index'])->name('alerts.index');
         
+        // Notices Management (System-wide announcements)
+        Route::resource('notices', \App\Http\Controllers\Admin\NoticesController::class);
+        Route::post('/notices/{notice}/toggle-status', [\App\Http\Controllers\Admin\NoticesController::class, 'toggleStatus'])->name('notices.toggle-status');
+        
         // Patient Alerts Management
         Route::get('/patients/{patient}/alerts', [\App\Http\Controllers\Admin\PatientAlertsController::class, 'index'])->name('patients.alerts.index');
         Route::get('/patients/{patient}/alerts/create', [\App\Http\Controllers\Admin\PatientAlertsController::class, 'create'])->name('patients.alerts.create');

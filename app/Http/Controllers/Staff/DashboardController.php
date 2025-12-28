@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Department;
 use App\Models\IntegrationModule;
+use App\Models\Notice;
 use App\Services\Integrations\QuincyService;
 use App\Services\PatientFeedbackService;
 use Illuminate\Http\Request;
@@ -123,6 +124,13 @@ class DashboardController extends Controller
         }
         $recentAppointments = $recentAppointmentsQuery->latest()->limit(5)->get();
 
+        // Get active notices for the current user's role
+        $notices = Notice::active()
+            ->forRole($user->role)
+            ->orderBy('priority', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         // Get today's appointments filtered by department for the Today's Schedule widget
         $todayAppointmentsQuery = Appointment::with(['patient', 'doctor'])
             ->whereDate('appointment_date', Carbon::today());
@@ -181,10 +189,10 @@ class DashboardController extends Controller
                 ->limit(5)
                 ->get();
 
-            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations'));
+            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations', 'notices'));
         }
-
-        return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus'));
+        
+        return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus', 'notices'));
     }
 
     public function getStats()

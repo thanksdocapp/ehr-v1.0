@@ -6,6 +6,41 @@
 
 @section('content')
 <div class="fade-in-up">
+    <!-- System Notices -->
+    @if(isset($notices) && $notices->count() > 0)
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                @foreach($notices as $notice)
+                    <div class="alert alert-{{ $notice->type }} alert-dismissible fade show mb-3" role="alert">
+                        <div class="d-flex align-items-start">
+                            <i class="fas {{ $notice->type_icon }} fa-2x me-3 mt-1"></i>
+                            <div class="flex-grow-1">
+                                <h5 class="alert-heading mb-2">
+                                    @if($notice->priority === 'urgent')
+                                        <span class="badge bg-danger me-2">URGENT</span>
+                                    @elseif($notice->priority === 'high')
+                                        <span class="badge bg-warning me-2">HIGH PRIORITY</span>
+                                    @endif
+                                    {{ $notice->title }}
+                                </h5>
+                                <div class="mb-2">
+                                    {!! nl2br(e($notice->message)) !!}
+                                </div>
+                                @if($notice->expires_at)
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        Expires: {{ $notice->expires_at->format('M d, Y H:i') }}
+                                    </small>
+                                @endif
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <!-- Welcome Hero Section - Transparent and Clean -->
     <div class="doctor-card mb-4" style="background: transparent; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: none;">
         <div class="doctor-card-body p-4">
