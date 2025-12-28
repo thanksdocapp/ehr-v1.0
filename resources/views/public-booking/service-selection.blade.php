@@ -91,13 +91,15 @@
 
         <!-- Schedule Selection - Shown when service is selected -->
         <div class="form-card" id="schedule-selection-card" style="display: none;">
-            <label class="form-label">Select Consultation Type <span class="text-danger">*</span></label>
-            <select name="consultation_type" id="consultation-type-select" class="form-control form-control-lg mb-3" required>
-                <option value="in_person">In-Clinic Consultation</option>
-                <option value="online">Online Consultation</option>
-            </select>
-
-            <label class="form-label">Select Date & Time <span class="text-danger">*</span></label>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <label class="form-label mb-0">Select Date & Time <span class="text-danger">*</span></label>
+                <div class="consultation-type-compact">
+                    <select name="consultation_type" id="consultation-type-select" class="form-select form-select-sm consultation-type-select" required>
+                        <option value="in_person">In-Person</option>
+                        <option value="online">Online</option>
+                    </select>
+                </div>
+            </div>
             
             <!-- Date Display (5 days) -->
             <div class="date-navigation mb-3">
@@ -244,6 +246,46 @@
     @media (max-width: 768px) {
         .time-slots-calendar {
             grid-template-columns: 1fr;
+        }
+    }
+
+    /* Compact Consultation Type Selector */
+    .consultation-type-compact {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .consultation-type-select {
+        min-width: 140px;
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        background-color: #ffffff;
+        transition: all 0.2s ease;
+    }
+
+    .consultation-type-select:focus {
+        border-color: var(--booking-primary, #007bff);
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        outline: 0;
+    }
+
+    .consultation-type-select:hover {
+        border-color: #adb5bd;
+    }
+
+    @media (max-width: 576px) {
+        .consultation-type-compact {
+            width: 100%;
+        }
+        .consultation-type-select {
+            width: 100%;
+        }
+        .d-flex.justify-content-between.align-items-center {
+            flex-direction: column;
+            align-items: flex-start !important;
         }
     }
 </style>
