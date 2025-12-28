@@ -209,6 +209,22 @@ class Patient extends Authenticatable
         $missingFields = [];
         $isIncomplete = false;
 
+        // Check for placeholder names and emails (highest priority - these must be fixed)
+        $hasPlaceholderName = (strtolower(trim($this->first_name)) === 'guest' && 
+                              strtolower(trim($this->last_name)) === 'patient');
+        $hasPlaceholderEmail = $this->email && strpos($this->email, '@payment-link.temp') !== false;
+        
+        if ($hasPlaceholderName) {
+            $missingFields[] = 'First Name (currently "Guest" - placeholder)';
+            $missingFields[] = 'Last Name (currently "Patient" - placeholder)';
+            $isIncomplete = true;
+        }
+        
+        if ($hasPlaceholderEmail) {
+            $missingFields[] = 'Email (currently placeholder: ' . $this->email . ')';
+            $isIncomplete = true;
+        }
+
         // Critical fields for consultations
         if (!$this->date_of_birth) {
             $missingFields[] = 'Date of Birth';
@@ -276,8 +292,22 @@ class Patient extends Authenticatable
         return [
             'is_incomplete' => $isIncomplete,
             'missing_fields' => $missingFields,
-            'missing_count' => count($missingFields)
+            'missing_count' => count($missingFields),
+            'has_placeholder_info' => $hasPlaceholderName || $hasPlaceholderEmail
         ];
+    }
+
+    /**
+     * Check if patient has placeholder information that needs to be fixed
+     * (First Name = "Guest", Last Name = "Patient", or email contains "@payment-link.temp")
+     */
+    public function hasPlaceholderInformation(): bool
+    {
+        $hasPlaceholderName = (strtolower(trim($this->first_name)) === 'guest' && 
+                              strtolower(trim($this->last_name)) === 'patient');
+        $hasPlaceholderEmail = $this->email && strpos($this->email, '@payment-link.temp') !== false;
+        
+        return $hasPlaceholderName || $hasPlaceholderEmail;
     }
 
     public function alerts(): HasMany

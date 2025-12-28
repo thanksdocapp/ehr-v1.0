@@ -470,9 +470,18 @@
                                             <div class="d-flex align-items-center gap-2">
                                                 <div class="fw-bold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
                                                 @php
-                                                    $patientInfoCheck = $appointment->patient->hasIncompleteInformation();
+                                                    $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => [], 'has_placeholder_info' => false];
+                                                    try {
+                                                        $patientInfoCheck = $appointment->patient->hasIncompleteInformation();
+                                                    } catch (\Exception $e) {
+                                                        // If there's any error checking incomplete info, just skip the badge
+                                                    }
                                                 @endphp
-                                                @if($patientInfoCheck['is_incomplete'] && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
+                                                @if(($patientInfoCheck['has_placeholder_info'] ?? false) && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
+                                                    <span class="badge bg-danger" title="Placeholder information detected - {{ implode(', ', $patientInfoCheck['missing_fields']) }}">
+                                                        <i class="fas fa-exclamation-circle me-1"></i>Placeholder Info
+                                                    </span>
+                                                @elseif($patientInfoCheck['is_incomplete'] && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
                                                     <span class="badge bg-warning text-dark" title="Incomplete patient information - {{ implode(', ', $patientInfoCheck['missing_fields']) }}">
                                                         <i class="fas fa-exclamation-triangle me-1"></i>Incomplete Info
                                                     </span>

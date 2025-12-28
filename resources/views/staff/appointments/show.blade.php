@@ -278,24 +278,44 @@
                 }
             @endphp
             @if($patientInfoCheck['is_incomplete'] && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
-                <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+                <div class="alert {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'alert-danger' : 'alert-warning' }} alert-dismissible fade show mb-4" role="alert">
                     <div class="d-flex align-items-start">
-                        <i class="fas fa-exclamation-triangle fa-2x me-3 mt-1"></i>
+                        <i class="fas {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'fa-exclamation-circle' : 'fa-exclamation-triangle' }} fa-2x me-3 mt-1"></i>
                         <div class="flex-grow-1">
                             <h5 class="alert-heading mb-2">
-                                <i class="fas fa-user-slash me-2"></i>Incomplete Patient Information
+                                <i class="fas fa-user-slash me-2"></i>
+                                @if($patientInfoCheck['has_placeholder_info'] ?? false)
+                                    <strong class="text-danger">URGENT: Placeholder Information Detected</strong>
+                                @else
+                                    Incomplete Patient Information
+                                @endif
                             </h5>
                             <p class="mb-2">
-                                <strong>This patient has missing information that should be completed before consultation:</strong>
+                                @if($patientInfoCheck['has_placeholder_info'] ?? false)
+                                    <strong class="text-danger">This patient has placeholder information that MUST be fixed before consultation:</strong>
+                                @else
+                                    <strong>This patient has missing information that should be completed before consultation:</strong>
+                                @endif
                             </p>
                             <ul class="mb-3">
                                 @foreach($patientInfoCheck['missing_fields'] as $field)
-                                    <li>{{ $field }}</li>
+                                    <li>
+                                        @if(strpos($field, 'placeholder') !== false || strpos($field, '@payment-link.temp') !== false)
+                                            <strong class="text-danger">{{ $field }}</strong>
+                                        @else
+                                            {{ $field }}
+                                        @endif
+                                    </li>
                                 @endforeach
                             </ul>
                             <div class="d-flex gap-2 flex-wrap">
-                                <a href="{{ route('staff.patients.edit', $appointment->patient->id) }}" class="btn btn-warning btn-sm">
-                                    <i class="fas fa-edit me-1"></i>Complete Patient Information
+                                <a href="{{ route('staff.patients.edit', $appointment->patient->id) }}" class="btn {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'btn-danger' : 'btn-warning' }} btn-sm">
+                                    <i class="fas fa-edit me-1"></i>
+                                    @if($patientInfoCheck['has_placeholder_info'] ?? false)
+                                        Fix Placeholder Information
+                                    @else
+                                        Complete Patient Information
+                                    @endif
                                 </a>
                                 @if($appointment->patient->is_guest)
                                     <span class="badge bg-info align-self-center">
