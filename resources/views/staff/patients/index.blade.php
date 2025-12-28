@@ -503,7 +503,27 @@
                                             </div>
                                         </div>
                                         <div>
-                                            <div class="fw-bold">{{ $patient->first_name }} {{ $patient->last_name }}</div>
+                                            <div class="fw-bold d-flex align-items-center gap-2 flex-wrap">
+                                                {{ $patient->first_name }} {{ $patient->last_name }}
+                                                @php
+                                                    $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => []];
+                                                    try {
+                                                        $patientInfoCheck = $patient->hasIncompleteInformation();
+                                                    } catch (\Exception $e) {
+                                                        // If there's any error checking incomplete info, just skip the badge
+                                                    }
+                                                @endphp
+                                                @if($patientInfoCheck['is_incomplete'] && $patient->is_guest)
+                                                    <span class="badge bg-warning text-dark" title="Incomplete patient information - {{ implode(', ', $patientInfoCheck['missing_fields']) }}">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>Incomplete Info
+                                                    </span>
+                                                @endif
+                                                @if($patient->is_guest)
+                                                    <span class="badge bg-secondary" title="Guest patient created via payment link">
+                                                        <i class="fas fa-user-clock me-1"></i>Guest
+                                                    </span>
+                                                @endif
+                                            </div>
                                             @if($patient->date_of_birth)
                                                 <small class="text-muted">{{ \Carbon\Carbon::parse($patient->date_of_birth)->age }} years old</small>
                                             @else

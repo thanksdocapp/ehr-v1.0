@@ -29,6 +29,46 @@
     <!-- Patient Alert Bar -->
     @include('components.patient-alert-bar', ['patient' => $patient])
 
+    <!-- Patient Information Incomplete Warning -->
+    @php
+        $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => [], 'missing_count' => 0];
+        try {
+            $patientInfoCheck = $patient->hasIncompleteInformation();
+        } catch (\Exception $e) {
+            // If there's any error checking incomplete info, just skip the warning
+            // This prevents DecryptException from crashing the page
+        }
+    @endphp
+    @if($patientInfoCheck['is_incomplete'] && $patient->is_guest)
+        <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+            <div class="d-flex align-items-start">
+                <i class="fas fa-exclamation-triangle fa-2x me-3 mt-1"></i>
+                <div class="flex-grow-1">
+                    <h5 class="alert-heading mb-2">
+                        <i class="fas fa-user-slash me-2"></i>Incomplete Patient Information
+                    </h5>
+                    <p class="mb-2">
+                        <strong>This guest patient has missing information that should be completed:</strong>
+                    </p>
+                    <ul class="mb-3">
+                        @foreach($patientInfoCheck['missing_fields'] as $field)
+                            <li>{{ $field }}</li>
+                        @endforeach
+                    </ul>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ route('staff.patients.edit', $patient->id) }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit me-1"></i>Complete Patient Information
+                        </a>
+                        <span class="badge bg-info align-self-center">
+                            <i class="fas fa-info-circle me-1"></i>Guest Patient (Created via Payment Link)
+                        </span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    @endif
+
     <div class="row">
         <!-- Main Content -->
         <div class="col-lg-8">
