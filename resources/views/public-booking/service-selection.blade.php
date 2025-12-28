@@ -51,14 +51,14 @@
 
         <!-- Doctor Selection (Dropdown) -->
         <div class="form-card">
-            <label class="form-label">Select Doctor <span class="text-danger">*</span></label>
+            <label class="form-label mb-2">Select Doctor <span class="text-danger">*</span></label>
             @if($doctors->isEmpty())
         <div class="empty-state">
                 <i class="fas fa-user-md"></i>
                 <p>No doctors available at this time.</p>
         </div>
         @else
-            <select name="doctor_id" id="doctor-select" class="form-control form-control-lg" required>
+            <select name="doctor_id" id="doctor-select" class="form-control form-control-sm" required>
                 <option value="">Select a doctor...</option>
                 @foreach($doctors as $doc)
                 <option value="{{ $doc->id }}" {{ (isset($doctor) && $doctor->id == $doc->id) ? 'selected' : '' }}>
@@ -315,6 +315,16 @@
         .service-details-col {
             width: 100%;
         }
+    }
+
+    /* Compact Doctor Selection Card */
+    .form-card:first-of-type {
+        padding: 1rem 1.5rem;
+    }
+
+    .form-card:first-of-type .form-label {
+        margin-bottom: 0.5rem;
+        font-size: 0.9375rem;
     }
 </style>
 @endsection
