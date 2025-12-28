@@ -208,19 +208,19 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
+                                        <div class="d-flex gap-1 justify-content-end">
                                             <a href="{{ route('staff.patients.alerts.show', [$alert->patient, $alert]) }}" 
-                                               class="btn btn-outline-primary" title="View">
+                                               class="btn btn-sm btn-outline-primary" title="View">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             @can('update', $alert)
                                             <a href="{{ route('staff.patients.alerts.edit', [$alert->patient, $alert]) }}" 
-                                               class="btn btn-outline-info" title="Edit">
+                                               class="btn btn-sm btn-outline-info" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             @endcan
                                             <a href="{{ route('staff.patients.show', $alert->patient) }}" 
-                                               class="btn btn-outline-success" title="View Patient">
+                                               class="btn btn-sm btn-outline-success" title="View Patient">
                                                 <i class="fas fa-user"></i>
                                             </a>
                                         </div>
