@@ -34,9 +34,24 @@ class SafeEncrypted implements CastsAttributes
             return Crypt::decryptString($value);
         } catch (DecryptException $e) {
             // Fall back to raw value for legacy/plaintext rows
+            // Log the error for debugging but don't throw
+            \Log::debug('SafeEncrypted: Failed to decrypt field', [
+                'key' => $key,
+                'model' => get_class($model),
+                'model_id' => $model->id ?? null,
+                'error' => $e->getMessage()
+            ]);
             return $value;
         } catch (\Throwable $e) {
             // Any other unexpected failure: safest is to return raw value
+            // Log the error for debugging but don't throw
+            \Log::debug('SafeEncrypted: Unexpected error decrypting field', [
+                'key' => $key,
+                'model' => get_class($model),
+                'model_id' => $model->id ?? null,
+                'error' => $e->getMessage(),
+                'error_type' => get_class($e)
+            ]);
             return $value;
         }
     }

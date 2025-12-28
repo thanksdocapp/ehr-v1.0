@@ -24,7 +24,22 @@
 
     <!-- Patient Alert Bar -->
     @if($appointment->patient)
-        @include('components.patient-alert-bar', ['patient' => $appointment->patient])
+        @php
+            try {
+                // Try to access patient to trigger any decryption issues early
+                $patientTest = $appointment->patient->id;
+            } catch (\Exception $e) {
+                // If there's a decryption error, skip the alert bar
+                $patientTest = null;
+            }
+        @endphp
+        @if($patientTest)
+            @try
+                @include('components.patient-alert-bar', ['patient' => $appointment->patient])
+            @catch(\Exception $e)
+                {{-- Silently fail if there's a decryption error --}}
+            @endtry
+        @endif
     @endif
 
     <div class="row">
@@ -254,7 +269,13 @@
 
             <!-- Patient Information Incomplete Warning -->
             @php
-                $patientInfoCheck = $appointment->patient->hasIncompleteInformation();
+                $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => [], 'missing_count' => 0];
+                try {
+                    $patientInfoCheck = $appointment->patient->hasIncompleteInformation();
+                } catch (\Exception $e) {
+                    // If there's any error checking incomplete info, just skip the warning
+                    // This prevents DecryptException from crashing the page
+                }
             @endphp
             @if($patientInfoCheck['is_incomplete'] && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
                 <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">

@@ -80,6 +80,27 @@ class Patient extends Authenticatable
         'notes' => SafeEncrypted::class, // May contain sensitive medical information
     ];
 
+    /**
+     * Override getAttribute to catch any decryption exceptions that might escape from casts
+     */
+    public function getAttribute($key)
+    {
+        try {
+            return parent::getAttribute($key);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            // If decryption fails, try to return the raw attribute value
+            if (array_key_exists($key, $this->attributes)) {
+                \Log::warning('Patient: DecryptException caught for attribute', [
+                    'key' => $key,
+                    'patient_id' => $this->id ?? null,
+                    'error' => $e->getMessage()
+                ]);
+                return $this->attributes[$key];
+            }
+            throw $e;
+        }
+    }
+
     // Relationships
     public function appointments(): HasMany
     {
