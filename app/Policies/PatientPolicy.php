@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Patient;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class PatientPolicy
 {
@@ -25,7 +26,7 @@ class PatientPolicy
     /**
      * Determine whether the user can view the patient.
      */
-    public function view(User $user, Patient $patient): bool
+    public function view(User $user, Patient $patient)
     {
         // Admins can view all patients
         if ($user->is_admin || $user->role === 'admin') {
@@ -33,7 +34,30 @@ class PatientPolicy
         }
         
         // Use the patient's isVisibleTo method to check visibility
-        return $patient->isVisibleTo($user);
+        if ($patient->isVisibleTo($user)) {
+            return true;
+        }
+        
+        // Get patient's department/clinic name for better error message
+        $patientDepartment = $patient->primaryDepartment();
+        $patientDepartmentName = $patientDepartment ? $patientDepartment->name : 'a different clinic';
+        
+        // Get user's current department/clinic name
+        $userDepartment = null;
+        if ($user->role === 'doctor') {
+            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
+            if ($doctor) {
+                $userDepartment = $doctor->primaryDepartment();
+            }
+        } else {
+            $userDepartment = $user->primaryDepartment();
+        }
+        $userDepartmentName = $userDepartment ? $userDepartment->name : 'your current clinic';
+        
+        throw new AuthorizationException(
+            "Access denied. This patient belongs to {$patientDepartmentName}, but you are currently assigned to {$userDepartmentName}. " .
+            "You can only view patients from your current clinic/department."
+        );
     }
 
     /**
