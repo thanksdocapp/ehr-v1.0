@@ -345,6 +345,14 @@ class AppointmentsController extends Controller
             }
         }
         
+        // Convert UK date format (dd/mm/yyyy) to Y-m-d if needed
+        $appointmentDateInput = $request->appointment_date;
+        if ($appointmentDateInput && preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $appointmentDateInput)) {
+            $parts = explode('/', $appointmentDateInput);
+            $appointmentDateInput = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+            $request->merge(['appointment_date' => $appointmentDateInput]);
+        }
+        
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:doctors,id',

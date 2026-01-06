@@ -69,7 +69,7 @@
                             <div class="col-md-6">
                                 <label class="form-label">Date of Birth</label>
                                 <div class="form-control-plaintext">
-                                    {{ $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : 'N/A' }}
+                                    {{ $patient->date_of_birth ? formatDate($patient->date_of_birth) : 'N/A' }}
                                     @if($patient->date_of_birth)
                                         <small class="text-muted">({{ $patient->age }} years old)</small>
                                     @endif

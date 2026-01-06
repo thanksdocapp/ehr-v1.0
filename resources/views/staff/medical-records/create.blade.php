@@ -152,9 +152,14 @@
 
                                 <div class="form-group mb-3">
                                     <label for="record_date" class="form-label">Record Date <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control @error('record_date') is-invalid @enderror" 
+                                    <input type="text" class="form-control @error('record_date') is-invalid @enderror" 
                                            id="record_date" name="record_date" 
-                                           value="{{ old('record_date', date('Y-m-d')) }}" required>
+                                           value="{{ old('record_date') ? (old('record_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('record_date')) ? \Carbon\Carbon::parse(old('record_date'))->format('d/m/Y') : old('record_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}" 
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
+                                           maxlength="10"
+                                           required>
+                                    <small class="text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                                     @error('record_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -993,9 +998,52 @@ $(document).ready(function() {
         }
     });
 
-    // Set record date to today by default
+    // Record Date UK format (dd/mm/yyyy) formatting and conversion
+    (function initRecordDateFormatting() {
+        const recordDateInput = document.getElementById('record_date');
+        if (!recordDateInput) return;
+
+        // Format date as user types (dd/mm/yyyy)
+        recordDateInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            
+            // Add slashes automatically
+            if (value.length > 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2);
+            }
+            if (value.length > 5) {
+                value = value.substring(0, 5) + '/' + value.substring(5, 9);
+            }
+            
+            e.target.value = value;
+        });
+        
+        // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
+        const form = document.getElementById('medicalRecordForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const dateValue = recordDateInput.value.trim();
+                
+                if (dateValue) {
+                    // Check if it's in dd/mm/yyyy format
+                    if (dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                        const parts = dateValue.split('/');
+                        // Convert to yyyy-mm-dd format
+                        const convertedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+                        recordDateInput.value = convertedDate;
+                    }
+                }
+            });
+        }
+    })();
+
+    // Set record date to today by default (in UK format)
     if (!$('#record_date').val()) {
-        $('#record_date').val(new Date().toISOString().split('T')[0]);
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        $('#record_date').val(dd + '/' + mm + '/' + yyyy);
     }
 
     // Copy from previous record function

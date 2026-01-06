@@ -403,6 +403,14 @@ class MedicalRecordsController extends Controller
                 ->with('error', 'You do not have permission to create medical records.');
         }
         
+        // Convert UK date format (dd/mm/yyyy) to Y-m-d if needed
+        $recordDateInput = $request->record_date;
+        if ($recordDateInput && preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $recordDateInput)) {
+            $parts = explode('/', $recordDateInput);
+            $recordDateInput = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+            $request->merge(['record_date' => $recordDateInput]);
+        }
+        
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'appointment_id' => 'nullable|exists:appointments,id',

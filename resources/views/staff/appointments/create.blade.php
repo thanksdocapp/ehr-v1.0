@@ -200,10 +200,14 @@
                             <div class="col-md-4">
                                 <div class="form-group mb-3">
                                     <label for="appointment_date" class="form-label">Appointment Date <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control @error('appointment_date') is-invalid @enderror"
+                                    <input type="text" class="form-control @error('appointment_date') is-invalid @enderror"
                                            id="appointment_date" name="appointment_date"
-                                           value="{{ old('appointment_date', date('Y-m-d')) }}"
-                                           min="{{ date('Y-m-d') }}" required>
+                                           value="{{ old('appointment_date') ? (old('appointment_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('appointment_date')) ? \Carbon\Carbon::parse(old('appointment_date'))->format('d/m/Y') : old('appointment_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}" 
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
+                                           maxlength="10"
+                                           required>
+                                    <small class="text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                                     @error('appointment_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -545,11 +549,55 @@ $(document).ready(function() {
         applyFilter();
     })();
 
-    // Set default appointment date to today
-    const today = new Date().toISOString().split('T')[0];
-    $('#appointment_date').attr('min', today);
+    // Appointment Date UK format (dd/mm/yyyy) formatting and conversion
+    (function initAppointmentDateFormatting() {
+        const appointmentDateInput = document.getElementById('appointment_date');
+        if (!appointmentDateInput) return;
+
+        // Format date as user types (dd/mm/yyyy)
+        appointmentDateInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            
+            // Add slashes automatically
+            if (value.length > 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2);
+            }
+            if (value.length > 5) {
+                value = value.substring(0, 5) + '/' + value.substring(5, 9);
+            }
+            
+            e.target.value = value;
+        });
+        
+        // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
+        const form = document.getElementById('appointmentForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const dateValue = appointmentDateInput.value.trim();
+                
+                if (dateValue) {
+                    // Check if it's in dd/mm/yyyy format
+                    if (dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                        const parts = dateValue.split('/');
+                        // Convert to yyyy-mm-dd format
+                        const convertedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+                        appointmentDateInput.value = convertedDate;
+                    }
+                }
+            });
+        }
+    })();
+
+    // Set default appointment date to today (in UK format)
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const todayUK = dd + '/' + mm + '/' + yyyy;
+    const todayISO = yyyy + '-' + mm + '-' + dd;
+    
     if (!$('#appointment_date').val()) {
-        $('#appointment_date').val(today);
+        $('#appointment_date').val(todayUK);
     }
 
     // Department filter for doctors

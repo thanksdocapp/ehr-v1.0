@@ -463,6 +463,14 @@ class PatientsController extends Controller
             $age = null;
             $isUnder18 = false;
             
+            // Convert UK date format (dd/mm/yyyy) to Y-m-d if needed
+            $dateOfBirthInput = $request->date_of_birth;
+            if ($dateOfBirthInput && preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $dateOfBirthInput)) {
+                $parts = explode('/', $dateOfBirthInput);
+                $dateOfBirthInput = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+                $request->merge(['date_of_birth' => $dateOfBirthInput]);
+            }
+            
             try {
                 $dateOfBirth = $request->date_of_birth ? Carbon::parse($request->date_of_birth) : null;
             } catch (\Exception $e) {

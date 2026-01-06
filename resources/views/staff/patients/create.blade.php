@@ -176,11 +176,12 @@
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
-                                    <input type="date" name="date_of_birth" id="date_of_birth" 
+                                    <input type="text" name="date_of_birth" id="date_of_birth" 
                                            class="form-control @error('date_of_birth') is-invalid @enderror" 
-                                           value="{{ old('date_of_birth') }}" 
-                                           max="{{ date('Y-m-d') }}"
-                                           min="{{ date('Y-m-d', strtotime('-150 years')) }}"
+                                           value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : '' }}" 
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
+                                           maxlength="10"
                                            required>
                                     @error('date_of_birth')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -188,7 +189,7 @@
                                 </div>
                                 <small class="text-muted">
                                     <i class="fas fa-info-circle me-1"></i>
-                                    Must be today or earlier
+                                    Format: dd/mm/yyyy (e.g., 15/01/2025). Must be today or earlier.
                                 </small>
                             </div>
                             
@@ -1409,6 +1410,45 @@ $(document).ready(function() {
             $(this).closest('.allergy-item').remove();
         }
     });
+
+    // Date of Birth UK format (dd/mm/yyyy) formatting and conversion
+    (function initDateOfBirthFormatting() {
+        const dobInput = document.getElementById('date_of_birth');
+        if (!dobInput) return;
+
+        // Format date as user types (dd/mm/yyyy)
+        dobInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            
+            // Add slashes automatically
+            if (value.length > 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2);
+            }
+            if (value.length > 5) {
+                value = value.substring(0, 5) + '/' + value.substring(5, 9);
+            }
+            
+            e.target.value = value;
+        });
+        
+        // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
+        const form = document.getElementById('patientCreateForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const dobValue = dobInput.value.trim();
+                
+                if (dobValue) {
+                    // Check if it's in dd/mm/yyyy format
+                    if (dobValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                        const parts = dobValue.split('/');
+                        // Convert to yyyy-mm-dd format
+                        const convertedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+                        dobInput.value = convertedDate;
+                    }
+                }
+            });
+        }
+    })();
 });
 </script>
 @endpush
