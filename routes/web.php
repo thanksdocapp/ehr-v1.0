@@ -107,6 +107,7 @@ Route::group(['middleware' => 'installed'], function () {
     Route::prefix('book')->name('public.booking.')->group(function () {
         // GET routes with specific paths (must come before parameterized route to avoid conflicts)
         Route::get('/clinic/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showClinicBooking'])->name('clinic');
+        Route::get('/service/{serviceId}/{doctorId}', [\App\Http\Controllers\PublicBookingController::class, 'showServiceBooking'])->name('service');
         Route::get('/success/{appointmentNumber}', [\App\Http\Controllers\PublicBookingController::class, 'success'])->name('success');
         // GET routes for POST-only pages (prevent 404 when accessed directly)
         Route::get('/review', [\App\Http\Controllers\PublicBookingController::class, 'showReview'])->name('review.show');
@@ -389,7 +390,7 @@ Route::group(['middleware' => 'installed'], function () {
             Route::post('/{bookingService}/toggle-status', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'toggleStatus'])->name('toggle-status');
             Route::delete('/{bookingService}', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'destroy'])->name('destroy');
             Route::delete('/{bookingService}/delete-service', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'deleteService'])->name('delete-service');
-            Route::post('/generate-payment-link', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'generatePaymentLink'])->name('generate-payment-link');
+            Route::post('/generate-booking-link', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'generateBookingLink'])->name('generate-booking-link');
         });
 
         // Doctor Schedule / Availability Management

@@ -24,35 +24,26 @@
             <i class="fas fa-check-circle me-2 mt-1"></i>
             <div class="flex-grow-1">
                 <div>{{ session('success') }}</div>
-                @if(session('payment_link'))
+                @if(session('booking_link'))
                 <div class="mt-3 p-3 bg-white rounded border">
                     <div class="mb-2">
                         <strong class="d-block mb-2">
-                            <i class="fas fa-link me-2"></i>Payment Link:
+                            <i class="fas fa-link me-2"></i>Booking Link:
                         </strong>
                         <div class="input-group">
-                            <input type="text" class="form-control font-monospace" id="paymentLinkInput" value="{{ session('payment_link') }}" readonly style="font-size: 0.875rem;">
-                            <button class="btn btn-outline-secondary" type="button" onclick="copyPaymentLink(event)" title="Copy to clipboard">
+                            <input type="text" class="form-control font-monospace" id="bookingLinkInput" value="{{ session('booking_link') }}" readonly style="font-size: 0.875rem;">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyBookingLink(event)" title="Copy to clipboard">
                                 <i class="fas fa-copy me-1"></i>Copy
                             </button>
-                            <a href="{{ session('payment_link') }}" target="_blank" class="btn btn-primary" title="Open payment link">
+                            <a href="{{ session('booking_link') }}" target="_blank" class="btn btn-primary" title="Open booking link">
                                 <i class="fas fa-external-link-alt me-1"></i>Open
                             </a>
                         </div>
                     </div>
-                    @if(session('invoice_number'))
+                    @if(session('service_name'))
                     <div class="mt-2 pt-2 border-top">
                         <small class="text-muted">
-                            <strong>Invoice:</strong> #{{ session('invoice_number') }}
-                            @if(session('billing_number'))
-                            | <strong>Bill:</strong> #{{ session('billing_number') }}
-                            @endif
-                            @if(session('service_name'))
-                            | <strong>Service:</strong> {{ session('service_name') }}
-                            @endif
-                            @if(session('patient_name'))
-                            | <strong>Patient:</strong> {{ session('patient_name') }}
-                            @endif
+                            <strong>Service:</strong> {{ session('service_name') }}
                         </small>
                     </div>
                     @endif
@@ -140,11 +131,11 @@
                                         </td>
                                         <td class="text-end">
                                             <div class="d-flex gap-1 justify-content-end">
-                                                @if($service['is_active_for_doctor'] && ($service['custom_price'] ?? $service['default_price']))
+                                                @if($service['is_active_for_doctor'])
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success" 
-                                                        title="Get Payment Link"
-                                                        onclick="showPaymentLinkModal({{ $service['id'] }}, '{{ addslashes($service['name']) }}', {{ $service['custom_price'] ?? $service['default_price'] ?? 0 }})">
+                                                        title="Get Booking Link"
+                                                        onclick="showBookingLinkModal({{ $service['id'] }}, '{{ addslashes($service['name']) }}')">
                                                     <i class="fas fa-link"></i>
                                                 </button>
                                                 @endif
@@ -209,35 +200,34 @@
     </div>
 </div>
 
-<!-- Payment Link Modal -->
-<div class="modal fade" id="paymentLinkModal" tabindex="-1" aria-labelledby="paymentLinkModalLabel" aria-hidden="true">
+<!-- Booking Link Modal -->
+<div class="modal fade" id="bookingLinkModal" tabindex="-1" aria-labelledby="bookingLinkModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="paymentLinkModalLabel">
-                    <i class="fas fa-link me-2"></i>Generate Payment Link
+                <h5 class="modal-title" id="bookingLinkModalLabel">
+                    <i class="fas fa-link me-2"></i>Generate Booking Link
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="paymentLinkForm" method="POST" action="{{ route('staff.doctor-services.generate-payment-link') }}">
+            <form id="bookingLinkForm" method="POST" action="{{ route('staff.doctor-services.generate-booking-link') }}">
                 @csrf
                 <input type="hidden" name="service_id" id="modal_service_id">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Service</label>
                         <input type="text" class="form-control" id="modal_service_name" readonly>
-                        <small class="text-muted" id="modal_service_price"></small>
                     </div>
                     <div class="alert alert-info mb-0">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>Note:</strong> A payment link will be generated that can be used on websites. 
-                        Patient information will be collected when the payment is made.
+                        <strong>Note:</strong> A booking link will be generated that can be used on websites. 
+                        Patients will be taken directly to the booking page with this service and your profile pre-selected.
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-success">
-                        <i class="fas fa-link me-2"></i>Generate Payment Link
+                        <i class="fas fa-link me-2"></i>Generate Booking Link
                     </button>
                 </div>
             </form>
@@ -246,18 +236,17 @@
 </div>
 
 <script>
-function showPaymentLinkModal(serviceId, serviceName, price) {
+function showBookingLinkModal(serviceId, serviceName) {
     document.getElementById('modal_service_id').value = serviceId;
     document.getElementById('modal_service_name').value = serviceName;
-    document.getElementById('modal_service_price').textContent = 'Price: £' + parseFloat(price).toFixed(2);
     
-    const modal = new bootstrap.Modal(document.getElementById('paymentLinkModal'));
+    const modal = new bootstrap.Modal(document.getElementById('bookingLinkModal'));
     modal.show();
 }
 
-function copyPaymentLink(event) {
+function copyBookingLink(event) {
     event.preventDefault();
-    const input = document.getElementById('paymentLinkInput');
+    const input = document.getElementById('bookingLinkInput');
     if (input) {
         input.select();
         input.setSelectionRange(0, 99999); // For mobile devices

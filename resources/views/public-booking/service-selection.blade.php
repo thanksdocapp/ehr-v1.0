@@ -74,8 +74,11 @@
             <label class="form-label">Select Service <span class="text-danger">*</span></label>
             <div class="service-selection-row">
                 <div class="service-dropdown-col">
-                    <select name="service_id" id="service-select" class="form-control form-control-sm" required {{ (isset($doctor) && $doctors->count() == 1) ? '' : 'disabled' }}>
+                    <select name="service_id" id="service-select" class="form-control form-control-sm" required {{ (isset($doctor) && $doctors->count() == 1) || isset($service) ? '' : 'disabled' }}>
                         <option value="">Select a service...</option>
+                        @if(isset($service))
+                        <option value="{{ $service->id }}" selected>{{ $service->name }} - £{{ number_format($service->getPriceForDoctor($doctor->id ?? 0) ?? $service->default_price ?? 0, 2) }}</option>
+                        @endif
                     </select>
                 </div>
                 <div class="service-details-col" id="service-details" style="display: none;">
@@ -362,6 +365,15 @@
         }
         @endif
 
+        // If service is pre-selected (from service booking link), auto-select it and load schedule
+        @if(isset($service) && isset($doctor))
+        selectedServiceId = {{ $service->id }};
+        serviceSelect.value = {{ $service->id }};
+        serviceSelect.disabled = false;
+        updateServiceDetails();
+        loadSchedule();
+        @endif
+
         // Doctor selection
         doctorSelect.addEventListener('change', function() {
             selectedDoctorId = this.value;
@@ -408,6 +420,7 @@
         function loadDoctorServices(doctorId) {
             serviceSelectionCard.style.display = 'block';
             serviceSelect.disabled = true;
+            const preselectedServiceId = selectedServiceId; // Preserve pre-selected service
             serviceSelect.innerHTML = '<option value="">Loading services...</option>';
             scheduleSelectionCard.style.display = 'none';
             continueBtn.disabled = true;
@@ -429,9 +442,20 @@
                         option.dataset.duration = service.duration;
                         option.dataset.price = service.price;
                         option.dataset.description = service.description || '';
+                        // Re-select if this was the pre-selected service
+                        if (preselectedServiceId && service.id == preselectedServiceId) {
+                            option.selected = true;
+                            selectedServiceId = preselectedServiceId;
+                        }
                         serviceSelect.appendChild(option);
                     });
                     serviceSelect.disabled = false;
+                    
+                    // If service was pre-selected, trigger update and load schedule
+                    if (preselectedServiceId && selectedServiceId == preselectedServiceId) {
+                        updateServiceDetails();
+                        loadSchedule();
+                    }
                 } else {
                     serviceSelect.innerHTML = '<option value="">No services available</option>';
                 }

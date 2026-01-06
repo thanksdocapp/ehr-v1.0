@@ -72,6 +72,33 @@ class PublicBookingController extends Controller
     }
 
     /**
+     * Step 1: Access via service-specific booking link - /book/service/{serviceId}/{doctorId}
+     */
+    public function showServiceBooking($serviceId, $doctorId)
+    {
+        $this->checkBookingEnabled();
+
+        $service = BookingService::findOrFail($serviceId);
+        $doctor = Doctor::where('id', $doctorId)->active()->firstOrFail();
+
+        // Verify service is available for this doctor
+        if (!$service->isAvailableForDoctor($doctor->id)) {
+            abort(404, 'This service is not available for the selected doctor.');
+        }
+
+        // Get the doctor's department
+        $department = $doctor->primaryDepartment();
+
+        return view('public-booking.service-selection', [
+            'service' => $service,
+            'doctor' => $doctor,
+            'doctors' => collect([$doctor]), // Single doctor pre-selected
+            'department' => $department,
+            'step' => 1
+        ]);
+    }
+
+    /**
      * Step 2: Select date and time (or doctor if booking through clinic)
      */
     public function selectDateTime(Request $request)
