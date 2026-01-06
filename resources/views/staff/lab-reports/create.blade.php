@@ -128,9 +128,14 @@
 
                                 <div class="form-group mb-3">
                                     <label for="collection_date" class="form-label">Collection Date <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control @error('collection_date') is-invalid @enderror" 
+                                    <input type="text" class="form-control uk-date @error('collection_date') is-invalid @enderror" 
                                            id="collection_date" name="collection_date" 
-                                           value="{{ old('collection_date', date('Y-m-d')) }}" required>
+                                           value="{{ old('collection_date') ? (old('collection_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('collection_date')) ? \Carbon\Carbon::parse(old('collection_date'))->format('d/m/Y') : old('collection_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}"
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
+                                           maxlength="10"
+                                           data-default-date="today"
+                                           required>
                                     @error('collection_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -213,9 +218,13 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="report_date" class="form-label">Report Date</label>
-                                    <input type="date" class="form-control @error('report_date') is-invalid @enderror" 
+                                    <input type="text" class="form-control uk-date @error('report_date') is-invalid @enderror" 
                                            id="report_date" name="report_date" 
-                                           value="{{ old('report_date') }}" min="{{ date('Y-m-d') }}">
+                                           value="{{ old('report_date') ? (old('report_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('report_date')) ? \Carbon\Carbon::parse(old('report_date'))->format('d/m/Y') : old('report_date')) : '' }}"
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
+                                           maxlength="10"
+                                           data-min-date="today">
                                     @error('report_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

@@ -209,9 +209,14 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="prescription_date" class="form-label">Prescription Date <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control @error('prescription_date') is-invalid @enderror" 
+                                    <input type="text" class="form-control uk-date @error('prescription_date') is-invalid @enderror" 
                                            id="prescription_date" name="prescription_date" 
-                                           value="{{ old('prescription_date', date('Y-m-d')) }}" required>
+                                           value="{{ old('prescription_date') ? (old('prescription_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('prescription_date')) ? \Carbon\Carbon::parse(old('prescription_date'))->format('d/m/Y') : old('prescription_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}"
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
+                                           maxlength="10"
+                                           data-default-date="today"
+                                           required>
                                     @error('prescription_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -291,9 +296,13 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="follow_up_date" class="form-label">Follow-up Date</label>
-                                    <input type="date" class="form-control @error('follow_up_date') is-invalid @enderror" 
+                                    <input type="text" class="form-control uk-date @error('follow_up_date') is-invalid @enderror" 
                                            id="follow_up_date" name="follow_up_date" 
-                                           value="{{ old('follow_up_date') }}" min="{{ date('Y-m-d', strtotime('+1 day')) }}">
+                                           value="{{ old('follow_up_date') ? (old('follow_up_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('follow_up_date')) ? \Carbon\Carbon::parse(old('follow_up_date'))->format('d/m/Y') : old('follow_up_date')) : '' }}"
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
+                                           maxlength="10"
+                                           data-min-date="{{ date('Y-m-d', strtotime('+1 day')) }}">
                                     @error('follow_up_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

@@ -82,7 +82,12 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="prescribed_date" class="form-label fw-semibold">Prescribed Date <span class="text-danger">*</span></label>
-                                <input type="date" name="prescribed_date" class="form-control" value="{{ $prescription->prescribed_date->format('Y-m-d') }}" required>
+                                <input type="text" name="prescribed_date" id="prescribed_date" class="form-control uk-date" 
+                                       value="{{ old('prescribed_date') ? (old('prescribed_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('prescribed_date')) ? \Carbon\Carbon::parse(old('prescribed_date'))->format('d/m/Y') : old('prescribed_date')) : ($prescription->prescribed_date ? $prescription->prescribed_date->format('d/m/Y') : '') }}"
+                                       placeholder="dd/mm/yyyy"
+                                       pattern="\d{2}/\d{2}/\d{4}"
+                                       maxlength="10"
+                                       required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="status" class="form-label fw-semibold">Status <span class="text-danger">*</span></label>

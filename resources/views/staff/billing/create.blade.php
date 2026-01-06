@@ -104,8 +104,14 @@
                                         <label for="billing_date" class="form-label">
                                             <i class="fas fa-calendar me-1"></i>Billing Date *
                                         </label>
-                                        <input type="date" class="form-control @error('billing_date') is-invalid @enderror"
-                                               id="billing_date" name="billing_date" value="{{ old('billing_date') }}" required>
+                                        <input type="text" class="form-control uk-date @error('billing_date') is-invalid @enderror"
+                                               id="billing_date" name="billing_date" 
+                                               value="{{ old('billing_date') ? (old('billing_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('billing_date')) ? \Carbon\Carbon::parse(old('billing_date'))->format('d/m/Y') : old('billing_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}"
+                                               placeholder="dd/mm/yyyy"
+                                               pattern="\d{2}/\d{2}/\d{4}"
+                                               maxlength="10"
+                                               data-default-date="today"
+                                               required>
                                         @error('billing_date')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
@@ -117,8 +123,12 @@
                                         <label for="due_date" class="form-label">
                                             <i class="fas fa-calendar-alt me-1"></i>Due Date
                                         </label>
-                                        <input type="date" class="form-control @error('due_date') is-invalid @enderror" 
-                                               id="due_date" name="due_date" value="{{ old('due_date') }}">
+                                        <input type="text" class="form-control uk-date @error('due_date') is-invalid @enderror" 
+                                               id="due_date" name="due_date" 
+                                               value="{{ old('due_date') ? (old('due_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('due_date')) ? \Carbon\Carbon::parse(old('due_date'))->format('d/m/Y') : old('due_date')) : '' }}"
+                                               placeholder="dd/mm/yyyy"
+                                               pattern="\d{2}/\d{2}/\d{4}"
+                                               maxlength="10">
                                         @error('due_date')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror

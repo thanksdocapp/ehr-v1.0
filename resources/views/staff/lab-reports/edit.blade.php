@@ -121,9 +121,13 @@
                             <!-- Collection Date -->
                             <div class="col-md-6 mb-3">
                                 <label for="collection_date" class="form-label fw-semibold">Collection Date <span class="text-danger">*</span></label>
-                                <input type="date" name="collection_date" id="collection_date" 
-                                       class="form-control @error('collection_date') is-invalid @enderror" 
-                                       value="{{ old('collection_date', $labReport->collection_date->format('Y-m-d')) }}" required>
+                                <input type="text" name="collection_date" id="collection_date" 
+                                       class="form-control uk-date @error('collection_date') is-invalid @enderror" 
+                                       value="{{ old('collection_date') ? (old('collection_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('collection_date')) ? \Carbon\Carbon::parse(old('collection_date'))->format('d/m/Y') : old('collection_date')) : ($labReport->collection_date ? $labReport->collection_date->format('d/m/Y') : '') }}"
+                                       placeholder="dd/mm/yyyy"
+                                       pattern="\d{2}/\d{2}/\d{4}"
+                                       maxlength="10"
+                                       required>
                                 @error('collection_date')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -311,10 +315,13 @@
 
                             <div class="col-md-6 mb-3">
                                 <label for="expected_completion_date" class="form-label fw-semibold">Expected Completion Date</label>
-                                <input type="date" name="expected_completion_date" id="expected_completion_date" 
-                                       class="form-control @error('expected_completion_date') is-invalid @enderror" 
-                                       value="{{ old('expected_completion_date', $labReport->expected_completion_date ? $labReport->expected_completion_date->format('Y-m-d') : '') }}" 
-                                       min="{{ date('Y-m-d') }}">
+                                <input type="text" name="expected_completion_date" id="expected_completion_date" 
+                                       class="form-control uk-date @error('expected_completion_date') is-invalid @enderror" 
+                                       value="{{ old('expected_completion_date') ? (old('expected_completion_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('expected_completion_date')) ? \Carbon\Carbon::parse(old('expected_completion_date'))->format('d/m/Y') : old('expected_completion_date')) : ($labReport->expected_completion_date ? $labReport->expected_completion_date->format('d/m/Y') : '') }}"
+                                       placeholder="dd/mm/yyyy"
+                                       pattern="\d{2}/\d{2}/\d{4}"
+                                       maxlength="10"
+                                       data-min-date="today">
                                 @error('expected_completion_date')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -345,9 +352,12 @@
 
                             <div class="col-md-6 mb-3">
                                 <label for="report_date" class="form-label fw-semibold">Report Date</label>
-                                <input type="date" name="report_date" id="report_date" 
-                                       class="form-control @error('report_date') is-invalid @enderror" 
-                                       value="{{ old('report_date', $labReport->report_date ? $labReport->report_date->format('Y-m-d') : '') }}">
+                                <input type="text" name="report_date" id="report_date" 
+                                       class="form-control uk-date @error('report_date') is-invalid @enderror" 
+                                       value="{{ old('report_date') ? (old('report_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('report_date')) ? \Carbon\Carbon::parse(old('report_date'))->format('d/m/Y') : old('report_date')) : ($labReport->report_date ? $labReport->report_date->format('d/m/Y') : '') }}"
+                                       placeholder="dd/mm/yyyy"
+                                       pattern="\d{2}/\d{2}/\d{4}"
+                                       maxlength="10">
                                 @error('report_date')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
