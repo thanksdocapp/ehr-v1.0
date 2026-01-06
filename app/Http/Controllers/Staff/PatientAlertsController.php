@@ -91,6 +91,11 @@ class PatientAlertsController extends Controller
         $code = $request->input('code');
         $categoryConfig = $alertCategories[$type][$code] ?? null;
 
+        // Parse UK datetime format (dd/mm/yyyy HH:MM) to Y-m-d H:i:s before validation
+        if ($request->has('expires_at') && $request->expires_at) {
+            $request->merge(['expires_at' => parseDateTimeInput($request->expires_at)]);
+        }
+        
         $validationRules = [
             'type' => 'required|string|in:' . implode(',', config('alerts.types', [])),
             'code' => 'required|string',
@@ -193,6 +198,11 @@ class PatientAlertsController extends Controller
 
         $before = $alert->toArray();
 
+        // Parse UK datetime format (dd/mm/yyyy HH:MM) to Y-m-d H:i:s before validation
+        if ($request->has('expires_at') && $request->expires_at) {
+            $request->merge(['expires_at' => parseDateTimeInput($request->expires_at)]);
+        }
+        
         $validationRules = [
             'severity' => 'nullable|string|in:' . implode(',', config('alerts.severities', [])),
             'title' => 'nullable|string|max:255',
