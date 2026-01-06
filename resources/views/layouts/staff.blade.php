@@ -2087,6 +2087,9 @@
         }
     </style>
     
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
     @stack('styles')
 </head>
 <body>
@@ -2547,6 +2550,11 @@
             });
         }
     </script>
+    
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <!-- Flatpickr Initialization -->
+    <script src="{{ asset('js/flatpickr-init.js') }}"></script>
     
     @stack('scripts')
     

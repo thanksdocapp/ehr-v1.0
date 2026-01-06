@@ -499,6 +499,9 @@
 
         @yield('styles')
     </style>
+    
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
     <div class="booking-container" style="max-width: @yield('container-width', '1200px')">
@@ -506,6 +509,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <!-- Flatpickr Initialization -->
+    <script src="{{ asset('js/flatpickr-init.js') }}"></script>
     @yield('scripts')
 </body>
 </html>

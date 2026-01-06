@@ -177,7 +177,7 @@
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
                                     <input type="text" name="date_of_birth" id="date_of_birth" 
-                                           class="form-control @error('date_of_birth') is-invalid @enderror" 
+                                           class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror" 
                                            value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : '' }}" 
                                            placeholder="dd/mm/yyyy"
                                            pattern="\d{2}/\d{2}/\d{4}"

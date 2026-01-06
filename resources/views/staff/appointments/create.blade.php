@@ -557,61 +557,13 @@ $(document).ready(function() {
         applyFilter();
     })();
 
-    // Appointment Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
-    (function initAppointmentDatePicker() {
-        const appointmentDateInput = document.getElementById('appointment_date');
-        if (!appointmentDateInput) return;
-
-        // Wait for Flatpickr to be available
-        if (typeof flatpickr === 'undefined') {
-            console.error('Flatpickr library not loaded');
-            return;
-        }
-
-        // Initialize Flatpickr with UK format
-        const appointmentPicker = flatpickr(appointmentDateInput, {
-            dateFormat: "d/m/Y",
-            altInput: false,
-            altFormat: "d/m/Y",
-            locale: {
-                firstDayOfWeek: 1 // Monday
-            },
-            minDate: "today",
-            allowInput: true, // Allow manual typing
-            clickOpens: true,
-            defaultDate: "today",
-            onChange: function(selectedDates, dateStr, instance) {
-                // Ensure format is dd/mm/yyyy
-                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    const date = new Date(dateStr);
-                    const dd = String(date.getDate()).padStart(2, '0');
-                    const mm = String(date.getMonth() + 1).padStart(2, '0');
-                    const yyyy = date.getFullYear();
-                    instance.input.value = dd + '/' + mm + '/' + yyyy;
-                }
-                // Trigger change event for time slot loading
-                $(appointmentDateInput).trigger('change');
-            }
-        });
-        
-        // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
-        const form = document.getElementById('appointmentForm');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                const dateValue = appointmentDateInput.value.trim();
-                
-                if (dateValue) {
-                    // Check if it's in dd/mm/yyyy format
-                    if (dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                        const parts = dateValue.split('/');
-                        // Convert to yyyy-mm-dd format
-                        const convertedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
-                        appointmentDateInput.value = convertedDate;
-                    }
-                }
-            });
-        }
-    })();
+    // Date picker is now handled by centralized flatpickr-init.js
+    // No manual initialization needed - just add 'uk-date' class to input
+    // Trigger change event for time slot loading when date changes
+    $('#appointment_date').on('change', function() {
+        loadAvailableTimeSlots();
+        checkScheduleConflicts();
+    });
 
     // Set default appointment date to today (in UK format) if empty
     const today = new Date();

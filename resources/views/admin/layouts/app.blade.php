@@ -2080,6 +2080,9 @@ use Illuminate\Support\Facades\Storage;
         }
     </style>
     
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
     @stack('styles')
     
     <!-- Modern UI System -->
@@ -2534,6 +2537,11 @@ use Illuminate\Support\Facades\Storage;
     });
     </script>
 
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <!-- Flatpickr Initialization -->
+    <script src="{{ asset('js/flatpickr-init.js') }}"></script>
+    
     @stack('scripts')
     
     <!-- Beautiful Modal System -->

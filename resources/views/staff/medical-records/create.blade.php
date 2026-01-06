@@ -157,12 +157,14 @@
 
                                 <div class="form-group mb-3">
                                     <label for="record_date" class="form-label">Record Date <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('record_date') is-invalid @enderror" 
+                                    <input type="text" class="form-control uk-date @error('record_date') is-invalid @enderror" 
                                            id="record_date" name="record_date" 
                                            value="{{ old('record_date') ? (old('record_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('record_date')) ? \Carbon\Carbon::parse(old('record_date'))->format('d/m/Y') : old('record_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}" 
                                            placeholder="dd/mm/yyyy"
                                            pattern="\d{2}/\d{2}/\d{4}"
                                            maxlength="10"
+                                           data-max-date="today"
+                                           data-default-date="today"
                                            required>
                                     <small class="text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                                     @error('record_date')
