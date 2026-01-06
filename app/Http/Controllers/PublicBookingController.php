@@ -336,9 +336,14 @@ class PublicBookingController extends Controller
         
         $patientData = $request->only([
             'first_name', 'last_name', 'email', 'phone', 'notes', 'consultation_type',
-            'date_of_birth', 'gender', 'consent_share_with_gp',
+            'gender', 'consent_share_with_gp',
             'gp_name', 'gp_email', 'gp_phone', 'gp_address'
         ]);
+        
+        // Convert date_of_birth from dd/mm/yyyy to Y-m-d format
+        if ($request->has('date_of_birth') && $request->date_of_birth) {
+            $patientData['date_of_birth'] = parseDateInput($request->date_of_birth);
+        }
         if ($departmentId) {
             $patientData['department_id'] = $departmentId;
         }
@@ -429,7 +434,14 @@ class PublicBookingController extends Controller
             $request->merge(['consultation_type' => 'in_person']);
         }
 
-        $validator = Validator::make($request->all(), $rules);
+        // Convert date_of_birth from dd/mm/yyyy to Y-m-d format before validation
+        $requestData = $request->all();
+        if (isset($requestData['date_of_birth']) && $requestData['date_of_birth']) {
+            $requestData['date_of_birth'] = parseDateInput($requestData['date_of_birth']);
+            $request->merge(['date_of_birth' => $requestData['date_of_birth']]);
+        }
+
+        $validator = Validator::make($requestData, $rules);
 
         if ($validator->fails()) {
             \Log::warning('Public booking confirmation validation failed', [
