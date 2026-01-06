@@ -95,9 +95,10 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="expires_at" class="form-label fw-semibold">Expires At (Review Date)</label>
-                                <input type="datetime-local" name="expires_at" id="expires_at" 
-                                       class="form-control @error('expires_at') is-invalid @enderror" 
-                                       value="{{ old('expires_at', $alert->expires_at ? $alert->expires_at->format('Y-m-d\TH:i') : '') }}">
+                                <input type="text" name="expires_at" id="expires_at" 
+                                       class="form-control uk-datetime @error('expires_at') is-invalid @enderror" 
+                                       value="{{ old('expires_at') ? (old('expires_at') && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', old('expires_at')) ? \Carbon\Carbon::parse(old('expires_at'))->format('d/m/Y H:i') : old('expires_at')) : ($alert->expires_at ? $alert->expires_at->format('d/m/Y H:i') : '') }}"
+                                       placeholder="dd/mm/yyyy HH:MM">
                                 <small class="text-muted">Leave empty for no expiry</small>
                                 @error('expires_at')
                                     <div class="invalid-feedback">{{ $message }}</div>

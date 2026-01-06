@@ -107,9 +107,13 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control @error('date_of_birth') is-invalid @enderror" 
+                                <input type="text" class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror" 
                                        id="date_of_birth" name="date_of_birth" 
-                                       value="{{ old('date_of_birth', $patient->date_of_birth ? $patient->date_of_birth->format('Y-m-d') : '') }}" required>
+                                       value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : ($patient->date_of_birth ? $patient->date_of_birth->format('d/m/Y') : '') }}"
+                                       placeholder="dd/mm/yyyy"
+                                       pattern="\d{2}/\d{2}/\d{4}"
+                                       maxlength="10"
+                                       required>
                                 @error('date_of_birth')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror

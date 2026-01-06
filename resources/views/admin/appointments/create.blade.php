@@ -349,13 +349,13 @@
                                     <label for="next_appointment_date" class="form-label">
                                         <i class="fas fa-calendar-check me-1"></i>Next Appointment Date
                                     </label>
-                                    <input type="text" class="form-control @error('next_appointment_date') is-invalid @enderror" 
+                                    <input type="text" class="form-control uk-date @error('next_appointment_date') is-invalid @enderror" 
                                            id="next_appointment_date" name="next_appointment_date" 
-                                           value="{{ old('next_appointment_date') ? formatDate(old('next_appointment_date')) : '' }}"
-                                           placeholder="dd-mm-yyyy" 
-                                           pattern="\d{2}-\d{2}-\d{4}" 
+                                           value="{{ old('next_appointment_date') ? (old('next_appointment_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('next_appointment_date')) ? \Carbon\Carbon::parse(old('next_appointment_date'))->format('d/m/Y') : old('next_appointment_date')) : '' }}"
+                                           placeholder="dd/mm/yyyy" 
+                                           pattern="\d{2}/\d{2}/\d{4}" 
                                            maxlength="10">
-                                    <small class="form-text text-muted">Format: dd-mm-yyyy (e.g., 15-01-2025)</small>
+                                    <small class="form-text text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                                     @error('next_appointment_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
