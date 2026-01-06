@@ -593,6 +593,8 @@
 @endphp
 
 @push('scripts')
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 $(document).ready(function() {
     // Appointments data loaded from PHP
