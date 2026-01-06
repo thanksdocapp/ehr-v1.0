@@ -4,6 +4,11 @@
 @section('page-title', 'Create Medical Record')
 @section('page-subtitle', auth()->user()->role === 'doctor' ? 'Create comprehensive medical records for your patients' : 'Create medical records as authorized by your role')
 
+@push('styles')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+@endpush
+
 @section('content')
 <div class="fade-in-up">
     <!-- Page Header -->

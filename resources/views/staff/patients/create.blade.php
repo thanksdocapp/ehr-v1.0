@@ -875,6 +875,8 @@
 @endsection
 
 @push('styles')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
     /* Guardian ID Document Section */
     #guardian_id_document_section {
@@ -931,6 +933,8 @@
 @endpush
 
 @push('scripts')
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder-bundled@5/dist/address-finder.js" defer></script>
 <script>
 $(document).ready(function() {
@@ -1411,24 +1415,33 @@ $(document).ready(function() {
         }
     });
 
-    // Date of Birth UK format (dd/mm/yyyy) formatting and conversion
-    (function initDateOfBirthFormatting() {
+    // Date of Birth UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initDateOfBirthPicker() {
         const dobInput = document.getElementById('date_of_birth');
         if (!dobInput) return;
 
-        // Format date as user types (dd/mm/yyyy)
-        dobInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-            
-            // Add slashes automatically
-            if (value.length > 2) {
-                value = value.substring(0, 2) + '/' + value.substring(2);
+        // Initialize Flatpickr with UK format
+        const flatpickr = flatpickr(dobInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            maxDate: "today",
+            minDate: new Date(new Date().setFullYear(new Date().getFullYear() - 150)),
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
             }
-            if (value.length > 5) {
-                value = value.substring(0, 5) + '/' + value.substring(5, 9);
-            }
-            
-            e.target.value = value;
         });
         
         // Convert dd/mm/yyyy to yyyy-mm-dd before form submission

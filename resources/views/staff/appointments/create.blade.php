@@ -5,6 +5,8 @@
 @section('page-subtitle', auth()->user()->role === 'doctor' ? 'Schedule appointments for your patients' : 'Book appointments for patients with available doctors')
 
 @push('styles')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
     /* Time slot notice (scoped to this view) */
     #timeSlotNotice {
@@ -549,24 +551,35 @@ $(document).ready(function() {
         applyFilter();
     })();
 
-    // Appointment Date UK format (dd/mm/yyyy) formatting and conversion
-    (function initAppointmentDateFormatting() {
+    // Appointment Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initAppointmentDatePicker() {
         const appointmentDateInput = document.getElementById('appointment_date');
         if (!appointmentDateInput) return;
 
-        // Format date as user types (dd/mm/yyyy)
-        appointmentDateInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-            
-            // Add slashes automatically
-            if (value.length > 2) {
-                value = value.substring(0, 2) + '/' + value.substring(2);
+        // Initialize Flatpickr with UK format
+        const flatpickr = flatpickr(appointmentDateInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            minDate: "today",
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            defaultDate: "today",
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
+                // Trigger change event for time slot loading
+                $(appointmentDateInput).trigger('change');
             }
-            if (value.length > 5) {
-                value = value.substring(0, 5) + '/' + value.substring(5, 9);
-            }
-            
-            e.target.value = value;
         });
         
         // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
@@ -588,13 +601,12 @@ $(document).ready(function() {
         }
     })();
 
-    // Set default appointment date to today (in UK format)
+    // Set default appointment date to today (in UK format) if empty
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const yyyy = today.getFullYear();
     const todayUK = dd + '/' + mm + '/' + yyyy;
-    const todayISO = yyyy + '-' + mm + '-' + dd;
     
     if (!$('#appointment_date').val()) {
         $('#appointment_date').val(todayUK);
