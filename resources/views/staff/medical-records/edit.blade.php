@@ -103,15 +103,19 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="record_date" class="form-label fw-semibold">Record Date <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control @error('record_date') is-invalid @enderror" 
+                                <input type="text" class="form-control @error('record_date') is-invalid @enderror" 
                                        id="record_date" name="record_date" 
-                                       value="{{ old('record_date', now()->format('Y-m-d')) }}" 
+                                       value="{{ old('record_date') ? (old('record_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('record_date')) ? \Carbon\Carbon::parse(old('record_date'))->format('d/m/Y') : old('record_date')) : ($medicalRecord->record_date ? $medicalRecord->record_date->format('d/m/Y') : \Carbon\Carbon::now()->format('d/m/Y')) }}" 
+                                       placeholder="dd/mm/yyyy"
+                                       pattern="\d{2}/\d{2}/\d{4}"
+                                       maxlength="10"
                                        required {{ auth()->user()->role !== 'doctor' ? 'readonly' : '' }}>
+                                <small class="text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                                 @error('record_date')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                                 @if(auth()->user()->role !== 'doctor')
-                                    <small class="text-muted">Only doctors can modify record dates</small>
+                                    <small class="text-muted d-block">Only doctors can modify record dates</small>
                                 @endif
                             </div>
                             <div class="col-md-6 mb-3">
@@ -557,6 +561,8 @@
 @endphp
 
 @push('scripts')
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
 $(document).ready(function() {
     // Calculate BMI automatically
@@ -782,6 +788,8 @@ $('#deleteRecordForm').on('submit', function(e) {
 @endpush
 
 @push('styles')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
 .card {
     border: none;
@@ -875,6 +883,66 @@ body.modal-open #deleteModal {
     overflow: visible !important;
 }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+    // Record Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initRecordDatePicker() {
+        const recordDateInput = document.getElementById('record_date');
+        if (!recordDateInput) return;
+
+        // Skip if readonly (non-doctor users)
+        if (recordDateInput.readOnly) return;
+
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
+        // Initialize Flatpickr with UK format
+        const recordPicker = flatpickr(recordDateInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            maxDate: "today",
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
+            }
+        });
+        
+        // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
+        const form = document.querySelector('form[method="POST"]');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const dateValue = recordDateInput.value.trim();
+                
+                if (dateValue) {
+                    // Check if it's in dd/mm/yyyy format
+                    if (dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                        const parts = dateValue.split('/');
+                        // Convert to yyyy-mm-dd format
+                        const convertedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+                        recordDateInput.value = convertedDate;
+                    }
+                }
+            });
+        }
+    })();
+</script>
 @endpush
 
 @endsection

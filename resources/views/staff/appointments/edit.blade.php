@@ -196,17 +196,21 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="appointment_date" class="form-label">Appointment Date <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control @error('appointment_date') is-invalid @enderror" 
+                                    <input type="text" class="form-control @error('appointment_date') is-invalid @enderror" 
                                            id="appointment_date" name="appointment_date" 
-                                           value="{{ old('appointment_date', $appointment->appointment_date->format('Y-m-d')) }}" 
-                                           min="{{ $appointment->status === 'pending' ? date('Y-m-d') : $appointment->appointment_date->format('Y-m-d') }}" 
+                                           value="{{ old('appointment_date') ? (old('appointment_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('appointment_date')) ? \Carbon\Carbon::parse(old('appointment_date'))->format('d/m/Y') : old('appointment_date')) : ($appointment->appointment_date ? $appointment->appointment_date->format('d/m/Y') : '') }}" 
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
+                                           maxlength="10"
+                                           data-min-date="{{ $appointment->status === 'pending' ? date('Y-m-d') : $appointment->appointment_date->format('Y-m-d') }}"
                                            required
                                            {{ in_array($appointment->status, ['completed', 'cancelled']) ? 'readonly' : '' }}>
+                                    <small class="text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                                     @error('appointment_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                     @if(in_array($appointment->status, ['completed', 'cancelled']))
-                                        <small class="text-muted">Date cannot be changed for {{ $appointment->status }} appointments</small>
+                                        <small class="text-muted d-block">Date cannot be changed for {{ $appointment->status }} appointments</small>
                                     @endif
                                 </div>
                             </div>
@@ -613,9 +617,21 @@
 </div>
 @endsection
 
+@push('styles')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+@endpush
+
 @push('scripts')
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
 $(document).ready(function() {
+    // Wait for Flatpickr to load
+    if (typeof flatpickr === 'undefined') {
+        console.error('Flatpickr failed to load');
+    }
+
     const appointmentStatus = '{{ $appointment->status }}';
     
     // Disable fields based on appointment status
@@ -862,6 +878,68 @@ $(document).ready(function() {
             updateMeetingLinkPlaceholder();
         }
     }, 300);
+
+    // Appointment Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initAppointmentDatePicker() {
+        const appointmentDateInput = document.getElementById('appointment_date');
+        if (!appointmentDateInput) return;
+
+        // Skip if readonly (completed/cancelled appointments)
+        if (appointmentDateInput.readOnly) return;
+
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
+        // Get min date from data attribute
+        const minDateAttr = appointmentDateInput.getAttribute('data-min-date');
+        const minDateValue = minDateAttr || 'today';
+
+        // Initialize Flatpickr with UK format
+        const appointmentPicker = flatpickr(appointmentDateInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            minDate: minDateValue,
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
+                // Trigger change event for time slot loading
+                $(appointmentDateInput).trigger('change');
+            }
+        });
+        
+        // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
+        const form = document.getElementById('appointmentEditForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const dateValue = appointmentDateInput.value.trim();
+                
+                if (dateValue) {
+                    // Check if it's in dd/mm/yyyy format
+                    if (dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                        const parts = dateValue.split('/');
+                        // Convert to yyyy-mm-dd format
+                        const convertedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+                        appointmentDateInput.value = convertedDate;
+                    }
+                }
+            });
+        }
+    })();
 });
 
 // Cancel appointment function

@@ -57,9 +57,14 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="date_of_birth" class="form-label fw-semibold">Date of Birth <span class="text-danger">*</span></label>
-                                <input type="date" name="date_of_birth" id="date_of_birth" 
+                                <input type="text" name="date_of_birth" id="date_of_birth" 
                                        class="form-control @error('date_of_birth') is-invalid @enderror" 
-                                       value="{{ old('date_of_birth', $patient->date_of_birth ? $patient->date_of_birth->format('Y-m-d') : '') }}" required>
+                                       value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : ($patient->date_of_birth ? $patient->date_of_birth->format('d/m/Y') : '') }}" 
+                                       placeholder="dd/mm/yyyy"
+                                       pattern="\d{2}/\d{2}/\d{4}"
+                                       maxlength="10"
+                                       required>
+                                <small class="text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                                 @error('date_of_birth')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -420,8 +425,15 @@
 </div>
 
 @push('scripts')
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
 $(document).ready(function() {
+    // Wait for Flatpickr to load
+    if (typeof flatpickr === 'undefined') {
+        console.error('Flatpickr failed to load');
+    }
+
     // Sync department_ids to department_id hidden field (for backward compatibility)
     // First selected department becomes the primary department_id
     $('#department_ids').on('change', function() {
@@ -523,6 +535,62 @@ $(document).ready(function() {
         }
     }
     
+    // Date of Birth UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initDateOfBirthPicker() {
+        const dobInput = document.getElementById('date_of_birth');
+        if (!dobInput) return;
+
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
+        // Initialize Flatpickr with UK format
+        const dobPicker = flatpickr(dobInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            maxDate: "today",
+            minDate: new Date(new Date().setFullYear(new Date().getFullYear() - 150)),
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
+                // Trigger age calculation
+                calculateAgeAndToggleGuardian();
+            }
+        });
+        
+        // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
+        const form = document.getElementById('patientEditForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const dobValue = dobInput.value.trim();
+                
+                if (dobValue) {
+                    // Check if it's in dd/mm/yyyy format
+                    if (dobValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                        const parts = dobValue.split('/');
+                        // Convert to yyyy-mm-dd format
+                        const convertedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+                        dobInput.value = convertedDate;
+                    }
+                }
+            });
+        }
+    })();
+
     $('#date_of_birth').on('change', calculateAgeAndToggleGuardian);
     
     // Calculate age on page load if date is already set
