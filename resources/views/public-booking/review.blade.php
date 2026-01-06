@@ -136,7 +136,7 @@
             @if(isset($patient_data['date_of_birth']))
             <div class="review-row">
                 <span class="review-label">Date of Birth</span>
-                <span class="review-value">{{ \Carbon\Carbon::parse($patient_data['date_of_birth'])->format('j M Y') }}</span>
+                <span class="review-value">{{ \Carbon\Carbon::parse($patient_data['date_of_birth'])->format('d/m/Y') }}</span>
             </div>
             @endif
             @if(isset($patient_data['gender']))
