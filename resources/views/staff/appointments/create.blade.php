@@ -556,8 +556,14 @@ $(document).ready(function() {
         const appointmentDateInput = document.getElementById('appointment_date');
         if (!appointmentDateInput) return;
 
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
         // Initialize Flatpickr with UK format
-        const flatpickr = flatpickr(appointmentDateInput, {
+        const appointmentPicker = flatpickr(appointmentDateInput, {
             dateFormat: "d/m/Y",
             altInput: false,
             altFormat: "d/m/Y",

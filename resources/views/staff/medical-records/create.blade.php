@@ -594,7 +594,7 @@
 
 @push('scripts')
 <!-- Flatpickr JS -->
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
 $(document).ready(function() {
     // Appointments data loaded from PHP
@@ -1010,8 +1010,14 @@ $(document).ready(function() {
         const recordDateInput = document.getElementById('record_date');
         if (!recordDateInput) return;
 
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
         // Initialize Flatpickr with UK format
-        const flatpickr = flatpickr(recordDateInput, {
+        const recordPicker = flatpickr(recordDateInput, {
             dateFormat: "d/m/Y",
             altInput: false,
             altFormat: "d/m/Y",

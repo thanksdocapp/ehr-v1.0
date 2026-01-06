@@ -1420,8 +1420,14 @@ $(document).ready(function() {
         const dobInput = document.getElementById('date_of_birth');
         if (!dobInput) return;
 
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
         // Initialize Flatpickr with UK format
-        const flatpickr = flatpickr(dobInput, {
+        const dobPicker = flatpickr(dobInput, {
             dateFormat: "d/m/Y",
             altInput: false,
             altFormat: "d/m/Y",
