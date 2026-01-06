@@ -77,7 +77,18 @@
                     <select name="service_id" id="service-select" class="form-control form-control-sm" required {{ (isset($doctor) && $doctors->count() == 1) || isset($service) ? '' : 'disabled' }}>
                         <option value="">Select a service...</option>
                         @if(isset($service))
-                        <option value="{{ $service->id }}" selected>{{ $service->name }} - £{{ number_format($service->getPriceForDoctor($doctor->id ?? 0) ?? $service->default_price ?? 0, 2) }}</option>
+                        @php
+                            $servicePrice = $service->getPriceForDoctor($doctor->id ?? 0) ?? $service->default_price ?? 0;
+                            $serviceDuration = $service->getDurationForDoctor($doctor->id ?? 0) ?? $service->default_duration_minutes ?? 60;
+                            $serviceDescription = $service->description ?? '';
+                        @endphp
+                        <option value="{{ $service->id }}" 
+                                selected 
+                                data-duration="{{ $serviceDuration }}"
+                                data-price="{{ $servicePrice }}"
+                                data-description="{{ $serviceDescription }}">
+                            {{ $service->name }} - £{{ number_format($servicePrice, 2) }}
+                        </option>
                         @endif
                     </select>
                 </div>
