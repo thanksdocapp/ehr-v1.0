@@ -459,6 +459,14 @@ class BillingsController extends Controller
             }
         }
         
+        // Parse UK date format (dd/mm/yyyy) to yyyy-mm-dd before validation
+        if ($request->has('billing_date') && $request->billing_date) {
+            $request->merge(['billing_date' => parseDateInput($request->billing_date)]);
+        }
+        if ($request->has('due_date') && $request->due_date) {
+            $request->merge(['due_date' => parseDateInput($request->due_date)]);
+        }
+        
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'nullable|exists:doctors,id',

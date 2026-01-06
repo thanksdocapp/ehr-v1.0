@@ -109,6 +109,43 @@ if (!function_exists('parseDateInput')) {
     }
 }
 
+if (!function_exists('parseDateTimeInput')) {
+    /**
+     * Parse datetime from dd/mm/yyyy HH:MM format to Y-m-d H:i:s for database
+     *
+     * @param string|null $datetime
+     * @return string|null
+     */
+    function parseDateTimeInput($datetime)
+    {
+        if (!$datetime) {
+            return null;
+        }
+
+        try {
+            // Try parsing dd/mm/yyyy HH:MM format (UK format)
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/', $datetime, $matches)) {
+                return $matches[3] . '-' . $matches[2] . '-' . $matches[1] . ' ' . $matches[4] . ':' . $matches[5] . ':00';
+            }
+            
+            // If already in Y-m-d H:i format, return as is (add seconds if needed)
+            if (preg_match('/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/', $datetime)) {
+                return $datetime . ':00';
+            }
+            
+            // If already in Y-m-d H:i:s format, return as is
+            if (preg_match('/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/', $datetime)) {
+                return $datetime;
+            }
+            
+            // Try Carbon parsing
+            return \Carbon\Carbon::parse($datetime)->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            return $datetime;
+        }
+    }
+}
+
 if (!function_exists('parseImportDate')) {
     /**
      * Parse date from MM/DD/YYYY format (enforced for CSV imports) to Y-m-d for database

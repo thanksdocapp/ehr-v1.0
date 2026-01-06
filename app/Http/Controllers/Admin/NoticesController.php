@@ -37,6 +37,14 @@ class NoticesController extends Controller
      */
     public function store(Request $request)
     {
+        // Parse UK datetime format (dd/mm/yyyy HH:MM) to Y-m-d H:i:s before validation
+        if ($request->has('starts_at') && $request->starts_at) {
+            $request->merge(['starts_at' => parseDateTimeInput($request->starts_at)]);
+        }
+        if ($request->has('expires_at') && $request->expires_at) {
+            $request->merge(['expires_at' => parseDateTimeInput($request->expires_at)]);
+        }
+        
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'message' => 'required|string',
@@ -86,6 +94,14 @@ class NoticesController extends Controller
      */
     public function update(Request $request, Notice $notice)
     {
+        // Parse UK datetime format (dd/mm/yyyy HH:MM) to Y-m-d H:i:s before validation
+        if ($request->has('starts_at') && $request->starts_at) {
+            $request->merge(['starts_at' => parseDateTimeInput($request->starts_at)]);
+        }
+        if ($request->has('expires_at') && $request->expires_at) {
+            $request->merge(['expires_at' => parseDateTimeInput($request->expires_at)]);
+        }
+        
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'message' => 'required|string',

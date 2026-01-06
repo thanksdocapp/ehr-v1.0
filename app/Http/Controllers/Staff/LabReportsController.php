@@ -268,6 +268,17 @@ class LabReportsController extends Controller
                 ->with('error', 'You do not have permission to edit this lab report.');
         }
         
+        // Parse UK date format (dd/mm/yyyy) to yyyy-mm-dd before validation
+        if ($request->has('collection_date') && $request->collection_date) {
+            $request->merge(['collection_date' => parseDateInput($request->collection_date)]);
+        }
+        if ($request->has('report_date') && $request->report_date) {
+            $request->merge(['report_date' => parseDateInput($request->report_date)]);
+        }
+        if ($request->has('expected_completion_date') && $request->expected_completion_date) {
+            $request->merge(['expected_completion_date' => parseDateInput($request->expected_completion_date)]);
+        }
+        
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'nullable|exists:doctors,id',

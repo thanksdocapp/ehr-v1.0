@@ -104,6 +104,14 @@ class PrescriptionsController extends Controller
                 ->with('error', 'You do not have permission to create prescriptions.');
         }
         
+        // Parse UK date format (dd/mm/yyyy) to yyyy-mm-dd before validation
+        if ($request->has('prescription_date') && $request->prescription_date) {
+            $request->merge(['prescription_date' => parseDateInput($request->prescription_date)]);
+        }
+        if ($request->has('follow_up_date') && $request->follow_up_date) {
+            $request->merge(['follow_up_date' => parseDateInput($request->follow_up_date)]);
+        }
+        
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'nullable|exists:doctors,id',
@@ -284,6 +292,11 @@ class PrescriptionsController extends Controller
                 ->with('success', 'Prescription status updated successfully.');
         } else {
             // Doctor updating full prescription
+            // Parse UK date format (dd/mm/yyyy) to yyyy-mm-dd before validation
+            if ($request->has('follow_up_date') && $request->follow_up_date) {
+                $request->merge(['follow_up_date' => parseDateInput($request->follow_up_date)]);
+            }
+            
             $request->validate([
                 'patient_id' => 'required|exists:patients,id',
                 'medical_record_id' => 'nullable|exists:medical_records,id',
