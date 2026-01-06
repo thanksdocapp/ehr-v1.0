@@ -570,13 +570,13 @@ textarea.modern-form-control {
                                     <label class="modern-form-label">
                                         <i class="fas fa-calendar-alt"></i>Hire Date
                                     </label>
-                                    <input type="text" class="modern-form-control @error('hire_date') is-invalid @enderror"
+                                    <input type="text" class="modern-form-control uk-date @error('hire_date') is-invalid @enderror"
                                            id="hire_date" name="hire_date"
-                                           value="{{ old('hire_date') ? formatDate(old('hire_date')) : '' }}"
-                                           placeholder="dd-mm-yyyy"
-                                           pattern="\d{2}-\d{2}-\d{4}"
+                                           value="{{ old('hire_date') ? (old('hire_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('hire_date')) ? \Carbon\Carbon::parse(old('hire_date'))->format('d/m/Y') : old('hire_date')) : '' }}"
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
                                            maxlength="10">
-                                    <div class="form-hint">Format: dd-mm-yyyy (e.g., 15-01-2025)</div>
+                                    <div class="form-hint">Format: dd/mm/yyyy (e.g., 15/01/2025)</div>
                                     @error('hire_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

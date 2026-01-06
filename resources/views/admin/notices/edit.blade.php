@@ -225,11 +225,12 @@
                                     <label class="modern-form-label">
                                         <i class="fas fa-play-circle me-1"></i>Start Date & Time
                                     </label>
-                                    <input type="datetime-local"
-                                           class="form-control modern-form-control @error('starts_at') is-invalid @enderror"
+                                    <input type="text"
+                                           class="form-control modern-form-control uk-datetime @error('starts_at') is-invalid @enderror"
                                            id="starts_at"
                                            name="starts_at"
-                                           value="{{ old('starts_at', $notice->starts_at ? $notice->starts_at->format('Y-m-d\TH:i') : '') }}">
+                                           value="{{ old('starts_at') ? (old('starts_at') && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', old('starts_at')) ? \Carbon\Carbon::parse(old('starts_at'))->format('d/m/Y H:i') : old('starts_at')) : ($notice->starts_at ? $notice->starts_at->format('d/m/Y H:i') : '') }}"
+                                           placeholder="dd/mm/yyyy HH:MM">
                                     @error('starts_at')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -242,11 +243,12 @@
                                     <label class="modern-form-label">
                                         <i class="fas fa-stop-circle me-1"></i>Expiry Date & Time
                                     </label>
-                                    <input type="datetime-local"
-                                           class="form-control modern-form-control @error('expires_at') is-invalid @enderror"
+                                    <input type="text"
+                                           class="form-control modern-form-control uk-datetime @error('expires_at') is-invalid @enderror"
                                            id="expires_at"
                                            name="expires_at"
-                                           value="{{ old('expires_at', $notice->expires_at ? $notice->expires_at->format('Y-m-d\TH:i') : '') }}">
+                                           value="{{ old('expires_at') ? (old('expires_at') && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', old('expires_at')) ? \Carbon\Carbon::parse(old('expires_at'))->format('d/m/Y H:i') : old('expires_at')) : ($notice->expires_at ? $notice->expires_at->format('d/m/Y H:i') : '') }}"
+                                           placeholder="dd/mm/yyyy HH:MM">
                                     @error('expires_at')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

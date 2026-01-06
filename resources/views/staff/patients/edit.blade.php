@@ -58,7 +58,7 @@
                             <div class="col-md-6 mb-3">
                                 <label for="date_of_birth" class="form-label fw-semibold">Date of Birth <span class="text-danger">*</span></label>
                                 <input type="text" name="date_of_birth" id="date_of_birth" 
-                                       class="form-control @error('date_of_birth') is-invalid @enderror" 
+                                       class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror" 
                                        value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : ($patient->date_of_birth ? $patient->date_of_birth->format('d/m/Y') : '') }}" 
                                        placeholder="dd/mm/yyyy"
                                        pattern="\d{2}/\d{2}/\d{4}"

@@ -208,13 +208,13 @@
                                     <label for="date_of_birth" class="form-label">
                                         <i class="fas fa-calendar me-1"></i>Date of Birth *
                                     </label>
-                                    <input type="text" class="form-control @error('date_of_birth') is-invalid @enderror" 
+                                    <input type="text" class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror" 
                                            id="date_of_birth" name="date_of_birth" 
-                                           value="{{ old('date_of_birth', $patient->date_of_birth ? formatDate($patient->date_of_birth) : '') }}" 
-                                           placeholder="dd-mm-yyyy" 
-                                           pattern="\d{2}-\d{2}-\d{4}" 
+                                           value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : ($patient->date_of_birth ? $patient->date_of_birth->format('d/m/Y') : '') }}" 
+                                           placeholder="dd/mm/yyyy" 
+                                           pattern="\d{2}/\d{2}/\d{4}" 
                                            maxlength="10" required>
-                                    <small class="form-text text-muted">Format: dd-mm-yyyy (e.g., 15-01-2025)</small>
+                                    <small class="form-text text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                                     @error('date_of_birth')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

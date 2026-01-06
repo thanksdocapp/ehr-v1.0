@@ -272,13 +272,15 @@ textarea.form-control {
                                     <label for="appointment_date" class="form-label">
                                         <i class="fas fa-calendar-day me-1"></i>Date *
                                     </label>
-                                    <input type="text" class="form-control @error('appointment_date') is-invalid @enderror"
+                                    <input type="text" class="form-control uk-date @error('appointment_date') is-invalid @enderror"
                                            id="appointment_date" name="appointment_date" 
-                                           value="{{ old('appointment_date', formatDate($appointment->appointment_date)) }}" 
-                                           placeholder="dd-mm-yyyy" 
-                                           pattern="\d{2}-\d{2}-\d{4}" 
-                                           maxlength="10" required>
-                                    <small class="form-text text-muted">Format: dd-mm-yyyy (e.g., 15-01-2025)</small>
+                                           value="{{ old('appointment_date') ? (old('appointment_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('appointment_date')) ? \Carbon\Carbon::parse(old('appointment_date'))->format('d/m/Y') : old('appointment_date')) : ($appointment->appointment_date ? $appointment->appointment_date->format('d/m/Y') : '') }}" 
+                                           placeholder="dd/mm/yyyy" 
+                                           pattern="\d{2}/\d{2}/\d{4}" 
+                                           maxlength="10"
+                                           data-min-date="{{ $appointment->status === 'pending' ? date('Y-m-d') : $appointment->appointment_date->format('Y-m-d') }}"
+                                           required>
+                                    <small class="form-text text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                                     @error('appointment_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

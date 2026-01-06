@@ -196,7 +196,7 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="appointment_date" class="form-label">Appointment Date <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('appointment_date') is-invalid @enderror" 
+                                    <input type="text" class="form-control uk-date @error('appointment_date') is-invalid @enderror" 
                                            id="appointment_date" name="appointment_date" 
                                            value="{{ old('appointment_date') ? (old('appointment_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('appointment_date')) ? \Carbon\Carbon::parse(old('appointment_date'))->format('d/m/Y') : old('appointment_date')) : ($appointment->appointment_date ? $appointment->appointment_date->format('d/m/Y') : '') }}" 
                                            placeholder="dd/mm/yyyy"

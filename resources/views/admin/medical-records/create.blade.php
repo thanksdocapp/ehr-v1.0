@@ -401,11 +401,11 @@
                                     <label for="follow_up_date" class="form-label">
                                         <i class="fas fa-calendar-plus me-1"></i>Follow-up Date
                                     </label>
-                                    <input type="text" class="form-control @error('follow_up_date') is-invalid @enderror" 
+                                    <input type="text" class="form-control uk-date @error('follow_up_date') is-invalid @enderror" 
                                            id="follow_up_date" name="follow_up_date" 
-                                           value="{{ old('follow_up_date') ? formatDate(old('follow_up_date')) : '' }}"
-                                           placeholder="dd-mm-yyyy" 
-                                           pattern="\d{2}-\d{2}-\d{4}" 
+                                           value="{{ old('follow_up_date') ? (old('follow_up_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('follow_up_date')) ? \Carbon\Carbon::parse(old('follow_up_date'))->format('d/m/Y') : old('follow_up_date')) : '' }}"
+                                           placeholder="dd/mm/yyyy" 
+                                           pattern="\d{2}/\d{2}/\d{4}" 
                                            maxlength="10">
                                     <small class="form-text text-muted">Format: dd-mm-yyyy (e.g., 15-01-2025). Must be after today.</small>
                                     @error('follow_up_date')
