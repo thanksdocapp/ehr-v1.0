@@ -97,7 +97,7 @@
                            id="date_of_birth" 
                            name="date_of_birth" 
                            required 
-                           value="{{ old('date_of_birth') ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : '' }}" 
+                           value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : '' }}" 
                            placeholder="dd/mm/yyyy"
                            pattern="\d{2}/\d{2}/\d{4}"
                            maxlength="10">
