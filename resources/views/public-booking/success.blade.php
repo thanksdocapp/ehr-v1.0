@@ -58,7 +58,7 @@
                                 <div class="row mb-3">
                                     <div class="col-md-6 mb-2">
                                         <small class="text-muted">Date</small>
-                                        <div><strong>{{ $appointment->appointment_date->format('l, F j, Y') }}</strong></div>
+                                        <div><strong>{{ $appointment->appointment_date->format('l, j F Y') }}</strong></div>
                                     </div>
                                     <div class="col-md-6 mb-2">
                                         <small class="text-muted">Time</small>
