@@ -361,8 +361,19 @@
         let currentDates = [];
         let currentDateIndex = 0;
 
+        // If service is pre-selected (from service booking link), set it up first and skip loading services
+        @if(isset($service) && isset($doctor))
+        selectedServiceId = {{ $service->id }};
+        selectedDoctorId = {{ $doctor->id }};
+        doctorSelect.value = {{ $doctor->id }};
+        // Service is already in dropdown with data attributes, just use it
+        serviceSelect.value = {{ $service->id }};
+        serviceSelect.disabled = false;
+        serviceSelectionCard.style.display = 'block';
+        updateServiceDetails();
+        loadSchedule();
+        @elseif(isset($doctor) && $doctors->count() == 1)
         // If single doctor is pre-selected (from doctor link) or only one doctor available, load services immediately
-        @if(isset($doctor) && $doctors->count() == 1)
         selectedDoctorId = {{ $doctor->id }};
         doctorSelect.value = {{ $doctor->id }};
         loadDoctorServices(selectedDoctorId);
@@ -374,15 +385,6 @@
             doctorSelect.value = selectedDoctorId;
             loadDoctorServices(selectedDoctorId);
         }
-        @endif
-
-        // If service is pre-selected (from service booking link), auto-select it and load schedule
-        @if(isset($service) && isset($doctor))
-        selectedServiceId = {{ $service->id }};
-        serviceSelect.value = {{ $service->id }};
-        serviceSelect.disabled = false;
-        updateServiceDetails();
-        loadSchedule();
         @endif
 
         // Doctor selection
@@ -429,9 +431,33 @@
 
         // Load doctor services
         function loadDoctorServices(doctorId) {
+            // If service is already pre-selected and has data, don't reload
+            if (selectedServiceId && serviceSelect.querySelector(`option[value="${selectedServiceId}"]`) && 
+                serviceSelect.querySelector(`option[value="${selectedServiceId}"]`).dataset.duration) {
+                // Service already loaded, just ensure it's selected
+                serviceSelect.value = selectedServiceId;
+                updateServiceDetails();
+                loadSchedule();
+                return;
+            }
+
             serviceSelectionCard.style.display = 'block';
             serviceSelect.disabled = true;
             const preselectedServiceId = selectedServiceId; // Preserve pre-selected service
+            const preselectedOption = preselectedServiceId ? serviceSelect.querySelector(`option[value="${preselectedServiceId}"]`) : null;
+            
+            // Save the pre-selected option if it exists
+            let savedPreselectedOption = null;
+            if (preselectedOption && preselectedOption.dataset.duration) {
+                savedPreselectedOption = {
+                    value: preselectedOption.value,
+                    text: preselectedOption.textContent,
+                    duration: preselectedOption.dataset.duration,
+                    price: preselectedOption.dataset.price,
+                    description: preselectedOption.dataset.description || ''
+                };
+            }
+            
             serviceSelect.innerHTML = '<option value="">Loading services...</option>';
             scheduleSelectionCard.style.display = 'none';
             continueBtn.disabled = true;
@@ -445,8 +471,27 @@
             .then(response => response.json())
             .then(data => {
                 serviceSelect.innerHTML = '<option value="">Select a service...</option>';
+                
+                // If we have a saved pre-selected option, add it first
+                if (savedPreselectedOption) {
+                    const option = document.createElement('option');
+                    option.value = savedPreselectedOption.value;
+                    option.textContent = savedPreselectedOption.text;
+                    option.dataset.duration = savedPreselectedOption.duration;
+                    option.dataset.price = savedPreselectedOption.price;
+                    option.dataset.description = savedPreselectedOption.description;
+                    option.selected = true;
+                    selectedServiceId = savedPreselectedOption.value;
+                    serviceSelect.appendChild(option);
+                }
+                
                 if (data.services && data.services.length > 0) {
                     data.services.forEach(service => {
+                        // Skip if this is the pre-selected service (already added)
+                        if (savedPreselectedOption && service.id == savedPreselectedOption.value) {
+                            return;
+                        }
+                        
                         const option = document.createElement('option');
                         option.value = service.id;
                         option.textContent = `${service.name} - £${parseFloat(service.price).toFixed(2)}`;
@@ -454,7 +499,7 @@
                         option.dataset.price = service.price;
                         option.dataset.description = service.description || '';
                         // Re-select if this was the pre-selected service
-                        if (preselectedServiceId && service.id == preselectedServiceId) {
+                        if (preselectedServiceId && service.id == preselectedServiceId && !savedPreselectedOption) {
                             option.selected = true;
                             selectedServiceId = preselectedServiceId;
                         }
@@ -468,12 +513,18 @@
                         loadSchedule();
                     }
                 } else {
-                    serviceSelect.innerHTML = '<option value="">No services available</option>';
+                    // If no services from API but we have pre-selected, keep it
+                    if (!savedPreselectedOption) {
+                        serviceSelect.innerHTML = '<option value="">No services available</option>';
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error loading services:', error);
-                serviceSelect.innerHTML = '<option value="">Error loading services</option>';
+                // If we have a pre-selected service, keep it even on error
+                if (!savedPreselectedOption) {
+                    serviceSelect.innerHTML = '<option value="">Error loading services</option>';
+                }
             });
         }
 
