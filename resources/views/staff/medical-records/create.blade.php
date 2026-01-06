@@ -1003,24 +1003,33 @@ $(document).ready(function() {
         }
     });
 
-    // Record Date UK format (dd/mm/yyyy) formatting and conversion
-    (function initRecordDateFormatting() {
+    // Record Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initRecordDatePicker() {
         const recordDateInput = document.getElementById('record_date');
         if (!recordDateInput) return;
 
-        // Format date as user types (dd/mm/yyyy)
-        recordDateInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-            
-            // Add slashes automatically
-            if (value.length > 2) {
-                value = value.substring(0, 2) + '/' + value.substring(2);
+        // Initialize Flatpickr with UK format
+        const flatpickr = flatpickr(recordDateInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            maxDate: "today",
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            defaultDate: "today",
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
             }
-            if (value.length > 5) {
-                value = value.substring(0, 5) + '/' + value.substring(5, 9);
-            }
-            
-            e.target.value = value;
         });
         
         // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
@@ -1042,7 +1051,7 @@ $(document).ready(function() {
         }
     })();
 
-    // Set record date to today by default (in UK format)
+    // Set record date to today by default (in UK format) if empty
     if (!$('#record_date').val()) {
         const today = new Date();
         const dd = String(today.getDate()).padStart(2, '0');
