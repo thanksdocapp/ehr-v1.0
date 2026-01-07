@@ -430,9 +430,8 @@ $(document).ready(function() {
     })();
 
     // Set test date to today by default
-    if (!$('#test_date').val()) {
-        $('#test_date').val(new Date().toISOString().split('T')[0]);
-    }
+    // Date pickers are now handled by centralized flatpickr-init.js
+    // No manual date setting needed - default dates are set via data-default-date attribute
 
     // Auto-dismiss alerts after 5 seconds
     setTimeout(function() {

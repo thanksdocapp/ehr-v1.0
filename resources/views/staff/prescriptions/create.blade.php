@@ -863,9 +863,8 @@ $(document).ready(function() {
     });
 
     // Set today's date as default
-    if (!$('#prescription_date').val()) {
-        $('#prescription_date').val(new Date().toISOString().split('T')[0]);
-    }
+    // Date pickers are now handled by centralized flatpickr-init.js
+    // No manual date setting needed - default dates are set via data-default-date attribute
 
     // Auto-populate common medication instructions
     $(document).on('change', '.medication-frequency', function() {

@@ -454,14 +454,9 @@
 @endsection
 
 @push('scripts')
-<!-- Flatpickr JS -->
-<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
 $(document).ready(function() {
-    // Wait for Flatpickr to load
-    if (typeof flatpickr === 'undefined') {
-        console.error('Flatpickr failed to load');
-    }
+    // Flatpickr is now loaded globally via base layout (flatpickr-init.js)
     // ===== Patient search (alerts-style: live filter the select options) =====
     (function initPatientSelectSearch() {
         const select = document.getElementById('patient_id');
