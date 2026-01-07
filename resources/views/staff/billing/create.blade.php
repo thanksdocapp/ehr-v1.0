@@ -457,7 +457,6 @@ $(document).ready(function() {
         applyFilter();
     })();
 
-    // Set today's date as default for billing date
     // Set due date 30 days from billing date when billing date changes
     // Note: Date conversion is handled by flatpickr-init.js
     $('#billing_date').on('change', function() {
