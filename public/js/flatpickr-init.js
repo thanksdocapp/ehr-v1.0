@@ -144,8 +144,10 @@
         });
 
         // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
-        const forms = document.querySelectorAll('form');
+        // Only attach handler once per form
+        const forms = document.querySelectorAll('form:not([data-flatpickr-form-handler])');
         forms.forEach(function(form) {
+            form.setAttribute('data-flatpickr-form-handler', 'true');
             form.addEventListener('submit', function(e) {
                 // Convert date inputs
                 const dateInputs = form.querySelectorAll('input.uk-date, input[data-uk-date="true"]');
