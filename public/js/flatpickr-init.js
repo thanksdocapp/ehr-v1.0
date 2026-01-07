@@ -22,6 +22,7 @@
 
         // Initialize date pickers (dd/mm/yyyy format)
         const dateInputs = document.querySelectorAll('input.uk-date, input[data-uk-date="true"]');
+        console.log('Flatpickr init: Found', dateInputs.length, 'date inputs');
         dateInputs.forEach(function(input) {
             // Skip if already initialized or readonly
             if (input.readOnly || input.hasAttribute('data-flatpickr-initialized')) {
@@ -86,6 +87,7 @@
 
         // Initialize datetime pickers (dd/mm/yyyy HH:MM format)
         const datetimeInputs = document.querySelectorAll('input.uk-datetime, input[data-uk-datetime="true"]');
+        console.log('Flatpickr init: Found', datetimeInputs.length, 'datetime inputs');
         datetimeInputs.forEach(function(input) {
             // Skip if already initialized or readonly
             if (input.readOnly || input.hasAttribute('data-flatpickr-initialized')) {
@@ -169,20 +171,30 @@
     }
 
     // Initialize when DOM and Flatpickr are ready
-    function waitForFlatpickr() {
-        if (typeof flatpickr === 'undefined') {
-            // Wait a bit and try again
-            setTimeout(waitForFlatpickr, 100);
+    function waitForFlatpickr(attempts) {
+        attempts = attempts || 0;
+        if (attempts > 50) {
+            console.error('Flatpickr library failed to load after 5 seconds');
             return;
         }
+        
+        if (typeof flatpickr === 'undefined') {
+            // Wait a bit and try again
+            setTimeout(function() {
+                waitForFlatpickr(attempts + 1);
+            }, 100);
+            return;
+        }
+        
+        console.log('Flatpickr library loaded, initializing pickers...');
         
         // DOM ready check
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
-                setTimeout(initFlatpickr, 50);
+                setTimeout(initFlatpickr, 100);
             });
         } else {
-            setTimeout(initFlatpickr, 50);
+            setTimeout(initFlatpickr, 100);
         }
     }
 
