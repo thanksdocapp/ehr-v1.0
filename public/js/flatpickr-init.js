@@ -168,23 +168,75 @@
         });
     }
 
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initFlatpickr);
-    } else {
-        initFlatpickr();
+    // Initialize when DOM and Flatpickr are ready
+    function waitForFlatpickr() {
+        if (typeof flatpickr === 'undefined') {
+            // Wait a bit and try again
+            setTimeout(waitForFlatpickr, 100);
+            return;
+        }
+        
+        // DOM ready check
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(initFlatpickr, 50);
+            });
+        } else {
+            setTimeout(initFlatpickr, 50);
+        }
     }
 
+    // Start waiting for Flatpickr
+    waitForFlatpickr();
+
     // Also initialize for dynamically added inputs (e.g., AJAX loaded content)
+    // Use both jQuery and vanilla JS approaches
     if (typeof jQuery !== 'undefined') {
         jQuery(document).ready(function($) {
-            initFlatpickr();
+            setTimeout(initFlatpickr, 100);
             
             // Re-initialize on AJAX complete (for forms loaded via AJAX)
             $(document).ajaxComplete(function() {
-                setTimeout(initFlatpickr, 100);
+                setTimeout(initFlatpickr, 200);
             });
         });
+    }
+
+    // Also listen for DOM mutations (for dynamically added content)
+    if (typeof MutationObserver !== 'undefined') {
+        const observer = new MutationObserver(function(mutations) {
+            let shouldReinit = false;
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length > 0) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1) { // Element node
+                            if (node.matches && (node.matches('input.uk-date, input.uk-datetime') || 
+                                node.querySelector && node.querySelector('input.uk-date, input.uk-datetime'))) {
+                                shouldReinit = true;
+                            }
+                        }
+                    });
+                }
+            });
+            if (shouldReinit) {
+                setTimeout(initFlatpickr, 100);
+            }
+        });
+
+        // Start observing
+        if (document.body) {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        } else {
+            document.addEventListener('DOMContentLoaded', function() {
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+            });
+        }
     }
 })();
 

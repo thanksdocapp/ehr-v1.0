@@ -2553,10 +2553,11 @@
     
     <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-    <!-- Flatpickr Initialization -->
-    <script src="{{ asset('js/flatpickr-init.js') }}"></script>
     
     @stack('scripts')
+    
+    <!-- Flatpickr Initialization - Load after all scripts -->
+    <script src="{{ asset('js/flatpickr-init.js') }}?v={{ time() }}"></script>
     
     <!-- Dark Mode Toggle (Doctor Role Only) -->
     @if(auth()->check() && auth()->user()->role === 'doctor')

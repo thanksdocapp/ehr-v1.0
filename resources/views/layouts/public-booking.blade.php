@@ -511,8 +511,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-    <!-- Flatpickr Initialization -->
-    <script src="{{ asset('js/flatpickr-init.js') }}"></script>
     @yield('scripts')
+    <!-- Flatpickr Initialization - Load after all scripts -->
+    <script src="{{ asset('js/flatpickr-init.js') }}?v={{ time() }}"></script>
 </body>
 </html>
