@@ -458,16 +458,21 @@ $(document).ready(function() {
     })();
 
     // Set today's date as default for billing date
-    if (!$('#billing_date').val()) {
-        $('#billing_date').val(new Date().toISOString().split('T')[0]);
-    }
-
     // Set due date 30 days from billing date when billing date changes
-    $('#billing_date').change(function() {
+    // Note: Date conversion is handled by flatpickr-init.js
+    $('#billing_date').on('change', function() {
         if ($(this).val() && !$('#due_date').val()) {
-            const billingDate = new Date($(this).val());
-            billingDate.setDate(billingDate.getDate() + 30);
-            $('#due_date').val(billingDate.toISOString().split('T')[0]);
+            // Parse UK date format (dd/mm/yyyy) to calculate 30 days later
+            const dateStr = $(this).val();
+            if (dateStr && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                const parts = dateStr.split('/');
+                const date = new Date(parts[2], parts[1] - 1, parts[0]);
+                date.setDate(date.getDate() + 30);
+                const dd = String(date.getDate()).padStart(2, '0');
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const yyyy = date.getFullYear();
+                $('#due_date').val(dd + '/' + mm + '/' + yyyy);
+            }
         }
     });
 
