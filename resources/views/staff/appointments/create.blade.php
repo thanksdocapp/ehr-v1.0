@@ -554,46 +554,108 @@ $(document).ready(function() {
 
     // Date picker is now handled by centralized flatpickr-init.js
     // Set up change handlers that work with Flatpickr
+    let handlerSetupAttempts = 0;
+    const MAX_HANDLER_SETUP_ATTEMPTS = 20; // 20 * 200ms = 4 seconds max
+    
     function setupAppointmentDateHandlers() {
+        handlerSetupAttempts++;
         const dateInput = document.getElementById('appointment_date');
+        
         if (!dateInput) {
-            // Retry if element not found yet
-            setTimeout(setupAppointmentDateHandlers, 100);
+            if (handlerSetupAttempts < MAX_HANDLER_SETUP_ATTEMPTS) {
+                setTimeout(setupAppointmentDateHandlers, 200);
+            } else {
+                console.warn('Appointment date input not found after', MAX_HANDLER_SETUP_ATTEMPTS, 'attempts');
+            }
             return;
         }
         
         // Get the Flatpickr instance if it exists
-        const fpInstance = dateInput._flatpickr;
+        const fpInstance = dateInput._flatpickr || (dateInput.flatpickr ? flatpickr.instances.find(fp => fp.input === dateInput) : null);
         
         // If Flatpickr is initialized, set up handlers
         if (fpInstance) {
-            // Use Flatpickr's onChange event
-            fpInstance.config.onChange.push(function(selectedDates, dateStr, instance) {
-                // Trigger our handlers after a short delay to ensure value is set
-                setTimeout(function() {
+            console.log('Setting up appointment date handlers with Flatpickr instance');
+            
+            // Use Flatpickr's onChange event (push to existing array)
+            if (Array.isArray(fpInstance.config.onChange)) {
+                fpInstance.config.onChange.push(function(selectedDates, dateStr, instance) {
+                    console.log('Flatpickr onChange triggered:', dateStr);
+                    // Trigger our handlers after a short delay to ensure value is set
+                    setTimeout(function() {
+                        if (typeof loadAvailableTimeSlots === 'function') {
+                            loadAvailableTimeSlots();
+                        }
+                        if (typeof checkScheduleConflicts === 'function') {
+                            checkScheduleConflicts();
+                        }
+                    }, 100);
+                });
+            } else {
+                // If onChange is not an array, wrap it
+                const existingOnChange = fpInstance.config.onChange;
+                fpInstance.config.onChange = function(selectedDates, dateStr, instance) {
+                    if (existingOnChange) {
+                        existingOnChange(selectedDates, dateStr, instance);
+                    }
+                    console.log('Flatpickr onChange triggered:', dateStr);
+                    setTimeout(function() {
+                        if (typeof loadAvailableTimeSlots === 'function') {
+                            loadAvailableTimeSlots();
+                        }
+                        if (typeof checkScheduleConflicts === 'function') {
+                            checkScheduleConflicts();
+                        }
+                    }, 100);
+                };
+            }
+            
+            // Also listen to native change event for manual input (fallback)
+            $(dateInput).off('change.appointment').on('change.appointment', function() {
+                console.log('Native change event triggered on appointment_date');
+                if (typeof loadAvailableTimeSlots === 'function') {
                     loadAvailableTimeSlots();
+                }
+                if (typeof checkScheduleConflicts === 'function') {
                     checkScheduleConflicts();
-                }, 50);
+                }
             });
             
-            // Also listen to native change event for manual input
-            $(dateInput).off('change.appointment').on('change.appointment', function() {
-                loadAvailableTimeSlots();
-                checkScheduleConflicts();
-            });
+            console.log('Appointment date handlers set up successfully');
         } else {
             // Flatpickr not initialized yet, wait and retry
-            setTimeout(setupAppointmentDateHandlers, 200);
+            if (handlerSetupAttempts < MAX_HANDLER_SETUP_ATTEMPTS) {
+                setTimeout(setupAppointmentDateHandlers, 200);
+            } else {
+                console.warn('Flatpickr not initialized on appointment_date after', MAX_HANDLER_SETUP_ATTEMPTS, 'attempts. Using fallback handler.');
+                // Fallback: set up basic change handler
+                $(dateInput).off('change.appointment').on('change.appointment', function() {
+                    if (typeof loadAvailableTimeSlots === 'function') {
+                        loadAvailableTimeSlots();
+                    }
+                    if (typeof checkScheduleConflicts === 'function') {
+                        checkScheduleConflicts();
+                    }
+                });
+            }
         }
     }
     
-    // Start setting up handlers after DOM is ready
+    // Start setting up handlers after DOM is ready and scripts are loaded
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(setupAppointmentDateHandlers, 500);
+            // Wait for Flatpickr library and init script to load
+            setTimeout(setupAppointmentDateHandlers, 800);
         });
     } else {
-        setTimeout(setupAppointmentDateHandlers, 500);
+        setTimeout(setupAppointmentDateHandlers, 800);
+    }
+    
+    // Also try after jQuery is ready (in case DOMContentLoaded already fired)
+    if (typeof jQuery !== 'undefined') {
+        jQuery(document).ready(function() {
+            setTimeout(setupAppointmentDateHandlers, 1000);
+        });
     }
 
     // Department filter for doctors
@@ -876,8 +938,8 @@ $(document).ready(function() {
     }
 
     // Load slots when doctor/date changes
-    // Use namespace to avoid conflicts with Flatpickr
-    $dateInput.off('change.loadSlots').on('change.loadSlots', loadAvailableTimeSlots);
+    // Note: Date change handler is set up in setupAppointmentDateHandlers() above
+    // This handler is removed to avoid conflicts with Flatpickr handlers
     $('#doctor_id').on('change', loadAvailableTimeSlots);
     $('#estimated_duration').on('change', function() {
         // Duration affects the slot end time and available ranges
