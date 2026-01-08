@@ -591,12 +591,12 @@ $(document).ready(function() {
     // Check for scheduling conflicts
     function checkScheduleConflicts() {
         const doctorId = $('#doctor_id').val();
-        const appointmentDate = $('#appointment_date').val();
+        const appointmentDateStr = $('#appointment_date').val();
         const appointmentTime = $('#appointment_time').val();
         
         $('#conflictWarning').hide();
         
-        if (doctorId && appointmentDate && appointmentTime) {
+        if (doctorId && appointmentDateStr && appointmentTime) {
             // Simulate conflict check (in production, this would be an AJAX call)
             setTimeout(() => {
                 const conflictExists = Math.random() < 0.3; // 30% chance of conflict
@@ -850,10 +850,11 @@ $(document).ready(function() {
     function setDateToTomorrow() {
         const d = new Date();
         d.setDate(d.getDate() + 1);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
-        $('#appointment_date').val(`${yyyy}-${mm}-${dd}`).trigger('change');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        // Set in UK format (dd/mm/yyyy) for Flatpickr
+        $('#appointment_date').val(`${dd}/${mm}/${yyyy}`).trigger('change');
         $('#appointment_time').val('').trigger('change');
         hideTimeSlotNotice();
     }
