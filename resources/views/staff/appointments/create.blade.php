@@ -553,26 +553,48 @@ $(document).ready(function() {
     })();
 
     // Date picker is now handled by centralized flatpickr-init.js
-    // Wait for Flatpickr to initialize, then set up change handlers
+    // Set up change handlers that work with Flatpickr
     function setupAppointmentDateHandlers() {
         const dateInput = document.getElementById('appointment_date');
-        if (!dateInput) return;
+        if (!dateInput) {
+            // Retry if element not found yet
+            setTimeout(setupAppointmentDateHandlers, 100);
+            return;
+        }
         
-        // Check if Flatpickr is initialized (has the data attribute)
-        if (dateInput.hasAttribute('data-flatpickr-initialized')) {
-            // Flatpickr is ready, set up handlers
-            $(dateInput).off('change.flatpickr').on('change.flatpickr', function() {
+        // Get the Flatpickr instance if it exists
+        const fpInstance = dateInput._flatpickr;
+        
+        // If Flatpickr is initialized, set up handlers
+        if (fpInstance) {
+            // Use Flatpickr's onChange event
+            fpInstance.config.onChange.push(function(selectedDates, dateStr, instance) {
+                // Trigger our handlers after a short delay to ensure value is set
+                setTimeout(function() {
+                    loadAvailableTimeSlots();
+                    checkScheduleConflicts();
+                }, 50);
+            });
+            
+            // Also listen to native change event for manual input
+            $(dateInput).off('change.appointment').on('change.appointment', function() {
                 loadAvailableTimeSlots();
                 checkScheduleConflicts();
             });
         } else {
-            // Wait a bit and try again
-            setTimeout(setupAppointmentDateHandlers, 100);
+            // Flatpickr not initialized yet, wait and retry
+            setTimeout(setupAppointmentDateHandlers, 200);
         }
     }
     
-    // Start setting up handlers after a short delay to ensure Flatpickr is initialized
-    setTimeout(setupAppointmentDateHandlers, 200);
+    // Start setting up handlers after DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(setupAppointmentDateHandlers, 500);
+        });
+    } else {
+        setTimeout(setupAppointmentDateHandlers, 500);
+    }
 
     // Department filter for doctors
     $('#department_id').on('change', function() {
