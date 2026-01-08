@@ -719,7 +719,18 @@ $(document).ready(function() {
     function applyTodayPastTimeDisabling() {
         const dateVal = $dateInput.val();
         if (!dateVal) return;
-        const selectedDate = new Date(dateVal);
+        
+        // Parse UK date format (dd/mm/yyyy)
+        let selectedDate = null;
+        if (dateVal.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+            const parts = dateVal.split('/');
+            selectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
+        } else {
+            selectedDate = new Date(dateVal);
+        }
+        
+        if (!selectedDate || isNaN(selectedDate.getTime())) return;
+        
         const today = new Date();
 
         // If appointment is today, disable past time slots
@@ -795,7 +806,14 @@ $(document).ready(function() {
 
             // Apply a 30-min buffer client-side for today's date (matches previous UI behavior)
             const today = new Date();
-            const selectedDate = new Date(date);
+            // Parse date - handle both UK format (dd/mm/yyyy) and standard format
+            let selectedDate;
+            if (typeof date === 'string' && date.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                const parts = date.split('/');
+                selectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            } else {
+                selectedDate = new Date(date);
+            }
             const nowPlusBuffer = new Date(Date.now() + 30 * 60 * 1000);
 
             const filtered = slots.filter(s => {
@@ -829,7 +847,8 @@ $(document).ready(function() {
     }
 
     // Load slots when doctor/date changes
-    $dateInput.on('change', loadAvailableTimeSlots);
+    // Use namespace to avoid conflicts with Flatpickr
+    $dateInput.off('change.loadSlots').on('change.loadSlots', loadAvailableTimeSlots);
     $('#doctor_id').on('change', loadAvailableTimeSlots);
     $('#estimated_duration').on('change', function() {
         // Duration affects the slot end time and available ranges
