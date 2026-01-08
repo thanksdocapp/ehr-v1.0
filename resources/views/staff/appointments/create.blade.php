@@ -553,23 +553,26 @@ $(document).ready(function() {
     })();
 
     // Date picker is now handled by centralized flatpickr-init.js
-    // No manual initialization needed - just add 'uk-date' class to input
-    // Trigger change event for time slot loading when date changes
-    $('#appointment_date').on('change', function() {
-        loadAvailableTimeSlots();
-        checkScheduleConflicts();
-    });
-
-    // Set default appointment date to today (in UK format) if empty
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2, '0');
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const yyyy = today.getFullYear();
-    const todayUK = dd + '/' + mm + '/' + yyyy;
-    
-    if (!$('#appointment_date').val()) {
-        $('#appointment_date').val(todayUK);
+    // Wait for Flatpickr to initialize, then set up change handlers
+    function setupAppointmentDateHandlers() {
+        const dateInput = document.getElementById('appointment_date');
+        if (!dateInput) return;
+        
+        // Check if Flatpickr is initialized (has the data attribute)
+        if (dateInput.hasAttribute('data-flatpickr-initialized')) {
+            // Flatpickr is ready, set up handlers
+            $(dateInput).off('change.flatpickr').on('change.flatpickr', function() {
+                loadAvailableTimeSlots();
+                checkScheduleConflicts();
+            });
+        } else {
+            // Wait a bit and try again
+            setTimeout(setupAppointmentDateHandlers, 100);
+        }
     }
+    
+    // Start setting up handlers after a short delay to ensure Flatpickr is initialized
+    setTimeout(setupAppointmentDateHandlers, 200);
 
     // Department filter for doctors
     $('#department_id').on('change', function() {
@@ -624,14 +627,27 @@ $(document).ready(function() {
         });
         
         // Check appointment date is not in the past
-        const appointmentDate = new Date($('#appointment_date').val());
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        
-        if (appointmentDate < now) {
-            $('#appointment_date').addClass('is-invalid');
-            alert('Appointment date cannot be in the past.');
-            isValid = false;
+        // Parse UK date format (dd/mm/yyyy) for validation
+        const appointmentDateStr = $('#appointment_date').val();
+        if (appointmentDateStr) {
+            let appointmentDate;
+            // Check if it's in UK format (dd/mm/yyyy)
+            if (appointmentDateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                const parts = appointmentDateStr.split('/');
+                appointmentDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            } else {
+                appointmentDate = new Date(appointmentDateStr);
+            }
+            
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            appointmentDate.setHours(0, 0, 0, 0);
+            
+            if (appointmentDate < now) {
+                $('#appointment_date').addClass('is-invalid');
+                alert('Appointment date cannot be in the past.');
+                isValid = false;
+            }
         }
         
         if (!isValid) {
