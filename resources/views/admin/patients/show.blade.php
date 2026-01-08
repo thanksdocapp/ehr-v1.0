@@ -897,6 +897,14 @@ function deletePatient(patientId) {
     
     console.log('User confirmed deletion, proceeding with AJAX...');
     
+    // Helper function to remove loading overlay safely
+    function removeLoadingOverlay() {
+        const overlay = document.getElementById('delete-loading-overlay');
+        if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+        }
+    }
+    
     // Show loading indicator
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'delete-loading-overlay';
@@ -904,7 +912,57 @@ function deletePatient(patientId) {
     loadingOverlay.innerHTML = '<div style="background: white; padding: 20px; border-radius: 8px; text-align: center;"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top: 10px;">Deleting patient...</p></div>';
     document.body.appendChild(loadingOverlay);
     
-    // Use AJAX for better error handling
+    // Check if jQuery is available, if not use fetch API
+    if (typeof jQuery === 'undefined' || typeof $ === 'undefined') {
+        console.warn('jQuery not available, using fetch API');
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!csrfToken) {
+            removeLoadingOverlay();
+            alert('Error: CSRF token not found. Please refresh the page and try again.');
+            return false;
+        }
+        
+        // Use fetch API
+        fetch(`/admin/patients/${patientId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('Delete response status:', response.status);
+            return response.json().then(data => ({ status: response.status, data }));
+        })
+        .then(({ status, data }) => {
+            removeLoadingOverlay();
+            
+            if (status >= 200 && status < 300) {
+                if (data.success) {
+                    alert('Patient deleted successfully!');
+                    window.location.href = '{{ route("admin.patients.index") }}';
+                } else {
+                    alert('Failed to delete patient: ' + (data.message || 'Unknown error'));
+                }
+            } else {
+                alert('Error: ' + (data.message || data.error || 'Failed to delete patient. Status: ' + status));
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            removeLoadingOverlay();
+            alert('An error occurred while deleting the patient: ' + error.message);
+        });
+        
+        return false;
+    }
+    
+    // Use jQuery AJAX if available
     $.ajax({
         url: `/admin/patients/${patientId}`,
         method: 'DELETE',
@@ -916,7 +974,7 @@ function deletePatient(patientId) {
         timeout: 60000, // 60 second timeout
         success: function(response) {
             console.log('Delete successful:', response);
-            document.body.removeChild(loadingOverlay);
+            removeLoadingOverlay();
             
             if (response.success) {
                 alert('Patient deleted successfully!');
@@ -927,8 +985,8 @@ function deletePatient(patientId) {
             }
         },
         error: function(xhr, status, error) {
-            console.error('Delete error:', {xhr, status, error});
-            document.body.removeChild(loadingOverlay);
+            console.error('Delete error:', {xhr, status, error, responseText: xhr.responseText});
+            removeLoadingOverlay();
             
             let errorMessage = 'An error occurred while deleting the patient.';
             
@@ -953,11 +1011,15 @@ function deletePatient(patientId) {
                         errorMessage = 'Patient not found.';
                     } else if (xhr.status === 403) {
                         errorMessage = 'You do not have permission to delete this patient.';
+                    } else if (xhr.status === 0) {
+                        errorMessage = 'Network error. Please check your connection.';
+                    } else if (status === 'timeout') {
+                        errorMessage = 'Request timed out. The deletion may still be processing.';
                     }
                 }
             }
             
-            alert('Error: ' + errorMessage);
+            alert('Error: ' + errorMessage + '\n\nStatus: ' + xhr.status + '\nError: ' + error);
         }
     });
     

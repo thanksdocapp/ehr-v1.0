@@ -907,6 +907,15 @@ class PatientsController extends Controller
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
+                
+                // Return error response immediately for AJAX requests
+                if (request()->wantsJson() || request()->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to delete patient: ' . $e->getMessage()
+                    ], 500);
+                }
+                
                 throw $e; // Re-throw to be caught by outer catch block
             }
                              
