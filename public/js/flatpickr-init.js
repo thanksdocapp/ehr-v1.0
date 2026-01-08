@@ -137,6 +137,8 @@
             try {
                 const fp = flatpickr(input, options);
                 input.setAttribute('data-flatpickr-initialized', 'true');
+                // Store instance on input for easy access
+                input._flatpickr = fp;
                 console.log('Flatpickr datetime initialized on:', input.id || input.name || 'unnamed input');
             } catch (e) {
                 console.error('Error initializing Flatpickr datetime on input:', input.id || input.name, e);
