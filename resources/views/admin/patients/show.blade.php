@@ -877,7 +877,7 @@ function exportPatientData() {
     alert('Export functionality would be implemented here');
 }
 
-// Delete confirmation - using comprehensive confirmation dialog
+// Delete confirmation - using AJAX for better error handling
 function deletePatient(patientId) {
     console.log('Delete patient called with ID:', patientId);
     
@@ -887,74 +887,79 @@ function deletePatient(patientId) {
         window.event.stopPropagation();
     }
     
-    // Handle both sync and async confirm dialogs
-    function handleConfirmation(confirmResult) {
-        console.log('User confirmation result:', confirmResult);
-        
-        if (confirmResult === true) {
-            console.log('User confirmed deletion, proceeding...');
-            
-            // Add a small delay to ensure the dialog is properly closed
-            setTimeout(() => {
-                console.log('Creating form for deletion...');
-                
-                // Create a form to submit the DELETE request
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = `/admin/patients/${patientId}`;
-                form.style.display = 'none';
-                
-                // Add CSRF token - try multiple methods
-                const csrfToken = document.createElement('input');
-                csrfToken.type = 'hidden';
-                csrfToken.name = '_token';
-                
-                // Try to get CSRF token from meta tag or Laravel's global
-                let csrfTokenValue = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                if (!csrfTokenValue && typeof Laravel !== 'undefined') {
-                    csrfTokenValue = Laravel.csrfToken;
-                }
-                if (!csrfTokenValue && typeof window.Laravel !== 'undefined') {
-                    csrfTokenValue = window.Laravel.csrfToken;
-                }
-                
-                csrfToken.value = csrfTokenValue;
-                form.appendChild(csrfToken);
-                
-                console.log('CSRF token:', csrfTokenValue);
-                
-                // Add DELETE method
-                const methodInput = document.createElement('input');
-                methodInput.type = 'hidden';
-                methodInput.name = '_method';
-                methodInput.value = 'DELETE';
-                form.appendChild(methodInput);
-                
-                console.log('Form action:', form.action);
-                console.log('Form method:', form.method);
-                console.log('Form children:', form.children);
-                
-                // Add form to document and submit
-                document.body.appendChild(form);
-                console.log('Form added to document, submitting...');
-                form.submit();
-            }, 100);
-        } else {
-            console.log('User cancelled deletion');
-        }
-    }
-    
-    // Use a more explicit confirmation dialog
+    // Use confirmation dialog
     const confirmDelete = confirm('⚠️ WARNING: Are you sure you want to permanently delete this patient?\n\nThis action cannot be undone and will remove all patient data including:\n- Personal information\n- Medical history\n- Appointment history\n- Insurance information\n- Emergency contact details\n\nClick OK to confirm deletion or Cancel to abort.');
     
-    // Handle both Promise and boolean returns
-    if (confirmDelete && typeof confirmDelete.then === 'function') {
-        // If it's a Promise, wait for it to resolve
-        confirmDelete.then(handleConfirmation).catch(() => handleConfirmation(false));
-    } else {
-        // If it's a boolean, handle it directly
-        handleConfirmation(confirmDelete);
+    if (!confirmDelete) {
+        console.log('User cancelled deletion');
+        return false;
     }
+    
+    console.log('User confirmed deletion, proceeding with AJAX...');
+    
+    // Show loading indicator
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'delete-loading-overlay';
+    loadingOverlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+    loadingOverlay.innerHTML = '<div style="background: white; padding: 20px; border-radius: 8px; text-align: center;"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top: 10px;">Deleting patient...</p></div>';
+    document.body.appendChild(loadingOverlay);
+    
+    // Use AJAX for better error handling
+    $.ajax({
+        url: `/admin/patients/${patientId}`,
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        timeout: 60000, // 60 second timeout
+        success: function(response) {
+            console.log('Delete successful:', response);
+            document.body.removeChild(loadingOverlay);
+            
+            if (response.success) {
+                alert('Patient deleted successfully!');
+                // Redirect to patients index
+                window.location.href = '{{ route("admin.patients.index") }}';
+            } else {
+                alert('Failed to delete patient: ' + (response.message || 'Unknown error'));
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Delete error:', {xhr, status, error});
+            document.body.removeChild(loadingOverlay);
+            
+            let errorMessage = 'An error occurred while deleting the patient.';
+            
+            // Try to extract error message from response
+            if (xhr.responseJSON) {
+                if (xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.responseJSON.error) {
+                    errorMessage = xhr.responseJSON.error;
+                }
+            } else if (xhr.responseText) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.message) {
+                        errorMessage = response.message;
+                    }
+                } catch (e) {
+                    // If response is HTML, show generic error
+                    if (xhr.status === 500) {
+                        errorMessage = 'Server error occurred. Please check the logs.';
+                    } else if (xhr.status === 404) {
+                        errorMessage = 'Patient not found.';
+                    } else if (xhr.status === 403) {
+                        errorMessage = 'You do not have permission to delete this patient.';
+                    }
+                }
+            }
+            
+            alert('Error: ' + errorMessage);
+        }
+    });
     
     return false;
 }
