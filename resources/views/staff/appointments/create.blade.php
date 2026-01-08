@@ -795,7 +795,14 @@ $(document).ready(function() {
         $timeSelect.empty().append($('<option value="">Loading available times…</option>'));
 
         try {
-            const url = `/api/doctor/${encodeURIComponent(doctorId)}/available-slots?date=${encodeURIComponent(date)}&duration=${encodeURIComponent(duration)}`;
+            // Convert UK date format (dd/mm/yyyy) to YYYY-MM-DD for API
+            let apiDate = date;
+            if (date && date.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                const parts = date.split('/');
+                apiDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            
+            const url = `/api/doctor/${encodeURIComponent(doctorId)}/available-slots?date=${encodeURIComponent(apiDate)}&duration=${encodeURIComponent(duration)}`;
             const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
