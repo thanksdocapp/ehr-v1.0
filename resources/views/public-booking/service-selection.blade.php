@@ -81,12 +81,14 @@
                             $servicePrice = $service->getPriceForDoctor($doctor->id ?? 0) ?? $service->default_price ?? 0;
                             $serviceDuration = $service->getDurationForDoctor($doctor->id ?? 0) ?? $service->default_duration_minutes ?? 60;
                             $serviceDescription = $service->description ?? '';
+                            $serviceConsultationType = $service->getConsultationTypeForDoctor($doctor->id ?? 0);
                         @endphp
                         <option value="{{ $service->id }}" 
                                 selected 
                                 data-duration="{{ $serviceDuration }}"
                                 data-price="{{ $servicePrice }}"
-                                data-description="{{ $serviceDescription }}">
+                                data-description="{{ $serviceDescription }}"
+                                data-consultation-type="{{ $serviceConsultationType }}">
                             {{ $service->name }} - £{{ number_format($servicePrice, 2) }}
                         </option>
                         @endif
@@ -95,6 +97,10 @@
                 <div class="service-details-col" id="service-details" style="display: none;">
                     <div class="summary-card-compact">
                         <div class="summary-description-compact" id="service-description"></div>
+                        <div class="summary-row-compact">
+                            <span class="summary-label-compact">Type:</span>
+                            <span class="summary-value-compact" id="service-consultation-type">-</span>
+                        </div>
                         <div class="summary-row-compact">
                             <span class="summary-label-compact">Duration:</span>
                             <span class="summary-value-compact" id="service-duration">-</span>
@@ -106,7 +112,7 @@
                     </div>
                 </div>
             </div>
-            <input type="hidden" name="consultation_type" value="in_person">
+            <input type="hidden" name="consultation_type" id="consultation-type-input" value="in_person">
         </div>
 
         <!-- Schedule Selection - Shown when service is selected -->
@@ -454,7 +460,8 @@
                     text: preselectedOption.textContent,
                     duration: preselectedOption.dataset.duration,
                     price: preselectedOption.dataset.price,
-                    description: preselectedOption.dataset.description || ''
+                    description: preselectedOption.dataset.description || '',
+                    consultationType: preselectedOption.dataset.consultationType || 'in_person'
                 };
             }
             
@@ -479,7 +486,8 @@
                     option.textContent = savedPreselectedOption.text;
                     option.dataset.duration = savedPreselectedOption.duration;
                     option.dataset.price = savedPreselectedOption.price;
-                    option.dataset.description = savedPreselectedOption.description;
+                    option.dataset.description = savedPreselectedOption.description || '';
+                    option.dataset.consultationType = savedPreselectedOption.consultationType || 'in_person';
                     option.selected = true;
                     selectedServiceId = savedPreselectedOption.value;
                     serviceSelect.appendChild(option);
@@ -498,6 +506,7 @@
                         option.dataset.duration = service.duration;
                         option.dataset.price = service.price;
                         option.dataset.description = service.description || '';
+                        option.dataset.consultationType = service.consultation_type || 'in_person';
                         // Re-select if this was the pre-selected service
                         if (preselectedServiceId && service.id == preselectedServiceId && !savedPreselectedOption) {
                             option.selected = true;
@@ -535,6 +544,7 @@
                 const description = selectedOption.dataset.description || '';
                 const duration = selectedOption.dataset.duration + ' minutes';
                 const price = '£' + parseFloat(selectedOption.dataset.price).toFixed(2);
+                const consultationType = selectedOption.dataset.consultationType || 'in_person';
                 
                 const descriptionEl = document.getElementById('service-description');
                 if (description && description.trim()) {
@@ -543,6 +553,13 @@
                 } else {
                     descriptionEl.style.display = 'none';
                 }
+                
+                // Update consultation type display
+                const consultationTypeDisplay = consultationType === 'online' ? 'Online Consultation' : 'In-Person Consultation';
+                document.getElementById('service-consultation-type').textContent = consultationTypeDisplay;
+                
+                // Update hidden input for form submission
+                document.getElementById('consultation-type-input').value = consultationType;
                 
                 document.getElementById('service-duration').textContent = duration;
                 document.getElementById('service-price').textContent = price;

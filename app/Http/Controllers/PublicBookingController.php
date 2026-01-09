@@ -567,6 +567,7 @@ class PublicBookingController extends Controller
                 'description' => $service->description,
                 'duration' => $service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 60,
                 'price' => $service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0,
+                'consultation_type' => $service->getConsultationTypeForDoctor($doctor->id),
             ];
         });
 

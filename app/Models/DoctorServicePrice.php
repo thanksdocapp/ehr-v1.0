@@ -15,6 +15,7 @@ class DoctorServicePrice extends Model
         'service_id',
         'custom_price',
         'custom_duration_minutes',
+        'consultation_type',
         'is_active'
     ];
 

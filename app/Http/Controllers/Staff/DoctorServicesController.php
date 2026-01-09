@@ -98,6 +98,7 @@ class DoctorServicesController extends Controller
             'description' => 'nullable|string',
             'default_duration_minutes' => 'required|integer|min:5|max:480',
             'default_price' => 'nullable|numeric|min:0',
+            'consultation_type' => 'required|in:in_person,online',
             'tags_input' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
@@ -126,6 +127,7 @@ class DoctorServicesController extends Controller
                 'service_id' => $service->id,
                 'custom_price' => $request->default_price,
                 'custom_duration_minutes' => $request->default_duration_minutes,
+                'consultation_type' => $request->consultation_type ?? 'in_person',
                 'is_active' => $request->boolean('is_active', true),
             ]);
 
@@ -179,6 +181,7 @@ class DoctorServicesController extends Controller
             'description' => 'nullable|string|max:1000',
             'custom_price' => 'nullable|numeric|min:0',
             'custom_duration_minutes' => 'nullable|integer|min:1',
+            'consultation_type' => 'required|in:in_person,online',
             'is_active' => 'boolean',
         ]);
 
@@ -197,6 +200,7 @@ class DoctorServicesController extends Controller
                 [
                     'custom_price' => $request->custom_price,
                     'custom_duration_minutes' => $request->custom_duration_minutes,
+                    'consultation_type' => $request->consultation_type ?? 'in_person',
                     'is_active' => $request->boolean('is_active', true),
                 ]
             );
