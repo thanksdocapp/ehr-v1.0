@@ -72,6 +72,16 @@ class BookingService extends Model
         return $doctorPrice ? $doctorPrice->custom_duration_minutes : $this->default_duration_minutes;
     }
 
+    public function getConsultationTypeForDoctor($doctorId)
+    {
+        $doctorPrice = $this->doctorPrices()
+            ->where('doctor_id', $doctorId)
+            ->where('is_active', true)
+            ->first();
+
+        return $doctorPrice ? $doctorPrice->consultation_type : 'in_person';
+    }
+
     public function isAvailableForDoctor($doctorId)
     {
         // Check if doctor has a specific price entry for this service (regardless of is_active)
