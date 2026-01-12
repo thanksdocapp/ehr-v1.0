@@ -582,6 +582,100 @@
                                     @endif
                                 </div>
                             </div>
+
+                            <!-- Documents Section -->
+                            @can('viewAny', [\App\Models\PatientDocument::class, $patient])
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h4 class="text-primary border-bottom pb-2 mb-0">Letters & Forms</h4>
+                                        @can('create', [\App\Models\PatientDocument::class, $patient])
+                                        <a href="{{ route('admin.patients.documents.create', $patient) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-plus me-1"></i>Add Document
+                                        </a>
+                                        @endcan
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    @if(isset($documents) && $documents->count() > 0)
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Title</th>
+                                                        <th>Type</th>
+                                                        <th>Status</th>
+                                                        <th>Created</th>
+                                                        <th>Created By</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($documents as $document)
+                                                    <tr>
+                                                        <td>
+                                                            <i class="fas fa-{{ $document->type === 'letter' ? 'file-alt' : 'list' }} me-2 text-primary"></i>
+                                                            <strong>{{ $document->title }}</strong>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-info">{{ ucfirst($document->type) }}</span>
+                                                        </td>
+                                                        <td>
+                                                            @php
+                                                                $statusColors = [
+                                                                    'draft' => 'warning',
+                                                                    'final' => 'success',
+                                                                    'void' => 'danger'
+                                                                ];
+                                                                $statusColor = $statusColors[$document->status] ?? 'secondary';
+                                                            @endphp
+                                                            <span class="badge bg-{{ $statusColor }}">{{ ucfirst($document->status) }}</span>
+                                                        </td>
+                                                        <td>
+                                                            <small>{{ $document->created_at->format('M d, Y') }}</small>
+                                                        </td>
+                                                        <td>
+                                                            <small>{{ $document->creator->name ?? 'N/A' }}</small>
+                                                        </td>
+                                                        <td>
+                                                            <a href="{{ route('admin.patients.documents.show', [$patient, $document]) }}" 
+                                                               class="btn btn-sm btn-outline-primary" 
+                                                               title="View Document">
+                                                                <i class="fas fa-eye"></i>
+                                                            </a>
+                                                            @if($document->pdf_path)
+                                                            <a href="{{ route('admin.patients.documents.download', [$patient, $document]) }}" 
+                                                               class="btn btn-sm btn-outline-success" 
+                                                               title="Download PDF">
+                                                                <i class="fas fa-download"></i>
+                                                            </a>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="text-center mt-3">
+                                            <a href="{{ route('admin.patients.documents.index', $patient) }}" 
+                                               class="btn btn-outline-primary">
+                                                <i class="fas fa-list me-1"></i>View All Documents
+                                            </a>
+                                        </div>
+                                    @else
+                                        <div class="text-center text-muted py-4">
+                                            <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                            <p>No documents found for this patient</p>
+                                            @can('create', [\App\Models\PatientDocument::class, $patient])
+                                            <a href="{{ route('admin.patients.documents.create', $patient) }}" class="btn btn-primary">
+                                                <i class="fas fa-plus me-1"></i>Create First Document
+                                            </a>
+                                            @endcan
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                            @endcan
                         </div>
                         
                         <div class="col-md-4">

@@ -600,7 +600,14 @@ class PatientsController extends Controller
             }
         ]);
         
-        return view('admin.patients.show', compact('patient'));
+        // Load documents (admins see all documents)
+        $documents = $patient->documents()
+            ->with(['template', 'creator'])
+            ->latest()
+            ->limit(10)
+            ->get();
+        
+        return view('admin.patients.show', compact('patient', 'documents'));
     }
 
     /**

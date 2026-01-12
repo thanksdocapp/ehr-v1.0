@@ -375,7 +375,19 @@ class PatientsController extends Controller
             }
         ]);
         
-        return view('staff.patients.show', compact('patient'));
+        // Load documents with proper filtering (respect ownership for doctors/staff)
+        $user = Auth::user();
+        $documentsQuery = $patient->documents();
+        if ($user->role !== 'admin' && !$user->is_admin) {
+            // For non-admin users, only show documents they created
+            $documentsQuery->where('created_by', $user->id);
+        }
+        $documents = $documentsQuery->with(['template', 'creator'])
+            ->latest()
+            ->limit(10)
+            ->get();
+        
+        return view('staff.patients.show', compact('patient', 'documents'));
     }
 
     public function create()
