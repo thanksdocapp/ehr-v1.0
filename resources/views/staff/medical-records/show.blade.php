@@ -283,28 +283,19 @@
 
             <!-- File Attachments -->
             @php
-                // Ensure attachments are loaded BEFORE using them in the header
-                if (!$medicalRecord->relationLoaded('attachments')) {
-                    $medicalRecord->load('attachments.uploader');
-                }
-                // Check if attachments exist - handle both collection and null cases
-                $attachments = $medicalRecord->attachments ?? collect([]);
+                // Always query attachments directly to ensure we get the latest data
+                // This is important after uploading new attachments
+                $attachments = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)
+                    ->with('uploader')
+                    ->orderBy('created_at', 'desc')
+                    ->get();
                 $hasAttachments = $attachments->count() > 0;
                 
-                // Fallback: if relationship is empty but we know attachments exist, query directly
-                if (!$hasAttachments) {
-                    $directAttachments = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)
-                        ->with('uploader')
-                        ->get();
-                    if ($directAttachments->count() > 0) {
-                        $attachments = $directAttachments;
-                        $hasAttachments = true;
-                        // Log this for debugging
-                        \Log::warning('Medical record attachments loaded via direct query fallback', [
-                            'medical_record_id' => $medicalRecord->id,
-                            'attachments_count' => $directAttachments->count()
-                        ]);
-                    }
+                // Also update the relationship on the model for consistency
+                if ($hasAttachments) {
+                    $medicalRecord->setRelation('attachments', $attachments);
+                } else {
+                    $medicalRecord->setRelation('attachments', collect([]));
                 }
             @endphp
             <div class="doctor-card mb-4">

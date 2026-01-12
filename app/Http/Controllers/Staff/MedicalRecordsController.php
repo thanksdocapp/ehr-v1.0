@@ -1121,10 +1121,15 @@ class MedicalRecordsController extends Controller
             
             // Refresh the medical record to ensure attachments are loaded
             $medicalRecord->refresh();
-            $medicalRecord->load('attachments.uploader');
             
-            // Get the count of attachments after upload
-            $attachmentsCount = $medicalRecord->attachments ? $medicalRecord->attachments->count() : 0;
+            // Query attachments directly to ensure we get the latest count
+            $attachmentsCount = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count();
+            
+            \Log::info('Attachments uploaded successfully', [
+                'medical_record_id' => $medicalRecord->id,
+                'attachments_count' => $attachmentsCount,
+                'user_id' => $user->id
+            ]);
             
             if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
                 return response()->json([
@@ -1402,27 +1407,50 @@ class MedicalRecordsController extends Controller
                 }
 
                 // Create attachment record using verified record ID
-                $attachment = MedicalRecordAttachment::create([
-                    'medical_record_id' => $verifyRecord->id,
-                    'uploaded_by' => $user->id,
-                    'file_name' => $displayFileName,
-                    'file_path' => $path,
-                    'file_type' => $file->getMimeType(),
-                    'file_extension' => $extension,
-                    'file_size' => $file->getSize(),
-                    'storage_disk' => 'private',
-                    'file_category' => $category,
-                    'description' => $description,
-                    'is_private' => true,
-                    'virus_scan_status' => 'pending', // Will be scanned asynchronously
-                ]);
-                
-                \Log::info('Medical record attachment created', [
-                    'attachment_id' => $attachment->id,
-                    'medical_record_id' => $verifyRecord->id,
-                    'file_name' => $displayFileName,
-                    'file_path' => $path
-                ]);
+                try {
+                    $attachment = MedicalRecordAttachment::create([
+                        'medical_record_id' => $verifyRecord->id,
+                        'uploaded_by' => $user->id,
+                        'file_name' => $displayFileName,
+                        'file_path' => $path,
+                        'file_type' => $file->getMimeType(),
+                        'file_extension' => $extension,
+                        'file_size' => $file->getSize(),
+                        'storage_disk' => 'private',
+                        'file_category' => $category,
+                        'description' => $description,
+                        'is_private' => true,
+                        'virus_scan_status' => 'pending', // Will be scanned asynchronously
+                    ]);
+                    
+                    \Log::info('Medical record attachment created successfully', [
+                        'attachment_id' => $attachment->id,
+                        'medical_record_id' => $verifyRecord->id,
+                        'file_name' => $displayFileName,
+                        'file_path' => $path,
+                        'file_size' => $file->getSize()
+                    ]);
+                } catch (\Exception $createException) {
+                    \Log::error('Failed to create attachment record in database', [
+                        'medical_record_id' => $verifyRecord->id,
+                        'file_name' => $displayFileName,
+                        'file_path' => $path,
+                        'error' => $createException->getMessage(),
+                        'trace' => $createException->getTraceAsString()
+                    ]);
+                    
+                    // Delete the uploaded file if attachment creation failed
+                    try {
+                        Storage::disk('private')->delete($path);
+                    } catch (\Exception $deleteException) {
+                        \Log::error('Failed to delete file after attachment creation failure', [
+                            'file_path' => $path,
+                            'error' => $deleteException->getMessage()
+                        ]);
+                    }
+                    
+                    throw new \Exception('Failed to save attachment record: ' . $createException->getMessage());
+                }
             } catch (\Exception $e) {
                 \Log::error('Failed to create attachment record', [
                     'medical_record_id' => $medicalRecord->id ?? 'null',
