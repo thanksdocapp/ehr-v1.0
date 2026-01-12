@@ -596,6 +596,83 @@
             </div>
             @endif
 
+            <!-- Patient Documents -->
+            @if($medicalRecord->patient)
+            @can('viewAny', [\App\Models\PatientDocument::class, $medicalRecord->patient])
+            <div class="doctor-card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-file-alt me-2"></i>Letters & Forms
+                            @if(isset($documents) && $documents->count() > 0)
+                                <span class="badge bg-light text-dark ms-2">{{ $documents->count() }}</span>
+                            @endif
+                        </h6>
+                        @can('create', [\App\Models\PatientDocument::class, $medicalRecord->patient])
+                        <a href="{{ route('staff.patients.documents.create', $medicalRecord->patient) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i>
+                        </a>
+                        @endcan
+                    </div>
+                </div>
+                <div class="doctor-card-body">
+                    @if(isset($documents) && $documents->count() > 0)
+                        @foreach($documents->take(5) as $document)
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fas fa-{{ $document->type === 'letter' ? 'file-alt' : 'list' }} me-2 text-primary"></i>
+                                        <div class="fw-bold text-truncate" style="max-width: 150px;" title="{{ $document->title }}">
+                                            {{ $document->title }}
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        @php
+                                            $statusColors = [
+                                                'draft' => 'warning',
+                                                'final' => 'success',
+                                                'void' => 'danger'
+                                            ];
+                                            $statusColor = $statusColors[$document->status] ?? 'secondary';
+                                        @endphp
+                                        <span class="badge bg-{{ $statusColor }} badge-sm">{{ ucfirst($document->status) }}</span>
+                                        <small class="text-muted">{{ $document->created_at->format('M d') }}</small>
+                                    </div>
+                                </div>
+                                <div class="ms-2">
+                                    <a href="{{ route('staff.patients.documents.show', [$medicalRecord->patient, $document]) }}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                        @if($documents->count() > 5)
+                            <small class="text-muted">and {{ $documents->count() - 5 }} more...</small>
+                        @endif
+                        <div class="mt-2">
+                            <a href="{{ route('staff.patients.documents.index', $medicalRecord->patient) }}" 
+                               class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-list me-1"></i>View All Documents
+                            </a>
+                        </div>
+                    @else
+                        <p class="text-muted mb-2 small">No documents found</p>
+                        @can('create', [\App\Models\PatientDocument::class, $medicalRecord->patient])
+                        <a href="{{ route('staff.patients.documents.create', $medicalRecord->patient) }}" 
+                           class="btn btn-sm btn-primary w-100">
+                            <i class="fas fa-plus me-1"></i>Add Document
+                        </a>
+                        @endcan
+                    @endif
+                </div>
+            </div>
+            @endcan
+            @endif
+
             <!-- Record Metadata -->
             <div class="card shadow-sm">
                 <div class="card-header">

@@ -544,7 +544,27 @@ class MedicalRecordsController extends Controller
         
         $medicalRecord->load(['patient', 'doctor', 'appointment', 'prescriptions', 'labReports', 'attachments.uploader']);
         
-        return view('staff.medical-records.show', compact('medicalRecord'));
+        // Load documents for the patient with proper filtering
+        $documents = collect([]);
+        if ($medicalRecord->patient) {
+            try {
+                $documents = $medicalRecord->patient->documents()
+                    ->ownedBy($user) // Use the scope which handles admin vs non-admin filtering
+                    ->with(['template', 'creator'])
+                    ->latest()
+                    ->limit(10)
+                    ->get();
+            } catch (\Exception $e) {
+                // Fallback: if there's an error, initialize empty collection
+                \Log::warning('Error loading patient documents in medical record view', [
+                    'patient_id' => $medicalRecord->patient->id,
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        return view('staff.medical-records.show', compact('medicalRecord', 'documents'));
     }
 
     public function edit(MedicalRecord $medicalRecord)
