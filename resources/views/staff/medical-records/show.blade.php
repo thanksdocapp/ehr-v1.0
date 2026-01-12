@@ -282,6 +282,31 @@
             </div>
 
             <!-- File Attachments -->
+            @php
+                // Ensure attachments are loaded BEFORE using them in the header
+                if (!$medicalRecord->relationLoaded('attachments')) {
+                    $medicalRecord->load('attachments.uploader');
+                }
+                // Check if attachments exist - handle both collection and null cases
+                $attachments = $medicalRecord->attachments ?? collect([]);
+                $hasAttachments = $attachments->count() > 0;
+                
+                // Fallback: if relationship is empty but we know attachments exist, query directly
+                if (!$hasAttachments) {
+                    $directAttachments = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)
+                        ->with('uploader')
+                        ->get();
+                    if ($directAttachments->count() > 0) {
+                        $attachments = $directAttachments;
+                        $hasAttachments = true;
+                        // Log this for debugging
+                        \Log::warning('Medical record attachments loaded via direct query fallback', [
+                            'medical_record_id' => $medicalRecord->id,
+                            'attachments_count' => $directAttachments->count()
+                        ]);
+                    }
+                }
+            @endphp
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
                     <h5 class="doctor-card-title mb-0">
@@ -292,31 +317,6 @@
                     </h5>
                 </div>
                 <div class="doctor-card-body">
-                    @php
-                        // Ensure attachments are loaded
-                        if (!$medicalRecord->relationLoaded('attachments')) {
-                            $medicalRecord->load('attachments.uploader');
-                        }
-                        // Check if attachments exist - handle both collection and null cases
-                        $attachments = $medicalRecord->attachments ?? collect([]);
-                        $hasAttachments = $attachments->count() > 0;
-                        
-                        // Fallback: if relationship is empty but we know attachments exist, query directly
-                        if (!$hasAttachments) {
-                            $directAttachments = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)
-                                ->with('uploader')
-                                ->get();
-                            if ($directAttachments->count() > 0) {
-                                $attachments = $directAttachments;
-                                $hasAttachments = true;
-                                // Log this for debugging
-                                \Log::warning('Medical record attachments loaded via direct query fallback', [
-                                    'medical_record_id' => $medicalRecord->id,
-                                    'attachments_count' => $directAttachments->count()
-                                ]);
-                            }
-                        }
-                    @endphp
                     {{-- Debug output (remove after fixing) --}}
                     @if(config('app.debug'))
                         <div class="alert alert-info small mb-2">
