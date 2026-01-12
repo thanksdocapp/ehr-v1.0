@@ -546,14 +546,35 @@ class MedicalRecordsController extends Controller
         
         // Load documents for the patient with proper filtering
         $documents = collect([]);
+        $totalDocumentsCount = null;
         if ($medicalRecord->patient) {
             try {
+                // Get total count (for informational message)
+                $totalDocumentsCount = $medicalRecord->patient->documents()->count();
+                
+                // In medical record context, show ALL documents for the patient
+                // If user has access to view this medical record, they should see all patient documents
+                // This is more permissive than the patient show page since they're already in a clinical context
                 $documents = $medicalRecord->patient->documents()
-                    ->ownedBy($user) // Use the scope which handles admin vs non-admin filtering
                     ->with(['template', 'creator'])
                     ->latest()
                     ->limit(10)
                     ->get();
+                    
+                // Debug logging - also check total documents without filter
+                $allDocumentsCount = $medicalRecord->patient->documents()->count();
+                $userDocumentsCount = $medicalRecord->patient->documents()->where('created_by', $user->id)->count();
+                
+                \Log::info('Loaded patient documents for medical record view', [
+                    'patient_id' => $medicalRecord->patient->id,
+                    'user_id' => $user->id,
+                    'user_role' => $user->role,
+                    'is_admin' => $user->is_admin,
+                    'documents_count' => $documents->count(),
+                    'total_documents_count' => $totalDocumentsCount,
+                    'all_documents_count' => $allDocumentsCount,
+                    'user_documents_count' => $userDocumentsCount
+                ]);
             } catch (\Exception $e) {
                 // Fallback: if there's an error, initialize empty collection
                 \Log::warning('Error loading patient documents in medical record view', [
@@ -564,7 +585,7 @@ class MedicalRecordsController extends Controller
             }
         }
         
-        return view('staff.medical-records.show', compact('medicalRecord', 'documents'));
+        return view('staff.medical-records.show', compact('medicalRecord', 'documents', 'totalDocumentsCount'));
     }
 
     public function edit(MedicalRecord $medicalRecord)

@@ -282,88 +282,124 @@
             </div>
 
             <!-- File Attachments -->
-            @if($medicalRecord->attachments && $medicalRecord->attachments->count() > 0)
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-paperclip me-2"></i>Documents or Attachments</h5>
+                    <h5 class="doctor-card-title mb-0">
+                        <i class="fas fa-paperclip me-2"></i>Documents or Attachments
+                        @if($medicalRecord->attachments && $medicalRecord->attachments->count() > 0)
+                            <span class="badge bg-light text-dark ms-2">{{ $medicalRecord->attachments->count() }}</span>
+                        @endif
+                    </h5>
                 </div>
                 <div class="doctor-card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Description</th>
-                                    <th>File Name</th>
-                                    <th>Type</th>
-                                    <th>Uploaded By</th>
-                                    <th>Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($medicalRecord->attachments as $attachment)
-                                <tr>
-                                    <td>
-                                        <span class="text-muted">{{ $attachment->description ?? '-' }}</span>
-                                    </td>
-                                    <td>
-                                        <i class="fas fa-{{ $attachment->file_icon }} me-2 text-primary"></i>
-                                        <strong>{{ $attachment->file_name }}</strong>
-                                        @if($attachment->virus_scan_status === 'pending')
-                                            <br><small class="text-warning"><i class="fas fa-clock me-1"></i>Scan pending</small>
-                                        @elseif($attachment->virus_scan_status === 'clean')
-                                            <br><small class="text-success"><i class="fas fa-shield-alt me-1"></i>Scanned clean</small>
-                                        @elseif($attachment->virus_scan_status === 'infected')
-                                            <br><small class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>Infected - Access restricted</small>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info">{{ ucfirst($attachment->file_category) }}</span>
-                                    </td>
-                                    <td>
-                                        {{ $attachment->uploader->name ?? 'Unknown' }}
-                                        @if($attachment->uploader)
-                                            <br><small class="text-muted">{{ ucfirst($attachment->uploader->role ?? 'Staff') }}</small>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <small>{{ formatDate($attachment->created_at) }}</small><br>
-                                        <small class="text-muted">{{ $attachment->created_at->format('H:i') }}</small>
-                                    </td>
-                                    <td>
-                                        @if($attachment->canAccess(auth()->user()) && $attachment->virus_scan_status !== 'infected')
-                                            @if($attachment->isViewable())
-                                                <a href="{{ route('staff.medical-record-attachments.view', $attachment) }}" 
-                                                   target="_blank"
-                                                   class="btn btn-sm btn-outline-info me-1" 
-                                                   title="View">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
+                    @if($medicalRecord->attachments && $medicalRecord->attachments->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>File Name</th>
+                                        <th>Type</th>
+                                        <th>Uploaded By</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($medicalRecord->attachments as $attachment)
+                                    <tr>
+                                        <td>
+                                            <span class="text-muted">{{ $attachment->description ?? '-' }}</span>
+                                        </td>
+                                        <td>
+                                            <i class="fas fa-{{ $attachment->file_icon }} me-2 text-primary"></i>
+                                            <strong>{{ $attachment->file_name }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ ucfirst($attachment->file_category ?? 'other') }}</span>
+                                        </td>
+                                        <td>
+                                            {{ $attachment->uploader->name ?? 'Unknown' }}
+                                            @if($attachment->uploader)
+                                                <br><small class="text-muted">{{ ucfirst($attachment->uploader->role ?? 'Staff') }}</small>
                                             @endif
-                                        @else
-                                            <span class="text-muted">Access restricted</span>
-                                        @endif
-                                        @if(auth()->user()->is_admin || $attachment->uploaded_by === auth()->id())
-                                            <form action="{{ route('staff.medical-record-attachments.destroy', $attachment) }}" 
-                                                  method="POST" 
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Are you sure you want to delete this file?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                                        </td>
+                                        <td>
+                                            <small>{{ formatDate($attachment->created_at) }}</small><br>
+                                            <small class="text-muted">{{ $attachment->created_at->format('H:i') }}</small>
+                                        </td>
+                                        <td>
+                                            @if($attachment->virus_scan_status === 'pending')
+                                                <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>Scan pending</span>
+                                            @elseif($attachment->virus_scan_status === 'clean')
+                                                <span class="badge bg-success"><i class="fas fa-shield-alt me-1"></i>Scanned clean</span>
+                                            @elseif($attachment->virus_scan_status === 'infected')
+                                                <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Infected</span>
+                                            @else
+                                                <span class="badge bg-secondary">Not scanned</span>
+                                            @endif
+                                            @if($attachment->is_private)
+                                                <br><small class="text-muted"><i class="fas fa-lock me-1"></i>Private</small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @php
+                                                $canAccess = $attachment->canAccess(auth()->user());
+                                                $isSafe = $attachment->virus_scan_status !== 'infected';
+                                            @endphp
+                                            @if($canAccess && $isSafe)
+                                                @if($attachment->isViewable())
+                                                    <a href="{{ route('medical-record-attachments.view', $attachment) }}" 
+                                                       target="_blank"
+                                                       class="btn btn-sm btn-outline-info me-1" 
+                                                       title="View">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                @endif
+                                                <a href="{{ route('medical-record-attachments.download', $attachment) }}" 
+                                                   class="btn btn-sm btn-outline-success me-1" 
+                                                   title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            @else
+                                                @if(!$canAccess)
+                                                    <span class="text-muted small" title="You don't have permission to access this file">
+                                                        <i class="fas fa-lock me-1"></i>No access
+                                                    </span>
+                                                @elseif(!$isSafe)
+                                                    <span class="text-danger small" title="File failed virus scan">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>Unsafe
+                                                    </span>
+                                                @endif
+                                            @endif
+                                            @if(auth()->user()->is_admin || $attachment->uploaded_by === auth()->id())
+                                                <form action="{{ route('medical-record-attachments.destroy', $attachment) }}" 
+                                                      method="POST" 
+                                                      class="d-inline"
+                                                      onsubmit="return confirm('Are you sure you want to delete this file?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="fas fa-paperclip fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No attachments found for this medical record.</p>
+                            <small class="text-muted">Attachments can be added when creating or editing a medical record.</small>
+                        </div>
+                    @endif
                 </div>
             </div>
-            @endif
 
             <!-- Vital Signs -->
             @if($medicalRecord->vital_signs && !empty($medicalRecord->vital_signs))
@@ -660,13 +696,23 @@
                             </a>
                         </div>
                     @else
-                        <p class="text-muted mb-2 small">No documents found</p>
+                        <p class="text-muted mb-2 small">
+                            @if(isset($totalDocumentsCount) && $totalDocumentsCount !== null && $totalDocumentsCount > 0)
+                                No documents visible to you. (Total: {{ $totalDocumentsCount }} - you can only see documents you created)
+                            @else
+                                No documents found for this patient.
+                            @endif
+                        </p>
                         @can('create', [\App\Models\PatientDocument::class, $medicalRecord->patient])
                         <a href="{{ route('staff.patients.documents.create', $medicalRecord->patient) }}" 
-                           class="btn btn-sm btn-primary w-100">
+                           class="btn btn-sm btn-primary w-100 mb-2">
                             <i class="fas fa-plus me-1"></i>Add Document
                         </a>
                         @endcan
+                        <a href="{{ route('staff.patients.documents.index', $medicalRecord->patient) }}" 
+                           class="btn btn-sm btn-outline-secondary w-100">
+                            <i class="fas fa-list me-1"></i>View All Documents
+                        </a>
                     @endif
                 </div>
             </div>
