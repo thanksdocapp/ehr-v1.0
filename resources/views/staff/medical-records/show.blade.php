@@ -286,13 +286,47 @@
                 <div class="doctor-card-header">
                     <h5 class="doctor-card-title mb-0">
                         <i class="fas fa-paperclip me-2"></i>Documents or Attachments
-                        @if($medicalRecord->attachments && $medicalRecord->attachments->count() > 0)
-                            <span class="badge bg-light text-dark ms-2">{{ $medicalRecord->attachments->count() }}</span>
+                        @if($hasAttachments)
+                            <span class="badge bg-light text-dark ms-2">{{ $attachments->count() }}</span>
                         @endif
                     </h5>
                 </div>
                 <div class="doctor-card-body">
-                    @if($medicalRecord->attachments && $medicalRecord->attachments->count() > 0)
+                    @php
+                        // Ensure attachments are loaded
+                        if (!$medicalRecord->relationLoaded('attachments')) {
+                            $medicalRecord->load('attachments.uploader');
+                        }
+                        // Check if attachments exist - handle both collection and null cases
+                        $attachments = $medicalRecord->attachments ?? collect([]);
+                        $hasAttachments = $attachments->count() > 0;
+                        
+                        // Fallback: if relationship is empty but we know attachments exist, query directly
+                        if (!$hasAttachments) {
+                            $directAttachments = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)
+                                ->with('uploader')
+                                ->get();
+                            if ($directAttachments->count() > 0) {
+                                $attachments = $directAttachments;
+                                $hasAttachments = true;
+                                // Log this for debugging
+                                \Log::warning('Medical record attachments loaded via direct query fallback', [
+                                    'medical_record_id' => $medicalRecord->id,
+                                    'attachments_count' => $directAttachments->count()
+                                ]);
+                            }
+                        }
+                    @endphp
+                    {{-- Debug output (remove after fixing) --}}
+                    @if(config('app.debug'))
+                        <div class="alert alert-info small mb-2">
+                            <strong>Debug:</strong> 
+                            Relationship loaded: {{ $medicalRecord->relationLoaded('attachments') ? 'Yes' : 'No' }}, 
+                            Attachments count: {{ $attachments->count() }}, 
+                            Direct query count: {{ \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count() }}
+                        </div>
+                    @endif
+                    @if($hasAttachments)
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead class="table-light">
@@ -307,7 +341,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($medicalRecord->attachments as $attachment)
+                                    @foreach($attachments as $attachment)
                                     <tr>
                                         <td>
                                             <span class="text-muted">{{ $attachment->description ?? '-' }}</span>

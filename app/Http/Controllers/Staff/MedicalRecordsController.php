@@ -522,6 +522,10 @@ class MedicalRecordsController extends Controller
         // Handle file uploads
         $this->handleFileUploads($request, $medicalRecord, $user);
         
+        // Refresh the medical record to ensure attachments are loaded
+        $medicalRecord->refresh();
+        $medicalRecord->load('attachments.uploader');
+        
         return redirect()->route('staff.medical-records.show', $medicalRecord)
             ->with('success', 'Medical record created successfully.');
     }
@@ -543,6 +547,29 @@ class MedicalRecordsController extends Controller
         }
         
         $medicalRecord->load(['patient', 'doctor', 'appointment', 'prescriptions', 'labReports', 'attachments.uploader']);
+        
+        // Ensure attachments are always loaded - refresh the relationship to get latest
+        $medicalRecord->load('attachments.uploader');
+        
+        // Debug: Log attachments count for troubleshooting
+        $attachmentsCount = $medicalRecord->attachments ? $medicalRecord->attachments->count() : 0;
+        $directQueryCount = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count();
+        
+        if ($directQueryCount > 0 && $attachmentsCount === 0) {
+            // If direct query finds attachments but relationship doesn't, force refresh
+            \Log::warning('Medical record attachments mismatch - forcing refresh', [
+                'medical_record_id' => $medicalRecord->id,
+                'relationship_count' => $attachmentsCount,
+                'direct_query_count' => $directQueryCount
+            ]);
+            $medicalRecord->refresh();
+            $medicalRecord->load('attachments.uploader');
+        }
+        
+        \Log::info('Medical record attachments loaded', [
+            'medical_record_id' => $medicalRecord->id,
+            'attachments_count' => $medicalRecord->attachments ? $medicalRecord->attachments->count() : 0
+        ]);
         
         // Load documents for the patient with proper filtering
         $documents = collect([]);
