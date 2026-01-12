@@ -46,7 +46,7 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.patients.documents.store', $patient) }}" method="POST" id="documentForm">
+    <form action="{{ route('admin.patients.documents.store', $patient) }}" method="POST" id="documentForm" enctype="multipart/form-data">
         @csrf
 
         <div class="row">
@@ -94,60 +94,97 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-8">
-                                <label for="template_id" class="form-label">
-                                    Select Template <span class="text-danger">*</span>
+                        <!-- Document Source Selection -->
+                        <div class="mb-4">
+                            <label class="form-label">Document Source <span class="text-danger">*</span></label>
+                            <div class="btn-group w-100" role="group" id="documentSourceGroup">
+                                <input type="radio" class="btn-check" name="document_source" id="source_template" value="template" {{ old('document_source', 'template') == 'template' ? 'checked' : '' }}>
+                                <label class="btn btn-outline-primary" for="source_template">
+                                    <i class="fas fa-file-alt me-2"></i>Create from Template
                                 </label>
-                                <select class="form-select form-select-lg @error('template_id') is-invalid @enderror"
-                                        id="template_id" name="template_id" required>
-                                    <option value="">-- Choose a template --</option>
-                                    @foreach($templates->groupBy('type') as $type => $typeTemplates)
-                                        <optgroup label="{{ ucfirst($type) }}s">
-                                            @foreach($typeTemplates as $tmpl)
-                                                <option value="{{ $tmpl->id }}"
-                                                        data-type="{{ $tmpl->type }}"
-                                                        {{ old('template_id', $template->id ?? '') == $tmpl->id ? 'selected' : '' }}>
-                                                    {{ $tmpl->name }}
-                                                </option>
-                                            @endforeach
-                                        </optgroup>
-                                    @endforeach
-                                </select>
-                                @error('template_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-4">
-                                <label for="type" class="form-label">
-                                    Document Type <span class="text-danger">*</span>
+                                
+                                <input type="radio" class="btn-check" name="document_source" id="source_upload" value="upload" {{ old('document_source') == 'upload' ? 'checked' : '' }}>
+                                <label class="btn btn-outline-primary" for="source_upload">
+                                    <i class="fas fa-upload me-2"></i>Upload PDF
                                 </label>
-                                <select class="form-select form-select-lg @error('type') is-invalid @enderror"
-                                        id="type" name="type" required>
-                                    <option value="">Select type</option>
-                                    <option value="letter" {{ old('type', $template->type ?? '') == 'letter' ? 'selected' : '' }}>
-                                        <i class="fas fa-envelope"></i> Letter
-                                    </option>
-                                    <option value="form" {{ old('type', $template->type ?? '') == 'form' ? 'selected' : '' }}>
-                                        <i class="fas fa-clipboard-list"></i> Form
-                                    </option>
-                                </select>
-                                @error('type')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
                             </div>
-                            <div class="col-12">
-                                <label for="title" class="form-label">Document Title</label>
-                                <input type="text"
-                                       class="form-control @error('title') is-invalid @enderror"
-                                       id="title"
-                                       name="title"
-                                       value="{{ old('title') }}"
-                                       placeholder="Leave blank to use template name">
-                                @error('title')
+                        </div>
+
+                        <!-- Template-based document fields -->
+                        <div id="templateFields">
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label for="template_id" class="form-label">
+                                        Select Template <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select form-select-lg @error('template_id') is-invalid @enderror"
+                                            id="template_id" name="template_id">
+                                        <option value="">-- Choose a template --</option>
+                                        @foreach($templates->groupBy('type') as $type => $typeTemplates)
+                                            <optgroup label="{{ ucfirst($type) }}s">
+                                                @foreach($typeTemplates as $tmpl)
+                                                    <option value="{{ $tmpl->id }}"
+                                                            data-type="{{ $tmpl->type }}"
+                                                            {{ old('template_id', $template->id ?? '') == $tmpl->id ? 'selected' : '' }}>
+                                                        {{ $tmpl->name }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endforeach
+                                    </select>
+                                    @error('template_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="type" class="form-label">
+                                        Document Type <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select form-select-lg @error('type') is-invalid @enderror"
+                                            id="type" name="type">
+                                        <option value="">Select type</option>
+                                        <option value="letter" {{ old('type', $template->type ?? '') == 'letter' ? 'selected' : '' }}>
+                                            <i class="fas fa-envelope"></i> Letter
+                                        </option>
+                                        <option value="form" {{ old('type', $template->type ?? '') == 'form' ? 'selected' : '' }}>
+                                            <i class="fas fa-clipboard-list"></i> Form
+                                        </option>
+                                    </select>
+                                    @error('type')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload-based document fields -->
+                        <div id="uploadFields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="pdf_file" class="form-label">PDF File <span class="text-danger">*</span></label>
+                                <input type="file" 
+                                       class="form-control @error('pdf_file') is-invalid @enderror" 
+                                       id="pdf_file" 
+                                       name="pdf_file" 
+                                       accept=".pdf,application/pdf">
+                                @error('pdf_file')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <small class="text-muted">Optional - defaults to template name if left empty</small>
+                                <small class="text-muted">Upload a PDF file (max 10MB). This will be stored as a patient document.</small>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mt-3">
+                            <label for="title" class="form-label">Document Title <span class="text-danger" id="titleRequired" style="display: none;">*</span></label>
+                            <input type="text"
+                                   class="form-control @error('title') is-invalid @enderror"
+                                   id="title"
+                                   name="title"
+                                   value="{{ old('title') }}"
+                                   placeholder="Enter document title">
+                            @error('title')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted" id="titleHelp">Optional - defaults to template name if left empty</small>
                             </div>
                         </div>
                     </div>
@@ -311,6 +348,50 @@ $(document).ready(function() {
     const extraPlaceholdersContainer = $('#extraPlaceholdersContainer');
     const templateInfo = $('#templateInfo');
     const templateInfoContent = $('#templateInfoContent');
+    const templateFields = $('#templateFields');
+    const uploadFields = $('#uploadFields');
+    const titleInput = $('#title');
+    const titleHelp = $('#titleHelp');
+    const titleRequired = $('#titleRequired');
+    const pdfFileInput = $('#pdf_file');
+
+    // Handle document source change
+    $('input[name="document_source"]').on('change', function() {
+        const source = $(this).val();
+        if (source === 'upload') {
+            templateFields.hide();
+            uploadFields.show();
+            templateSelect.removeAttr('required');
+            typeSelect.removeAttr('required');
+            pdfFileInput.attr('required', 'required');
+            titleInput.attr('required', 'required');
+            titleRequired.show();
+            titleHelp.text('Enter a title for the uploaded document');
+            formDataSection.hide();
+            letterPreviewSection.hide();
+            templateInfo.hide();
+        } else {
+            templateFields.show();
+            uploadFields.hide();
+            templateSelect.attr('required', 'required');
+            typeSelect.attr('required', 'required');
+            pdfFileInput.removeAttr('required');
+            titleInput.removeAttr('required');
+            titleRequired.hide();
+            titleHelp.text('Optional - defaults to template name if left empty');
+            // Trigger type change to show appropriate sections
+            typeSelect.trigger('change');
+        }
+    });
+    
+    // Auto-fill title from PDF filename
+    pdfFileInput.on('change', function() {
+        const file = this.files[0];
+        if (file && !titleInput.val()) {
+            const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+            titleInput.val(fileName);
+        }
+    });
 
     // Template selection handler
     templateSelect.on('change', function() {
@@ -583,7 +664,11 @@ $(document).ready(function() {
     });
 
     // Trigger initial state if template is pre-selected
-    if (templateSelect.val()) {
+    // Initialize based on selected source
+    const selectedSource = $('input[name="document_source"]:checked').val();
+    if (selectedSource === 'upload') {
+        $('input[name="document_source"][value="upload"]').trigger('change');
+    } else if (templateSelect.val()) {
         templateSelect.trigger('change');
     }
 });

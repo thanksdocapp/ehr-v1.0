@@ -192,6 +192,18 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="service_id" class="form-label">Service</label>
+                                    <select class="form-control @error('service_id') is-invalid @enderror" 
+                                            id="service_id" name="service_id">
+                                        <option value="">Select Service (Optional)</option>
+                                    </select>
+                                    <small class="text-muted">Select a service to auto-set consultation type</small>
+                                    @error('service_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
 
@@ -940,13 +952,86 @@ $(document).ready(function() {
     // Load slots when doctor/date changes
     // Note: Date change handler is set up in setupAppointmentDateHandlers() above
     // This handler is removed to avoid conflicts with Flatpickr handlers
-    $('#doctor_id').on('change', loadAvailableTimeSlots);
+    $('#doctor_id').on('change', function() {
+        loadAvailableTimeSlots();
+        loadDoctorServices();
+    });
     $('#estimated_duration').on('change', function() {
         // Duration affects the slot end time and available ranges
         loadAvailableTimeSlots();
     });
     // Also handle doctor-locked view (hidden input) - initial load
     setTimeout(loadAvailableTimeSlots, 0);
+    setTimeout(loadDoctorServices, 500); // Small delay to ensure DOM is ready
+
+    // ===== Service Selection and Consultation Type Auto-Check =====
+    function loadDoctorServices() {
+        const doctorId = getDoctorIdForSlots();
+        const $serviceSelect = $('#service_id');
+        
+        if (!doctorId) {
+            $serviceSelect.empty().append('<option value="">Select Service (Optional)</option>');
+            return;
+        }
+
+        // Show loading state
+        $serviceSelect.prop('disabled', true);
+        const prevVal = $serviceSelect.val();
+        $serviceSelect.empty().append('<option value="">Loading services...</option>');
+
+        fetch(`/doctors/${doctorId}/services`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load services');
+                }
+                return response.json();
+            })
+            .then(data => {
+                $serviceSelect.empty();
+                $serviceSelect.append('<option value="">Select Service (Optional)</option>');
+                
+                if (data.services && data.services.length > 0) {
+                    data.services.forEach(service => {
+                        const option = $('<option></option>')
+                            .attr('value', service.id)
+                            .text(service.name)
+                            .data('consultation-type', service.consultation_type);
+                        $serviceSelect.append(option);
+                    });
+                } else {
+                    $serviceSelect.append('<option value="">No services available</option>');
+                }
+
+                // Restore previous selection if still available
+                if (prevVal && $serviceSelect.find(`option[value="${prevVal}"]`).length) {
+                    $serviceSelect.val(prevVal);
+                    // Trigger change to update consultation type
+                    $serviceSelect.trigger('change');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading services:', error);
+                $serviceSelect.empty().append('<option value="">Error loading services</option>');
+            })
+            .finally(() => {
+                $serviceSelect.prop('disabled', false);
+            });
+    }
+
+    // Auto-check/uncheck online consultation checkbox based on service consultation type
+    $('#service_id').on('change', function() {
+        const $serviceSelect = $(this);
+        const selectedOption = $serviceSelect.find('option:selected');
+        const consultationType = selectedOption.data('consultation-type');
+        const $isOnlineCheckbox = $('#is_online');
+
+        if (consultationType === 'online') {
+            $isOnlineCheckbox.prop('checked', true).trigger('change');
+        } else if (consultationType === 'in_person') {
+            $isOnlineCheckbox.prop('checked', false).trigger('change');
+        }
+        // If no service selected or consultation_type is not set, leave checkbox as is
+    });
 
     function showTimeSlotNotice(message) {
         $('#timeSlotNoticeText').text(message);

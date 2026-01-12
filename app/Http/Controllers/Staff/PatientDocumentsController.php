@@ -11,6 +11,7 @@ use App\Services\TemplateRenderer;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class PatientDocumentsController extends Controller
@@ -93,6 +94,39 @@ class PatientDocumentsController extends Controller
     {
         $this->authorize('create', [PatientDocument::class, $patient]);
 
+        $documentSource = $request->input('document_source', 'template');
+
+        // Handle PDF upload
+        if ($documentSource === 'upload') {
+            $validated = $request->validate([
+                'pdf_file' => 'required|file|mimes:pdf|max:10240', // 10MB max
+                'title' => 'required|string|max:255',
+            ]);
+
+            // Store the uploaded PDF
+            $file = $request->file('pdf_file');
+            $filename = 'patient_document_' . $patient->id . '_' . time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+            $pdfPath = $file->storeAs('patient_documents', $filename, 'private');
+
+            // Create document record
+            $document = PatientDocument::create([
+                'patient_id' => $patient->id,
+                'template_id' => null, // No template for uploaded files
+                'type' => 'letter', // Default to letter for uploaded PDFs
+                'title' => $validated['title'],
+                'status' => 'final', // Uploaded documents are immediately final
+                'content' => null, // No content for uploaded files
+                'form_data' => null,
+                'pdf_path' => $pdfPath,
+                'created_by' => Auth::id(),
+            ]);
+
+            return redirect()
+                ->route('staff.patients.documents.show', [$patient, $document])
+                ->with('success', 'Document uploaded successfully.');
+        }
+
+        // Handle template-based document creation
         $validated = $request->validate([
             'template_id' => 'required|integer',
             'title' => 'nullable|string|max:255',
@@ -304,13 +338,23 @@ class PatientDocumentsController extends Controller
     {
         $this->authorize('download', $document);
 
-        if (empty($document->pdf_path) || !$this->pdfService->pdfExists($document->pdf_path)) {
+        if (empty($document->pdf_path)) {
             return back()->with('error', 'PDF not found. Please finalise the document first.');
         }
 
-        $pdfPath = $this->pdfService->getPdfPath($document->pdf_path);
-        
-        return response()->download($pdfPath, Str::slug($document->title) . '.pdf');
+        // Check if file exists in private storage (uploaded files)
+        if (Storage::disk('private')->exists($document->pdf_path)) {
+            $filePath = Storage::disk('private')->path($document->pdf_path);
+            return response()->download($filePath, Str::slug($document->title) . '.pdf');
+        }
+
+        // Check if file exists via PdfService (generated PDFs)
+        if ($this->pdfService->pdfExists($document->pdf_path)) {
+            $pdfPath = $this->pdfService->getPdfPath($document->pdf_path);
+            return response()->download($pdfPath, Str::slug($document->title) . '.pdf');
+        }
+
+        return back()->with('error', 'PDF not found. Please finalise the document first.');
     }
 
     /**
