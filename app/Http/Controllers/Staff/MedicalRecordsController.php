@@ -549,26 +549,31 @@ class MedicalRecordsController extends Controller
         $medicalRecord->load(['patient', 'doctor', 'appointment', 'prescriptions', 'labReports', 'attachments.uploader']);
         
         // Ensure attachments are always loaded - refresh the relationship to get latest
+        // This is important after adding new attachments
         $medicalRecord->load('attachments.uploader');
         
-        // Debug: Log attachments count for troubleshooting
-        $attachmentsCount = $medicalRecord->attachments ? $medicalRecord->attachments->count() : 0;
+        // Double-check attachments exist by querying directly
         $directQueryCount = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count();
+        $relationshipCount = $medicalRecord->attachments ? $medicalRecord->attachments->count() : 0;
         
-        if ($directQueryCount > 0 && $attachmentsCount === 0) {
+        if ($directQueryCount > 0 && $relationshipCount === 0) {
             // If direct query finds attachments but relationship doesn't, force refresh
             \Log::warning('Medical record attachments mismatch - forcing refresh', [
                 'medical_record_id' => $medicalRecord->id,
-                'relationship_count' => $attachmentsCount,
+                'relationship_count' => $relationshipCount,
                 'direct_query_count' => $directQueryCount
             ]);
             $medicalRecord->refresh();
             $medicalRecord->load('attachments.uploader');
         }
         
+        // Final count after refresh
+        $finalAttachmentsCount = $medicalRecord->attachments ? $medicalRecord->attachments->count() : 0;
+        
         \Log::info('Medical record attachments loaded', [
             'medical_record_id' => $medicalRecord->id,
-            'attachments_count' => $medicalRecord->attachments ? $medicalRecord->attachments->count() : 0
+            'attachments_count' => $finalAttachmentsCount,
+            'direct_query_count' => $directQueryCount
         ]);
         
         // Load documents for the patient with proper filtering
@@ -1114,10 +1119,18 @@ class MedicalRecordsController extends Controller
             // Handle file uploads
             $this->handleFileUploads($request, $medicalRecord, $user);
             
-            if ($request->expectsJson()) {
+            // Refresh the medical record to ensure attachments are loaded
+            $medicalRecord->refresh();
+            $medicalRecord->load('attachments.uploader');
+            
+            // Get the count of attachments after upload
+            $attachmentsCount = $medicalRecord->attachments ? $medicalRecord->attachments->count() : 0;
+            
+            if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'message' => 'Attachments uploaded successfully.',
-                    'redirect' => route('staff.medical-records.show', $medicalRecord)
+                    'redirect' => route('staff.medical-records.show', $medicalRecord),
+                    'attachments_count' => $attachmentsCount
                 ]);
             }
             
@@ -1402,6 +1415,13 @@ class MedicalRecordsController extends Controller
                     'description' => $description,
                     'is_private' => true,
                     'virus_scan_status' => 'pending', // Will be scanned asynchronously
+                ]);
+                
+                \Log::info('Medical record attachment created', [
+                    'attachment_id' => $attachment->id,
+                    'medical_record_id' => $verifyRecord->id,
+                    'file_name' => $displayFileName,
+                    'file_path' => $path
                 ]);
             } catch (\Exception $e) {
                 \Log::error('Failed to create attachment record', [

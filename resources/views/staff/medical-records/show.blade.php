@@ -1002,16 +1002,32 @@ $(document).ready(function() {
             data: formData,
             processData: false,
             contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
             success: function(response) {
                 // Close modal
                 $('#addAttachmentModal').modal('hide');
                 
-                // Reload page to show new attachments
-                if (response.redirect) {
-                    window.location.href = response.redirect;
-                } else {
-                    window.location.reload();
+                // Show success message
+                if (response.message) {
+                    // Create a temporary success alert
+                    const alertHtml = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                        '<i class="fas fa-check-circle me-2"></i>' + response.message +
+                        '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                        '</div>';
+                    $('.fade-in-up').prepend(alertHtml);
                 }
+                
+                // Reload page to show new attachments
+                setTimeout(function() {
+                    if (response.redirect) {
+                        window.location.href = response.redirect;
+                    } else {
+                        window.location.reload();
+                    }
+                }, 500);
             },
             error: function(xhr) {
                 submitBtn.prop('disabled', false).html(originalText);
