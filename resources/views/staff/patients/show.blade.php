@@ -605,7 +605,16 @@
                     </div>
                 </div>
                 <div class="doctor-card-body">
-                    @if(isset($documents) && $documents->count() > 0)
+                    @php
+                        // Debug: Check if documents variable exists
+                        $hasDocuments = isset($documents) && $documents instanceof \Illuminate\Support\Collection && $documents->count() > 0;
+                        // Also check total documents count for this patient (for admin info)
+                        $totalDocumentsCount = null;
+                        if (auth()->user()->is_admin || auth()->user()->role === 'admin') {
+                            $totalDocumentsCount = $patient->documents()->count();
+                        }
+                    @endphp
+                    @if($hasDocuments)
                         <div class="list-group list-group-flush">
                             @foreach($documents as $document)
                             <div class="list-group-item border-0 px-0 py-3">
@@ -661,12 +670,23 @@
                     @else
                         <div class="text-center py-4">
                             <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
-                            <p class="text-muted mb-0">No documents found for this patient.</p>
+                            <p class="text-muted mb-0">
+                                @if($totalDocumentsCount !== null && $totalDocumentsCount > 0)
+                                    No documents visible to you. (Total: {{ $totalDocumentsCount }} - you can only see documents you created)
+                                @else
+                                    No documents found for this patient.
+                                @endif
+                            </p>
                             @can('create', [\App\Models\PatientDocument::class, $patient])
                             <a href="{{ route('staff.patients.documents.create', $patient) }}" class="btn btn-doctor-primary mt-3">
                                 <i class="fas fa-plus me-1"></i>Create First Document
                             </a>
                             @endcan
+                            <div class="mt-2">
+                                <a href="{{ route('staff.patients.documents.index', $patient) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-list me-1"></i>View All Documents
+                                </a>
+                            </div>
                         </div>
                     @endif
                 </div>

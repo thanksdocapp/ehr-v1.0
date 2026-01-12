@@ -377,15 +377,22 @@ class PatientsController extends Controller
         
         // Load documents with proper filtering (respect ownership for doctors/staff)
         $user = Auth::user();
-        $documentsQuery = $patient->documents();
-        if ($user->role !== 'admin' && !$user->is_admin) {
-            // For non-admin users, only show documents they created
-            $documentsQuery->where('created_by', $user->id);
+        try {
+            $documents = $patient->documents()
+                ->ownedBy($user) // Use the scope which handles admin vs non-admin filtering
+                ->with(['template', 'creator'])
+                ->latest()
+                ->limit(10)
+                ->get();
+        } catch (\Exception $e) {
+            // Fallback: if there's an error, initialize empty collection
+            $documents = collect([]);
+            \Log::warning('Error loading patient documents', [
+                'patient_id' => $patient->id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
         }
-        $documents = $documentsQuery->with(['template', 'creator'])
-            ->latest()
-            ->limit(10)
-            ->get();
         
         return view('staff.patients.show', compact('patient', 'documents'));
     }

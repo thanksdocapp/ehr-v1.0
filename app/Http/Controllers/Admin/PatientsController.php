@@ -601,11 +601,23 @@ class PatientsController extends Controller
         ]);
         
         // Load documents (admins see all documents)
-        $documents = $patient->documents()
-            ->with(['template', 'creator'])
-            ->latest()
-            ->limit(10)
-            ->get();
+        $user = Auth::user();
+        try {
+            $documents = $patient->documents()
+                ->ownedBy($user) // Use the scope which handles admin vs non-admin filtering
+                ->with(['template', 'creator'])
+                ->latest()
+                ->limit(10)
+                ->get();
+        } catch (\Exception $e) {
+            // Fallback: if there's an error, initialize empty collection
+            $documents = collect([]);
+            \Log::warning('Error loading patient documents', [
+                'patient_id' => $patient->id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+        }
         
         return view('admin.patients.show', compact('patient', 'documents'));
     }
