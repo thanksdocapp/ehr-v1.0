@@ -327,6 +327,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/medical-records/{medical_record}/edit', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'edit'])->name('medical-records.edit');
         Route::put('/medical-records/{medical_record}', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'update'])->name('medical-records.update');
         Route::delete('/medical-records/{medical_record}', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'destroy'])->name('medical-records.destroy');
+        Route::post('/medical-records/{medical_record}/add-attachments', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'addAttachments'])->name('medical-records.add-attachments');
         Route::get('medical-records/create-from-appointment/{appointment}', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'createFromAppointment'])->name('medical-records.create-from-appointment');
         Route::get('api/appointments-by-patient', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'getAppointmentsByPatient'])->name('api.appointments-by-patient');
         

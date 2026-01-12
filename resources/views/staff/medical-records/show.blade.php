@@ -309,12 +309,19 @@
             @endphp
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0">
-                        <i class="fas fa-paperclip me-2"></i>Documents or Attachments
-                        @if($hasAttachments)
-                            <span class="badge bg-light text-dark ms-2">{{ $attachments->count() }}</span>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="doctor-card-title mb-0">
+                            <i class="fas fa-paperclip me-2"></i>Documents or Attachments
+                            @if($hasAttachments)
+                                <span class="badge bg-light text-dark ms-2">{{ $attachments->count() }}</span>
+                            @endif
+                        </h5>
+                        @if(auth()->user()->role === 'doctor' || auth()->user()->is_admin)
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addAttachmentModal">
+                                <i class="fas fa-plus me-1"></i>Add Attachment
+                            </button>
                         @endif
-                    </h5>
+                    </div>
                 </div>
                 <div class="doctor-card-body">
                     @if($hasAttachments)
@@ -420,11 +427,88 @@
                         <div class="text-center py-4">
                             <i class="fas fa-paperclip fa-3x text-muted mb-3"></i>
                             <p class="text-muted mb-0">No attachments found for this medical record.</p>
-                            <small class="text-muted">Attachments can be added when creating or editing a medical record.</small>
+                            <small class="text-muted">Click "Add Attachment" above to upload documents or files.</small>
                         </div>
                     @endif
                 </div>
             </div>
+
+            <!-- Add Attachment Modal -->
+            @if(auth()->user()->role === 'doctor' || auth()->user()->is_admin)
+            <div class="modal fade" id="addAttachmentModal" tabindex="-1" aria-labelledby="addAttachmentModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <form id="addAttachmentForm" action="{{ route('staff.medical-records.add-attachments', $medicalRecord) }}" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="addAttachmentModalLabel">
+                                    <i class="fas fa-paperclip me-2"></i>Add Documents or Attachments
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>File Upload Guidelines:</strong>
+                                    <ul class="mb-0 mt-2 small">
+                                        <li>Maximum file size: 10MB per file</li>
+                                        <li>Allowed formats: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG, GIF, TXT, ZIP, RAR</li>
+                                        <li>Maximum {{ 10 - $attachments->count() }} file(s) can be added (10 total limit per record)</li>
+                                    </ul>
+                                </div>
+
+                                <div id="attachmentUploadContainer">
+                                    <div class="attachment-upload-item mb-3 p-3 border rounded">
+                                        <div class="row g-2">
+                                            <div class="col-md-5 mb-2">
+                                                <label class="form-label small">File</label>
+                                                <input type="file" 
+                                                       class="form-control form-control-sm attachment-file-input" 
+                                                       name="attachments[]" 
+                                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar"
+                                                       required>
+                                            </div>
+                                            <div class="col-md-3 mb-2">
+                                                <label class="form-label small">Type</label>
+                                                <select class="form-select form-select-sm" name="attachments_category[]" required>
+                                                    <option value="photo">Photo</option>
+                                                    <option value="results">Results</option>
+                                                    <option value="documents" selected>Documents</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3 mb-2">
+                                                <label class="form-label small">Description (Optional)</label>
+                                                <input type="text" 
+                                                       class="form-control form-control-sm" 
+                                                       name="attachments_description[]" 
+                                                       placeholder="Brief description"
+                                                       maxlength="500">
+                                            </div>
+                                            <div class="col-md-1 mb-2 d-flex align-items-end">
+                                                <button type="button" class="btn btn-sm btn-danger remove-attachment-btn" style="display: none;">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="addAttachmentBtn">
+                                    <i class="fas fa-plus me-1"></i>Add Another File
+                                </button>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload me-1"></i>Upload Attachments
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             <!-- Vital Signs -->
             @if($medicalRecord->vital_signs && !empty($medicalRecord->vital_signs))
@@ -834,6 +918,124 @@ $(document).ready(function() {
             // };
         }, 500);
     }
+
+    // Attachment upload management
+    const maxFiles = {{ 10 - $attachments->count() }};
+    let attachmentCount = 1;
+
+    // Show remove button when there's more than one file input
+    function updateRemoveButtons() {
+        const count = $('#attachmentUploadContainer .attachment-upload-item').length;
+        $('#attachmentUploadContainer .remove-attachment-btn').toggle(count > 1);
+    }
+
+    // Add another file input
+    $('#addAttachmentBtn').on('click', function() {
+        if ($('#attachmentUploadContainer .attachment-upload-item').length >= maxFiles) {
+            alert('Maximum ' + maxFiles + ' files allowed. You can add up to 10 files total per medical record.');
+            return;
+        }
+
+        const newAttachmentItem = `
+            <div class="attachment-upload-item mb-3 p-3 border rounded">
+                <div class="row g-2">
+                    <div class="col-md-5 mb-2">
+                        <label class="form-label small">File</label>
+                        <input type="file" 
+                               class="form-control form-control-sm attachment-file-input" 
+                               name="attachments[]" 
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar"
+                               required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Type</label>
+                        <select class="form-select form-select-sm" name="attachments_category[]" required>
+                            <option value="photo">Photo</option>
+                            <option value="results">Results</option>
+                            <option value="documents" selected>Documents</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Description (Optional)</label>
+                        <input type="text" 
+                               class="form-control form-control-sm" 
+                               name="attachments_description[]" 
+                               placeholder="Brief description"
+                               maxlength="500">
+                    </div>
+                    <div class="col-md-1 mb-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-sm btn-danger remove-attachment-btn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        $('#attachmentUploadContainer').append(newAttachmentItem);
+        updateRemoveButtons();
+    });
+
+    // Remove file input
+    $(document).on('click', '.remove-attachment-btn', function() {
+        $(this).closest('.attachment-upload-item').remove();
+        updateRemoveButtons();
+    });
+
+    // Initialize remove buttons
+    updateRemoveButtons();
+
+    // Handle form submission
+    $('#addAttachmentForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const submitBtn = $(this).find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        
+        // Disable submit button
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Uploading...');
+        
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                // Close modal
+                $('#addAttachmentModal').modal('hide');
+                
+                // Reload page to show new attachments
+                if (response.redirect) {
+                    window.location.href = response.redirect;
+                } else {
+                    window.location.reload();
+                }
+            },
+            error: function(xhr) {
+                submitBtn.prop('disabled', false).html(originalText);
+                
+                let errorMessage = 'Failed to upload attachments. Please try again.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    const errors = Object.values(xhr.responseJSON.errors).flat();
+                    errorMessage = errors.join('<br>');
+                }
+                
+                alert(errorMessage);
+            }
+        });
+    });
+
+    // Reset form when modal is closed
+    $('#addAttachmentModal').on('hidden.bs.modal', function() {
+        $('#addAttachmentForm')[0].reset();
+        // Reset to single file input
+        $('#attachmentUploadContainer .attachment-upload-item:not(:first)').remove();
+        updateRemoveButtons();
+    });
 });
 </script>
 @endpush

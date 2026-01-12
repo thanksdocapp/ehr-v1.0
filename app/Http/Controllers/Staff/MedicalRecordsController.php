@@ -1067,6 +1067,82 @@ class MedicalRecordsController extends Controller
     }
 
     /**
+     * Add attachments to an existing medical record.
+     * 
+     * @param Request $request
+     * @param MedicalRecord $medicalRecord
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    public function addAttachments(Request $request, MedicalRecord $medicalRecord)
+    {
+        $user = Auth::user();
+        
+        // Check if user can add attachments (doctors and admins only)
+        if ($user->role !== 'doctor' && !$user->is_admin) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'You do not have permission to add attachments.'], 403);
+            }
+            return redirect()->route('staff.medical-records.show', $medicalRecord)
+                ->with('error', 'You do not have permission to add attachments.');
+        }
+        
+        // Check if user can access this medical record
+        $departmentId = $this->getUserDepartmentId();
+        if ($departmentId && $medicalRecord->doctor && $medicalRecord->doctor->department_id !== $departmentId) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'You do not have permission to add attachments to this record.'], 403);
+            }
+            return redirect()->route('staff.medical-records.index')
+                ->with('error', 'You do not have permission to add attachments to this medical record.');
+        } elseif (!$departmentId && $medicalRecord->created_by !== $user->id && 
+            (!$medicalRecord->appointment || $medicalRecord->appointment->staff_id !== $user->id)) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'You do not have permission to add attachments to this record.'], 403);
+            }
+            return redirect()->route('staff.medical-records.index')
+                ->with('error', 'You do not have permission to add attachments to this medical record.');
+        }
+        
+        // Validate request
+        $validated = $request->validate([
+            'attachments.*' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,txt,zip,rar|max:10240', // 10MB max per file
+            'attachments_category.*' => 'required|in:photo,results,documents,other',
+            'attachments_description.*' => 'nullable|string|max:500',
+        ]);
+        
+        try {
+            // Handle file uploads
+            $this->handleFileUploads($request, $medicalRecord, $user);
+            
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Attachments uploaded successfully.',
+                    'redirect' => route('staff.medical-records.show', $medicalRecord)
+                ]);
+            }
+            
+            return redirect()->route('staff.medical-records.show', $medicalRecord)
+                ->with('success', 'Attachments uploaded successfully.');
+                
+        } catch (\Exception $e) {
+            \Log::error('Failed to add attachments to medical record', [
+                'medical_record_id' => $medicalRecord->id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to upload attachments: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->route('staff.medical-records.show', $medicalRecord)
+                ->with('error', 'Failed to upload attachments: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Handle file uploads for medical records.
      * 
      * @param Request $request
