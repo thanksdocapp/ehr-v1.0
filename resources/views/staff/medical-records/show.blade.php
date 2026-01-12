@@ -1016,6 +1016,26 @@ $(document).ready(function() {
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
         
+        // Check if files are selected
+        const fileInputs = $(this).find('input[type="file"]');
+        let hasFiles = false;
+        fileInputs.each(function() {
+            if (this.files && this.files.length > 0) {
+                hasFiles = true;
+                console.log('File selected:', this.files[0].name);
+            }
+        });
+        
+        if (!hasFiles) {
+            alert('Please select at least one file to upload.');
+            return;
+        }
+        
+        console.log('Submitting attachment form', {
+            url: $(this).attr('action'),
+            filesCount: fileInputs.filter(function() { return this.files && this.files.length > 0; }).length
+        });
+        
         // Disable submit button
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Uploading...');
         
@@ -1030,6 +1050,7 @@ $(document).ready(function() {
                 'Accept': 'application/json'
             },
             success: function(response) {
+                console.log('Upload successful', response);
                 // Close modal
                 $('#addAttachmentModal').modal('hide');
                 
@@ -1052,7 +1073,14 @@ $(document).ready(function() {
                     }
                 }, 500);
             },
-            error: function(xhr) {
+            error: function(xhr, status, error) {
+                console.error('Upload failed', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseJSON,
+                    statusCode: xhr.status
+                });
+                
                 submitBtn.prop('disabled', false).html(originalText);
                 
                 let errorMessage = 'Failed to upload attachments. Please try again.';
@@ -1061,6 +1089,10 @@ $(document).ready(function() {
                 } else if (xhr.responseJSON && xhr.responseJSON.errors) {
                     const errors = Object.values(xhr.responseJSON.errors).flat();
                     errorMessage = errors.join('<br>');
+                } else if (xhr.status === 0) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                } else if (xhr.status === 500) {
+                    errorMessage = 'Server error. Please check the logs and try again.';
                 }
                 
                 alert(errorMessage);

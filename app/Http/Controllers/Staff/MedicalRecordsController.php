@@ -1116,6 +1116,14 @@ class MedicalRecordsController extends Controller
         ]);
         
         try {
+            // Log before upload
+            \Log::info('Starting attachment upload', [
+                'medical_record_id' => $medicalRecord->id,
+                'user_id' => $user->id,
+                'has_files' => $request->hasFile('attachments'),
+                'files_count' => $request->hasFile('attachments') ? count($request->file('attachments')) : 0
+            ]);
+            
             // Handle file uploads
             $this->handleFileUploads($request, $medicalRecord, $user);
             
@@ -1125,9 +1133,15 @@ class MedicalRecordsController extends Controller
             // Query attachments directly to ensure we get the latest count
             $attachmentsCount = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count();
             
+            // Get all attachment IDs for debugging
+            $attachmentIds = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)
+                ->pluck('id')
+                ->toArray();
+            
             \Log::info('Attachments uploaded successfully', [
                 'medical_record_id' => $medicalRecord->id,
                 'attachments_count' => $attachmentsCount,
+                'attachment_ids' => $attachmentIds,
                 'user_id' => $user->id
             ]);
             
@@ -1172,8 +1186,18 @@ class MedicalRecordsController extends Controller
     {
         // Check if files are uploaded
         if (!$request->hasFile('attachments')) {
+            \Log::warning('No files in request for handleFileUploads', [
+                'medical_record_id' => $medicalRecord->id,
+                'request_keys' => array_keys($request->all()),
+                'has_attachments_key' => $request->has('attachments')
+            ]);
             return;
         }
+        
+        \Log::info('Files found in request', [
+            'medical_record_id' => $medicalRecord->id,
+            'files_count' => count($request->file('attachments'))
+        ]);
 
         // Ensure the medical record still exists
         if (!$medicalRecord->exists || !$medicalRecord->id) {
@@ -1212,8 +1236,17 @@ class MedicalRecordsController extends Controller
 
         // If no valid files, return early
         if (empty($files)) {
+            \Log::warning('No valid files after filtering', [
+                'medical_record_id' => $medicalRecord->id,
+                'original_files_count' => $request->hasFile('attachments') ? count($request->file('attachments')) : 0
+            ]);
             return;
         }
+        
+        \Log::info('Processing file uploads', [
+            'medical_record_id' => $medicalRecord->id,
+            'valid_files_count' => count($files)
+        ]);
 
         // Check total number of files (including existing)
         $existingCount = $medicalRecord->attachments()->count();
