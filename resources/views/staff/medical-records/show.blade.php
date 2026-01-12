@@ -317,15 +317,6 @@
                     </h5>
                 </div>
                 <div class="doctor-card-body">
-                    {{-- Debug output (remove after fixing) --}}
-                    @if(config('app.debug'))
-                        <div class="alert alert-info small mb-2">
-                            <strong>Debug:</strong> 
-                            Relationship loaded: {{ $medicalRecord->relationLoaded('attachments') ? 'Yes' : 'No' }}, 
-                            Attachments count: {{ $attachments->count() }}, 
-                            Direct query count: {{ \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count() }}
-                        </div>
-                    @endif
                     @if($hasAttachments)
                         <div class="table-responsive">
                             <table class="table table-hover">
