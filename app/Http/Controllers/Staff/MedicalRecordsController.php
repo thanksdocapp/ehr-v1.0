@@ -1192,10 +1192,10 @@ class MedicalRecordsController extends Controller
      * @param Request $request
      * @param MedicalRecord $medicalRecord
      * @param \App\Models\User $user
-     * @param array $rejectionReasons Reference array to collect rejection reasons
+     * @param array|null $rejectionReasons Reference array to collect rejection reasons (optional)
      * @return void
      */
-    private function handleFileUploads(Request $request, MedicalRecord $medicalRecord, $user, array &$rejectionReasons = []): void
+    private function handleFileUploads(Request $request, MedicalRecord $medicalRecord, $user, ?array &$rejectionReasons = null): void
     {
         // Check if files are uploaded
         if (!$request->hasFile('attachments')) {
