@@ -245,9 +245,10 @@ class AppointmentController extends Controller
                 ->exists();
 
             if (!$isBooked) {
-                // Only include slot if it's in the future (for today's date, ensure time hasn't passed)
-                $isToday = $current->isToday();
-                $isFuture = !$isToday || $current->gt($now);
+                // Only include slot if it's at least 5 minutes in the future
+                // Doctors can book appointments with only 5 minutes advance notice
+                $minimumAdvanceTime = $now->copy()->addMinutes(5);
+                $isFuture = !$current->isToday() || $current->gt($minimumAdvanceTime);
                 
                 if ($isFuture) {
                     $slots[] = [

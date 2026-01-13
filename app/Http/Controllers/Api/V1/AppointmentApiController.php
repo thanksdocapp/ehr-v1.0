@@ -410,9 +410,10 @@ class AppointmentApiController extends BaseApiController
                     $formattedTime = $currentSlot->format('h:i A');
 
                     if (!in_array($timeSlot, $existingAppointments)) {
-                        // Check if slot is in the future (for today, ensure time hasn't passed)
-                        // Only include slots that are after the current time
-                        if ($currentSlot->gt($now)) {
+                        // Check if slot is at least 5 minutes in the future
+                        // Doctors can book appointments with only 5 minutes advance notice
+                        $minimumAdvanceTime = $now->copy()->addMinutes(5);
+                        if ($currentSlot->gt($minimumAdvanceTime)) {
                             $availableSlots[] = [
                                 'time' => $timeSlot,
                                 'formatted_time' => $formattedTime,

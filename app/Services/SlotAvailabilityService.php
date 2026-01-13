@@ -223,10 +223,10 @@ class SlotAvailabilityService
      */
     private function isSlotAvailable($slotStart, $slotEnd, $existingAppointments, $blockedTimes)
     {
-        // Check if slot is in the past - compare full datetime to current time
-        // Only block if the slot start time has actually passed
-        $now = Carbon::now();
-        if ($slotStart->lte($now)) {
+        // Check if slot is at least 5 minutes in the future
+        // Doctors can book appointments with only 5 minutes advance notice
+        $minimumAdvanceTime = Carbon::now()->addMinutes(5);
+        if ($slotStart->lte($minimumAdvanceTime)) {
             return false;
         }
 
