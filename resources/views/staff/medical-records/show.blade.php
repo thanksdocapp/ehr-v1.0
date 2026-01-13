@@ -412,11 +412,6 @@
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                 @endif
-                                                <a href="{{ route('staff.medical-record-attachments.download', $attachment) }}" 
-                                                   class="btn btn-sm btn-outline-success me-1" 
-                                                   title="Download">
-                                                    <i class="fas fa-download"></i>
-                                                </a>
                                             @else
                                                 @if(!$canAccess)
                                                     <span class="text-muted small" title="You don't have permission to access this file">
@@ -427,18 +422,6 @@
                                                         <i class="fas fa-exclamation-triangle me-1"></i>Unsafe
                                                     </span>
                                                 @endif
-                                            @endif
-                                            @if(auth()->user()->is_admin || $attachment->uploaded_by === auth()->id())
-                                                <form action="{{ route('staff.medical-record-attachments.destroy', $attachment) }}" 
-                                                      method="POST" 
-                                                      class="d-inline"
-                                                      onsubmit="return confirm('Are you sure you want to delete this file?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
                                             @endif
                                         </td>
                                     </tr>
