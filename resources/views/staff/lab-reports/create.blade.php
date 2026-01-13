@@ -438,9 +438,119 @@ $(document).ready(function() {
         applyFilter();
     })();
 
-    // Set test date to today by default
-    // Date pickers are now handled by centralized flatpickr-init.js
-    // No manual date setting needed - default dates are set via data-default-date attribute
+    // Collection Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initCollectionDatePicker() {
+        const collectionDateInput = document.getElementById('collection_date');
+        if (!collectionDateInput) return;
+
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
+        // Initialize Flatpickr with UK format
+        // Collection date can be in the past (samples collected earlier) but not in the future
+        const collectionPicker = flatpickr(collectionDateInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            maxDate: "today", // Cannot select future dates
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            defaultDate: "today",
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
+            }
+        });
+
+        // Store instance for easy access
+        collectionDateInput._flatpickr = collectionPicker;
+    })();
+
+    // Report Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initReportDatePicker() {
+        const reportDateInput = document.getElementById('report_date');
+        if (!reportDateInput) return;
+
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
+        // Initialize Flatpickr with UK format
+        // Report date should be today or future (cannot report in the past)
+        const reportPicker = flatpickr(reportDateInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            minDate: "today",
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
+            }
+        });
+
+        // Store instance for easy access
+        reportDateInput._flatpickr = reportPicker;
+    })();
+
+    // Set default dates if empty
+    if (!$('#collection_date').val()) {
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        $('#collection_date').val(dd + '/' + mm + '/' + yyyy);
+    }
+
+    // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
+    const labReportForm = document.getElementById('labReportForm');
+    if (labReportForm) {
+        labReportForm.addEventListener('submit', function(e) {
+            // Convert collection_date
+            const collectionDateInput = document.getElementById('collection_date');
+            if (collectionDateInput) {
+                const dateValue = collectionDateInput.value.trim();
+                if (dateValue && dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const parts = dateValue.split('/');
+                    collectionDateInput.value = parts[2] + '-' + parts[1] + '-' + parts[0];
+                }
+            }
+            
+            // Convert report_date
+            const reportDateInput = document.getElementById('report_date');
+            if (reportDateInput && reportDateInput.value) {
+                const dateValue = reportDateInput.value.trim();
+                if (dateValue && dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const parts = dateValue.split('/');
+                    reportDateInput.value = parts[2] + '-' + parts[1] + '-' + parts[0];
+                }
+            }
+        });
+    }
 
     // Auto-dismiss alerts after 5 seconds
     setTimeout(function() {
