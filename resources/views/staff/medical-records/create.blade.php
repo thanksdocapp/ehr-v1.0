@@ -225,6 +225,7 @@
                                         <option value="emergency" {{ old('record_type') === 'emergency' ? 'selected' : '' }}>Emergency</option>
                                         <option value="routine_checkup" {{ old('record_type') === 'routine_checkup' ? 'selected' : '' }}>Routine Checkup</option>
                                         <option value="procedure" {{ old('record_type') === 'procedure' ? 'selected' : '' }}>Procedure</option>
+                                        <option value="administration_update" {{ old('record_type') === 'administration_update' ? 'selected' : '' }}>Administration update</option>
                                     </select>
                                     @error('record_type')
                                         <div class="invalid-feedback">{{ $message }}</div>
