@@ -616,6 +616,69 @@ $(document).ready(function() {
         applyFilter();
     })();
 
+    // Prescription Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initPrescriptionDatePicker() {
+        const prescriptionDateInput = document.getElementById('prescription_date');
+        if (!prescriptionDateInput) return;
+
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
+        // Initialize Flatpickr with UK format
+        const prescriptionPicker = flatpickr(prescriptionDateInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            minDate: "today",
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            defaultDate: "today",
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
+            }
+        });
+
+        // Store instance for easy access
+        prescriptionDateInput._flatpickr = prescriptionPicker;
+    })();
+
+    // Set default date if empty
+    if (!$('#prescription_date').val()) {
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        $('#prescription_date').val(dd + '/' + mm + '/' + yyyy);
+    }
+
+    // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
+    const prescriptionForm = document.getElementById('prescriptionForm');
+    if (prescriptionForm) {
+        prescriptionForm.addEventListener('submit', function(e) {
+            const prescriptionDateInput = document.getElementById('prescription_date');
+            if (prescriptionDateInput) {
+                const dateValue = prescriptionDateInput.value.trim();
+                if (dateValue && dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const parts = dateValue.split('/');
+                    prescriptionDateInput.value = parts[2] + '-' + parts[1] + '-' + parts[0];
+                }
+            }
+        });
+    }
+
     // Patient selection change
     $('#patient_id').on('change', function() {
         const selectedOption = $(this).find('option:selected');
