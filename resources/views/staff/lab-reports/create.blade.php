@@ -4,6 +4,11 @@
 @section('page-title', 'Create Lab Report')
 @section('page-subtitle', 'Fill out the form below to create a new lab report for selected patient')
 
+@push('styles')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+@endpush
+
 @section('content')
 <div class="fade-in-up">
     <!-- Page Header -->
@@ -134,6 +139,8 @@
                                            placeholder="dd/mm/yyyy"
                                            pattern="\d{2}/\d{2}/\d{4}"
                                            maxlength="10"
+                                           data-min-date="today"
+                                           data-max-date="today"
                                            data-default-date="today"
                                            required>
                                     @error('collection_date')
@@ -334,6 +341,8 @@
 @endsection
 
 @push('scripts')
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
 $(document).ready(function() {
     // ===== Patient search (alerts-style: live filter the select options) =====
