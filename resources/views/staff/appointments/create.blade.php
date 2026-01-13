@@ -5,6 +5,8 @@
 @section('page-subtitle', auth()->user()->role === 'doctor' ? 'Schedule appointments for your patients' : 'Book appointments for patients with available doctors')
 
 @push('styles')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
     /* Time slot notice (scoped to this view) */
     #timeSlotNotice {
@@ -467,9 +469,10 @@
 @endsection
 
 @push('scripts')
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
 $(document).ready(function() {
-    // Flatpickr is now loaded globally via base layout (flatpickr-init.js)
     // ===== Patient search (alerts-style: live filter the select options) =====
     (function initPatientSelectSearch() {
         const select = document.getElementById('patient_id');
@@ -565,110 +568,96 @@ $(document).ready(function() {
         applyFilter();
     })();
 
-    // Date picker is now handled by centralized flatpickr-init.js
-    // Set up change handlers that work with Flatpickr
-    let handlerSetupAttempts = 0;
-    const MAX_HANDLER_SETUP_ATTEMPTS = 20; // 20 * 200ms = 4 seconds max
-    
-    function setupAppointmentDateHandlers() {
-        handlerSetupAttempts++;
-        const dateInput = document.getElementById('appointment_date');
-        
-        if (!dateInput) {
-            if (handlerSetupAttempts < MAX_HANDLER_SETUP_ATTEMPTS) {
-                setTimeout(setupAppointmentDateHandlers, 200);
-            } else {
-                console.warn('Appointment date input not found after', MAX_HANDLER_SETUP_ATTEMPTS, 'attempts');
-            }
+    // Appointment Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    // Using the same functional implementation as staff/medical-records/create Record Date
+    (function initAppointmentDatePicker() {
+        const appointmentDateInput = document.getElementById('appointment_date');
+        if (!appointmentDateInput) return;
+
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
             return;
         }
-        
-        // Get the Flatpickr instance if it exists
-        const fpInstance = dateInput._flatpickr || (dateInput.flatpickr ? flatpickr.instances.find(fp => fp.input === dateInput) : null);
-        
-        // If Flatpickr is initialized, set up handlers
-        if (fpInstance) {
-            console.log('Setting up appointment date handlers with Flatpickr instance');
-            
-            // Use Flatpickr's onChange event (push to existing array)
-            if (Array.isArray(fpInstance.config.onChange)) {
-                fpInstance.config.onChange.push(function(selectedDates, dateStr, instance) {
-                    console.log('Flatpickr onChange triggered:', dateStr);
-                    // Trigger our handlers after a short delay to ensure value is set
-                    setTimeout(function() {
-                        if (typeof loadAvailableTimeSlots === 'function') {
-                            loadAvailableTimeSlots();
-                        }
-                        if (typeof checkScheduleConflicts === 'function') {
-                            checkScheduleConflicts();
-                        }
-                    }, 100);
-                });
-            } else {
-                // If onChange is not an array, wrap it
-                const existingOnChange = fpInstance.config.onChange;
-                fpInstance.config.onChange = function(selectedDates, dateStr, instance) {
-                    if (existingOnChange) {
-                        existingOnChange(selectedDates, dateStr, instance);
-                    }
-                    console.log('Flatpickr onChange triggered:', dateStr);
-                    setTimeout(function() {
-                        if (typeof loadAvailableTimeSlots === 'function') {
-                            loadAvailableTimeSlots();
-                        }
-                        if (typeof checkScheduleConflicts === 'function') {
-                            checkScheduleConflicts();
-                        }
-                    }, 100);
-                };
-            }
-            
-            // Also listen to native change event for manual input (fallback)
-            $(dateInput).off('change.appointment').on('change.appointment', function() {
-                console.log('Native change event triggered on appointment_date');
-                if (typeof loadAvailableTimeSlots === 'function') {
-                    loadAvailableTimeSlots();
+
+        // Calculate max date (2 years from today)
+        const maxDate = new Date();
+        maxDate.setFullYear(maxDate.getFullYear() + 2);
+
+        // Initialize Flatpickr with UK format
+        const appointmentPicker = flatpickr(appointmentDateInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            minDate: "today",
+            maxDate: maxDate,
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            defaultDate: "today",
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
                 }
-                if (typeof checkScheduleConflicts === 'function') {
-                    checkScheduleConflicts();
-                }
-            });
-            
-            console.log('Appointment date handlers set up successfully');
-        } else {
-            // Flatpickr not initialized yet, wait and retry
-            if (handlerSetupAttempts < MAX_HANDLER_SETUP_ATTEMPTS) {
-                setTimeout(setupAppointmentDateHandlers, 200);
-            } else {
-                console.warn('Flatpickr not initialized on appointment_date after', MAX_HANDLER_SETUP_ATTEMPTS, 'attempts. Using fallback handler.');
-                // Fallback: set up basic change handler
-                $(dateInput).off('change.appointment').on('change.appointment', function() {
+                
+                // Trigger time slot loading and conflict checking
+                setTimeout(function() {
                     if (typeof loadAvailableTimeSlots === 'function') {
                         loadAvailableTimeSlots();
                     }
                     if (typeof checkScheduleConflicts === 'function') {
                         checkScheduleConflicts();
                     }
-                });
+                }, 100);
             }
+        });
+
+        // Store instance for easy access
+        appointmentDateInput._flatpickr = appointmentPicker;
+
+        // Also listen to native change event for manual input (fallback)
+        $(appointmentDateInput).off('change.appointment').on('change.appointment', function() {
+            if (typeof loadAvailableTimeSlots === 'function') {
+                loadAvailableTimeSlots();
+            }
+            if (typeof checkScheduleConflicts === 'function') {
+                checkScheduleConflicts();
+            }
+        });
+
+        // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
+        const form = document.getElementById('appointmentForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const dateValue = appointmentDateInput.value.trim();
+                
+                if (dateValue) {
+                    // Check if it's in dd/mm/yyyy format
+                    if (dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                        const parts = dateValue.split('/');
+                        // Convert to yyyy-mm-dd format
+                        const convertedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+                        appointmentDateInput.value = convertedDate;
+                    }
+                }
+            });
         }
-    }
-    
-    // Start setting up handlers after DOM is ready and scripts are loaded
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            // Wait for Flatpickr library and init script to load
-            setTimeout(setupAppointmentDateHandlers, 800);
-        });
-    } else {
-        setTimeout(setupAppointmentDateHandlers, 800);
-    }
-    
-    // Also try after jQuery is ready (in case DOMContentLoaded already fired)
-    if (typeof jQuery !== 'undefined') {
-        jQuery(document).ready(function() {
-            setTimeout(setupAppointmentDateHandlers, 1000);
-        });
+    })();
+
+    // Set default date if empty
+    if (!$('#appointment_date').val()) {
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        $('#appointment_date').val(dd + '/' + mm + '/' + yyyy);
     }
 
     // Department filter for doctors
