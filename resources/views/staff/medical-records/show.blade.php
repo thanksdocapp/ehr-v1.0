@@ -1008,20 +1008,15 @@ $(document).ready(function() {
     // Initialize remove buttons
     updateRemoveButtons();
 
-    // Handle form submission - Use regular form submission instead of AJAX for reliability
+    // Simple form submission - just validate files before submit
     $('#addAttachmentForm').on('submit', function(e) {
-        // Remove preventDefault to allow normal form submission
-        // This is more reliable than AJAX for file uploads
-        
-        const submitBtn = $(this).find('button[type="submit"]');
-        const originalText = submitBtn.html();
-        
         // Check if files are selected
         const fileInputs = $(this).find('input[type="file"]');
         let hasFiles = false;
         fileInputs.each(function() {
             if (this.files && this.files.length > 0) {
                 hasFiles = true;
+                return false; // break
             }
         });
         
@@ -1031,11 +1026,7 @@ $(document).ready(function() {
             return false;
         }
         
-        // Disable submit button to prevent double submission
-        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Uploading...');
-        
-        // Let the form submit normally - the server will redirect back
-        return true;
+        // Let form submit normally - no preventDefault
     });
 
     // Reset form when modal is closed
