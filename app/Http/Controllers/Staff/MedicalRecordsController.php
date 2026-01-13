@@ -1287,8 +1287,16 @@ class MedicalRecordsController extends Controller
         $files = $request->file('attachments');
         $categories = $request->input('attachments_category', []);
         $descriptions = $request->input('attachments_description', []);
+        
+        \Log::info('Files received in handleFileUploads', [
+            'medical_record_id' => $medicalRecord->id,
+            'files_type' => gettype($files),
+            'files_is_array' => is_array($files),
+            'files_count' => is_array($files) ? count($files) : ($files ? 1 : 0),
+        ]);
 
         // Filter out empty file inputs (when no file is selected)
+        $originalCount = is_array($files) ? count($files) : ($files ? 1 : 0);
         if (is_array($files)) {
             $files = array_filter($files, function($file) {
                 return $file && $file->isValid();
@@ -1297,13 +1305,14 @@ class MedicalRecordsController extends Controller
             $files = $files && $files->isValid() ? [$files] : [];
         }
 
-        // If no valid files, return early
+        // If no valid files, throw exception instead of returning silently
         if (empty($files)) {
             \Log::warning('No valid files after filtering', [
                 'medical_record_id' => $medicalRecord->id,
-                'original_files_count' => $request->hasFile('attachments') ? count($request->file('attachments')) : 0
+                'original_files_count' => $originalCount,
+                'has_file_attachments' => $request->hasFile('attachments'),
             ]);
-            return;
+            throw new \Exception('No valid files found after filtering. Files may be invalid or corrupted. Please try selecting files again.');
         }
         
         \Log::info('Processing file uploads', [
