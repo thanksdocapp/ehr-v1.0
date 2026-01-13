@@ -1145,16 +1145,9 @@ class MedicalRecordsController extends Controller
                 'user_id' => $user->id
             ]);
             
-            if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
-                return response()->json([
-                    'message' => 'Attachments uploaded successfully.',
-                    'redirect' => route('staff.medical-records.show', $medicalRecord),
-                    'attachments_count' => $attachmentsCount
-                ]);
-            }
-            
+            // Always redirect for file uploads (more reliable than JSON response)
             return redirect()->route('staff.medical-records.show', $medicalRecord)
-                ->with('success', 'Attachments uploaded successfully.');
+                ->with('success', 'Attachments uploaded successfully. ' . $attachmentsCount . ' attachment(s) added.');
                 
         } catch (\Exception $e) {
             \Log::error('Failed to add attachments to medical record', [

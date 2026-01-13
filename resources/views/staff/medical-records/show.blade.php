@@ -1008,11 +1008,11 @@ $(document).ready(function() {
     // Initialize remove buttons
     updateRemoveButtons();
 
-    // Handle form submission
+    // Handle form submission - Use regular form submission instead of AJAX for reliability
     $('#addAttachmentForm').on('submit', function(e) {
-        e.preventDefault();
+        // Remove preventDefault to allow normal form submission
+        // This is more reliable than AJAX for file uploads
         
-        const formData = new FormData(this);
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
         
@@ -1022,82 +1022,20 @@ $(document).ready(function() {
         fileInputs.each(function() {
             if (this.files && this.files.length > 0) {
                 hasFiles = true;
-                console.log('File selected:', this.files[0].name);
             }
         });
         
         if (!hasFiles) {
+            e.preventDefault();
             alert('Please select at least one file to upload.');
-            return;
+            return false;
         }
         
-        console.log('Submitting attachment form', {
-            url: $(this).attr('action'),
-            filesCount: fileInputs.filter(function() { return this.files && this.files.length > 0; }).length
-        });
-        
-        // Disable submit button
+        // Disable submit button to prevent double submission
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Uploading...');
         
-        $.ajax({
-            url: $(this).attr('action'),
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            },
-            success: function(response) {
-                console.log('Upload successful', response);
-                // Close modal
-                $('#addAttachmentModal').modal('hide');
-                
-                // Show success message
-                if (response.message) {
-                    // Create a temporary success alert
-                    const alertHtml = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
-                        '<i class="fas fa-check-circle me-2"></i>' + response.message +
-                        '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-                        '</div>';
-                    $('.fade-in-up').prepend(alertHtml);
-                }
-                
-                // Reload page to show new attachments
-                setTimeout(function() {
-                    if (response.redirect) {
-                        window.location.href = response.redirect;
-                    } else {
-                        window.location.reload();
-                    }
-                }, 500);
-            },
-            error: function(xhr, status, error) {
-                console.error('Upload failed', {
-                    status: status,
-                    error: error,
-                    response: xhr.responseJSON,
-                    statusCode: xhr.status
-                });
-                
-                submitBtn.prop('disabled', false).html(originalText);
-                
-                let errorMessage = 'Failed to upload attachments. Please try again.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    const errors = Object.values(xhr.responseJSON.errors).flat();
-                    errorMessage = errors.join('<br>');
-                } else if (xhr.status === 0) {
-                    errorMessage = 'Network error. Please check your connection and try again.';
-                } else if (xhr.status === 500) {
-                    errorMessage = 'Server error. Please check the logs and try again.';
-                }
-                
-                alert(errorMessage);
-            }
-        });
+        // Let the form submit normally - the server will redirect back
+        return true;
     });
 
     // Reset form when modal is closed
