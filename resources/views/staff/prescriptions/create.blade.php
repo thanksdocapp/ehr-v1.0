@@ -4,6 +4,11 @@
 @section('page-title', 'Create Prescription')
 @section('page-subtitle', auth()->user()->role === 'doctor' ? 'Create new prescriptions for your patients' : (auth()->user()->role === 'pharmacist' ? 'Create and dispense prescriptions' : 'Create prescriptions with doctor supervision'))
 
+@push('styles')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+@endpush
+
 @section('content')
 <div class="fade-in-up">
     <!-- Page Header -->
@@ -512,6 +517,8 @@
 @endsection
 
 @push('scripts')
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
 $(document).ready(function() {
     let medicationCount = 0;

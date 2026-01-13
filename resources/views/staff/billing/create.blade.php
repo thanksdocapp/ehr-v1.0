@@ -5,6 +5,8 @@
 @section('page-subtitle', 'Create a new bill for patient services')
 
 @push('styles')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 @include('admin.shared.modern-ui')
 @endpush
 
@@ -110,6 +112,7 @@
                                                placeholder="dd/mm/yyyy"
                                                pattern="\d{2}/\d{2}/\d{4}"
                                                maxlength="10"
+                                               data-min-date="today"
                                                data-default-date="today"
                                                required>
                                         @error('billing_date')
@@ -362,6 +365,8 @@
 @endsection
 
 @push('scripts')
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script>
 $(document).ready(function() {
     // ===== Patient search (alerts-style: live filter the select options) =====
@@ -457,23 +462,149 @@ $(document).ready(function() {
         applyFilter();
     })();
 
-    // Set due date 30 days from billing date when billing date changes
-    // Note: Date conversion is handled by flatpickr-init.js
-    $('#billing_date').on('change', function() {
-        if ($(this).val() && !$('#due_date').val()) {
-            // Parse UK date format (dd/mm/yyyy) to calculate 30 days later
-            const dateStr = $(this).val();
-            if (dateStr && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                const parts = dateStr.split('/');
-                const date = new Date(parts[2], parts[1] - 1, parts[0]);
-                date.setDate(date.getDate() + 30);
-                const dd = String(date.getDate()).padStart(2, '0');
-                const mm = String(date.getMonth() + 1).padStart(2, '0');
-                const yyyy = date.getFullYear();
-                $('#due_date').val(dd + '/' + mm + '/' + yyyy);
+    // Billing Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initBillingDatePicker() {
+        const billingDateInput = document.getElementById('billing_date');
+        if (!billingDateInput) return;
+
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
+        // Initialize Flatpickr with UK format
+        const billingPicker = flatpickr(billingDateInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            minDate: "today",
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            defaultDate: "today",
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
+                
+                // Update due date minDate when billing date changes
+                const dueDateInput = document.getElementById('due_date');
+                if (dueDateInput && dueDateInput._flatpickr) {
+                    dueDateInput._flatpickr.set('minDate', selectedDates[0] || 'today');
+                }
+                
+                // Auto-set due date to 30 days later if not already set
+                if (selectedDates[0] && !dueDateInput.value) {
+                    const dueDate = new Date(selectedDates[0]);
+                    dueDate.setDate(dueDate.getDate() + 30);
+                    const dd = String(dueDate.getDate()).padStart(2, '0');
+                    const mm = String(dueDate.getMonth() + 1).padStart(2, '0');
+                    const yyyy = dueDate.getFullYear();
+                    if (dueDateInput._flatpickr) {
+                        dueDateInput._flatpickr.setDate(dueDate, false);
+                    } else {
+                        dueDateInput.value = dd + '/' + mm + '/' + yyyy;
+                    }
+                }
+            }
+        });
+
+        // Store instance for easy access
+        billingDateInput._flatpickr = billingPicker;
+    })();
+
+    // Due Date UK format (dd/mm/yyyy) with Flatpickr calendar picker
+    (function initDueDatePicker() {
+        const dueDateInput = document.getElementById('due_date');
+        if (!dueDateInput) return;
+
+        // Wait for Flatpickr to be available
+        if (typeof flatpickr === 'undefined') {
+            console.error('Flatpickr library not loaded');
+            return;
+        }
+
+        // Get billing date to set as minDate
+        const billingDateInput = document.getElementById('billing_date');
+        let minDate = 'today';
+        if (billingDateInput && billingDateInput.value) {
+            // Parse billing date to set as minimum
+            const billingDateStr = billingDateInput.value;
+            if (billingDateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                const parts = billingDateStr.split('/');
+                minDate = new Date(parts[2], parts[1] - 1, parts[0]);
             }
         }
-    });
+
+        // Initialize Flatpickr with UK format
+        const duePicker = flatpickr(dueDateInput, {
+            dateFormat: "d/m/Y",
+            altInput: false,
+            altFormat: "d/m/Y",
+            locale: {
+                firstDayOfWeek: 1 // Monday
+            },
+            minDate: minDate,
+            allowInput: true, // Allow manual typing
+            clickOpens: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                // Ensure format is dd/mm/yyyy
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const date = new Date(dateStr);
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    instance.input.value = dd + '/' + mm + '/' + yyyy;
+                }
+            }
+        });
+
+        // Store instance for easy access
+        dueDateInput._flatpickr = duePicker;
+    })();
+
+    // Set default dates if empty
+    if (!$('#billing_date').val()) {
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        $('#billing_date').val(dd + '/' + mm + '/' + yyyy);
+    }
+
+    // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
+    const billingForm = document.getElementById('createBillForm');
+    if (billingForm) {
+        billingForm.addEventListener('submit', function(e) {
+            // Convert billing_date
+            const billingDateInput = document.getElementById('billing_date');
+            if (billingDateInput) {
+                const dateValue = billingDateInput.value.trim();
+                if (dateValue && dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const parts = dateValue.split('/');
+                    billingDateInput.value = parts[2] + '-' + parts[1] + '-' + parts[0];
+                }
+            }
+            
+            // Convert due_date
+            const dueDateInput = document.getElementById('due_date');
+            if (dueDateInput && dueDateInput.value) {
+                const dateValue = dueDateInput.value.trim();
+                if (dateValue && dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const parts = dateValue.split('/');
+                    dueDateInput.value = parts[2] + '-' + parts[1] + '-' + parts[0];
+                }
+            }
+        });
+    }
 
     // Auto-format amount inputs
     $('#subtotal, #discount, #tax').on('blur', function() {
