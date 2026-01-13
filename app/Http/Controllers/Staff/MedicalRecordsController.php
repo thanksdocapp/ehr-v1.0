@@ -897,7 +897,8 @@ class MedicalRecordsController extends Controller
                     throw new \Exception('Medical record was deleted before file upload. Transaction will be rolled back.');
                 }
                 
-                $this->handleFileUploads($request, $medicalRecord, $user);
+                $rejectionReasons = [];
+                $this->handleFileUploads($request, $medicalRecord, $user, $rejectionReasons);
                 
                 // Verify record still exists after file upload
                 $verifyAfterUpload = MedicalRecord::find($medicalRecord->id);
