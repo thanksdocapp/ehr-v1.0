@@ -1108,103 +1108,28 @@ class MedicalRecordsController extends Controller
                 ->with('error', 'You do not have permission to add attachments to this medical record.');
         }
         
-        // Log request details BEFORE validation
-        \Log::info('Before validation - attachment upload request', [
-            'medical_record_id' => $medicalRecord->id,
-            'has_file_attachments' => $request->hasFile('attachments'),
-            'has_attachments_key' => $request->has('attachments'),
-            'request_method' => $request->method(),
-            'content_type' => $request->header('Content-Type'),
-            'all_request_keys' => array_keys($request->all()),
-        ]);
-        
-        // Validate request - make attachments required at top level first
-        try {
-            $request->validate([
-                'attachments' => 'required|array|min:1',
-                'attachments.*' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,txt,zip,rar|max:10240', // 10MB max per file
-                'attachments_category.*' => 'required|in:photo,results,documents,other',
-                'attachments_description.*' => 'nullable|string|max:500',
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $validationException) {
-            \Log::error('Validation failed for attachment upload', [
-                'medical_record_id' => $medicalRecord->id,
-                'errors' => $validationException->errors(),
-                'has_file_attachments' => $request->hasFile('attachments'),
-                'request_keys' => array_keys($request->all())
-            ]);
-            throw $validationException;
-        }
-        
-        \Log::info('Validation passed - proceeding with upload', [
-            'medical_record_id' => $medicalRecord->id,
-            'has_file_attachments' => $request->hasFile('attachments'),
-            'files_count' => $request->hasFile('attachments') ? count($request->file('attachments')) : 0
-        ]);
+        // Get count before upload
+        $beforeCount = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count();
         
         try {
-            // Log before upload
-            \Log::info('Starting attachment upload', [
-                'medical_record_id' => $medicalRecord->id,
-                'user_id' => $user->id,
-                'has_files' => $request->hasFile('attachments'),
-                'files_count' => $request->hasFile('attachments') ? count($request->file('attachments')) : 0,
-                'request_keys' => array_keys($request->all()),
-                'attachments_in_request' => $request->has('attachments')
-            ]);
-            
-            // Get count before upload
-            $beforeCount = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count();
-            
-            // Handle file uploads
-            try {
-                $this->handleFileUploads($request, $medicalRecord, $user);
-            } catch (\Exception $uploadException) {
-                \Log::error('Error in handleFileUploads', [
-                    'medical_record_id' => $medicalRecord->id,
-                    'error' => $uploadException->getMessage(),
-                    'trace' => $uploadException->getTraceAsString()
-                ]);
-                throw $uploadException;
-            }
+            // Handle file uploads - same approach as edit form (no validation, just process)
+            $this->handleFileUploads($request, $medicalRecord, $user);
             
             // Refresh the medical record to ensure attachments are loaded
             $medicalRecord->refresh();
             
             // Query attachments directly to ensure we get the latest count
             $attachmentsCount = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count();
+            $addedCount = $attachmentsCount - $beforeCount;
             
-            // Get all attachment IDs for debugging
-            $attachmentIds = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)
-                ->pluck('id')
-                ->toArray();
-            
-            \Log::info('After handleFileUploads', [
-                'medical_record_id' => $medicalRecord->id,
-                'attachments_count' => $attachmentsCount,
-                'before_count' => $beforeCount,
-                'attachment_ids' => $attachmentIds,
-                'user_id' => $user->id
-            ]);
-            
-            // Check if any attachments were actually created
-            if ($attachmentsCount === $beforeCount) {
-                // No attachments were created - this is an error
-                \Log::warning('No attachments created despite upload attempt', [
-                    'medical_record_id' => $medicalRecord->id,
-                    'before_count' => $beforeCount,
-                    'after_count' => $attachmentsCount,
-                    'has_files' => $request->hasFile('attachments'),
-                    'files_count' => $request->hasFile('attachments') ? count($request->file('attachments')) : 0
-                ]);
-                
+            if ($addedCount > 0) {
+                return redirect()->route('staff.medical-records.show', $medicalRecord)
+                    ->with('success', 'Attachments uploaded successfully. ' . $addedCount . ' attachment(s) added.');
+            } else {
+                // No files were uploaded or processed
                 return redirect()->route('staff.medical-records.show', $medicalRecord)
                     ->with('error', 'No files were uploaded. Please ensure you select valid files and try again.');
             }
-            
-            // Always redirect for file uploads (more reliable than JSON response)
-            return redirect()->route('staff.medical-records.show', $medicalRecord)
-                ->with('success', 'Attachments uploaded successfully. ' . ($attachmentsCount - $beforeCount) . ' attachment(s) added.');
                 
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Validation errors - redirect back with errors
