@@ -1121,11 +1121,25 @@ class MedicalRecordsController extends Controller
                 'medical_record_id' => $medicalRecord->id,
                 'user_id' => $user->id,
                 'has_files' => $request->hasFile('attachments'),
-                'files_count' => $request->hasFile('attachments') ? count($request->file('attachments')) : 0
+                'files_count' => $request->hasFile('attachments') ? count($request->file('attachments')) : 0,
+                'request_keys' => array_keys($request->all()),
+                'attachments_in_request' => $request->has('attachments')
             ]);
             
+            // Get count before upload
+            $beforeCount = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count();
+            
             // Handle file uploads
-            $this->handleFileUploads($request, $medicalRecord, $user);
+            try {
+                $this->handleFileUploads($request, $medicalRecord, $user);
+            } catch (\Exception $uploadException) {
+                \Log::error('Error in handleFileUploads', [
+                    'medical_record_id' => $medicalRecord->id,
+                    'error' => $uploadException->getMessage(),
+                    'trace' => $uploadException->getTraceAsString()
+                ]);
+                throw $uploadException;
+            }
             
             // Refresh the medical record to ensure attachments are loaded
             $medicalRecord->refresh();
@@ -1138,16 +1152,32 @@ class MedicalRecordsController extends Controller
                 ->pluck('id')
                 ->toArray();
             
-            \Log::info('Attachments uploaded successfully', [
+            \Log::info('After handleFileUploads', [
                 'medical_record_id' => $medicalRecord->id,
                 'attachments_count' => $attachmentsCount,
+                'before_count' => $beforeCount,
                 'attachment_ids' => $attachmentIds,
                 'user_id' => $user->id
             ]);
             
+            // Check if any attachments were actually created
+            if ($attachmentsCount === $beforeCount) {
+                // No attachments were created - this is an error
+                \Log::warning('No attachments created despite upload attempt', [
+                    'medical_record_id' => $medicalRecord->id,
+                    'before_count' => $beforeCount,
+                    'after_count' => $attachmentsCount,
+                    'has_files' => $request->hasFile('attachments'),
+                    'files_count' => $request->hasFile('attachments') ? count($request->file('attachments')) : 0
+                ]);
+                
+                return redirect()->route('staff.medical-records.show', $medicalRecord)
+                    ->with('error', 'No files were uploaded. Please ensure you select valid files and try again.');
+            }
+            
             // Always redirect for file uploads (more reliable than JSON response)
             return redirect()->route('staff.medical-records.show', $medicalRecord)
-                ->with('success', 'Attachments uploaded successfully. ' . $attachmentsCount . ' attachment(s) added.');
+                ->with('success', 'Attachments uploaded successfully. ' . ($attachmentsCount - $beforeCount) . ' attachment(s) added.');
                 
         } catch (\Exception $e) {
             \Log::error('Failed to add attachments to medical record', [
