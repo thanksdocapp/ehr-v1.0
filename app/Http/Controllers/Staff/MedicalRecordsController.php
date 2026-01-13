@@ -1108,6 +1108,12 @@ class MedicalRecordsController extends Controller
                 ->with('error', 'You do not have permission to add attachments to this medical record.');
         }
         
+        // Check if files exist in request before processing
+        if (!$request->hasFile('attachments')) {
+            return redirect()->route('staff.medical-records.show', $medicalRecord)
+                ->with('error', 'No files were selected. Please select at least one file to upload.');
+        }
+        
         // Get count before upload
         $beforeCount = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count();
         
@@ -1128,7 +1134,7 @@ class MedicalRecordsController extends Controller
             } else {
                 // No files were uploaded or processed
                 return redirect()->route('staff.medical-records.show', $medicalRecord)
-                    ->with('error', 'No files were uploaded. Please ensure you select valid files and try again.');
+                    ->with('error', 'No files were uploaded. Files may be invalid or too large. Please check file sizes and types and try again.');
             }
                 
         } catch (\Illuminate\Validation\ValidationException $e) {
