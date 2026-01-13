@@ -1008,8 +1008,27 @@ $(document).ready(function() {
     // Initialize remove buttons
     updateRemoveButtons();
 
-    // No submit handler - let form submit naturally like edit form
-    // Server will handle validation and file processing
+    // Simple form submission - just validate files before submit
+    $('#addAttachmentForm').on('submit', function(e) {
+        // Check if files are selected
+        const fileInputs = $(this).find('input[type="file"]');
+        let hasFiles = false;
+        fileInputs.each(function() {
+            if (this.files && this.files.length > 0) {
+                hasFiles = true;
+                return false; // break
+            }
+        });
+        
+        if (!hasFiles) {
+            e.preventDefault();
+            alert('Please select at least one file to upload.');
+            return false;
+        }
+        
+        // Files are selected - allow form to submit normally
+        return true; // Explicitly allow submission
+    });
 
     // Reset form when modal is closed
     $('#addAttachmentModal').on('hidden.bs.modal', function() {
