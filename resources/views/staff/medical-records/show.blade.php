@@ -405,14 +405,14 @@
                                             @endphp
                                             @if($canAccess && $isSafe)
                                                 @if($attachment->isViewable())
-                                                    <a href="{{ route('medical-record-attachments.view', $attachment) }}" 
+                                                    <a href="{{ route('staff.medical-record-attachments.view', $attachment) }}" 
                                                        target="_blank"
                                                        class="btn btn-sm btn-outline-info me-1" 
                                                        title="View">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                 @endif
-                                                <a href="{{ route('medical-record-attachments.download', $attachment) }}" 
+                                                <a href="{{ route('staff.medical-record-attachments.download', $attachment) }}" 
                                                    class="btn btn-sm btn-outline-success me-1" 
                                                    title="Download">
                                                     <i class="fas fa-download"></i>
@@ -429,7 +429,7 @@
                                                 @endif
                                             @endif
                                             @if(auth()->user()->is_admin || $attachment->uploaded_by === auth()->id())
-                                                <form action="{{ route('medical-record-attachments.destroy', $attachment) }}" 
+                                                <form action="{{ route('staff.medical-record-attachments.destroy', $attachment) }}" 
                                                       method="POST" 
                                                       class="d-inline"
                                                       onsubmit="return confirm('Are you sure you want to delete this file?');">
