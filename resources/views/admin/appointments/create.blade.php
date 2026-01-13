@@ -104,6 +104,7 @@
                                            pattern="\d{2}/\d{2}/\d{4}" 
                                            maxlength="10"
                                            data-min-date="today"
+                                           data-max-date="{{ \Carbon\Carbon::now()->addYears(2)->format('Y-m-d') }}"
                                            required>
                                     <small class="form-text text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                                     @error('appointment_date')

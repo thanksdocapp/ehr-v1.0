@@ -59,11 +59,23 @@
             // Set max date
             if (input.hasAttribute('data-max-date')) {
                 const maxDate = input.getAttribute('data-max-date');
-                options.maxDate = maxDate === 'today' ? 'today' : maxDate;
+                if (maxDate === 'today') {
+                    options.maxDate = 'today';
+                } else if (maxDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    // Parse YYYY-MM-DD format date string
+                    options.maxDate = new Date(maxDate + 'T00:00:00');
+                } else {
+                    options.maxDate = maxDate;
+                }
             } else if (input.classList.contains('uk-date-dob')) {
                 // Default max date for date of birth
                 options.maxDate = 'today';
                 options.minDate = new Date(new Date().setFullYear(new Date().getFullYear() - 150));
+            } else if (input.id === 'appointment_date' || input.name === 'appointment_date') {
+                // For appointment dates without explicit max date, allow booking up to 2 years in the future
+                const maxDate = new Date();
+                maxDate.setFullYear(maxDate.getFullYear() + 2);
+                options.maxDate = maxDate;
             }
 
             // Set default date
