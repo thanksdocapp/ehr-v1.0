@@ -520,14 +520,21 @@ class MedicalRecordsController extends Controller
         ]);
         
         // Handle file uploads
-        $this->handleFileUploads($request, $medicalRecord, $user);
+        $rejectionReasons = [];
+        $this->handleFileUploads($request, $medicalRecord, $user, $rejectionReasons);
         
         // Refresh the medical record to ensure attachments are loaded
         $medicalRecord->refresh();
         $medicalRecord->load('attachments.uploader');
         
+        // Prepare success message
+        $successMessage = 'Medical record created successfully.';
+        if (!empty($rejectionReasons)) {
+            $successMessage .= ' Note: Some files were rejected: ' . implode(', ', array_unique($rejectionReasons));
+        }
+        
         return redirect()->route('staff.medical-records.show', $medicalRecord)
-            ->with('success', 'Medical record created successfully.');
+            ->with('success', $successMessage);
     }
 
     public function show(MedicalRecord $medicalRecord)
