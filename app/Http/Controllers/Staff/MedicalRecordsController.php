@@ -1110,6 +1110,13 @@ class MedicalRecordsController extends Controller
         
         // Check if files exist in request before processing
         if (!$request->hasFile('attachments')) {
+            // Check if files were actually selected but failed to upload (PHP limits)
+            if ($request->has('attachments')) {
+                $uploadMaxSize = ini_get('upload_max_filesize');
+                $postMaxSize = ini_get('post_max_size');
+                return redirect()->route('staff.medical-records.show', $medicalRecord)
+                    ->with('error', 'File upload failed. Files may exceed PHP upload limits (upload_max_filesize: ' . $uploadMaxSize . ', post_max_size: ' . $postMaxSize . '). Please check file sizes and try again.');
+            }
             return redirect()->route('staff.medical-records.show', $medicalRecord)
                 ->with('error', 'No files were selected. Please select at least one file to upload.');
         }
@@ -1119,7 +1126,8 @@ class MedicalRecordsController extends Controller
         
         try {
             // Handle file uploads - same approach as edit form (no validation, just process)
-            $this->handleFileUploads($request, $medicalRecord, $user);
+            $rejectionReasons = [];
+            $this->handleFileUploads($request, $medicalRecord, $user, $rejectionReasons);
             
             // Refresh the medical record to ensure attachments are loaded
             $medicalRecord->refresh();
@@ -1129,12 +1137,22 @@ class MedicalRecordsController extends Controller
             $addedCount = $attachmentsCount - $beforeCount;
             
             if ($addedCount > 0) {
+                $message = 'Attachments uploaded successfully. ' . $addedCount . ' attachment(s) added.';
+                if (!empty($rejectionReasons)) {
+                    $message .= ' Note: Some files were rejected: ' . implode(', ', array_unique($rejectionReasons));
+                }
                 return redirect()->route('staff.medical-records.show', $medicalRecord)
-                    ->with('success', 'Attachments uploaded successfully. ' . $addedCount . ' attachment(s) added.');
+                    ->with('success', $message);
             } else {
                 // No files were uploaded or processed
+                $errorMessage = 'No files were uploaded. ';
+                if (!empty($rejectionReasons)) {
+                    $errorMessage .= 'Reasons: ' . implode(', ', array_unique($rejectionReasons));
+                } else {
+                    $errorMessage .= 'Files may be invalid, too large (max 10MB), or unsupported file types. Please check file sizes and types and try again.';
+                }
                 return redirect()->route('staff.medical-records.show', $medicalRecord)
-                    ->with('error', 'No files were uploaded. Files may be invalid or too large. Please check file sizes and types and try again.');
+                    ->with('error', $errorMessage);
             }
                 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1174,9 +1192,10 @@ class MedicalRecordsController extends Controller
      * @param Request $request
      * @param MedicalRecord $medicalRecord
      * @param \App\Models\User $user
+     * @param array $rejectionReasons Reference array to collect rejection reasons
      * @return void
      */
-    private function handleFileUploads(Request $request, MedicalRecord $medicalRecord, $user): void
+    private function handleFileUploads(Request $request, MedicalRecord $medicalRecord, $user, array &$rejectionReasons = []): void
     {
         // Check if files are uploaded
         if (!$request->hasFile('attachments')) {
@@ -1266,6 +1285,10 @@ class MedicalRecordsController extends Controller
 
         foreach ($files as $index => $file) {
             if (!$file || !$file->isValid()) {
+                if ($rejectionReasons !== null) {
+                    $filename = $file ? $file->getClientOriginalName() : 'unknown';
+                    $rejectionReasons[] = "File '{$filename}' is invalid (upload may have failed - check file size limits)";
+                }
                 continue;
             }
 
@@ -1323,12 +1346,16 @@ class MedicalRecordsController extends Controller
             
             // Validate both MIME type and extension for security
             if (!in_array($mimeType, $allowedMimeTypes) || !in_array($extension, $allowedExtensions)) {
+                $filename = $file->getClientOriginalName();
                 \Log::warning('Invalid file upload attempt', [
-                    'filename' => $file->getClientOriginalName(),
+                    'filename' => $filename,
                     'mime_type' => $mimeType,
                     'extension' => $extension,
                     'user_id' => $user->id ?? null,
                 ]);
+                if ($rejectionReasons !== null) {
+                    $rejectionReasons[] = "File '{$filename}' has unsupported type (MIME: {$mimeType}, Extension: {$extension})";
+                }
                 continue; // Skip invalid file types
             }
             
@@ -1353,21 +1380,30 @@ class MedicalRecordsController extends Controller
                 : [$mimeToExtension[$mimeType] ?? ''];
             
             if (!in_array($extension, $expectedExtensions)) {
+                $filename = $file->getClientOriginalName();
                 \Log::warning('File extension does not match MIME type', [
-                    'filename' => $file->getClientOriginalName(),
+                    'filename' => $filename,
                     'mime_type' => $mimeType,
                     'extension' => $extension,
                     'expected_extensions' => $expectedExtensions,
                 ]);
+                if ($rejectionReasons !== null) {
+                    $rejectionReasons[] = "File '{$filename}' extension does not match file type";
+                }
                 continue; // Skip suspicious files
             }
 
             // Check file size (10MB max)
             if ($file->getSize() > 10 * 1024 * 1024) {
+                $filename = $file->getClientOriginalName();
+                $sizeMB = round($file->getSize() / (1024 * 1024), 2);
                 \Log::warning('File too large', [
-                    'filename' => $file->getClientOriginalName(),
+                    'filename' => $filename,
                     'size' => $file->getSize(),
                 ]);
+                if ($rejectionReasons !== null) {
+                    $rejectionReasons[] = "File '{$filename}' is too large ({$sizeMB}MB, max 10MB)";
+                }
                 continue; // Skip files larger than 10MB
             }
 
