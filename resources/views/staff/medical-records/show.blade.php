@@ -1008,7 +1008,7 @@ $(document).ready(function() {
     // Initialize remove buttons
     updateRemoveButtons();
 
-    // Simple form submission - validate files before submit
+    // Simple form submission - just validate files before submit
     $('#addAttachmentForm').on('submit', function(e) {
         // Check if files are selected
         const fileInputs = $(this).find('input[type="file"]');
@@ -1023,12 +1023,10 @@ $(document).ready(function() {
         if (!hasFiles) {
             e.preventDefault();
             alert('Please select at least one file to upload.');
-            return false; // Explicitly prevent submission
+            return false;
         }
         
-        // Files are selected - allow form to submit normally
-        // Don't call preventDefault() - form will submit naturally
-        return true; // Explicitly allow submission
+        // Let form submit normally - no preventDefault
     });
 
     // Reset form when modal is closed
