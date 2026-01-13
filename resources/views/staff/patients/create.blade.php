@@ -1006,12 +1006,14 @@ $(document).ready(function() {
         }
     });
     
-    // Phone number formatting (simple)
-    $('#phone, #emergency_contact_phone').on('input', function() {
-        let value = $(this).val().replace(/\D/g, '');
-        if (value.length >= 10) {
-            value = value.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
-        }
+    // UK phone number formatting - allow flexible entry, no forced formatting
+    // Users can enter in formats like: +44 20 1234 5678, 020 1234 5678, 07700 900123, etc.
+    $('#phone, #emergency_contact_phone, #gp_phone').on('input', function() {
+        // Remove any auto-formatting, allow natural UK phone number entry
+        // Just ensure no invalid characters (allow +, spaces, digits, hyphens, parentheses)
+        let value = $(this).val();
+        // Allow UK phone formats: +44, 0 prefix, spaces, hyphens
+        value = value.replace(/[^\d\+\s\-\(\)]/g, '');
         $(this).val(value);
     });
 
