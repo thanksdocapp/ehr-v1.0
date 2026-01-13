@@ -1108,8 +1108,9 @@ class MedicalRecordsController extends Controller
                 ->with('error', 'You do not have permission to add attachments to this medical record.');
         }
         
-        // Validate request
-        $validated = $request->validate([
+        // Validate request - make attachments required at top level first
+        $request->validate([
+            'attachments' => 'required|array|min:1',
             'attachments.*' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,txt,zip,rar|max:10240', // 10MB max per file
             'attachments_category.*' => 'required|in:photo,results,documents,other',
             'attachments_description.*' => 'nullable|string|max:500',
