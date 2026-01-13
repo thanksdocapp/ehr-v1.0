@@ -1183,14 +1183,28 @@ class MedicalRecordsController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             
+            // Extract rejection reasons from exception message if available
+            $errorMessage = $e->getMessage();
+            
+            // If rejection reasons were collected, use them; otherwise use the exception message
+            if (!empty($rejectionReasons)) {
+                $errorMessage = 'No files were uploaded. Reasons: ' . implode(', ', array_unique($rejectionReasons));
+            } elseif (str_contains($errorMessage, 'Reasons:')) {
+                // Exception already contains reasons, use it as-is
+                $errorMessage = 'No files were uploaded. ' . $errorMessage;
+            } else {
+                // Generic error message
+                $errorMessage = 'No files were uploaded. ' . $errorMessage;
+            }
+            
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'Failed to upload attachments: ' . $e->getMessage()
+                    'message' => $errorMessage
                 ], 500);
             }
             
             return redirect()->route('staff.medical-records.show', $medicalRecord)
-                ->with('error', 'Failed to upload attachments: ' . $e->getMessage());
+                ->with('error', $errorMessage);
         }
     }
 
