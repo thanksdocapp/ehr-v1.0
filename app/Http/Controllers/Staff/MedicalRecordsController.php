@@ -1108,12 +1108,38 @@ class MedicalRecordsController extends Controller
                 ->with('error', 'You do not have permission to add attachments to this medical record.');
         }
         
+        // Log request details BEFORE validation
+        \Log::info('Before validation - attachment upload request', [
+            'medical_record_id' => $medicalRecord->id,
+            'has_file_attachments' => $request->hasFile('attachments'),
+            'has_attachments_key' => $request->has('attachments'),
+            'request_method' => $request->method(),
+            'content_type' => $request->header('Content-Type'),
+            'all_request_keys' => array_keys($request->all()),
+        ]);
+        
         // Validate request - make attachments required at top level first
-        $request->validate([
-            'attachments' => 'required|array|min:1',
-            'attachments.*' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,txt,zip,rar|max:10240', // 10MB max per file
-            'attachments_category.*' => 'required|in:photo,results,documents,other',
-            'attachments_description.*' => 'nullable|string|max:500',
+        try {
+            $request->validate([
+                'attachments' => 'required|array|min:1',
+                'attachments.*' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,txt,zip,rar|max:10240', // 10MB max per file
+                'attachments_category.*' => 'required|in:photo,results,documents,other',
+                'attachments_description.*' => 'nullable|string|max:500',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $validationException) {
+            \Log::error('Validation failed for attachment upload', [
+                'medical_record_id' => $medicalRecord->id,
+                'errors' => $validationException->errors(),
+                'has_file_attachments' => $request->hasFile('attachments'),
+                'request_keys' => array_keys($request->all())
+            ]);
+            throw $validationException;
+        }
+        
+        \Log::info('Validation passed - proceeding with upload', [
+            'medical_record_id' => $medicalRecord->id,
+            'has_file_attachments' => $request->hasFile('attachments'),
+            'files_count' => $request->hasFile('attachments') ? count($request->file('attachments')) : 0
         ]);
         
         try {
