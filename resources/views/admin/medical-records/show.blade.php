@@ -937,7 +937,7 @@ function deleteRecord(recordId) {
                 // Create a form to submit the DELETE request
                 const form = document.createElement('form');
                 form.method = 'POST';
-                form.action = '{{ route("admin.medical-records.destroy", ":id") }}'.replace(':id', recordId);
+                form.action = '{{ url("/admin/medical-records") }}/' + recordId;
                 form.style.display = 'none';
                 
                 // Add CSRF token - try multiple methods
