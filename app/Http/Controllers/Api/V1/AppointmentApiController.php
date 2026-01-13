@@ -396,18 +396,23 @@ class AppointmentApiController extends BaseApiController
             $availableSlots = [];
             $slotDuration = 30; // 30 minutes per slot
 
+            $dateCarbon = Carbon::parse($date);
+            $now = Carbon::now();
+            
             foreach ($schedules as $schedule) {
-                $startTime = Carbon::createFromFormat('H:i:s', $schedule->start_time);
-                $endTime = Carbon::createFromFormat('H:i:s', $schedule->end_time);
+                // Create full datetime for the slot start time on the selected date
+                $slotStartTime = $dateCarbon->copy()->setTimeFromTimeString($schedule->start_time);
+                $slotEndTime = $dateCarbon->copy()->setTimeFromTimeString($schedule->end_time);
+                $currentSlot = $slotStartTime->copy();
 
-                while ($startTime->lt($endTime)) {
-                    $timeSlot = $startTime->format('H:i:s');
-                    $formattedTime = $startTime->format('h:i A');
+                while ($currentSlot->lt($slotEndTime)) {
+                    $timeSlot = $currentSlot->format('H:i:s');
+                    $formattedTime = $currentSlot->format('h:i A');
 
                     if (!in_array($timeSlot, $existingAppointments)) {
-                        // Check if slot is not in the past for today's date
-                        if ($date > now()->format('Y-m-d') || 
-                            ($date == now()->format('Y-m-d') && $startTime->gt(now()))) {
+                        // Check if slot is in the future (for today, ensure time hasn't passed)
+                        // Only include slots that are after the current time
+                        if ($currentSlot->gt($now)) {
                             $availableSlots[] = [
                                 'time' => $timeSlot,
                                 'formatted_time' => $formattedTime,
@@ -416,7 +421,7 @@ class AppointmentApiController extends BaseApiController
                         }
                     }
 
-                    $startTime->addMinutes($slotDuration);
+                    $currentSlot->addMinutes($slotDuration);
                 }
             }
 

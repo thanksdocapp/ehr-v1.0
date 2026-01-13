@@ -232,6 +232,7 @@ class AppointmentController extends Controller
         $slots = [];
         $current = Carbon::parse($date->format('Y-m-d') . ' ' . $workingHours['start']);
         $end = Carbon::parse($date->format('Y-m-d') . ' ' . $workingHours['end']);
+        $now = Carbon::now();
 
         while ($current->lt($end)) {
             $timeSlot = $current->format('H:i');
@@ -244,10 +245,16 @@ class AppointmentController extends Controller
                 ->exists();
 
             if (!$isBooked) {
-                $slots[] = [
-                    'time' => $timeSlot,
-                    'display' => $current->format('g:i A'),
-                ];
+                // Only include slot if it's in the future (for today's date, ensure time hasn't passed)
+                $isToday = $current->isToday();
+                $isFuture = !$isToday || $current->gt($now);
+                
+                if ($isFuture) {
+                    $slots[] = [
+                        'time' => $timeSlot,
+                        'display' => $current->format('g:i A'),
+                    ];
+                }
             }
 
             $current->addMinutes($workingHours['slot_duration']);

@@ -131,10 +131,14 @@ class SlotAvailabilityService
         if ($doctor->availability && isset($doctor->availability[$dayName])) {
             $dayAvailability = $doctor->availability[$dayName];
             if (isset($dayAvailability['available']) && $dayAvailability['available']) {
+                // Support both 'start'/'end' (new format) and 'from'/'to' (old format)
+                $start = $dayAvailability['start'] ?? $dayAvailability['from'] ?? '09:00';
+                $end = $dayAvailability['end'] ?? $dayAvailability['to'] ?? '17:00';
+                
                 return [
                     'available' => true,
-                    'start' => $dayAvailability['start'] ?? '09:00',
-                    'end' => $dayAvailability['end'] ?? '17:00'
+                    'start' => $start,
+                    'end' => $end
                 ];
             }
             // If explicitly set to not available
@@ -219,8 +223,10 @@ class SlotAvailabilityService
      */
     private function isSlotAvailable($slotStart, $slotEnd, $existingAppointments, $blockedTimes)
     {
-        // Check if slot is in the past
-        if ($slotStart->isPast()) {
+        // Check if slot is in the past - compare full datetime to current time
+        // Only block if the slot start time has actually passed
+        $now = Carbon::now();
+        if ($slotStart->lte($now)) {
             return false;
         }
 

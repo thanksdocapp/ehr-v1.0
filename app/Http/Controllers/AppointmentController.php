@@ -96,13 +96,20 @@ class AppointmentController extends Controller
         $timeSlots = [];
         $startTime = Carbon::parse($date . ' 09:00:00');
         $endTime = Carbon::parse($date . ' 17:00:00');
+        $now = Carbon::now();
 
         while ($startTime < $endTime) {
             $timeString = $startTime->format('H:i:s');
             
             // Skip if slot is already booked
             if (!in_array($timeString, $existingAppointments)) {
-                $timeSlots[] = $startTime->format('g:i A');
+                // Only include slot if it's in the future (for today's date, ensure time hasn't passed)
+                $isToday = $startTime->isToday();
+                $isFuture = !$isToday || $startTime->gt($now);
+                
+                if ($isFuture) {
+                    $timeSlots[] = $startTime->format('g:i A');
+                }
             }
             
             $startTime->addMinutes(30);
