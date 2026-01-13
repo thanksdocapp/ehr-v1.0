@@ -1180,11 +1180,24 @@ class MedicalRecordsController extends Controller
             return redirect()->route('staff.medical-records.show', $medicalRecord)
                 ->with('success', 'Attachments uploaded successfully. ' . ($attachmentsCount - $beforeCount) . ' attachment(s) added.');
                 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Validation errors - redirect back with errors
+            \Log::warning('Attachment upload validation failed', [
+                'medical_record_id' => $medicalRecord->id,
+                'user_id' => $user->id,
+                'errors' => $e->errors()
+            ]);
+            
+            return redirect()->route('staff.medical-records.show', $medicalRecord)
+                ->withErrors($e->validator)
+                ->withInput();
+                
         } catch (\Exception $e) {
             \Log::error('Failed to add attachments to medical record', [
                 'medical_record_id' => $medicalRecord->id,
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             
             if ($request->expectsJson()) {
