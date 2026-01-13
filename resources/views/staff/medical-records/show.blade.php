@@ -488,7 +488,8 @@
                                                 <input type="file" 
                                                        class="form-control form-control-sm attachment-file-input" 
                                                        name="attachments[]" 
-                                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar">
+                                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar"
+                                                       required>
                                             </div>
                                             <div class="col-md-3 mb-2">
                                                 <label class="form-label small">Type</label>
@@ -1007,26 +1008,8 @@ $(document).ready(function() {
     // Initialize remove buttons
     updateRemoveButtons();
 
-    // Simple form submission - just validate files before submit
-    $('#addAttachmentForm').on('submit', function(e) {
-        // Check if files are selected
-        const fileInputs = $(this).find('input[type="file"]');
-        let hasFiles = false;
-        fileInputs.each(function() {
-            if (this.files && this.files.length > 0) {
-                hasFiles = true;
-                return false; // break
-            }
-        });
-        
-        if (!hasFiles) {
-            e.preventDefault();
-            alert('Please select at least one file to upload.');
-            return false;
-        }
-        
-        // Let form submit normally - no preventDefault
-    });
+    // No submit handler - let form submit naturally like edit form
+    // Server will handle validation and file processing
 
     // Reset form when modal is closed
     $('#addAttachmentModal').on('hidden.bs.modal', function() {
