@@ -112,9 +112,14 @@ use Illuminate\Support\Facades\Storage;
                                 </div>
                             @endif
 
-                            @if($doctor->availability && is_array($doctor->availability) && count($doctor->availability) > 0)
-                                <div class="mb-4">
-                                    <h5 class="text-primary">Weekly Availability</h5>
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="text-primary mb-0">Weekly Availability</h5>
+                                    <a href="{{ route('admin.doctors.edit', $doctor->id) }}#availability" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit me-1"></i>Edit Availability
+                                    </a>
+                                </div>
+                                @if($doctor->availability && is_array($doctor->availability) && count($doctor->availability) > 0)
                                     <div class="table-responsive">
                                         <table class="table table-sm">
                                             <thead>
@@ -122,6 +127,7 @@ use Illuminate\Support\Facades\Storage;
                                                     <th>Day</th>
                                                     <th>Available</th>
                                                     <th>Time</th>
+                                                    <th>Breaks</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -131,21 +137,36 @@ use Illuminate\Support\Facades\Storage;
                                                 @foreach($days as $day => $dayName)
                                                     @php
                                                         $dayAvailability = $doctor->availability[$day] ?? [];
+                                                        $isAvailable = $dayAvailability['available'] ?? false;
+                                                        $startTime = $dayAvailability['start'] ?? $dayAvailability['from'] ?? 'N/A';
+                                                        $endTime = $dayAvailability['end'] ?? $dayAvailability['to'] ?? 'N/A';
+                                                        $breaks = $dayAvailability['breaks'] ?? [];
                                                     @endphp
                                                     <tr>
                                                         <td class="fw-bold">{{ $dayName }}</td>
                                                         <td>
-                                                            @if(($dayAvailability['available'] ?? false))
+                                                            @if($isAvailable)
                                                                 <span class="badge bg-success">Yes</span>
                                                             @else
                                                                 <span class="badge bg-secondary">No</span>
                                                             @endif
                                                         </td>
                                                         <td>
-                                                            @if(($dayAvailability['available'] ?? false))
-                                                                {{ $dayAvailability['from'] ?? 'N/A' }} - {{ $dayAvailability['to'] ?? 'N/A' }}
+                                                            @if($isAvailable)
+                                                                {{ $startTime }} - {{ $endTime }}
                                                             @else
                                                                 -
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($isAvailable && !empty($breaks) && is_array($breaks))
+                                                                @foreach($breaks as $break)
+                                                                    <span class="badge bg-info me-1">
+                                                                        {{ $break['start'] ?? '' }} - {{ $break['end'] ?? '' }}
+                                                                    </span>
+                                                                @endforeach
+                                                            @else
+                                                                <span class="text-muted">-</span>
                                                             @endif
                                                         </td>
                                                     </tr>
@@ -153,8 +174,13 @@ use Illuminate\Support\Facades\Storage;
                                             </tbody>
                                         </table>
                                     </div>
-                                </div>
-                            @endif
+                                @else
+                                    <div class="alert alert-warning mb-0">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        No availability schedule set. <a href="{{ route('admin.doctors.edit', $doctor->id) }}#availability">Set availability now</a>.
+                                    </div>
+                                @endif
+                            </div>
 
                             @if(isset($upcomingAppointments) && $upcomingAppointments->count() > 0)
                                 <div class="mb-4">

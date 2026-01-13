@@ -435,6 +435,142 @@ use Illuminate\Support\Facades\Storage;
                     </div>
                 </div>
 
+                <!-- Weekly Availability Section -->
+                <div class="form-section" id="availability">
+                    <div class="form-section-header">
+                        <h4 class="mb-0"><i class="fas fa-calendar-week me-2"></i>Weekly Availability</h4>
+                        <small class="opacity-75">Set doctor's weekly schedule and working hours</small>
+                    </div>
+                    <div class="form-section-body">
+                        @php
+                            $days = [
+                                'monday' => 'Monday',
+                                'tuesday' => 'Tuesday',
+                                'wednesday' => 'Wednesday',
+                                'thursday' => 'Thursday',
+                                'friday' => 'Friday',
+                                'saturday' => 'Saturday',
+                                'sunday' => 'Sunday'
+                            ];
+                            $currentAvailability = old('availability', $doctor->availability ?? []);
+                        @endphp
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="availability-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 150px;">Day</th>
+                                        <th style="width: 100px;">Available</th>
+                                        <th style="width: 200px;">Start Time</th>
+                                        <th style="width: 200px;">End Time</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($days as $dayKey => $dayName)
+                                        @php
+                                            $dayData = $currentAvailability[$dayKey] ?? [];
+                                            $isAvailable = old("availability.{$dayKey}.available", $dayData['available'] ?? false);
+                                            $startTime = old("availability.{$dayKey}.start", $dayData['start'] ?? ($dayData['from'] ?? '09:00'));
+                                            $endTime = old("availability.{$dayKey}.end", $dayData['end'] ?? ($dayData['to'] ?? '17:00'));
+                                            $breaks = old("availability.{$dayKey}.breaks", $dayData['breaks'] ?? []);
+                                        @endphp
+                                        <tr data-day="{{ $dayKey }}">
+                                            <td class="fw-bold">{{ $dayName }}</td>
+                                            <td>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input availability-toggle" 
+                                                           type="checkbox" 
+                                                           id="available_{{ $dayKey }}" 
+                                                           name="availability[{{ $dayKey }}][available]" 
+                                                           value="1"
+                                                           {{ $isAvailable ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="available_{{ $dayKey }}"></label>
+                                                </div>
+                                                <input type="hidden" name="availability[{{ $dayKey }}][available]" value="0" disabled>
+                                            </td>
+                                            <td>
+                                                <input type="time" 
+                                                       class="form-control start-time" 
+                                                       name="availability[{{ $dayKey }}][start]" 
+                                                       value="{{ $startTime }}"
+                                                       {{ !$isAvailable ? 'disabled' : '' }}>
+                                            </td>
+                                            <td>
+                                                <input type="time" 
+                                                       class="form-control end-time" 
+                                                       name="availability[{{ $dayKey }}][end]" 
+                                                       value="{{ $endTime }}"
+                                                       {{ !$isAvailable ? 'disabled' : '' }}>
+                                            </td>
+                                            <td>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-info manage-breaks" 
+                                                        data-day="{{ $dayKey }}"
+                                                        {{ !$isAvailable ? 'disabled' : '' }}>
+                                                    <i class="fas fa-coffee me-1"></i>Breaks
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <!-- Breaks Row (hidden by default) -->
+                                        <tr class="breaks-row" data-day="{{ $dayKey }}" style="display: none;">
+                                            <td colspan="5">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <strong>Breaks for {{ $dayName }}</strong>
+                                                        <button type="button" class="btn btn-sm btn-success add-break" data-day="{{ $dayKey }}">
+                                                            <i class="fas fa-plus me-1"></i>Add Break
+                                                        </button>
+                                                    </div>
+                                                    <div class="breaks-container" data-day="{{ $dayKey }}">
+                                                        @if(!empty($breaks) && is_array($breaks))
+                                                            @foreach($breaks as $index => $break)
+                                                                <div class="break-item mb-2 row g-2">
+                                                                    <div class="col-md-4">
+                                                                        <label class="small">Start Time</label>
+                                                                        <input type="time" 
+                                                                               class="form-control form-control-sm" 
+                                                                               name="availability[{{ $dayKey }}][breaks][{{ $index }}][start]" 
+                                                                               value="{{ $break['start'] ?? '' }}" 
+                                                                               required>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="small">End Time</label>
+                                                                        <input type="time" 
+                                                                               class="form-control form-control-sm" 
+                                                                               name="availability[{{ $dayKey }}][breaks][{{ $index }}][end]" 
+                                                                               value="{{ $break['end'] ?? '' }}" 
+                                                                               required>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="small">&nbsp;</label>
+                                                                        <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-break">
+                                                                            <i class="fas fa-trash"></i> Remove
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        @endif
+                                                        <div class="no-breaks text-muted small" style="{{ !empty($breaks) && count($breaks) > 0 ? 'display:none;' : '' }}">
+                                                            No breaks configured. Click "Add Break" to add one.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Tip:</strong> Use the toggles to enable/disable days. Set working hours and add breaks as needed. 
+                            This schedule will be used for appointment availability.
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Action Buttons -->
                 <div class="form-section">
                     <div class="form-section-body text-center">
@@ -625,6 +761,115 @@ $(document).ready(function() {
             // Add auto-save logic here if needed
             console.log('Auto-save triggered');
         }, 5000); // Auto-save after 5 seconds of inactivity
+    });
+
+    // Weekly Availability Management
+    function initAvailabilityEditor() {
+        // Toggle availability for each day
+        $('.availability-toggle').on('change', function() {
+            const $row = $(this).closest('tr');
+            const day = $row.data('day');
+            const isChecked = $(this).is(':checked');
+            
+            // Enable/disable time inputs and breaks button
+            $row.find('.start-time, .end-time').prop('disabled', !isChecked);
+            $row.find('.manage-breaks').prop('disabled', !isChecked);
+            
+            // Toggle hidden input (for unchecked state)
+            const $hiddenInput = $row.find('input[type="hidden"][name*="[available]"]');
+            if (isChecked) {
+                // Disable hidden input when checkbox is checked
+                $hiddenInput.prop('disabled', true);
+                // Ensure checkbox value is set
+                $(this).val('1');
+            } else {
+                // Enable hidden input when checkbox is unchecked (so "0" is submitted)
+                $hiddenInput.prop('disabled', false);
+                // Hide breaks row if day is disabled
+                $(`.breaks-row[data-day="${day}"]`).slideUp();
+            }
+        });
+
+        // Manage breaks button
+        $('.manage-breaks').on('click', function() {
+            const day = $(this).data('day');
+            const $breaksRow = $(`.breaks-row[data-day="${day}"]`);
+            $breaksRow.slideToggle();
+        });
+
+        // Add break
+        $(document).on('click', '.add-break', function() {
+            const day = $(this).data('day');
+            const $container = $(`.breaks-container[data-day="${day}"]`);
+            const breakIndex = $container.find('.break-item').length;
+            
+            const breakHtml = `
+                <div class="break-item mb-2 row g-2">
+                    <div class="col-md-4">
+                        <label class="small">Start Time</label>
+                        <input type="time" 
+                               class="form-control form-control-sm" 
+                               name="availability[${day}][breaks][${breakIndex}][start]" 
+                               required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small">End Time</label>
+                        <input type="time" 
+                               class="form-control form-control-sm" 
+                               name="availability[${day}][breaks][${breakIndex}][end]" 
+                               required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small">&nbsp;</label>
+                        <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-break">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            $container.find('.no-breaks').hide();
+            $container.append(breakHtml);
+        });
+
+        // Remove break
+        $(document).on('click', '.remove-break', function() {
+            const $breakItem = $(this).closest('.break-item');
+            const $container = $breakItem.closest('.breaks-container');
+            $breakItem.remove();
+            
+            // Show "no breaks" message if no breaks left
+            if ($container.find('.break-item').length === 0) {
+                $container.find('.no-breaks').show();
+            }
+            
+            // Reindex break inputs
+            $container.find('.break-item').each(function(index) {
+                const day = $container.data('day');
+                $(this).find('input[name*="[start]"]').attr('name', `availability[${day}][breaks][${index}][start]`);
+                $(this).find('input[name*="[end]"]').attr('name', `availability[${day}][breaks][${index}][end]`);
+            });
+        });
+
+        // Validate time inputs
+        $('.start-time, .end-time').on('change', function() {
+            const $row = $(this).closest('tr');
+            const startTime = $row.find('.start-time').val();
+            const endTime = $row.find('.end-time').val();
+            
+            if (startTime && endTime && startTime >= endTime) {
+                alert('Start time must be before end time!');
+                $(this).val('');
+            }
+        });
+    }
+
+    // Initialize availability editor on page load
+    initAvailabilityEditor();
+
+    // Trigger initial state for all days
+    $('.availability-toggle').each(function() {
+        $(this).trigger('change');
     });
 });
 </script>
