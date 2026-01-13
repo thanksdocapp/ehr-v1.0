@@ -1247,12 +1247,32 @@ class MedicalRecordsController extends Controller
 
         // Filter out empty file inputs (when no file is selected)
         $originalCount = is_array($files) ? count($files) : ($files ? 1 : 0);
+        $invalidFiles = [];
         if (is_array($files)) {
-            $files = array_filter($files, function($file) {
-                return $file && $file->isValid();
-            });
+            $validFiles = [];
+            foreach ($files as $file) {
+                if ($file && $file->isValid()) {
+                    $validFiles[] = $file;
+                } else {
+                    $invalidFiles[] = $file;
+                }
+            }
+            $files = $validFiles;
         } else {
-            $files = $files && $files->isValid() ? [$files] : [];
+            if ($files && $files->isValid()) {
+                $files = [$files];
+            } else {
+                $invalidFiles = $files ? [$files] : [];
+                $files = [];
+            }
+        }
+
+        // Collect rejection reasons for invalid files (upload failures)
+        if ($rejectionReasons !== null && !empty($invalidFiles)) {
+            foreach ($invalidFiles as $invalidFile) {
+                $filename = $invalidFile ? $invalidFile->getClientOriginalName() : 'unknown';
+                $rejectionReasons[] = "File '{$filename}' upload failed (file may be corrupted, too large for PHP limits, or upload was interrupted)";
+            }
         }
 
         // If no valid files, throw exception instead of returning silently
@@ -1260,9 +1280,16 @@ class MedicalRecordsController extends Controller
             \Log::warning('No valid files after filtering', [
                 'medical_record_id' => $medicalRecord->id,
                 'original_files_count' => $originalCount,
+                'invalid_files_count' => count($invalidFiles),
                 'has_file_attachments' => $request->hasFile('attachments'),
             ]);
-            throw new \Exception('No valid files found after filtering. Files may be invalid or corrupted. Please try selecting files again.');
+            $errorMsg = 'No valid files found after filtering. ';
+            if ($rejectionReasons !== null && !empty($rejectionReasons)) {
+                $errorMsg .= 'Reasons: ' . implode(', ', array_unique($rejectionReasons));
+            } else {
+                $errorMsg .= 'Files may be invalid, corrupted, or exceed PHP upload limits. Please try selecting files again.';
+            }
+            throw new \Exception($errorMsg);
         }
         
         \Log::info('Processing file uploads', [
