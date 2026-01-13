@@ -638,11 +638,11 @@
             <!-- Action Buttons -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h6 class="doctor-doctor-card-title mb-0">
+                    <h5 class="doctor-card-title mb-0">
                         <i class="fas fa-cogs me-2"></i>Quick Actions
-                    </h6>
+                    </h5>
                 </div>
-                <div class="doctor-doctor-card-body">
+                <div class="doctor-card-body">
                     <div class="d-grid gap-2">
                         @if(auth()->user()->role === 'doctor')
                             <h6 class="text-uppercase fw-bold text-muted small mb-2">Workflow</h6>
@@ -666,7 +666,7 @@
                             
                             @if($medicalRecord->patient && in_array(auth()->user()->role, ['doctor', 'nurse']))
                                 <a href="{{ route('staff.medical-records.create', ['patient_id' => $medicalRecord->patient_id, 'source_record_id' => $medicalRecord->id]) }}" 
-                                   class="btn btn-doctor-primary w-100 mb-2">
+                                   class="btn btn-primary w-100 mb-2">
                                     <i class="fas fa-copy me-2"></i>Copy Forward to New Record
                                 </a>
                             @endif
@@ -697,10 +697,10 @@
 
             <!-- Doctor Information -->
             <div class="doctor-card mb-4">
-                <div class="card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0">
                         <i class="fas fa-user-md me-2"></i>Doctor Information
-                    </h6>
+                    </h5>
                 </div>
                 <div class="doctor-card-body">
                     @if($medicalRecord->doctor)
@@ -768,14 +768,14 @@
             @if($medicalRecord->patient)
             @can('viewAny', [\App\Models\PatientDocument::class, $medicalRecord->patient])
             <div class="doctor-card mb-4">
-                <div class="card-header">
+                <div class="doctor-card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="m-0 font-weight-bold text-primary">
+                        <h5 class="doctor-card-title mb-0">
                             <i class="fas fa-file-alt me-2"></i>Letters & Forms
                             @if(isset($documents) && $documents->count() > 0)
                                 <span class="badge bg-light text-dark ms-2">{{ $documents->count() }}</span>
                             @endif
-                        </h6>
+                        </h5>
                         @can('create', [\App\Models\PatientDocument::class, $medicalRecord->patient])
                         <a href="{{ route('staff.patients.documents.create', $medicalRecord->patient) }}" class="btn btn-sm btn-primary">
                             <i class="fas fa-plus"></i>
@@ -1026,8 +1026,7 @@ $(document).ready(function() {
             return false;
         }
         
-        // Files are selected - allow form to submit normally
-        return true; // Explicitly allow submission
+        // Let form submit normally - no preventDefault
     });
 
     // Reset form when modal is closed
