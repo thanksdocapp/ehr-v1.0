@@ -139,7 +139,6 @@
                                            placeholder="dd/mm/yyyy"
                                            pattern="\d{2}/\d{2}/\d{4}"
                                            maxlength="10"
-                                           data-min-date="today"
                                            data-max-date="today"
                                            data-default-date="today"
                                            required>
@@ -449,6 +448,11 @@ $(document).ready(function() {
             return;
         }
 
+        // Check if already initialized by centralized flatpickr-init.js and destroy it
+        if (collectionDateInput._flatpickr) {
+            collectionDateInput._flatpickr.destroy();
+        }
+
         // Initialize Flatpickr with UK format
         // Collection date can be in the past (samples collected earlier) but not in the future
         const collectionPicker = flatpickr(collectionDateInput, {
@@ -458,7 +462,7 @@ $(document).ready(function() {
             locale: {
                 firstDayOfWeek: 1 // Monday
             },
-            maxDate: "today", // Cannot select future dates
+            maxDate: "today", // Cannot select future dates, but allows past dates (no minDate)
             allowInput: true, // Allow manual typing
             clickOpens: true,
             defaultDate: "today",
