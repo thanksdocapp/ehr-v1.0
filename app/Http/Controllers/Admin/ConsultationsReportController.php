@@ -8,6 +8,7 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
@@ -19,79 +20,17 @@ class ConsultationsReportController extends Controller
     public function index(Request $request)
     {
         $departments = Department::where('is_active', true)->orderBy('name')->get();
-        
-        // Default to current month if no dates provided
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
-        $departmentId = $request->input('department_id');
+        [$startDate, $endDate, $departmentId, $groupBy] = $this->resolveReportFilters($request);
 
-        // Build query
-        $query = Appointment::with(['doctor', 'department', 'service'])
-            ->whereBetween('appointment_date', [$startDate, $endDate])
-            ->where('status', 'completed'); // Only completed appointments
-
-        // Filter by department if selected
-        if ($departmentId) {
-            $query->where('department_id', $departmentId);
-        }
-
-        // Group by month
-        $appointments = $query->get();
-        
-        $reportData = $appointments->groupBy(function ($appointment) {
-            return Carbon::parse($appointment->appointment_date)->format('Y-m');
-        })
-        ->map(function ($monthAppointments, $monthKey) {
-            $monthName = Carbon::createFromFormat('Y-m', $monthKey)->format('F Y');
-            $totalDuration = $monthAppointments->sum(function ($apt) {
-                // Try to get duration from check_in/check_out, otherwise use service duration
-                if ($apt->check_in_time && $apt->check_out_time) {
-                    return $apt->check_in_time->diffInMinutes($apt->check_out_time);
-                }
-                // Fallback to service duration if available
-                if ($apt->service && $apt->service->default_duration_minutes) {
-                    return $apt->service->default_duration_minutes;
-                }
-                // Default 30 minutes if nothing available
-                return 30;
-            });
-            $count = $monthAppointments->count();
-            
-            return [
-                'month_key' => $monthKey,
-                'month_name' => $monthName,
-                'total_consultations' => $count,
-                'total_duration_minutes' => $totalDuration,
-                'average_duration_minutes' => $count > 0 ? round($totalDuration / $count, 2) : 0,
-                'department_name' => $monthAppointments->first()->department->name ?? 'N/A',
-            ];
-        })
-        ->sortBy('month_key')
-        ->values();
-
-        // Paginate
-        $perPage = 12; // Show 12 months per page
-        $currentPage = $request->get('page', 1);
-        $items = $reportData->slice(($currentPage - 1) * $perPage, $perPage)->values();
-        
-        // Create paginator manually
-        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
-            $items,
-            $reportData->count(),
-            $perPage,
-            $currentPage,
-            [
-                'path' => $request->url(),
-                'query' => $request->query(),
-                'pageName' => 'page',
-            ]
-        );
+        $reportQuery = $this->buildReportQuery($startDate, $endDate, $departmentId, $groupBy);
+        $reportData = (clone $reportQuery)->get();
+        $paginator = $reportQuery->paginate(12)->appends($request->query());
 
         // Summary stats
         $summary = [
             'total_consultations' => $reportData->sum('total_consultations'),
             'total_duration_hours' => round($reportData->sum('total_duration_minutes') / 60, 2),
-            'average_duration_minutes' => $reportData->count() > 0 
+            'average_duration_minutes' => $reportData->sum('total_consultations') > 0 
                 ? round($reportData->sum('total_duration_minutes') / $reportData->sum('total_consultations'), 2)
                 : 0,
         ];
@@ -102,6 +41,7 @@ class ConsultationsReportController extends Controller
             'startDate',
             'endDate',
             'departmentId',
+            'groupBy',
             'summary'
         ));
     }
@@ -111,50 +51,20 @@ class ConsultationsReportController extends Controller
      */
     public function exportExcel(Request $request)
     {
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
-        $departmentId = $request->input('department_id');
+        [$startDate, $endDate, $departmentId, $groupBy] = $this->resolveReportFilters($request);
 
-        // Build query
-        $query = Appointment::with(['doctor', 'department', 'service'])
-            ->whereBetween('appointment_date', [$startDate, $endDate])
-            ->where('status', 'completed');
-
-        if ($departmentId) {
-            $query->where('department_id', $departmentId);
-        }
-
-        $reportData = $query->get()
-            ->groupBy(function ($appointment) {
-                return Carbon::parse($appointment->appointment_date)->format('Y-m');
-            })
-            ->map(function ($monthAppointments, $monthKey) {
-                $monthName = Carbon::createFromFormat('Y-m', $monthKey)->format('F Y');
-                $totalDuration = $monthAppointments->sum(function ($apt) {
-                    if ($apt->check_in_time && $apt->check_out_time) {
-                        return $apt->check_in_time->diffInMinutes($apt->check_out_time);
-                    }
-                    if ($apt->service && $apt->service->default_duration_minutes) {
-                        return $apt->service->default_duration_minutes;
-                    }
-                    // Default 30 minutes if nothing available
-                    return 30;
-                });
-                $count = $monthAppointments->count();
-                
+        $reportData = $this->buildReportQuery($startDate, $endDate, $departmentId, $groupBy)
+            ->get()
+            ->map(function ($row) {
                 return [
-                    'Month' => $monthName,
-                    'Department' => $monthAppointments->first()->department->name ?? 'N/A',
-                    'Total Consultations' => $count,
-                    'Total Duration (Minutes)' => $totalDuration,
-                    'Total Duration (Hours)' => round($totalDuration / 60, 2),
-                    'Average Duration (Minutes)' => $count > 0 ? round($totalDuration / $count, 2) : 0,
+                    'Month' => $row->month_name,
+                    'Department' => $row->department_name,
+                    'Total Consultations' => $row->total_consultations,
+                    'Total Duration (Minutes)' => $row->total_duration_minutes,
+                    'Total Duration (Hours)' => $row->total_duration_hours,
+                    'Average Duration (Minutes)' => $row->average_duration_minutes,
                 ];
-            })
-            ->sortBy(function ($item, $key) {
-                return $key;
-            })
-            ->values();
+            });
 
         $filename = 'consultations_report_' . $startDate . '_to_' . $endDate . '.csv';
         
@@ -190,52 +100,10 @@ class ConsultationsReportController extends Controller
      */
     public function exportPdf(Request $request)
     {
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
-        $departmentId = $request->input('department_id');
+        [$startDate, $endDate, $departmentId, $groupBy] = $this->resolveReportFilters($request);
 
-        // Build query
-        $query = Appointment::with(['doctor', 'department', 'service'])
-            ->whereBetween('appointment_date', [$startDate, $endDate])
-            ->where('status', 'completed');
-
-        if ($departmentId) {
-            $query->where('department_id', $departmentId);
-            $department = Department::find($departmentId);
-        } else {
-            $department = null;
-        }
-
-        $reportData = $query->get()
-            ->groupBy(function ($appointment) {
-                return Carbon::parse($appointment->appointment_date)->format('Y-m');
-            })
-            ->map(function ($monthAppointments, $monthKey) {
-                $monthName = Carbon::createFromFormat('Y-m', $monthKey)->format('F Y');
-                $totalDuration = $monthAppointments->sum(function ($apt) {
-                    if ($apt->check_in_time && $apt->check_out_time) {
-                        return $apt->check_in_time->diffInMinutes($apt->check_out_time);
-                    }
-                    if ($apt->service && $apt->service->default_duration_minutes) {
-                        return $apt->service->default_duration_minutes;
-                    }
-                    // Default 30 minutes if nothing available
-                    return 30;
-                });
-                $count = $monthAppointments->count();
-                
-                return [
-                    'month_key' => $monthKey,
-                    'month_name' => $monthName,
-                    'department_name' => $monthAppointments->first()->department->name ?? 'N/A',
-                    'total_consultations' => $count,
-                    'total_duration_minutes' => $totalDuration,
-                    'total_duration_hours' => round($totalDuration / 60, 2),
-                    'average_duration_minutes' => $count > 0 ? round($totalDuration / $count, 2) : 0,
-                ];
-            })
-            ->sortBy('month_key')
-            ->values();
+        $department = $departmentId ? Department::find($departmentId) : null;
+        $reportData = $this->buildReportQuery($startDate, $endDate, $departmentId, $groupBy)->get();
 
         // Summary
         $summary = [
@@ -267,6 +135,93 @@ class ConsultationsReportController extends Controller
         return response()->streamDownload(function() use ($dompdf) {
             echo $dompdf->output();
         }, $filename);
+    }
+
+    private function resolveReportFilters(Request $request): array
+    {
+        $rawStartDate = $request->input('start_date');
+        $rawEndDate = $request->input('end_date');
+        $groupBy = $request->input('group_by', 'department');
+
+        $validator = Validator::make($request->all(), [
+            'start_date' => ['nullable', 'date', 'required_with:end_date'],
+            'end_date' => ['nullable', 'date', 'required_with:start_date'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'group_by' => ['nullable', 'in:department,month'],
+        ]);
+
+        $validator->after(function ($validator) use ($rawStartDate, $rawEndDate) {
+            if ($rawStartDate && $rawEndDate) {
+                $start = Carbon::parse($rawStartDate);
+                $end = Carbon::parse($rawEndDate);
+
+                if ($end->lt($start)) {
+                    $validator->errors()->add('end_date', 'End date must be on or after start date.');
+                }
+
+                if ($start->diffInDays($end) > 731) {
+                    $validator->errors()->add('end_date', 'Date range cannot exceed 24 months.');
+                }
+            }
+        });
+
+        $validator->validate();
+
+        $startDate = $rawStartDate ?: Carbon::now()->startOfMonth()->format('Y-m-d');
+        $endDate = $rawEndDate ?: Carbon::now()->endOfMonth()->format('Y-m-d');
+
+        return [
+            $startDate,
+            $endDate,
+            $request->input('department_id'),
+            $groupBy,
+        ];
+    }
+
+    private function buildReportQuery(string $startDate, string $endDate, $departmentId = null, string $groupBy = 'department')
+    {
+        $durationExpression = "CASE
+            WHEN appointments.check_in_time IS NOT NULL AND appointments.check_out_time IS NOT NULL
+                THEN TIMESTAMPDIFF(MINUTE, appointments.check_in_time, appointments.check_out_time)
+            WHEN booking_services.default_duration_minutes IS NOT NULL
+                THEN booking_services.default_duration_minutes
+            ELSE 30
+        END";
+
+        $departmentNameExpression = $groupBy === 'month'
+            ? "CASE
+                WHEN COUNT(DISTINCT departments.id) > 1 THEN 'Multiple departments'
+                ELSE COALESCE(MAX(departments.name), 'N/A')
+              END"
+            : "COALESCE(departments.name, 'N/A')";
+
+        $query = Appointment::query()
+            ->leftJoin('departments', 'appointments.department_id', '=', 'departments.id')
+            ->leftJoin('booking_services', 'appointments.service_id', '=', 'booking_services.id')
+            ->whereBetween('appointments.appointment_date', [$startDate, $endDate])
+            ->where('appointments.status', 'completed')
+            ->selectRaw("
+                DATE_FORMAT(appointments.appointment_date, '%Y-%m') as month_key,
+                DATE_FORMAT(appointments.appointment_date, '%M %Y') as month_name,
+                {$departmentNameExpression} as department_name,
+                COUNT(*) as total_consultations,
+                SUM($durationExpression) as total_duration_minutes,
+                ROUND(SUM($durationExpression) / 60, 2) as total_duration_hours,
+                ROUND(SUM($durationExpression) / NULLIF(COUNT(*), 0), 2) as average_duration_minutes
+            ")
+            ->orderByRaw("DATE_FORMAT(appointments.appointment_date, '%Y-%m')");
+
+        if ($groupBy === 'month') {
+            $query->groupByRaw("DATE_FORMAT(appointments.appointment_date, '%Y-%m')");
+        } else {
+            $query->groupByRaw("DATE_FORMAT(appointments.appointment_date, '%Y-%m'), departments.id, departments.name");
+        }
+
+        if (!empty($departmentId)) {
+            $query->where('appointments.department_id', $departmentId);
+        }
+
+        return $query;
     }
 }
 

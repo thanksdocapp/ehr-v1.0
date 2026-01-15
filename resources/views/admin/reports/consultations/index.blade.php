@@ -73,6 +73,15 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-md-4">
+                    <label for="group_by" class="modern-form-label">Group By</label>
+                    <select id="group_by"
+                            name="group_by"
+                            class="form-select modern-form-select">
+                        <option value="month" {{ ($groupBy ?? 'department') === 'month' ? 'selected' : '' }}>Month (merged departments)</option>
+                        <option value="department" {{ ($groupBy ?? 'department') === 'department' ? 'selected' : '' }}>Month + Department</option>
+                    </select>
+                </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-search me-2"></i>Apply Filters
