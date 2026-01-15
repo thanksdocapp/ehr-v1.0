@@ -144,16 +144,21 @@ class ConsultationsReportController extends Controller
         $groupBy = $request->input('group_by', 'department');
 
         $validator = Validator::make($request->all(), [
-            'start_date' => ['nullable', 'date', 'required_with:end_date'],
-            'end_date' => ['nullable', 'date', 'required_with:start_date'],
+            'start_date' => ['nullable', 'required_with:end_date'],
+            'end_date' => ['nullable', 'required_with:start_date'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'group_by' => ['nullable', 'in:department,month'],
         ]);
 
         $validator->after(function ($validator) use ($rawStartDate, $rawEndDate) {
             if ($rawStartDate && $rawEndDate) {
-                $start = Carbon::parse($rawStartDate);
-                $end = Carbon::parse($rawEndDate);
+                $start = $this->parseReportDate($rawStartDate);
+                $end = $this->parseReportDate($rawEndDate);
+
+                if (!$start || !$end) {
+                    $validator->errors()->add('start_date', 'Dates must be in YYYY-MM-DD or DD/MM/YYYY format.');
+                    return;
+                }
 
                 if ($end->lt($start)) {
                     $validator->errors()->add('end_date', 'End date must be on or after start date.');
@@ -167,8 +172,12 @@ class ConsultationsReportController extends Controller
 
         $validator->validate();
 
-        $startDate = $rawStartDate ?: Carbon::now()->startOfMonth()->format('Y-m-d');
-        $endDate = $rawEndDate ?: Carbon::now()->endOfMonth()->format('Y-m-d');
+        $startDate = $rawStartDate
+            ? $this->parseReportDate($rawStartDate)->format('Y-m-d')
+            : Carbon::now()->startOfMonth()->format('Y-m-d');
+        $endDate = $rawEndDate
+            ? $this->parseReportDate($rawEndDate)->format('Y-m-d')
+            : Carbon::now()->endOfMonth()->format('Y-m-d');
 
         return [
             $startDate,
@@ -176,6 +185,25 @@ class ConsultationsReportController extends Controller
             $request->input('department_id'),
             $groupBy,
         ];
+    }
+
+    private function parseReportDate(string $value): ?Carbon
+    {
+        $value = trim($value);
+
+        try {
+            if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $value)) {
+                return Carbon::createFromFormat('d/m/Y', $value);
+            }
+
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+                return Carbon::createFromFormat('Y-m-d', $value);
+            }
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return null;
     }
 
     private function buildReportQuery(string $startDate, string $endDate, $departmentId = null, string $groupBy = 'department')
