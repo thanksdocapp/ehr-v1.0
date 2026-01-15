@@ -44,20 +44,26 @@
             <form method="GET" action="{{ route('admin.consultations-report.index') }}" class="row g-3">
                 <div class="col-md-4">
                     <label for="start_date" class="modern-form-label">Start Date</label>
-                    <input type="date" 
+                    <input type="text" 
                            id="start_date" 
                            name="start_date" 
-                           class="form-control modern-form-control" 
-                           value="{{ $startDate }}"
+                           class="form-control modern-form-control uk-date" 
+                           value="{{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }}"
+                           placeholder="dd/mm/yyyy"
+                           pattern="\d{2}/\d{2}/\d{4}"
+                           maxlength="10"
                            required>
                 </div>
                 <div class="col-md-4">
                     <label for="end_date" class="modern-form-label">End Date</label>
-                    <input type="date" 
+                    <input type="text" 
                            id="end_date" 
                            name="end_date" 
-                           class="form-control modern-form-control" 
-                           value="{{ $endDate }}"
+                           class="form-control modern-form-control uk-date" 
+                           value="{{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}"
+                           placeholder="dd/mm/yyyy"
+                           pattern="\d{2}/\d{2}/\d{4}"
+                           maxlength="10"
                            required>
                 </div>
                 <div class="col-md-4">
