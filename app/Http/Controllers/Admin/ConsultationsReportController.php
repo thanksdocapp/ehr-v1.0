@@ -201,15 +201,15 @@ class ConsultationsReportController extends Controller
             ->whereBetween('appointments.appointment_date', [$startDate, $endDate])
             ->where('appointments.status', 'completed')
             ->selectRaw("
-                DATE_FORMAT(appointments.appointment_date, '%Y-%m') as month_key,
-                DATE_FORMAT(appointments.appointment_date, '%M %Y') as month_name,
+                DATE_FORMAT(MIN(appointments.appointment_date), '%Y-%m') as month_key,
+                DATE_FORMAT(MIN(appointments.appointment_date), '%M %Y') as month_name,
                 {$departmentNameExpression} as department_name,
                 COUNT(*) as total_consultations,
                 SUM($durationExpression) as total_duration_minutes,
                 ROUND(SUM($durationExpression) / 60, 2) as total_duration_hours,
                 ROUND(SUM($durationExpression) / NULLIF(COUNT(*), 0), 2) as average_duration_minutes
             ")
-            ->orderByRaw("DATE_FORMAT(appointments.appointment_date, '%Y-%m')");
+            ->orderByRaw("DATE_FORMAT(MIN(appointments.appointment_date), '%Y-%m')");
 
         if ($groupBy === 'month') {
             $query->groupByRaw("DATE_FORMAT(appointments.appointment_date, '%Y-%m')");
