@@ -228,7 +228,6 @@ class ConsultationsReportController extends Controller
             ->leftJoin('booking_services', 'appointments.service_id', '=', 'booking_services.id')
             ->whereBetween('appointments.appointment_date', [$startDate, $endDate])
             ->where('appointments.status', 'completed')
-            ->where('appointments.type', 'consultation')
             ->selectRaw("
                 DATE_FORMAT(MIN(appointments.appointment_date), '%Y-%m') as month_key,
                 DATE_FORMAT(MIN(appointments.appointment_date), '%M %Y') as month_name,
