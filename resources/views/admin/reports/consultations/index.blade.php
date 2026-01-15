@@ -8,6 +8,41 @@
     <li class="breadcrumb-item active">Consultations Report</li>
 @endsection
 
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof flatpickr === 'undefined') {
+            console.warn('Flatpickr not loaded for consultations report dates.');
+            return;
+        }
+
+        const inputIds = ['start_date', 'end_date'];
+        inputIds.forEach(function(id) {
+            const input = document.getElementById(id);
+            if (!input) {
+                return;
+            }
+
+            if (input._flatpickr) {
+                input._flatpickr.destroy();
+            }
+
+            const instance = flatpickr(input, {
+                dateFormat: "d/m/Y",
+                altInput: false,
+                altFormat: "d/m/Y",
+                allowInput: true,
+                clickOpens: true,
+                locale: { firstDayOfWeek: 1 }
+            });
+
+            input._flatpickr = instance;
+            input.setAttribute('data-flatpickr-initialized', 'true');
+        });
+    });
+</script>
+@endpush
+
 @section('content')
 <div class="fade-in">
     <!-- Modern Page Header -->
@@ -52,6 +87,7 @@
                            placeholder="dd/mm/yyyy"
                            pattern="\d{2}/\d{2}/\d{4}"
                            maxlength="10"
+                           data-uk-date="true"
                            required>
                 </div>
                 <div class="col-md-4">
@@ -64,6 +100,7 @@
                            placeholder="dd/mm/yyyy"
                            pattern="\d{2}/\d{2}/\d{4}"
                            maxlength="10"
+                           data-uk-date="true"
                            required>
                 </div>
                 <div class="col-md-4">
