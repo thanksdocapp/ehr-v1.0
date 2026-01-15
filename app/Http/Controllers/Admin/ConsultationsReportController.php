@@ -218,34 +218,65 @@ class ConsultationsReportController extends Controller
 
         $departmentNameExpression = $groupBy === 'month'
             ? "CASE
-                WHEN COUNT(DISTINCT departments.id) > 1 THEN 'Multiple departments'
-                ELSE COALESCE(MAX(departments.name), 'N/A')
+                WHEN COUNT(DISTINCT department_id) > 1 THEN 'Multiple departments'
+                ELSE COALESCE(MAX(department_name), 'N/A')
               END"
-            : "COALESCE(departments.name, 'N/A')";
+            : "COALESCE(department_name, 'N/A')";
 
-        $query = Appointment::query()
+        $appointmentRows = Appointment::query()
             ->leftJoin('departments', 'appointments.department_id', '=', 'departments.id')
             ->leftJoin('booking_services', 'appointments.service_id', '=', 'booking_services.id')
             ->whereBetween('appointments.appointment_date', [$startDate, $endDate])
+            ->whereIn('appointments.type', ['consultation', 'followup'])
             ->selectRaw("
-                DATE_FORMAT(MIN(appointments.appointment_date), '%Y-%m') as month_key,
-                DATE_FORMAT(MIN(appointments.appointment_date), '%M %Y') as month_name,
-                {$departmentNameExpression} as department_name,
-                COUNT(*) as total_consultations,
-                SUM($durationExpression) as total_duration_minutes,
-                ROUND(SUM($durationExpression) / 60, 2) as total_duration_hours,
-                ROUND(SUM($durationExpression) / NULLIF(COUNT(*), 0), 2) as average_duration_minutes
-            ")
-            ->orderByRaw("DATE_FORMAT(MIN(appointments.appointment_date), '%Y-%m')");
-
-        if ($groupBy === 'month') {
-            $query->groupByRaw("DATE_FORMAT(appointments.appointment_date, '%Y-%m')");
-        } else {
-            $query->groupByRaw("DATE_FORMAT(appointments.appointment_date, '%Y-%m'), departments.id, departments.name");
-        }
+                appointments.appointment_date as record_date,
+                appointments.department_id as department_id,
+                departments.name as department_name,
+                $durationExpression as duration_minutes
+            ");
 
         if (!empty($departmentId)) {
-            $query->where('appointments.department_id', $departmentId);
+            $appointmentRows->where('appointments.department_id', $departmentId);
+        }
+
+        $recordDateExpression = "DATE(COALESCE(medical_records.record_date, medical_records.created_at))";
+
+        $medicalRecordRows = DB::table('medical_records')
+            ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
+            ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
+            ->whereNull('medical_records.appointment_id')
+            ->whereIn('medical_records.record_type', ['consultation', 'follow_up'])
+            ->whereBetween(DB::raw($recordDateExpression), [$startDate, $endDate])
+            ->selectRaw("
+                $recordDateExpression as record_date,
+                doctors.department_id as department_id,
+                departments.name as department_name,
+                30 as duration_minutes
+            ");
+
+        if (!empty($departmentId)) {
+            $medicalRecordRows->where('doctors.department_id', $departmentId);
+        }
+
+        $unionQuery = $appointmentRows->unionAll($medicalRecordRows);
+
+        $query = DB::query()
+            ->fromSub($unionQuery, 'consultation_rows')
+            ->selectRaw("
+                DATE_FORMAT(MIN(record_date), '%Y-%m') as month_key,
+                DATE_FORMAT(MIN(record_date), '%M %Y') as month_name,
+                {$departmentNameExpression} as department_name,
+                COUNT(*) as total_consultations,
+                SUM(duration_minutes) as total_duration_minutes,
+                ROUND(SUM(duration_minutes) / 60, 2) as total_duration_hours,
+                ROUND(SUM(duration_minutes) / NULLIF(COUNT(*), 0), 2) as average_duration_minutes
+            ")
+            ->orderByRaw("DATE_FORMAT(MIN(record_date), '%Y-%m')");
+
+        if ($groupBy === 'month') {
+            $query->groupByRaw("DATE_FORMAT(record_date, '%Y-%m')");
+        } else {
+            $query->groupByRaw("DATE_FORMAT(record_date, '%Y-%m'), department_id, department_name");
         }
 
         return $query;
