@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('department_id')->constrained()->cascadeOnDelete();
             $table->date('appointment_date');
             $table->time('appointment_time');
-            $table->enum('type', ['consultation', 'followup', 'emergency', 'checkup', 'surgery'])->default('consultation');
+            $table->enum('type', ['consultation', 'followup'])->default('consultation');
             $table->enum('status', ['pending', 'confirmed', 'completed', 'cancelled', 'rescheduled'])->default('pending');
             $table->text('reason')->nullable(); // Reason for appointment
             $table->text('symptoms')->nullable();

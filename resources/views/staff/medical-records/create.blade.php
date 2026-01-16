@@ -222,9 +222,7 @@
                                         <option value="">Select Record Type</option>
                                         <option value="consultation" {{ old('record_type') === 'consultation' ? 'selected' : '' }}>Consultation</option>
                                         <option value="followup" {{ old('record_type') === 'followup' ? 'selected' : '' }}>Follow-up</option>
-                                        <option value="emergency" {{ old('record_type') === 'emergency' ? 'selected' : '' }}>Emergency</option>
-                                        <option value="checkup" {{ old('record_type') === 'checkup' ? 'selected' : '' }}>Checkup</option>
-                                        <option value="surgery" {{ old('record_type') === 'surgery' ? 'selected' : '' }}>Surgery</option>
+                                        <option value="administration_update" {{ old('record_type') === 'administration_update' ? 'selected' : '' }}>Administrative update</option>
                                     </select>
                                     @error('record_type')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -994,14 +992,14 @@ $(document).ready(function() {
                     $('#presenting_complaint').val('Emergency presentation: ');
                 }
                 break;
-            case 'checkup':
-                if (!$('#presenting_complaint').val()) {
-                    $('#presenting_complaint').val('Routine health maintenance visit');
-                }
-                break;
             case 'followup':
                 if (!$('#presenting_complaint').val()) {
                     $('#presenting_complaint').val('Follow-up visit for: ');
+                }
+                break;
+            case 'administration_update':
+                if (!$('#presenting_complaint').val()) {
+                    $('#presenting_complaint').val('Administrative update: ');
                 }
                 break;
         }

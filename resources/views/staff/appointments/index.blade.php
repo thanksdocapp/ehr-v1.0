@@ -248,8 +248,6 @@
                             <option value="">All Types</option>
                             <option value="consultation" {{ request('appointment_type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
                             <option value="follow_up" {{ request('appointment_type') == 'follow_up' ? 'selected' : '' }}>Follow Up</option>
-                            <option value="routine_checkup" {{ request('appointment_type') == 'routine_checkup' ? 'selected' : '' }}>Routine Checkup</option>
-                            <option value="emergency" {{ request('appointment_type') == 'emergency' ? 'selected' : '' }}>Emergency</option>
                         </select>
                     </div>
                     <div class="col-md-3">

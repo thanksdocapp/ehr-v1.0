@@ -80,9 +80,7 @@ class AppointmentsController extends Controller
             // Map frontend values to database values
             $typeMapping = [
                 'follow_up' => 'followup',
-                'routine_checkup' => 'checkup',
                 'consultation' => 'consultation',
-                'emergency' => 'emergency',
             ];
             $dbType = $typeMapping[$request->appointment_type] ?? $request->appointment_type;
             $query->where('type', $dbType);
@@ -359,7 +357,7 @@ class AppointmentsController extends Controller
             'department_id' => 'required|exists:departments,id',
             'appointment_date' => 'required|date|after_or_equal:today',
             'appointment_time' => 'required',
-            'appointment_type' => 'required|in:consultation,follow_up,routine_checkup,emergency',
+            'appointment_type' => 'required|in:consultation,follow_up',
             'notes' => 'nullable|string',
             'is_online' => 'nullable|boolean',
             'meeting_link' => 'nullable|url|max:500',
@@ -406,9 +404,7 @@ class AppointmentsController extends Controller
         // Map appointment_type to database enum values
         $typeMapping = [
             'follow_up' => 'followup',
-            'routine_checkup' => 'checkup',
             'consultation' => 'consultation',
-            'emergency' => 'emergency',
         ];
         $appointmentType = $typeMapping[$request->appointment_type] ?? $request->appointment_type;
 
@@ -590,7 +586,7 @@ class AppointmentsController extends Controller
             'department_id' => 'required|exists:departments,id',
             'appointment_date' => 'required|date',
             'appointment_time' => 'required',
-            'appointment_type' => 'required|in:consultation,follow_up,routine_checkup,emergency',
+            'appointment_type' => 'required|in:consultation,follow_up',
             'reason' => 'nullable|string',
             'priority' => 'nullable|in:normal,high,urgent',
             'estimated_duration' => 'nullable|integer|min:15|max:480',
@@ -612,9 +608,7 @@ class AppointmentsController extends Controller
         // Map appointment_type to database enum values
         $typeMapping = [
             'follow_up' => 'followup',
-            'routine_checkup' => 'checkup',
             'consultation' => 'consultation',
-            'emergency' => 'emergency',
         ];
         $appointmentType = $typeMapping[$request->appointment_type] ?? $request->appointment_type;
 

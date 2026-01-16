@@ -194,9 +194,6 @@
                             <option value="">All Types</option>
                             <option value="consultation" {{ request('type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
                             <option value="followup" {{ request('type') == 'followup' ? 'selected' : '' }}>Follow Up</option>
-                            <option value="checkup" {{ request('type') == 'checkup' ? 'selected' : '' }}>Checkup</option>
-                            <option value="emergency" {{ request('type') == 'emergency' ? 'selected' : '' }}>Emergency</option>
-                            <option value="surgery" {{ request('type') == 'surgery' ? 'selected' : '' }}>Surgery</option>
                         </select>
                     </div>
                     <div class="col-md-3">

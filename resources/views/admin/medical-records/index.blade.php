@@ -158,9 +158,7 @@
                     <option value="">All Types</option>
                     <option value="consultation" {{ request('record_type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
                     <option value="followup" {{ request('record_type') == 'followup' ? 'selected' : '' }}>Follow-up</option>
-                    <option value="emergency" {{ request('record_type') == 'emergency' ? 'selected' : '' }}>Emergency</option>
-                    <option value="checkup" {{ request('record_type') == 'checkup' ? 'selected' : '' }}>Checkup</option>
-                    <option value="surgery" {{ request('record_type') == 'surgery' ? 'selected' : '' }}>Surgery</option>
+                    <option value="administration_update" {{ request('record_type') == 'administration_update' ? 'selected' : '' }}>Administrative update</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -271,9 +269,7 @@
                                         <span class="record-type-badge badge bg-{{
                                             $record->record_type === 'consultation' ? 'primary' :
                                             ($record->record_type === 'followup' ? 'info' :
-                                            ($record->record_type === 'emergency' ? 'danger' :
-                                            ($record->record_type === 'checkup' ? 'success' :
-                                            ($record->record_type === 'surgery' ? 'warning' : 'dark'))))
+                                            ($record->record_type === 'administration_update' ? 'secondary' : 'dark'))
                                         }}">
                                             {{ ucfirst(str_replace('_', ' ', $record->record_type)) }}
                                         </span>

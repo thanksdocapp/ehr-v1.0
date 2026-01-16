@@ -108,8 +108,6 @@
                                 <option value="">Select Type</option>
                                 <option value="consultation" {{ old('appointment_type', $appointment->type) === 'consultation' ? 'selected' : '' }}>Consultation</option>
                                 <option value="follow_up" {{ old('appointment_type', $appointment->type === 'followup' ? 'follow_up' : ($appointment->type === 'follow_up' ? 'follow_up' : '')) === 'follow_up' ? 'selected' : '' }}>Follow Up</option>
-                                <option value="routine_checkup" {{ old('appointment_type', $appointment->type === 'checkup' ? 'routine_checkup' : ($appointment->type === 'routine_checkup' ? 'routine_checkup' : '')) === 'routine_checkup' ? 'selected' : '' }}>Routine Checkup</option>
-                                <option value="emergency" {{ old('appointment_type', $appointment->type) === 'emergency' ? 'selected' : '' }}>Emergency</option>
                             </select>
                             @error('appointment_type')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -735,13 +733,6 @@ $(document).ready(function() {
                 break;
             case 'follow_up':
                 durationSelect.val('30');
-                break;
-            case 'routine_checkup':
-                durationSelect.val('30');
-                break;
-            case 'emergency':
-                durationSelect.val('60');
-                $('#priority').val('urgent');
                 break;
         }
     });

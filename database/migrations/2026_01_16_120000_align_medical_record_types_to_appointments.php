@@ -13,12 +13,11 @@ return new class extends Migration
     public function up(): void
     {
         $driver = DB::getDriverName();
-        $allowedTypes = ['consultation', 'followup', 'emergency', 'checkup', 'surgery'];
+        $allowedTypes = ['consultation', 'followup', 'administration_update'];
 
         // Normalize existing values to the new appointment-aligned set
         DB::statement("UPDATE medical_records SET record_type = 'followup' WHERE record_type = 'follow_up'");
-        DB::statement("UPDATE medical_records SET record_type = 'checkup' WHERE record_type = 'routine_checkup'");
-        DB::statement("UPDATE medical_records SET record_type = 'consultation' WHERE record_type IN ('diagnosis', 'prescription', 'lab_result', 'discharge', 'procedure', 'administration_update')");
+        DB::statement("UPDATE medical_records SET record_type = 'consultation' WHERE record_type IN ('routine_checkup', 'emergency', 'checkup', 'surgery', 'procedure', 'diagnosis', 'prescription', 'lab_result', 'discharge')");
 
         if ($driver === 'sqlite') {
             DB::statement('ALTER TABLE medical_records RENAME TO medical_records_old');
@@ -147,8 +146,7 @@ return new class extends Migration
                     id, patient_id, doctor_id, appointment_id,
                     CASE
                         WHEN record_type = 'followup' THEN 'follow_up'
-                        WHEN record_type = 'checkup' THEN 'consultation'
-                        WHEN record_type = 'surgery' THEN 'consultation'
+                        WHEN record_type = 'administration_update' THEN 'consultation'
                         ELSE record_type
                     END as record_type,
                     diagnosis, symptoms, treatment, notes, vital_signs, follow_up_date, is_private, record_date,

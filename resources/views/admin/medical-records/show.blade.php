@@ -291,9 +291,7 @@
         $recordTypeBadge = match($medicalRecord->record_type) {
             'consultation' => 'bg-primary',
             'followup' => 'bg-info',
-            'emergency' => 'bg-danger',
-            'checkup' => 'bg-success',
-            'surgery' => 'bg-warning',
+            'administration_update' => 'bg-secondary',
             default => 'bg-secondary',
         };
     @endphp

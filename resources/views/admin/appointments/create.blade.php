@@ -80,9 +80,6 @@
                                         <option value="">Select Type</option>
                                         <option value="consultation" {{ old('type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
                                         <option value="followup" {{ old('type') == 'followup' ? 'selected' : '' }}>Follow-up</option>
-                                        <option value="emergency" {{ old('type') == 'emergency' ? 'selected' : '' }}>Emergency</option>
-                                        <option value="checkup" {{ old('type') == 'checkup' ? 'selected' : '' }}>Check-up</option>
-                                        <option value="surgery" {{ old('type') == 'surgery' ? 'selected' : '' }}>Surgery</option>
                                     </select>
                                     @error('type')
                                         <div class="invalid-feedback">{{ $message }}</div>

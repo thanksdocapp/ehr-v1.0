@@ -184,7 +184,7 @@ class MedicalRecordsController extends Controller
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:doctors,id',
             'appointment_id' => 'nullable|exists:appointments,id',
-            'record_type' => 'required|in:consultation,followup,emergency,checkup,surgery',
+            'record_type' => 'required|in:consultation,followup,administration_update',
             'pre_consultation_verified' => 'required|accepted',
             'presenting_complaint' => 'required|string|max:1000',
             'history_of_presenting_complaint' => 'required|string',
@@ -339,7 +339,7 @@ class MedicalRecordsController extends Controller
             'doctor_id' => 'required|exists:doctors,id',
             'appointment_id' => 'nullable|exists:appointments,id',
             'record_date' => 'nullable|date', // Allow nullable to preserve existing date
-            'record_type' => 'required|in:consultation,followup,emergency,checkup,surgery',
+            'record_type' => 'required|in:consultation,followup,administration_update',
             'presenting_complaint' => 'required|string|max:1000',
             'history_of_presenting_complaint' => 'required|string',
             'past_medical_history' => 'required|string',
@@ -861,30 +861,12 @@ class MedicalRecordsController extends Controller
                 ];
                 break;
                 
-            case 'emergency':
+            case 'administration_update':
                 $content = [
-                    'summary' => 'An emergency visit record has been added to your file.',
-                    'explanation' => 'Your healthcare provider has documented details from an emergency visit.',
-                    'urgency_level' => 'High',
-                    'next_steps' => 'Please follow the care plan provided and contact your provider with any concerns.'
-                ];
-                break;
-                
-            case 'checkup':
-                $content = [
-                    'summary' => 'A checkup record has been added to your file.',
-                    'explanation' => 'Your healthcare provider has documented details from your checkup.',
+                    'summary' => 'An administrative update has been added to your medical record.',
+                    'explanation' => 'Your healthcare provider has recorded an administrative update related to your care.',
                     'urgency_level' => 'Standard',
-                    'next_steps' => 'Please review your checkup notes and follow any recommendations provided.'
-                ];
-                break;
-                
-            case 'surgery':
-                $content = [
-                    'summary' => 'A surgery record has been added to your file.',
-                    'explanation' => 'Your healthcare provider has documented surgical details and care instructions.',
-                    'urgency_level' => 'High',
-                    'next_steps' => 'Please review your surgical notes and follow all post-op instructions.'
+                    'next_steps' => 'Please review the update and contact your provider if you need clarification.'
                 ];
                 break;
                 
@@ -1594,7 +1576,7 @@ class MedicalRecordsController extends Controller
                     }
 
                     // Handle record_type validation
-                    $validRecordTypes = ['consultation', 'followup', 'emergency', 'checkup', 'surgery'];
+                    $validRecordTypes = ['consultation', 'followup', 'administration_update'];
                     if (!in_array(strtolower($data['record_type']), $validRecordTypes)) {
                         throw new \Exception("Row {$rowNumber}: Invalid record_type. Must be one of: " . implode(', ', $validRecordTypes));
                     }

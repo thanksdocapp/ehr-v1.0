@@ -46,10 +46,8 @@
                             @php
                                 $typeColors = [
                                     'consultation' => 'primary',
-                                    'follow_up' => 'info',
-                                    'emergency' => 'danger',
-                                    'routine_checkup' => 'success',
-                                    'procedure' => 'warning'
+                                    'followup' => 'info',
+                                    'administration_update' => 'secondary'
                                 ];
                                 $typeColor = $typeColors[$medicalRecord->record_type] ?? 'secondary';
                             @endphp

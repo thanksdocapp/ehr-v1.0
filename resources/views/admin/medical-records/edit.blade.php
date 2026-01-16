@@ -242,9 +242,7 @@
                                         <option value="">Select Record Type</option>
                                         <option value="consultation" {{ old('record_type', $medicalRecord->record_type) == 'consultation' ? 'selected' : '' }}>Consultation</option>
                                         <option value="followup" {{ old('record_type', $medicalRecord->record_type) == 'followup' ? 'selected' : '' }}>Follow-up</option>
-                                        <option value="emergency" {{ old('record_type', $medicalRecord->record_type) == 'emergency' ? 'selected' : '' }}>Emergency</option>
-                                        <option value="checkup" {{ old('record_type', $medicalRecord->record_type) == 'checkup' ? 'selected' : '' }}>Checkup</option>
-                                        <option value="surgery" {{ old('record_type', $medicalRecord->record_type) == 'surgery' ? 'selected' : '' }}>Surgery</option>
+                                        <option value="administration_update" {{ old('record_type', $medicalRecord->record_type) == 'administration_update' ? 'selected' : '' }}>Administrative update</option>
                                     </select>
                                     @error('record_type')
                                         <div class="invalid-feedback">{{ $message }}</div>
