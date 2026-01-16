@@ -245,7 +245,7 @@
                         </div>
                     @endif
 
-                    @if($appointment->patient->date_of_birth)
+                    @if($appointment->patient && $appointment->patient->date_of_birth)
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label text-muted">Date of Birth</label>
@@ -258,7 +258,7 @@
                         </div>
                     @endif
 
-                    @if($appointment->patient->gender)
+                    @if($appointment->patient && $appointment->patient->gender)
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label text-muted">Gender</label>
@@ -267,7 +267,7 @@
                         </div>
                     @endif
 
-                    @if($appointment->patient->address)
+                    @if($appointment->patient && $appointment->patient->address)
                         <div class="row mb-3">
                             <div class="col-12">
                                 <label class="form-label text-muted">Address</label>
