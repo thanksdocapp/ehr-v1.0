@@ -180,6 +180,10 @@ class MedicalRecordsController extends Controller
                 ->withInput();
         }
 
+        if ($request->input('record_type') === 'follow_up') {
+            $request->merge(['record_type' => 'followup']);
+        }
+
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:doctors,id',
@@ -326,6 +330,9 @@ class MedicalRecordsController extends Controller
      */
     public function update(Request $request, MedicalRecord $medicalRecord, HospitalEmailNotificationService $emailService): RedirectResponse
     {
+        if ($request->input('record_type') === 'follow_up') {
+            $request->merge(['record_type' => 'followup']);
+        }
         // Check if patient is a guest
         $patient = Patient::find($request->patient_id);
         if ($patient && $patient->is_guest) {

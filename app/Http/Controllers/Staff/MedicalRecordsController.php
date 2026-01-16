@@ -410,6 +410,10 @@ class MedicalRecordsController extends Controller
             $recordDateInput = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
             $request->merge(['record_date' => $recordDateInput]);
         }
+
+        if ($request->input('record_type') === 'follow_up') {
+            $request->merge(['record_type' => 'followup']);
+        }
         
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
@@ -714,6 +718,10 @@ class MedicalRecordsController extends Controller
                         ->with('error', 'You can only edit your own medical records.');
                 }
             }
+        }
+
+        if ($request->input('record_type') === 'follow_up') {
+            $request->merge(['record_type' => 'followup']);
         }
         
         try {
