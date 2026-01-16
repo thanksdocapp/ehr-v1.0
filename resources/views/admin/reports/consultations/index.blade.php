@@ -208,7 +208,14 @@
                                 <small class="text-muted">{{ $monthData->month_key }}</small>
                             </td>
                             <td>
-                                <span class="badge bg-primary">{{ $monthData->department_name }}</span>
+                                @if(!empty($monthData->department_id))
+                                    <a class="badge bg-primary text-decoration-none"
+                                       href="{{ route('admin.consultations-report.details', array_merge(request()->all(), ['month' => $monthData->month_key, 'department_id' => $monthData->department_id])) }}">
+                                        {{ $monthData->department_name }}
+                                    </a>
+                                @else
+                                    <span class="badge bg-primary">{{ $monthData->department_name }}</span>
+                                @endif
                             </td>
                             <td class="text-end">
                                 <span class="fw-semibold">{{ number_format($monthData->total_consultations) }}</span>

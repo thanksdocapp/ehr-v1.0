@@ -1023,6 +1023,7 @@ Route::group(['middleware' => 'installed'], function () {
         // Consultations Report
         Route::prefix('consultations-report')->name('consultations-report.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\ConsultationsReportController::class, 'index'])->name('index');
+            Route::get('/details', [\App\Http\Controllers\Admin\ConsultationsReportController::class, 'details'])->name('details');
             Route::get('/export-excel', [\App\Http\Controllers\Admin\ConsultationsReportController::class, 'exportExcel'])->name('export-excel');
             Route::get('/export-pdf', [\App\Http\Controllers\Admin\ConsultationsReportController::class, 'exportPdf'])->name('export-pdf');
         });

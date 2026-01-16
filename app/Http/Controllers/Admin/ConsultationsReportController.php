@@ -137,6 +137,41 @@ class ConsultationsReportController extends Controller
         }, $filename);
     }
 
+    /**
+     * Display consultations for a specific department and month.
+     */
+    public function details(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'month' => ['required', 'regex:/^\d{4}-\d{2}$/'],
+            'department_id' => ['required', 'integer', 'exists:departments,id'],
+        ]);
+
+        $validator->validate();
+
+        $monthKey = $request->input('month');
+        $departmentId = (int) $request->input('department_id');
+
+        $monthDate = Carbon::createFromFormat('Y-m', $monthKey)->startOfMonth();
+        $startDate = $monthDate->copy()->startOfMonth()->format('Y-m-d');
+        $endDate = $monthDate->copy()->endOfMonth()->format('Y-m-d');
+
+        $department = Department::find($departmentId);
+
+        $rows = $this->buildConsultationDetailsQuery($startDate, $endDate, $departmentId)
+            ->orderByDesc('record_date')
+            ->paginate(25)
+            ->appends($request->query());
+
+        return view('admin.reports.consultations.details', [
+            'rows' => $rows,
+            'department' => $department,
+            'monthKey' => $monthKey,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+        ]);
+    }
+
     private function resolveReportFilters(Request $request): array
     {
         $rawStartDate = $request->input('start_date');
@@ -223,6 +258,13 @@ class ConsultationsReportController extends Controller
               END"
             : "COALESCE(department_name, 'N/A')";
 
+        $departmentIdExpression = $groupBy === 'month'
+            ? "CASE
+                WHEN COUNT(DISTINCT department_id) > 1 THEN NULL
+                ELSE MAX(department_id)
+              END"
+            : "department_id";
+
         $appointmentRows = Appointment::query()
             ->leftJoin('departments', 'appointments.department_id', '=', 'departments.id')
             ->leftJoin('booking_services', 'appointments.service_id', '=', 'booking_services.id')
@@ -266,6 +308,7 @@ class ConsultationsReportController extends Controller
                 DATE_FORMAT(MIN(record_date), '%Y-%m') as month_key,
                 DATE_FORMAT(MIN(record_date), '%M %Y') as month_name,
                 {$departmentNameExpression} as department_name,
+                {$departmentIdExpression} as department_id,
                 COUNT(*) as total_consultations,
                 SUM(duration_minutes) as total_duration_minutes,
                 ROUND(SUM(duration_minutes) / 60, 2) as total_duration_hours,
@@ -280,6 +323,64 @@ class ConsultationsReportController extends Controller
         }
 
         return $query;
+    }
+
+    private function buildConsultationDetailsQuery(string $startDate, string $endDate, int $departmentId)
+    {
+        $durationExpression = "CASE
+            WHEN appointments.check_in_time IS NOT NULL AND appointments.check_out_time IS NOT NULL
+                THEN TIMESTAMPDIFF(MINUTE, appointments.check_in_time, appointments.check_out_time)
+            WHEN booking_services.default_duration_minutes IS NOT NULL
+                THEN booking_services.default_duration_minutes
+            ELSE 30
+        END";
+
+        $appointmentRows = Appointment::query()
+            ->leftJoin('patients', 'appointments.patient_id', '=', 'patients.id')
+            ->leftJoin('doctors', 'appointments.doctor_id', '=', 'doctors.id')
+            ->leftJoin('departments', 'appointments.department_id', '=', 'departments.id')
+            ->leftJoin('booking_services', 'appointments.service_id', '=', 'booking_services.id')
+            ->whereBetween('appointments.appointment_date', [$startDate, $endDate])
+            ->where('appointments.department_id', $departmentId)
+            ->whereIn('appointments.type', ['consultation', 'followup'])
+            ->selectRaw("
+                appointments.id as appointment_id,
+                NULL as medical_record_id,
+                appointments.appointment_date as record_date,
+                CONCAT(patients.first_name, ' ', patients.last_name) as patient_name,
+                CONCAT(doctors.first_name, ' ', doctors.last_name) as doctor_name,
+                departments.name as department_name,
+                CASE
+                    WHEN appointments.type = 'followup' THEN 'follow_up'
+                    ELSE appointments.type
+                END as consultation_type,
+                'appointment' as source,
+                $durationExpression as duration_minutes
+            ");
+
+        $recordDateExpression = "DATE(COALESCE(medical_records.record_date, medical_records.created_at))";
+
+        $medicalRecordRows = DB::table('medical_records')
+            ->leftJoin('patients', 'medical_records.patient_id', '=', 'patients.id')
+            ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
+            ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
+            ->whereNull('medical_records.appointment_id')
+            ->where('doctors.department_id', $departmentId)
+            ->whereIn('medical_records.record_type', ['consultation', 'follow_up'])
+            ->whereBetween(DB::raw($recordDateExpression), [$startDate, $endDate])
+            ->selectRaw("
+                NULL as appointment_id,
+                medical_records.id as medical_record_id,
+                $recordDateExpression as record_date,
+                CONCAT(patients.first_name, ' ', patients.last_name) as patient_name,
+                CONCAT(doctors.first_name, ' ', doctors.last_name) as doctor_name,
+                departments.name as department_name,
+                medical_records.record_type as consultation_type,
+                'medical_record' as source,
+                30 as duration_minutes
+            ");
+
+        return DB::query()->fromSub($appointmentRows->unionAll($medicalRecordRows), 'consultation_details');
     }
 }
 
