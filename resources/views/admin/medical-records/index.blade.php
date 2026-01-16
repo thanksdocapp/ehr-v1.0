@@ -157,11 +157,10 @@
                 <select class="modern-form-select" id="record_type" name="record_type">
                     <option value="">All Types</option>
                     <option value="consultation" {{ request('record_type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
-                    <option value="diagnosis" {{ request('record_type') == 'diagnosis' ? 'selected' : '' }}>Diagnosis</option>
-                    <option value="prescription" {{ request('record_type') == 'prescription' ? 'selected' : '' }}>Prescription</option>
-                    <option value="lab_result" {{ request('record_type') == 'lab_result' ? 'selected' : '' }}>Lab Result</option>
-                    <option value="follow_up" {{ request('record_type') == 'follow_up' ? 'selected' : '' }}>Follow-up</option>
-                    <option value="discharge" {{ request('record_type') == 'discharge' ? 'selected' : '' }}>Discharge</option>
+                    <option value="followup" {{ request('record_type') == 'followup' ? 'selected' : '' }}>Follow-up</option>
+                    <option value="emergency" {{ request('record_type') == 'emergency' ? 'selected' : '' }}>Emergency</option>
+                    <option value="checkup" {{ request('record_type') == 'checkup' ? 'selected' : '' }}>Checkup</option>
+                    <option value="surgery" {{ request('record_type') == 'surgery' ? 'selected' : '' }}>Surgery</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -269,12 +268,12 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="record-type-badge badge bg-{{ 
-                                            $record->record_type === 'consultation' ? 'primary' : 
-                                            ($record->record_type === 'diagnosis' ? 'info' : 
-                                            ($record->record_type === 'prescription' ? 'warning' : 
-                                            ($record->record_type === 'lab_result' ? 'success' : 
-                                            ($record->record_type === 'follow_up' ? 'secondary' : 'dark')))) 
+                                        <span class="record-type-badge badge bg-{{
+                                            $record->record_type === 'consultation' ? 'primary' :
+                                            ($record->record_type === 'followup' ? 'info' :
+                                            ($record->record_type === 'emergency' ? 'danger' :
+                                            ($record->record_type === 'checkup' ? 'success' :
+                                            ($record->record_type === 'surgery' ? 'warning' : 'dark'))))
                                         }}">
                                             {{ ucfirst(str_replace('_', ' ', $record->record_type)) }}
                                         </span>

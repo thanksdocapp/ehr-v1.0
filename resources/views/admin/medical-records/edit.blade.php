@@ -237,15 +237,14 @@
                                     <label for="record_type" class="form-label">
                                         <i class="fas fa-file-alt me-1"></i>Record Type *
                                     </label>
-                                    <select class="form-control @error('record_type') is-invalid @enderror" 
+                                    <select class="form-control @error('record_type') is-invalid @enderror"
                                             id="record_type" name="record_type" required>
                                         <option value="">Select Record Type</option>
                                         <option value="consultation" {{ old('record_type', $medicalRecord->record_type) == 'consultation' ? 'selected' : '' }}>Consultation</option>
-                                        <option value="diagnosis" {{ old('record_type', $medicalRecord->record_type) == 'diagnosis' ? 'selected' : '' }}>Diagnosis</option>
-                                        <option value="prescription" {{ old('record_type', $medicalRecord->record_type) == 'prescription' ? 'selected' : '' }}>Prescription</option>
-                                        <option value="lab_result" {{ old('record_type', $medicalRecord->record_type) == 'lab_result' ? 'selected' : '' }}>Lab Result</option>
-                                        <option value="follow_up" {{ old('record_type', $medicalRecord->record_type) == 'follow_up' ? 'selected' : '' }}>Follow-up</option>
-                                        <option value="discharge" {{ old('record_type', $medicalRecord->record_type) == 'discharge' ? 'selected' : '' }}>Discharge</option>
+                                        <option value="followup" {{ old('record_type', $medicalRecord->record_type) == 'followup' ? 'selected' : '' }}>Follow-up</option>
+                                        <option value="emergency" {{ old('record_type', $medicalRecord->record_type) == 'emergency' ? 'selected' : '' }}>Emergency</option>
+                                        <option value="checkup" {{ old('record_type', $medicalRecord->record_type) == 'checkup' ? 'selected' : '' }}>Checkup</option>
+                                        <option value="surgery" {{ old('record_type', $medicalRecord->record_type) == 'surgery' ? 'selected' : '' }}>Surgery</option>
                                     </select>
                                     @error('record_type')
                                         <div class="invalid-feedback">{{ $message }}</div>

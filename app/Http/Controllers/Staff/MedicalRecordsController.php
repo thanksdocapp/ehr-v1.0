@@ -291,7 +291,7 @@ class MedicalRecordsController extends Controller
         });
         
         $departments = \App\Models\Department::where('is_active', true)->orderBy('name')->get();
-        $recordTypes = ['consultation', 'follow_up', 'emergency', 'routine_checkup', 'procedure', 'administration_update'];
+        $recordTypes = ['consultation', 'followup', 'emergency', 'checkup', 'surgery'];
 
         // Sort by date and time
         $medicalRecords = $query->orderBy('record_date', 'desc')
@@ -416,7 +416,7 @@ class MedicalRecordsController extends Controller
             'appointment_id' => 'nullable|exists:appointments,id',
             'doctor_id' => 'nullable|exists:users,id',
             'record_date' => 'required|date',
-            'record_type' => 'required|string|in:consultation,follow_up,emergency,routine_checkup,procedure,administration_update',
+            'record_type' => 'required|string|in:consultation,followup,emergency,checkup,surgery',
             'pre_consultation_verified' => 'required|accepted',
             'presenting_complaint' => 'required|string|max:1000',
             'history_of_presenting_complaint' => 'required|string',
@@ -721,7 +721,7 @@ class MedicalRecordsController extends Controller
             'patient_id' => 'required|exists:patients,id',
             'appointment_id' => 'nullable|exists:appointments,id',
             'record_date' => 'required|date',
-            'record_type' => 'required|string|in:consultation,follow_up,emergency,routine_checkup,procedure,administration_update',
+            'record_type' => 'required|string|in:consultation,followup,emergency,checkup,surgery',
             'presenting_complaint' => 'required|string|max:1000',
             'history_of_presenting_complaint' => 'required|string',
             'past_medical_history' => 'required|string',

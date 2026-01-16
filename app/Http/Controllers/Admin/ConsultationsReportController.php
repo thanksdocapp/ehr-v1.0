@@ -287,7 +287,7 @@ class ConsultationsReportController extends Controller
             ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
             ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
             ->whereNull('medical_records.appointment_id')
-            ->whereIn('medical_records.record_type', ['consultation', 'follow_up'])
+            ->whereIn('medical_records.record_type', ['consultation', 'followup'])
             ->whereBetween(DB::raw($recordDateExpression), [$startDate, $endDate])
             ->selectRaw("
                 $recordDateExpression as record_date,
@@ -350,10 +350,7 @@ class ConsultationsReportController extends Controller
                 CONCAT(patients.first_name, ' ', patients.last_name) as patient_name,
                 CONCAT(doctors.first_name, ' ', doctors.last_name) as doctor_name,
                 departments.name as department_name,
-                CASE
-                    WHEN appointments.type = 'followup' THEN 'follow_up'
-                    ELSE appointments.type
-                END as consultation_type,
+                appointments.type as consultation_type,
                 'appointment' as source,
                 $durationExpression as duration_minutes
             ");
@@ -366,7 +363,7 @@ class ConsultationsReportController extends Controller
             ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
             ->whereNull('medical_records.appointment_id')
             ->where('doctors.department_id', $departmentId)
-            ->whereIn('medical_records.record_type', ['consultation', 'follow_up'])
+            ->whereIn('medical_records.record_type', ['consultation', 'followup'])
             ->whereBetween(DB::raw($recordDateExpression), [$startDate, $endDate])
             ->selectRaw("
                 NULL as appointment_id,

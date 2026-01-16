@@ -290,11 +290,10 @@
         $recordTypeLabel = ucfirst(str_replace('_', ' ', $medicalRecord->record_type));
         $recordTypeBadge = match($medicalRecord->record_type) {
             'consultation' => 'bg-primary',
-            'diagnosis' => 'bg-info',
-            'prescription' => 'bg-warning',
-            'lab_result' => 'bg-danger',
-            'follow_up' => 'bg-secondary',
-            'discharge' => 'bg-dark',
+            'followup' => 'bg-info',
+            'emergency' => 'bg-danger',
+            'checkup' => 'bg-success',
+            'surgery' => 'bg-warning',
             default => 'bg-secondary',
         };
     @endphp

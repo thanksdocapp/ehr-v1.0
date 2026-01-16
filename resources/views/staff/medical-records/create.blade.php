@@ -217,15 +217,14 @@
 
                                 <div class="form-group mb-3">
                                     <label for="record_type" class="form-label">Record Type <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('record_type') is-invalid @enderror" 
+                                    <select class="form-control @error('record_type') is-invalid @enderror"
                                             id="record_type" name="record_type" required>
                                         <option value="">Select Record Type</option>
                                         <option value="consultation" {{ old('record_type') === 'consultation' ? 'selected' : '' }}>Consultation</option>
-                                        <option value="follow_up" {{ old('record_type') === 'follow_up' ? 'selected' : '' }}>Follow-up</option>
+                                        <option value="followup" {{ old('record_type') === 'followup' ? 'selected' : '' }}>Follow-up</option>
                                         <option value="emergency" {{ old('record_type') === 'emergency' ? 'selected' : '' }}>Emergency</option>
-                                        <option value="routine_checkup" {{ old('record_type') === 'routine_checkup' ? 'selected' : '' }}>Routine Checkup</option>
-                                        <option value="procedure" {{ old('record_type') === 'procedure' ? 'selected' : '' }}>Procedure</option>
-                                        <option value="administration_update" {{ old('record_type') === 'administration_update' ? 'selected' : '' }}>Administrative update</option>
+                                        <option value="checkup" {{ old('record_type') === 'checkup' ? 'selected' : '' }}>Checkup</option>
+                                        <option value="surgery" {{ old('record_type') === 'surgery' ? 'selected' : '' }}>Surgery</option>
                                     </select>
                                     @error('record_type')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -995,12 +994,12 @@ $(document).ready(function() {
                     $('#presenting_complaint').val('Emergency presentation: ');
                 }
                 break;
-            case 'routine_checkup':
+            case 'checkup':
                 if (!$('#presenting_complaint').val()) {
                     $('#presenting_complaint').val('Routine health maintenance visit');
                 }
                 break;
-            case 'follow_up':
+            case 'followup':
                 if (!$('#presenting_complaint').val()) {
                     $('#presenting_complaint').val('Follow-up visit for: ');
                 }
