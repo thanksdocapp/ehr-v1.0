@@ -432,11 +432,13 @@
             </div>
 
             <!-- Appointment Status -->
-            <div class="doctor-card mb-4">
-                <div class="doctor-card-header">
-                    <h5 class="mb-0">Status Information</h5>
+            <div class="modern-card mb-4">
+                <div class="modern-card-header">
+                    <h5 class="modern-card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Status Information
+                    </h5>
                 </div>
-                <div class="doctor-card-body">
+                <div class="modern-card-body">
                     <div class="mb-3">
                         <label class="form-label text-muted">Current Status</label>
                         <div>
