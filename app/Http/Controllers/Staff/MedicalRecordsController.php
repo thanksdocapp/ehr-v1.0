@@ -291,7 +291,7 @@ class MedicalRecordsController extends Controller
         });
         
         $departments = \App\Models\Department::where('is_active', true)->orderBy('name')->get();
-        $recordTypes = ['consultation', 'follow_up', 'emergency', 'routine_checkup', 'procedure'];
+        $recordTypes = ['consultation', 'follow_up', 'emergency', 'routine_checkup', 'procedure', 'administration_update'];
 
         // Sort by date and time
         $medicalRecords = $query->orderBy('record_date', 'desc')
