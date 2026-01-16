@@ -204,23 +204,23 @@
                         @forelse($paginator as $monthData)
                         <tr>
                             <td>
-                                <div class="fw-semibold">{{ $monthData['month_name'] }}</div>
-                                <small class="text-muted">{{ $monthData['month_key'] }}</small>
+                                <div class="fw-semibold">{{ $monthData->month_name }}</div>
+                                <small class="text-muted">{{ $monthData->month_key }}</small>
                             </td>
                             <td>
-                                <span class="badge bg-primary">{{ $monthData['department_name'] }}</span>
+                                <span class="badge bg-primary">{{ $monthData->department_name }}</span>
                             </td>
                             <td class="text-end">
-                                <span class="fw-semibold">{{ number_format($monthData['total_consultations']) }}</span>
+                                <span class="fw-semibold">{{ number_format($monthData->total_consultations) }}</span>
                             </td>
                             <td class="text-end">
-                                <span class="fw-semibold text-info">{{ number_format($monthData['total_duration_minutes'] / 60, 2) }}</span>
+                                <span class="fw-semibold text-info">{{ number_format($monthData->total_duration_minutes / 60, 2) }}</span>
                             </td>
                             <td class="text-end">
-                                <span class="text-muted">{{ number_format($monthData['total_duration_minutes']) }}</span>
+                                <span class="text-muted">{{ number_format($monthData->total_duration_minutes) }}</span>
                             </td>
                             <td class="text-end">
-                                <span class="badge bg-success">{{ number_format($monthData['average_duration_minutes'], 1) }} min</span>
+                                <span class="badge bg-success">{{ number_format($monthData->average_duration_minutes, 1) }} min</span>
                             </td>
                         </tr>
                         @empty
