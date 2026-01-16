@@ -211,11 +211,13 @@
             </div>
 
             <!-- Patient Information -->
-            <div class="doctor-card mb-4">
-                <div class="doctor-card-header">
-                    <h5 class="mb-0">Patient Information</h5>
+            <div class="modern-card mb-4">
+                <div class="modern-card-header">
+                    <h5 class="modern-card-title mb-0">
+                        <i class="fas fa-user me-2"></i>Patient Information
+                    </h5>
                 </div>
-                <div class="doctor-card-body">
+                <div class="modern-card-body">
                     @if($appointment->patient)
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -279,11 +281,13 @@
             </div>
 
             <!-- Doctor Information -->
-            <div class="doctor-card mb-4">
-                <div class="doctor-card-header">
-                    <h5 class="mb-0">Doctor Information</h5>
+            <div class="modern-card mb-4">
+                <div class="modern-card-header">
+                    <h5 class="modern-card-title mb-0">
+                        <i class="fas fa-user-md me-2"></i>Doctor Information
+                    </h5>
                 </div>
-                <div class="doctor-card-body">
+                <div class="modern-card-body">
                     @if($appointment->doctor)
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -374,11 +378,13 @@
         <!-- Sidebar -->
         <div class="col-lg-4">
             <!-- Quick Actions -->
-            <div class="doctor-card mb-4">
-                <div class="doctor-card-header">
-                    <h5 class="mb-0">Quick Actions</h5>
+            <div class="modern-card mb-4">
+                <div class="modern-card-header">
+                    <h5 class="modern-card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
                 </div>
-                <div class="doctor-card-body">
+                <div class="modern-card-body">
                     <div class="d-grid gap-2">
                         @if($appointment->status === 'pending')
                             <button class="btn btn-success" onclick="confirmAppointment({{ $appointment->id }})">
