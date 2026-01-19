@@ -59,7 +59,7 @@ class HospitalEmailNotificationService
         $onlineConsultationSection = '';
         if ($appointment->is_online && $appointment->meeting_link) {
             $platformName = $appointment->meeting_platform_name ?? 'Video Call';
-            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nJoin Meeting: {$appointment->meeting_link}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nParticipant link: {$appointment->meeting_link}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
         }
 
         $variables = [
@@ -146,7 +146,7 @@ class HospitalEmailNotificationService
         if ($appointment->is_online && ($appointment->whereby_host_url || $appointment->meeting_link)) {
             $platformName = $appointment->meeting_platform_name ?? 'Video Call';
             $doctorMeetingLink = $appointment->whereby_host_url ?? $appointment->meeting_link;
-            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nJoin as Host: {$doctorMeetingLink}\n";
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nHost link: {$doctorMeetingLink}\n";
         } elseif ($appointment->is_online) {
             $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation. Meeting link will be generated.\n";
         }
@@ -218,7 +218,7 @@ class HospitalEmailNotificationService
         $onlineConsultationSection = '';
         if ($appointment->is_online && $appointment->meeting_link) {
             $platformName = $appointment->meeting_platform_name ?? 'Video Call';
-            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nJoin Meeting: {$appointment->meeting_link}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nParticipant link: {$appointment->meeting_link}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
         }
 
         $variables = [
@@ -969,7 +969,7 @@ class HospitalEmailNotificationService
             $platformName = $appointment->meeting_platform_name ?? 'Video Call';
             // Use host URL for doctor if available (Whereby), otherwise use regular meeting link
             $doctorMeetingLink = $appointment->whereby_host_url ?? $appointment->meeting_link;
-            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nJoin as Host: {$doctorMeetingLink}\n";
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nHost link: {$doctorMeetingLink}\n";
         } elseif ($appointment->is_online) {
             $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation. Meeting link will be generated.\n";
         }
