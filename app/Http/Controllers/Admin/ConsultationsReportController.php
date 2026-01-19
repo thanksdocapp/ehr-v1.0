@@ -293,7 +293,7 @@ class ConsultationsReportController extends Controller
                 $recordDateExpression as record_date,
                 doctors.department_id as department_id,
                 departments.name as department_name,
-                30 as duration_minutes
+                20 as duration_minutes
             ");
 
         if (!empty($departmentId)) {
@@ -374,7 +374,7 @@ class ConsultationsReportController extends Controller
                 departments.name as department_name,
                 medical_records.record_type as consultation_type,
                 'medical_record' as source,
-                30 as duration_minutes
+                20 as duration_minutes
             ");
 
         return DB::query()->fromSub($appointmentRows->unionAll($medicalRecordRows), 'consultation_details');
