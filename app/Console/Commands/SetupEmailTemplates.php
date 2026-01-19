@@ -330,6 +330,7 @@ class SetupEmailTemplates extends Command
 <li><strong>Appointment ID:</strong> {{ appointment_id }}</li>
 </ul>
 <p><strong>Notes:</strong> {{ notes }}</p>
+<p><strong>Online Consultation:</strong><br>{{ online_consultation_section }}</p>
 <p><strong>Hospital Information:</strong></p>
 <ul>
 <li>Address: {{ hospital_address }}</li>
@@ -352,6 +353,7 @@ class SetupEmailTemplates extends Command
                     'department' => 'Department name',
                     'appointment_id' => 'Appointment ID',
                     'notes' => 'Additional notes',
+                    'online_consultation_section' => 'Online consultation section (meeting link)',
                     'hospital_name' => 'Hospital/clinic name',
                     'hospital_address' => 'Hospital address',
                     'hospital_phone' => 'Hospital phone',
@@ -712,6 +714,7 @@ class SetupEmailTemplates extends Command
 <li><strong>Time:</strong> {{ appointment_time }}</li>
 <li><strong>Type:</strong> {{ appointment_type }}</li>
 <li><strong>Notes:</strong> {{ notes }}</li>
+<li><strong>Online Consultation:</strong><br>{{ online_consultation_section }}</li>
 </ul>
 <p>View appointment: <a href="{{ appointment_url }}">{{ appointment_url }}</a></p>
 <p>Best regards,<br>{{ hospital_name }}</p>',
@@ -727,6 +730,7 @@ class SetupEmailTemplates extends Command
                     'appointment_time' => 'Appointment time',
                     'appointment_type' => 'Appointment type',
                     'notes' => 'Appointment notes',
+                    'online_consultation_section' => 'Online consultation section (meeting link)',
                     'appointment_url' => 'Appointment detail URL',
                     'hospital_name' => 'Hospital/clinic name',
                 ],
