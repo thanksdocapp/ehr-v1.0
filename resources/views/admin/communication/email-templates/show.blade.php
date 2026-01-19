@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let previewBodyText = originalBody;
 
         Object.keys(sampleData).forEach(key => {
-            const regex = new RegExp('{{\\s*' + key + '\\s*}}', 'g');
+            const regex = new RegExp('\\{\\{\\s*' + key + '\\s*\\}\\}', 'g');
             previewSubjectText = previewSubjectText.replace(regex, sampleData[key]);
             previewBodyText = previewBodyText.replace(regex, sampleData[key]);
         });
