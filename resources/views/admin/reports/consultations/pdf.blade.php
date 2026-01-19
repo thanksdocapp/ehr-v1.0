@@ -114,12 +114,12 @@
         <tbody>
             @foreach($reportData as $monthData)
             <tr>
-                <td>{{ $monthData['month_name'] }}</td>
-                <td>{{ $monthData['department_name'] }}</td>
-                <td class="text-right">{{ number_format($monthData['total_consultations']) }}</td>
-                <td class="text-right">{{ number_format($monthData['total_duration_hours'], 2) }}</td>
-                <td class="text-right">{{ number_format($monthData['total_duration_minutes']) }}</td>
-                <td class="text-right">{{ number_format($monthData['average_duration_minutes'], 2) }}</td>
+                <td>{{ $monthData->month_name }}</td>
+                <td>{{ $monthData->department_name }}</td>
+                <td class="text-right">{{ number_format($monthData->total_consultations) }}</td>
+                <td class="text-right">{{ number_format($monthData->total_duration_hours, 2) }}</td>
+                <td class="text-right">{{ number_format($monthData->total_duration_minutes) }}</td>
+                <td class="text-right">{{ number_format($monthData->average_duration_minutes, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
