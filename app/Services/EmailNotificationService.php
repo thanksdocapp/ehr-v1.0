@@ -29,50 +29,7 @@ class EmailNotificationService
     public function sendTemplateEmail(string $templateName, array $to, array $variables = [], array $options = [])
     {
         try {
-            // Find the template - first try active (including soft-deleted), then try any status
-            $template = EmailTemplate::withTrashed()
-                ->where('name', $templateName)
-                ->where('status', 'active')
-                ->first();
-            
-            // If not found as active, try to find any template with this name (including soft-deleted)
-            if (!$template) {
-                $template = EmailTemplate::withTrashed()
-                    ->where('name', $templateName)
-                    ->first();
-                    
-                if ($template) {
-                    if ($template->trashed()) {
-                        Log::warning('Email template found but is soft-deleted, restoring it', [
-                            'template_id' => $template->id,
-                            'template_name' => $templateName,
-                            'current_status' => $template->status
-                        ]);
-                        $template->restore();
-                    }
-                    
-                    if ($template->status !== 'active') {
-                        Log::warning('Email template found but not active, activating it', [
-                            'template_id' => $template->id,
-                            'template_name' => $templateName,
-                            'current_status' => $template->status
-                        ]);
-                        $template->update(['status' => 'active']);
-                    }
-                }
-            }
-            
-            if (!$template) {
-                Log::error('Email template not found', [
-                    'template_name' => $templateName,
-                    'recipient' => array_key_first($to),
-                    'all_templates_with_name' => EmailTemplate::withTrashed()
-                        ->where('name', $templateName)
-                        ->get(['id', 'name', 'status', 'deleted_at'])
-                        ->toArray()
-                ]);
-                throw new Exception("Email template '{$templateName}' not found. Please create it in Admin > Email Templates.");
-            }
+            $template = $this->resolveTemplate($templateName, $to);
             
             // Validate template has required fields
             if (empty($template->subject)) {
@@ -513,6 +470,84 @@ class EmailNotificationService
 
             return false;
         }
+    }
+
+    /**
+     * Render an email template without sending.
+     *
+     * @param string $templateName
+     * @param array $variables
+     * @return array{subject:string, body:string, template:EmailTemplate}
+     */
+    public function renderTemplate(string $templateName, array $variables = []): array
+    {
+        $template = $this->resolveTemplate($templateName);
+
+        $subject = $this->parseContent($template->subject, $variables);
+        $body = $this->parseContent($template->body, $variables);
+
+        return [
+            'subject' => $subject,
+            'body' => $body,
+            'template' => $template,
+        ];
+    }
+
+    /**
+     * Resolve and activate a template by name.
+     *
+     * @param string $templateName
+     * @param array $to
+     * @return EmailTemplate
+     */
+    protected function resolveTemplate(string $templateName, array $to = []): EmailTemplate
+    {
+        // Find the template - first try active (including soft-deleted), then try any status
+        $template = EmailTemplate::withTrashed()
+            ->where('name', $templateName)
+            ->where('status', 'active')
+            ->first();
+
+        // If not found as active, try to find any template with this name (including soft-deleted)
+        if (!$template) {
+            $template = EmailTemplate::withTrashed()
+                ->where('name', $templateName)
+                ->first();
+
+            if ($template) {
+                if ($template->trashed()) {
+                    Log::warning('Email template found but is soft-deleted, restoring it', [
+                        'template_id' => $template->id,
+                        'template_name' => $templateName,
+                        'current_status' => $template->status
+                    ]);
+                    $template->restore();
+                }
+
+                if ($template->status !== 'active') {
+                    Log::warning('Email template found but not active, activating it', [
+                        'template_id' => $template->id,
+                        'template_name' => $templateName,
+                        'current_status' => $template->status
+                    ]);
+                    $template->update(['status' => 'active']);
+                }
+            }
+        }
+
+        if (!$template) {
+            Log::error('Email template not found', [
+                'template_name' => $templateName,
+                'recipient' => $to ? array_key_first($to) : null,
+                'all_templates_with_name' => EmailTemplate::withTrashed()
+                    ->where('name', $templateName)
+                    ->get(['id', 'name', 'status', 'deleted_at'])
+                    ->toArray()
+            ]);
+            throw new Exception("Email template '{$templateName}' not found. Please create it in Admin > Email Templates.");
+        }
+
+        return $template;
     }
 
     /**
