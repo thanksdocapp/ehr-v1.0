@@ -17,9 +17,20 @@
 <div class="row">
     <div class="col-lg-8">
         <div class="admin-card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title mb-0">Template Preview</h3>
                 <div>
+                        <div class="btn-group me-2" role="group" aria-label="Online section preview">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="previewOnlineNone">
+                                No Online Section
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="previewOnlineParticipant">
+                                Participant Link
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm" id="previewOnlineHost">
+                                Host Link
+                            </button>
+                        </div>
                     <button type="button" class="btn btn-info btn-sm me-2" id="togglePreviewBtn">
                         <i class="fas fa-eye me-1"></i>Show with Sample Data
                     </button>
@@ -331,9 +342,61 @@ document.addEventListener('DOMContentLoaded', function() {
     const samplePreview = document.getElementById('samplePreview');
     const previewSubject = document.getElementById('previewSubject');
     const previewBody = document.getElementById('previewBody');
+    const previewOnlineNone = document.getElementById('previewOnlineNone');
+    const previewOnlineParticipant = document.getElementById('previewOnlineParticipant');
+    const previewOnlineHost = document.getElementById('previewOnlineHost');
+    const originalSubject = @json($emailTemplate->subject);
+    const originalBody = @json($emailTemplate->body);
     
     let showingSampleData = false;
     
+    const sampleData = {
+        'patient_name': 'John Doe',
+        'patient_id': 'P001',
+        'doctor_name': 'Dr. Sarah Johnson',
+        'doctor_phone': '+1 (555) 123-4567',
+        'appointment_date': 'February 15, 2025',
+        'appointment_time': '10:30 AM',
+        'department': 'Cardiology',
+        'hospital_name': 'ThanksDoc EHR',
+        'hospital_phone': '+1 (555) 987-6543',
+        'hospital_address': '123 Healthcare Street, City, State 12345',
+        'site_url': window.location.origin,
+        'date': new Date().toLocaleDateString(),
+        'time': new Date().toLocaleTimeString(),
+        'online_consultation_section': ''
+    };
+
+    const renderSamplePreview = () => {
+        let previewSubjectText = originalSubject;
+        let previewBodyText = originalBody;
+
+        Object.keys(sampleData).forEach(key => {
+            const regex = new RegExp('{{\\s*' + key + '\\s*}}', 'g');
+            previewSubjectText = previewSubjectText.replace(regex, sampleData[key]);
+            previewBodyText = previewBodyText.replace(regex, sampleData[key]);
+        });
+
+        previewSubject.textContent = previewSubjectText;
+        previewBody.innerHTML = previewBodyText.replace(/\n/g, '<br>');
+    };
+
+    const setOnlineSection = (mode) => {
+        if (mode === 'participant') {
+            sampleData.online_consultation_section =
+                "*** ONLINE CONSULTATION ***\nPlatform: Whereby\nParticipant link: https://whereby.test/participant\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
+        } else if (mode === 'host') {
+            sampleData.online_consultation_section =
+                "*** ONLINE CONSULTATION ***\nPlatform: Whereby\nHost link: https://whereby.test/host\n";
+        } else {
+            sampleData.online_consultation_section = '';
+        }
+
+        if (showingSampleData) {
+            renderSamplePreview();
+        }
+    };
+
     toggleBtn.addEventListener('click', function() {
         if (showingSampleData) {
             // Switch to raw view
@@ -343,40 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showingSampleData = false;
         } else {
             // Switch to sample data view
-            const originalSubject = @json($emailTemplate->subject);
-            const originalBody = @json($emailTemplate->body);
-            
-            // Sample data for preview
-            const sampleData = {
-                'patient_name': 'John Doe',
-                'patient_id': 'P001',
-                'doctor_name': 'Dr. Sarah Johnson',
-                'doctor_phone': '+1 (555) 123-4567',
-                'appointment_date': 'February 15, 2025',
-                'appointment_time': '10:30 AM',
-                'department': 'Cardiology',
-                'hospital_name': 'ThanksDoc EHR',
-                'hospital_phone': '+1 (555) 987-6543',
-                'hospital_address': '123 Healthcare Street, City, State 12345',
-                'site_url': window.location.origin,
-                'date': new Date().toLocaleDateString(),
-                'time': new Date().toLocaleTimeString()
-            };
-            
-            let previewSubjectText = originalSubject;
-            let previewBodyText = originalBody;
-            
-            // Replace variables with sample data
-            Object.keys(sampleData).forEach(key => {
-                const regex = new RegExp('{{' + key + '}}', 'g');
-                previewSubjectText = previewSubjectText.replace(regex, sampleData[key]);
-                previewBodyText = previewBodyText.replace(regex, sampleData[key]);
-            });
-            
-            // Update preview content
-            previewSubject.textContent = previewSubjectText;
-            previewBody.innerHTML = previewBodyText.replace(/\n/g, '<br>');
-            
+            renderSamplePreview();
             // Show sample preview
             rawPreview.style.display = 'none';
             samplePreview.style.display = 'block';
@@ -384,6 +414,10 @@ document.addEventListener('DOMContentLoaded', function() {
             showingSampleData = true;
         }
     });
+
+    previewOnlineNone.addEventListener('click', () => setOnlineSection('none'));
+    previewOnlineParticipant.addEventListener('click', () => setOnlineSection('participant'));
+    previewOnlineHost.addEventListener('click', () => setOnlineSection('host'));
 });
 </script>
 @endpush
