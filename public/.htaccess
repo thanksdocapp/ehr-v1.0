@@ -32,6 +32,7 @@
 <IfModule mod_headers.c>
     # Allow embedding booking pages in iframes (WordPress etc.); block framing for all other paths
     SetEnvIf Request_URI "^/book" allow_booking_embed
+    SetEnvIf Request_URI "^/$" allow_booking_embed
 
     Header always set X-Content-Type-Options nosniff
     Header always set X-Frame-Options DENY env=!allow_booking_embed

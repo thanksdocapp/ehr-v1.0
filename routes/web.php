@@ -42,7 +42,7 @@ Route::post('/forms/{token}/save', [\App\Http\Controllers\PublicFormController::
 Route::get('/feedback/{token}', [\App\Http\Controllers\PublicFeedbackController::class, 'show'])->name('feedback.show');
 Route::post('/feedback/{token}', [\App\Http\Controllers\PublicFeedbackController::class, 'submit'])->name('feedback.submit');
 
-// Root Route Handler - Patient Booking Page
+// Root Route Handler - Patient Booking Page (allow iframe embed when serving booking)
 Route::get('/', function () {
     if (!File::exists(storage_path('installed'))) {
         return redirect()->route('install.index');
@@ -56,7 +56,7 @@ Route::get('/', function () {
     
     // Homepage is now the patient booking page
     return app(AppointmentController::class)->create();
-})->name('homepage');
+})->middleware('booking.embed')->name('homepage');
 
 // Installation Routes (only accessible if not installed)
 Route::group(['prefix' => 'install', 'middleware' => 'install.check'], function () {
