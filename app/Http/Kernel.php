@@ -73,6 +73,7 @@ class Kernel extends HttpKernel
         'install.check' => \App\Http\Middleware\CheckInstallation::class,
         'installed' => \App\Http\Middleware\EnsureInstalled::class,
         'frontend.enabled' => \App\Http\Middleware\CheckFrontendEnabled::class,
+        'booking.embed' => \App\Http\Middleware\AllowBookingEmbed::class,
         'require.2fa' => \App\Http\Middleware\RequireTwoFactor::class,
         // API Middleware for Mobile App
         'patient.api' => \App\Http\Middleware\PatientApiMiddleware::class,

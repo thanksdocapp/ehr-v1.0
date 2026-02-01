@@ -492,18 +492,24 @@
                 grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             }
 
-            .step-line {
-                width: 30px;
-            }
+        .step-line {
+            width: 30px;
         }
+        }
+
+        /* Embed mode: compact when shown in iframe (e.g. WordPress) */
+        body.embed-mode .booking-container { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        body.embed-mode .booking-header { margin-bottom: 1.5rem; }
+        body.embed-mode .booking-header h1 { font-size: 1.5rem; }
 
         @yield('styles')
     </style>
     
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    @php $embed = $embed ?? request()->boolean('embed'); @endphp
 </head>
-<body>
+<body class="{{ $embed ? 'embed-mode' : '' }}">
     <div class="booking-container" style="max-width: @yield('container-width', '1200px')">
         @yield('content')
     </div>

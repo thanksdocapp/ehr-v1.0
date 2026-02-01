@@ -103,8 +103,8 @@ Route::group(['middleware' => 'installed'], function () {
     Route::get('/appointments/slots/{doctorId}', [AppointmentController::class, 'getAvailableSlots'])->name('appointments.slots');
     
     // Public Booking Routes (with unique doctor/clinic links)
-    // IMPORTANT: Specific routes must come BEFORE parameterized routes to avoid conflicts
-    Route::prefix('book')->name('public.booking.')->group(function () {
+    // booking.embed: allows iframe embedding on WordPress etc.
+    Route::prefix('book')->name('public.booking.')->middleware('booking.embed')->group(function () {
         // GET routes with specific paths (must come before parameterized route to avoid conflicts)
         Route::get('/clinic/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showClinicBooking'])->name('clinic');
         Route::get('/service/{serviceId}/{doctorId}', [\App\Http\Controllers\PublicBookingController::class, 'showServiceBooking'])->name('service');

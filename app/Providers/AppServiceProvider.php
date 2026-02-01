@@ -58,5 +58,12 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('theme_settings', []);
             }
         });
+
+        // Share embed flag for public booking (iframe / WordPress embed)
+        view()->composer(['layouts.public-booking', 'public-booking.*'], function ($view) {
+            if (request()->is('book') || request()->is('book/*')) {
+                $view->with('embed', request()->boolean('embed'));
+            }
+        });
     }
 }
