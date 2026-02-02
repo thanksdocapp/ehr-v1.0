@@ -280,7 +280,8 @@ class HospitalEmailNotificationService
             return null;
         }
 
-        $templateExists = EmailTemplate::where('name', 'doctor_welcome_epr')->exists();
+        // Include soft-deleted so we don't block when template was trashed (resolveTemplate will restore)
+        $templateExists = EmailTemplate::withTrashed()->where('name', 'doctor_welcome_epr')->exists();
         if (!$templateExists) {
             Log::error('Doctor welcome email not sent: template "doctor_welcome_epr" not found. Run migration 2026_02_01_120000_insert_doctor_welcome_epr_email_template or database/sql/doctor_welcome_epr_email_template.sql');
             return null;
@@ -304,19 +305,26 @@ class HospitalEmailNotificationService
         ];
 
         try {
-            return $this->emailService->sendTemplateEmail(
+            $log = $this->emailService->sendTemplateEmail(
                 'doctor_welcome_epr',
                 [$user->email => $user->name],
                 $variables,
                 ['email_type' => 'doctor_welcome']
             );
+            // If sendTemplateEmail returned null (e.g. template not found after all, or send failed), surface a clear error
+            if ($log === null) {
+                throw new \RuntimeException(
+                    'Doctor welcome email could not be sent. The template may be missing or inactive, or the mail send failed. Check Admin > Communication > Email Templates and storage/logs/laravel.log.'
+                );
+            }
+            return $log;
         } catch (\Exception $e) {
             Log::error('Failed to send doctor welcome email', [
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'error' => $e->getMessage(),
             ]);
-            return null;
+            throw $e;
         }
     }
 
