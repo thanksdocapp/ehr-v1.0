@@ -309,12 +309,11 @@ class HospitalEmailNotificationService
                 'doctor_welcome_epr',
                 [$user->email => $user->name],
                 $variables,
-                ['email_type' => 'doctor_welcome']
+                ['email_type' => 'doctor_welcome', 'debug_throw' => true]
             );
-            // If sendTemplateEmail returned null (e.g. template not found after all, or send failed), surface a clear error
             if ($log === null) {
                 throw new \RuntimeException(
-                    'Doctor welcome email could not be sent. The template may be missing or inactive, or the mail send failed. Check Admin > Communication > Email Templates and storage/logs/laravel.log.'
+                    'Doctor welcome email could not be sent. Check Admin > Communication > Email Templates (template name must be exactly: doctor_welcome_epr) and storage/logs/laravel.log.'
                 );
             }
             return $log;
