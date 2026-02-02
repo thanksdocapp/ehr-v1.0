@@ -280,6 +280,12 @@ class HospitalEmailNotificationService
             return null;
         }
 
+        $templateExists = EmailTemplate::where('name', 'doctor_welcome_epr')->exists();
+        if (!$templateExists) {
+            Log::error('Doctor welcome email not sent: template "doctor_welcome_epr" not found. Run migration 2026_02_01_120000_insert_doctor_welcome_epr_email_template or database/sql/doctor_welcome_epr_email_template.sql');
+            return null;
+        }
+
         $hospitalName = SiteSetting::get('hospital_name', config('app.name', 'ThanksDoc'));
         $loginUrl = rtrim(SiteSetting::get('app_url', config('app.url', url('/'))), '/');
         $supportEmail = SiteSetting::get('hospital_email', config('hospital.email', 'info@thanksdoc.co.uk'));

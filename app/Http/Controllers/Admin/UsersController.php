@@ -178,21 +178,39 @@ class UsersController extends Controller
         }
         
         // Send doctor welcome email (EPR login details) when a doctor account is created
+        $welcomeEmailSent = false;
+        $emailError = null;
         if ($user->role === 'doctor' && $user->email) {
             try {
                 $hospitalEmailService = app(HospitalEmailNotificationService::class);
-                $hospitalEmailService->sendDoctorWelcomeEmail($user, $plainPassword);
+                $log = $hospitalEmailService->sendDoctorWelcomeEmail($user, $plainPassword);
+                $welcomeEmailSent = $log && $log->status !== 'failed';
+                if ($log && $log->status === 'failed' && !empty($log->error_message)) {
+                    $emailError = $log->error_message;
+                }
             } catch (\Exception $e) {
                 \Log::error('Failed to send doctor welcome email on user creation', [
                     'user_id' => $user->id,
                     'email' => $user->email,
                     'error' => $e->getMessage(),
                 ]);
+                $emailError = $e->getMessage();
             }
         }
         
+        $message = 'User created successfully!';
+        if ($user->role === 'doctor' && $user->email) {
+            $message .= $welcomeEmailSent
+                ? ' Welcome email has been sent to the doctor.'
+                : ' The doctor welcome email could not be sent.';
+            if ($emailError) {
+                $message .= ' Reason: ' . \Illuminate\Support\Str::limit($emailError, 120);
+            } else {
+                $message .= ' Check Admin > Settings > Email (mail configuration).';
+            }
+        }
         return redirect()->route('admin.users.index')
-            ->with('success', 'User created successfully!' . ($user->role === 'doctor' && $user->email ? ' Welcome email has been sent to the doctor.' : ''));
+            ->with('success', $message);
     }
 
     /**
