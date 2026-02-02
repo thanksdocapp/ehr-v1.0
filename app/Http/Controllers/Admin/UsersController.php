@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\PasswordResetToken;
 use App\Models\UserActivity;
 use App\Services\EmailNotificationService;
+use App\Services\HospitalEmailNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -160,6 +161,7 @@ class UsersController extends Controller
             $departmentIds[] = $primaryDepartmentId;
         }
         
+        $plainPassword = $validated['password'];
         $user = User::create($validated);
         
         // Sync departments to pivot table
@@ -175,8 +177,22 @@ class UsersController extends Controller
             $user->departments()->sync($syncData);
         }
         
+        // Send doctor welcome email (EPR login details) when a doctor account is created
+        if ($user->role === 'doctor' && $user->email) {
+            try {
+                $hospitalEmailService = app(HospitalEmailNotificationService::class);
+                $hospitalEmailService->sendDoctorWelcomeEmail($user, $plainPassword);
+            } catch (\Exception $e) {
+                \Log::error('Failed to send doctor welcome email on user creation', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+        
         return redirect()->route('admin.users.index')
-            ->with('success', 'User created successfully!');
+            ->with('success', 'User created successfully!' . ($user->role === 'doctor' && $user->email ? ' Welcome email has been sent to the doctor.' : ''));
     }
 
     /**

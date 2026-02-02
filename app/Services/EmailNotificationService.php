@@ -578,7 +578,19 @@ class EmailNotificationService
         
         // Add other common defaults
         if (!isset($variables['site_url'])) {
-            $variables['site_url'] = config('app.url', url('/'));
+            $variables['site_url'] = \App\Models\SiteSetting::get('app_url', config('app.url', url('/')));
+        }
+        if (!isset($variables['login_url'])) {
+            $variables['login_url'] = \App\Models\SiteSetting::get('app_url', config('app.url', url('/')));
+        }
+        if (!isset($variables['support_email'])) {
+            $variables['support_email'] = \App\Models\SiteSetting::get('hospital_email', config('hospital.email', ''));
+        }
+        if (!isset($variables['support_phone'])) {
+            $variables['support_phone'] = \App\Models\SiteSetting::get('hospital_phone', config('hospital.phone', ''));
+        }
+        if (!isset($variables['website_url'])) {
+            $variables['website_url'] = \App\Models\SiteSetting::get('hospital_website', config('hospital.website', ''));
         }
         
         if (!isset($variables['date'])) {

@@ -96,6 +96,46 @@
                                    placeholder="Your Company Name">
                             <div class="form-help">Company or author name (used in installation and system info)</div>
                         </div>
+
+                        <div class="form-group">
+                            <label for="app_url" class="form-label">
+                                <i class="fas fa-link me-1"></i>Application URL
+                            </label>
+                            <input type="url" class="form-control" id="app_url" name="app_url"
+                                   value="{{ old('app_url', $settings['app_url'] ?? '') }}" 
+                                   placeholder="https://yoursite.com">
+                            <div class="form-help">Base URL for login links and emails (e.g. https://notes.thanksdoc.co.uk)</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="hospital_email" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>Hospital / Support Email
+                            </label>
+                            <input type="email" class="form-control" id="hospital_email" name="hospital_email"
+                                   value="{{ old('hospital_email', $settings['hospital_email'] ?? '') }}" 
+                                   placeholder="info@hospital.com">
+                            <div class="form-help">Used in doctor welcome and other notification emails</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="hospital_phone" class="form-label">
+                                <i class="fas fa-phone me-1"></i>Hospital / Support Phone
+                            </label>
+                            <input type="text" class="form-control" id="hospital_phone" name="hospital_phone"
+                                   value="{{ old('hospital_phone', $settings['hospital_phone'] ?? '') }}" 
+                                   placeholder="0800 246 5824">
+                            <div class="form-help">Shown in emails (e.g. doctor welcome, password help)</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="hospital_website" class="form-label">
+                                <i class="fas fa-globe me-1"></i>Hospital Website
+                            </label>
+                            <input type="url" class="form-control" id="hospital_website" name="hospital_website"
+                                   value="{{ old('hospital_website', $settings['hospital_website'] ?? '') }}" 
+                                   placeholder="https://www.hospital.com">
+                            <div class="form-help">Public website URL used in email footers</div>
+                        </div>
                     </div>
 
                     <div class="col-md-6">

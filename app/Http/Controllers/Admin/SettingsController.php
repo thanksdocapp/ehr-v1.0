@@ -37,6 +37,11 @@ class SettingsController extends Controller
     public function general()
     {
         $settings = Setting::getGroup('general');
+        // Merge app/hospital config from env so admin can see and override in UI
+        $settings['app_url'] = $settings['app_url'] ?? config('app.url', '');
+        $settings['hospital_email'] = $settings['hospital_email'] ?? config('hospital.email', '');
+        $settings['hospital_phone'] = $settings['hospital_phone'] ?? config('hospital.phone', '');
+        $settings['hospital_website'] = $settings['hospital_website'] ?? config('hospital.website', '');
         $statistics = [
             'total_users' => User::count(),
             'total_appointments' => Appointment::count(),
@@ -69,6 +74,10 @@ class SettingsController extends Controller
                 'logo_light' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
                 'logo_dark' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
                 'favicon' => 'nullable|image|mimes:png,jpg,jpeg,ico|max:1024',
+                'app_url' => 'nullable|string|max:500',
+                'hospital_email' => 'nullable|email|max:255',
+                'hospital_phone' => 'nullable|string|max:50',
+                'hospital_website' => 'nullable|string|max:500',
             ]);
 
             if ($validator->fails()) {
@@ -93,6 +102,10 @@ class SettingsController extends Controller
                 'debug_mode' => $request->debug_mode ?? '0',
                 'cache_enabled' => $request->cache_enabled ?? '1',
                 'session_timeout' => $request->session_timeout ?? '120',
+                'app_url' => $request->app_url ?? '',
+                'hospital_email' => $request->hospital_email ?? '',
+                'hospital_phone' => $request->hospital_phone ?? '',
+                'hospital_website' => $request->hospital_website ?? '',
             ];
 
             foreach ($generalSettings as $key => $value) {
@@ -100,11 +113,15 @@ class SettingsController extends Controller
                 Setting::set($key, $value, $type, 'general');
             }
 
-            // Also sync hospital name with app name in SiteSetting for frontend compatibility
+            // Also sync hospital name and app/hospital config in SiteSetting for emails and frontend
             \App\Models\SiteSetting::set('hospital_name', $request->app_name, 'Hospital Name');
             \App\Models\SiteSetting::set('app_name', $request->app_name, 'Application Name');
             \App\Models\SiteSetting::set('app_version', $request->app_version ?? '1.0', 'Application Version');
             \App\Models\SiteSetting::set('company_name', $request->company_name ?? '', 'Company Name');
+            \App\Models\SiteSetting::set('app_url', $request->app_url ?? config('app.url', ''), 'Application URL');
+            \App\Models\SiteSetting::set('hospital_email', $request->hospital_email ?? config('hospital.email', ''), 'Hospital / Support Email');
+            \App\Models\SiteSetting::set('hospital_phone', $request->hospital_phone ?? config('hospital.phone', ''), 'Hospital / Support Phone');
+            \App\Models\SiteSetting::set('hospital_website', $request->hospital_website ?? config('hospital.website', ''), 'Hospital Website');
 
             // Handle logo uploads
             $this->handleLogoUploads($request);

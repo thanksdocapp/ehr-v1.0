@@ -11,6 +11,7 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\LabReport;
 use App\Models\ContactMessage;
+use App\Models\SiteSetting;
 use App\Jobs\SendEmail;
 use App\Services\EmailNotificationService;
 use Dompdf\Dompdf;
@@ -262,6 +263,55 @@ class HospitalEmailNotificationService
                 ]
             ]
         );
+    }
+
+    /**
+     * Send welcome email to new doctor (EPR login details) when account is created.
+     * Uses the editable email template "doctor_welcome_epr" and admin settings for URL/contact.
+     *
+     * @param User $user The doctor user (role must be doctor)
+     * @param string $plainPassword The temporary password set at creation (plain text)
+     * @return EmailLog|null
+     */
+    public function sendDoctorWelcomeEmail(User $user, string $plainPassword)
+    {
+        if (!$user->email) {
+            Log::warning('Cannot send doctor welcome email: no email', ['user_id' => $user->id]);
+            return null;
+        }
+
+        $hospitalName = SiteSetting::get('hospital_name', config('app.name', 'ThanksDoc'));
+        $loginUrl = rtrim(SiteSetting::get('app_url', config('app.url', url('/'))), '/');
+        $supportEmail = SiteSetting::get('hospital_email', config('hospital.email', 'info@thanksdoc.co.uk'));
+        $supportPhone = SiteSetting::get('hospital_phone', config('hospital.phone', '0800 246 5824'));
+        $websiteUrl = SiteSetting::get('hospital_website', config('hospital.website', 'https://www.thanksdoc.co.uk'));
+
+        $variables = [
+            'doctor_name' => $user->name,
+            'doctor_email' => $user->email,
+            'password' => $plainPassword,
+            'login_url' => $loginUrl,
+            'support_email' => $supportEmail,
+            'support_phone' => $supportPhone,
+            'website_url' => $websiteUrl,
+            'hospital_name' => $hospitalName,
+        ];
+
+        try {
+            return $this->emailService->sendTemplateEmail(
+                'doctor_welcome_epr',
+                [$user->email => $user->name],
+                $variables,
+                ['email_type' => 'doctor_welcome']
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to send doctor welcome email', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
     }
 
     /**
