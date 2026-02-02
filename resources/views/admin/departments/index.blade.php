@@ -668,10 +668,36 @@
                             </div>
                         </div>
                     </div>
+                    @if($department->slug)
+                    @php $clinicBookingUrl = route('public.booking.clinic', ['slug' => $department->slug]); @endphp
+                    <div class="mt-2">
+                        <small class="text-muted d-flex align-items-center gap-1">
+                            <i class="fas fa-link"></i>
+                            <span class="text-truncate" style="max-width: 220px;" title="{{ $clinicBookingUrl }}">{{ $clinicBookingUrl }}</span>
+                        </small>
+                        <div class="d-flex gap-1 mt-1">
+                            <a href="{{ $clinicBookingUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary" title="Open booking link">
+                                <i class="fas fa-external-link-alt me-1"></i>Open
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-secondary copy-booking-link" data-url="{{ $clinicBookingUrl }}" title="Copy link">
+                                <i class="fas fa-copy me-1"></i>Copy
+                            </button>
+                        </div>
+                    </div>
+                    @else
+                    <div class="mt-2">
+                        <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Set a slug in Edit to get a public booking link.</small>
+                    </div>
+                    @endif
                 </div>
                 
                 <!-- Action Buttons -->
                 <div class="clinic-list-actions">
+                    @if($department->slug)
+                    <a href="{{ route('public.booking.clinic', ['slug' => $department->slug]) }}" target="_blank" rel="noopener noreferrer" class="btn btn-info modern-action-btn" title="Open booking link">
+                        <i class="fas fa-link"></i>
+                    </a>
+                    @endif
                     <a href="{{ contextRoute('departments.show', $department->id) }}" 
                        class="btn btn-primary modern-action-btn" 
                        title="View Details">
@@ -849,6 +875,24 @@
             const url = $(this).attr('href');
             if (url) {
                 window.location.href = url;
+            }
+        });
+
+        // Copy clinic booking link to clipboard
+        $(document).on('click', '.copy-booking-link', function() {
+            const url = $(this).data('url');
+            if (!url) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function() {
+                    if (typeof toastr !== 'undefined') toastr.success('Booking link copied.');
+                    else alert('Booking link copied to clipboard.');
+                });
+            } else {
+                const $tmp = $('<input>').val(url).appendTo('body').select();
+                document.execCommand('copy');
+                $tmp.remove();
+                if (typeof toastr !== 'undefined') toastr.success('Booking link copied.');
+                else alert('Booking link copied to clipboard.');
             }
         });
     });

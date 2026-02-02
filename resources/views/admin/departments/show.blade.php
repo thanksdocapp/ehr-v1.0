@@ -204,6 +204,26 @@ use Illuminate\Support\Facades\Storage;
                         </div>
                     </div>
 
+                    @if($department->slug)
+                    <div class="mt-4 p-3 bg-light rounded border">
+                        <h6 class="fw-bold mb-2"><i class="fas fa-link me-2"></i>Public booking link</h6>
+                        <p class="small text-muted mb-2">Share this link so patients can book appointments with this clinic online.</p>
+                        <div class="input-group">
+                            <input type="text" class="form-control font-monospace" id="departmentBookingLink" value="{{ route('public.booking.clinic', ['slug' => $department->slug]) }}" readonly style="font-size: 0.875rem;">
+                            <button type="button" class="btn btn-outline-secondary" onclick="copyDeptBookingLink()" title="Copy to clipboard">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <a href="{{ route('public.booking.clinic', ['slug' => $department->slug]) }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" title="Open in new tab">
+                                <i class="fas fa-external-link-alt me-1"></i>Open
+                            </a>
+                        </div>
+                    </div>
+                    @else
+                    <div class="mt-4 p-3 bg-light rounded border">
+                        <p class="small text-muted mb-0"><i class="fas fa-info-circle me-1"></i>Add a <strong>slug</strong> in Edit to enable and display the public booking link for this clinic.</p>
+                    </div>
+                    @endif
+
                     @if($department->description)
                     <div class="mt-3">
                         <h6 class="fw-bold mb-2">Description</h6>
@@ -801,5 +821,21 @@ $(document).ready(function() {
         window.deleteDepartment(id);
     });
 });
+
+function copyDeptBookingLink() {
+    const input = document.getElementById('departmentBookingLink');
+    if (!input) return;
+    input.select();
+    input.setSelectionRange(0, 99999);
+    try {
+        navigator.clipboard.writeText(input.value);
+        if (typeof toastr !== 'undefined') toastr.success('Booking link copied to clipboard.');
+        else alert('Booking link copied to clipboard.');
+    } catch (e) {
+        document.execCommand('copy');
+        if (typeof toastr !== 'undefined') toastr.success('Booking link copied to clipboard.');
+        else alert('Booking link copied to clipboard.');
+    }
+}
 </script>
 @endpush
