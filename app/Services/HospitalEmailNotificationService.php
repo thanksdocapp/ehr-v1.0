@@ -6,12 +6,15 @@ use App\Models\EmailTemplate;
 use App\Models\EmailLog;
 use App\Models\User;
 use App\Models\Patient;
+use App\Models\MedicalRecord;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\LabReport;
 use App\Models\ContactMessage;
 use App\Jobs\SendEmail;
 use App\Services\EmailNotificationService;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
@@ -1920,9 +1923,10 @@ class HospitalEmailNotificationService
      * @param User|null $sentBy
      * @param array $medicalRecordAttachments Array of MedicalRecordAttachment models
      * @param array $uploadedFiles Array of uploaded file objects
+     * @param array $selectedMedicalRecords Array of MedicalRecord models (used to generate consultation summary PDF when no file attachments)
      * @return EmailLog|null
      */
-    public function sendGpEmail(Patient $patient, string $subject, string $message, string $emailType = 'general', User $sentBy = null, array $medicalRecordAttachments = [], array $uploadedFiles = [])
+    public function sendGpEmail(Patient $patient, string $subject, string $message, string $emailType = 'general', User $sentBy = null, array $medicalRecordAttachments = [], array $uploadedFiles = [], array $selectedMedicalRecords = [])
     {
         // Check if patient has GP consent and GP email
         if (!$patient->consent_share_with_gp) {
@@ -1964,7 +1968,7 @@ class HospitalEmailNotificationService
         ];
 
         // Always send direct email with custom subject and message
-        return $this->sendDirectGpEmail($patient, $subject, $message, $variables, $sentBy, $emailType, $medicalRecordAttachments, $uploadedFiles);
+        return $this->sendDirectGpEmail($patient, $subject, $message, $variables, $sentBy, $emailType, $medicalRecordAttachments, $uploadedFiles, $selectedMedicalRecords);
     }
 
     /**
@@ -1978,9 +1982,10 @@ class HospitalEmailNotificationService
      * @param string $emailType
      * @param array $medicalRecordAttachments Array of MedicalRecordAttachment models
      * @param array $uploadedFiles Array of uploaded file objects
+     * @param array $selectedMedicalRecords Array of MedicalRecord models (used to generate consultation summary PDF when no file attachments)
      * @return EmailLog|null
      */
-    private function sendDirectGpEmail(Patient $patient, string $subject, string $message, array $variables, User $sentBy = null, string $emailType = 'general', array $medicalRecordAttachments = [], array $uploadedFiles = [])
+    private function sendDirectGpEmail(Patient $patient, string $subject, string $message, array $variables, User $sentBy = null, string $emailType = 'general', array $medicalRecordAttachments = [], array $uploadedFiles = [], array $selectedMedicalRecords = [])
     {
         try {
             $hospitalName = $variables['hospital_name'];
@@ -2044,6 +2049,26 @@ class HospitalEmailNotificationService
                 }
             }
 
+            // If medical records were selected but no file attachments (e.g. consultation notes are text only), generate a PDF summary
+            if (empty($attachments) && !empty($selectedMedicalRecords)) {
+                try {
+                    $summary = $this->generateGpConsultationSummaryPdf($patient, $selectedMedicalRecords);
+                    if ($summary) {
+                        $attachments[] = $summary;
+                        $tempFiles[] = $summary['path'];
+                    } else {
+                        Log::warning('GP consultation summary PDF returned null', ['patient_id' => $patient->id]);
+                        throw new \Exception('Could not generate consultation summary. Please try again or upload files manually.');
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to generate GP consultation summary PDF', [
+                        'patient_id' => $patient->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    throw new \Exception('Could not generate consultation summary: ' . $e->getMessage() . '. Please try again or upload files manually.');
+                }
+            }
+
             // Create email log entry - check for column existence first
             $emailLogData = [
                 'recipient_email' => $patient->gp_email,
@@ -2102,6 +2127,62 @@ class HospitalEmailNotificationService
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Generate a consultation summary PDF for selected medical records (when they have no file attachments).
+     *
+     * @param Patient $patient
+     * @param array $medicalRecords Array of MedicalRecord models
+     * @return array|null ['path' => string, 'name' => string, 'type' => string] or null on failure
+     */
+    private function generateGpConsultationSummaryPdf(Patient $patient, array $medicalRecords): ?array
+    {
+        $medicalRecords = array_filter($medicalRecords, fn ($r) => $r instanceof MedicalRecord);
+        if (empty($medicalRecords)) {
+            return null;
+        }
+
+        $medicalRecords = array_values($medicalRecords);
+        foreach ($medicalRecords as $record) {
+            $record->loadMissing(['doctor']);
+        }
+
+        $html = view('emails.gp-consultation-summary', [
+            'patient' => $patient,
+            'medicalRecords' => $medicalRecords,
+        ])->render();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('defaultFont', 'sans-serif');
+        $options->set('chroot', base_path());
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $patient->full_name ?? 'Patient');
+        $fileName = 'Consultation_Notes_' . $safeName . '_' . now()->format('Y-m-d_His') . '.pdf';
+        $tempPath = 'temp/gp-emails/' . uniqid('summary_', true) . '.pdf';
+        $fullPath = Storage::disk('private')->path($tempPath);
+
+        $dir = dirname($fullPath);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        if (file_put_contents($fullPath, $dompdf->output()) === false) {
+            Log::warning('Failed to write GP consultation summary PDF to disk', ['path' => $fullPath]);
+            return null;
+        }
+
+        return [
+            'path' => $fullPath,
+            'name' => $fileName,
+            'type' => 'application/pdf',
+        ];
     }
 
     /**

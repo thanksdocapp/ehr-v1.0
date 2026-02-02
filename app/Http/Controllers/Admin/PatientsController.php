@@ -1409,6 +1409,22 @@ class PatientsController extends Controller
             'attachments.*' => 'file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png,gif,txt,xls,xlsx',
         ]);
 
+        // Prevent sending "please find attached" with no attachment
+        $hasRecords = !empty($request->medical_record_ids);
+        $hasFiles = $request->hasFile('attachments') && count($request->file('attachments')) > 0;
+        $impliesAttachment = preg_match('/\battach(ed|ment)?\b/i', $request->message . ' ' . ($request->subject ?? ''));
+        if ($impliesAttachment && !$hasRecords && !$hasFiles) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your message mentions an attachment. Please select medical records to attach and/or upload files, then send again.'
+                ], 422);
+            }
+            return redirect()->back()
+                ->with('error', 'Your message mentions an attachment. Please select medical records to attach and/or upload files, then send again.')
+                ->withInput();
+        }
+
         // Check if patient has GP consent and GP email
         if (!$patient->consent_share_with_gp) {
             if ($request->wantsJson() || $request->ajax()) {
@@ -1438,15 +1454,16 @@ class PatientsController extends Controller
             $emailType = $request->email_type ?? 'general';
             $sentBy = Auth::user();
 
-            // Process medical record attachments
+            // Process medical record attachments and selected records (for consultation summary if no file attachments)
             $medicalRecordIds = $request->medical_record_ids ?? [];
             $medicalRecordAttachments = [];
+            $selectedMedicalRecords = [];
             if (!empty($medicalRecordIds)) {
                 $medicalRecords = \App\Models\MedicalRecord::whereIn('id', $medicalRecordIds)
                     ->where('patient_id', $patient->id)
                     ->with('attachments')
                     ->get();
-                
+                $selectedMedicalRecords = $medicalRecords->all();
                 foreach ($medicalRecords as $record) {
                     foreach ($record->attachments as $attachment) {
                         $medicalRecordAttachments[] = $attachment;
@@ -1469,7 +1486,8 @@ class PatientsController extends Controller
                 $emailType,
                 $sentBy,
                 $medicalRecordAttachments,
-                $uploadedFiles
+                $uploadedFiles,
+                $selectedMedicalRecords
             );
 
             if ($emailLog) {

@@ -145,6 +145,9 @@
                             <label for="medical_record_ids" class="form-label" style="color: #2d3748; font-weight: 500;">
                                 <i class="fas fa-file-medical me-2"></i>Attach Medical Records (Optional)
                             </label>
+                            <div class="alert alert-info py-2 mb-2" style="font-size: 13px;">
+                                <i class="fas fa-info-circle me-2"></i><strong>If your message says &quot;please find attached&quot; or &quot;consultation notes attached&quot;</strong>, you must either select medical records below or upload files. Otherwise the GP will not receive any attachment. Selecting records with no file attachments will auto-generate a consultation summary PDF.
+                            </div>
                             <select class="form-control @error('medical_record_ids') is-invalid @enderror" 
                                     id="medical_record_ids" 
                                     name="medical_record_ids[]" 
