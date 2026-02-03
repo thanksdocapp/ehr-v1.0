@@ -92,7 +92,8 @@ class UsersController extends Controller
             'state' => 'nullable|string|max:255',
             'postal_code' => 'nullable|string|max:20',
             'country' => 'nullable|string|max:100',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required_without:generate_password|nullable|string|min:8|confirmed',
+            'generate_password' => 'nullable|boolean',
             'role' => 'required|in:admin,doctor,nurse,receptionist,pharmacist,technician,staff',
             'department_id' => 'nullable|exists:departments,id', // Primary department for backward compatibility
             'department_ids' => 'nullable|array',
@@ -161,7 +162,15 @@ class UsersController extends Controller
             $departmentIds[] = $primaryDepartmentId;
         }
         
-        $plainPassword = $validated['password'];
+        // Generate password automatically if requested (e.g. for doctors; sent in welcome email)
+        if (!empty($validated['generate_password'])) {
+            $plainPassword = \Illuminate\Support\Str::password(12);
+            $validated['password'] = $plainPassword;
+            $validated['password_confirmation'] = $plainPassword;
+        } else {
+            $plainPassword = $validated['password'];
+        }
+        
         $user = User::create($validated);
         
         // Sync departments to pivot table

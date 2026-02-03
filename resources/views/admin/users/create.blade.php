@@ -703,26 +703,35 @@ textarea.modern-form-control {
                     </div>
                     <div class="form-section-body">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-12 mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="generate_password" name="generate_password" value="1" {{ old('generate_password') ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="generate_password">
+                                        <i class="fas fa-magic me-1"></i>Generate password automatically
+                                    </label>
+                                    <small class="d-block text-muted mt-1">A secure 12-character password will be created. For doctors, it is sent in the welcome email.</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6 password-fields">
                                 <div class="modern-form-group">
                                     <label class="modern-form-label">
                                         <i class="fas fa-lock"></i>Password<span class="required">*</span>
                                     </label>
                                     <input type="password" class="modern-form-control @error('password') is-invalid @enderror"
-                                           id="password" name="password" required minlength="8"
-                                           placeholder="Minimum 8 characters">
+                                           id="password" name="password" minlength="8"
+                                           placeholder="Minimum 8 characters (or use generate above)">
                                     @error('password')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 password-fields">
                                 <div class="modern-form-group">
                                     <label class="modern-form-label">
                                         <i class="fas fa-lock"></i>Confirm Password<span class="required">*</span>
                                     </label>
                                     <input type="password" class="modern-form-control"
-                                           id="password_confirmation" name="password_confirmation" required minlength="8"
+                                           id="password_confirmation" name="password_confirmation" minlength="8"
                                            placeholder="Re-enter password">
                                 </div>
                             </div>
@@ -959,6 +968,17 @@ $(document).ready(function() {
             });
     })();
 
+    // Generate password: toggle password fields
+    function togglePasswordFields() {
+        const useGenerate = $('#generate_password').is(':checked');
+        $('#password, #password_confirmation').prop('required', !useGenerate).prop('disabled', useGenerate);
+        if (useGenerate) {
+            $('#password, #password_confirmation').val('').removeClass('is-invalid');
+        }
+    }
+    $('#generate_password').on('change', togglePasswordFields);
+    togglePasswordFields();
+
     // Password confirmation validation
     $('#password_confirmation').on('input', function() {
         const password = $('#password').val();
@@ -987,6 +1007,7 @@ $(document).ready(function() {
 
     // Form validation
     $('#createUserForm').on('submit', function(e) {
+        if ($('#generate_password').is(':checked')) return true;
         const password = $('#password').val();
         const confirmPassword = $('#password_confirmation').val();
 
