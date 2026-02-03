@@ -946,6 +946,7 @@ $(document).ready(function() {
     setTimeout(loadDoctorServices, 500); // Small delay to ensure DOM is ready
 
     // ===== Service Selection and Consultation Type Auto-Check =====
+    const doctorServicesApiUrl = "{{ url('api/public/doctors') }}";
     function loadDoctorServices() {
         const doctorId = getDoctorIdForSlots();
         const $serviceSelect = $('#service_id');
@@ -960,7 +961,7 @@ $(document).ready(function() {
         const prevVal = $serviceSelect.val();
         $serviceSelect.empty().append('<option value="">Loading services...</option>');
 
-        fetch(`/doctors/${doctorId}/services`)
+        fetch(`${doctorServicesApiUrl}/${doctorId}/services`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to load services');
