@@ -52,9 +52,18 @@
                             <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0;">
                                 If you have any questions or need further information, please do not hesitate to contact us.
                             </p>
-                            <p style="color: #2d3748; font-size: 14px; line-height: 1.6; margin: 16px 0 0 0; font-weight: 600;">
-                                Please send any reply only to the clinic at: <a href="mailto:{{ $gp_reply_to_email ?? 'gpsurgeryresponses@thanksdoc.co.uk' }}" style="color: #1a202c;">{{ $gp_reply_to_email ?? 'gpsurgeryresponses@thanksdoc.co.uk' }}</a>
-                            </p>
+                            <div style="background-color: #f0f9ff; border-left: 4px solid #0284c7; padding: 14px 16px; margin: 20px 0 0 0; border-radius: 0 6px 6px 0;">
+                                <p style="color: #0c4a6e; font-size: 13px; font-weight: 600; margin: 0 0 8px 0;">Important – How to reply</p>
+                                <p style="color: #2d3748; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;">
+                                    <strong>Please send any reply only to the clinic at:</strong> <a href="mailto:{{ $department_email ?? $gp_reply_to_email ?? 'gpsurgeryresponses@thanksdoc.co.uk' }}" style="color: #0369a1; font-weight: 600;">{{ $department_email ?? $gp_reply_to_email ?? 'gpsurgeryresponses@thanksdoc.co.uk' }}</a>
+                                </p>
+                                <p style="color: #2d3748; font-size: 13px; line-height: 1.6; margin: 0 0 8px 0;">
+                                    Do not use “Reply” only: the “From” address on this email is not a monitored mailbox. Replies sent only to the sender may be lost or bounce.
+                                </p>
+                                <p style="color: #2d3748; font-size: 13px; line-height: 1.6; margin: 0;">
+                                    Use <strong>“Reply all”</strong> so that the clinic ({{ $department_email ?? $gp_reply_to_email ?? 'gpsurgeryresponses@thanksdoc.co.uk' }}) receives your reply, or compose a new email to the clinic address above.
+                                </p>
+                            </div>
                         </td>
                     </tr>
                     

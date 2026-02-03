@@ -2010,6 +2010,12 @@ class HospitalEmailNotificationService
             ? Doctor::where('user_id', $sentBy->id)->first() 
             : null;
 
+        // Clinic/department email for GP replies: doctor's or patient's department, else global config
+        $department = $doctor ? $doctor->primaryDepartment() : $patient->primaryDepartment();
+        $departmentEmail = $department && !empty($department->email)
+            ? $department->email
+            : config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk');
+
         $variables = [
             'gp_name' => $patient->gp_name ?? 'GP',
             'gp_email' => $patient->gp_email,
@@ -2025,6 +2031,7 @@ class HospitalEmailNotificationService
             'hospital_phone' => config('hospital.phone', ''),
             'hospital_email' => config('hospital.email', ''),
             'gp_reply_to_email' => config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk'),
+            'department_email' => $departmentEmail,
             'message' => $message,
             'email_type' => $emailType,
             'date' => now()->format('F d, Y'),
@@ -2134,6 +2141,7 @@ class HospitalEmailNotificationService
             }
 
             // Create email log entry - check for column existence first
+            $clinicCopyEmail = $variables['department_email'] ?? config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk');
             $emailLogData = [
                 'recipient_email' => $patient->gp_email,
                 'recipient_name' => $patient->gp_name ?? 'GP',
@@ -2141,6 +2149,7 @@ class HospitalEmailNotificationService
                 'body' => $this->formatGpEmailBody($message, $variables),
                 'variables' => $variables,
                 'attachments' => $attachments,
+                'cc_emails' => array_filter([$clinicCopyEmail]), // CC clinic (department) so they receive a copy and can receive replies
                 'metadata' => [
                     'email_type' => 'gp_communication',
                     'sent_by' => $sentBy ? $sentBy->id : null,
@@ -2274,6 +2283,7 @@ class HospitalEmailNotificationService
             'hospital_phone' => $hospitalPhone,
             'hospital_email' => $hospitalEmail,
             'gp_reply_to_email' => $variables['gp_reply_to_email'] ?? config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk'),
+            'department_email' => $variables['department_email'] ?? config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk'),
             'message' => nl2br(e($message)),
             'date' => $variables['date'],
             'time' => $variables['time'],

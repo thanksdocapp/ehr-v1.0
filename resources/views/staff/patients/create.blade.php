@@ -633,8 +633,7 @@
 <strong>I consent for you to share information with my GP.</strong>
                                 </label>
                         </div>
-                        <small class="text-muted d-block mb-3">By checking this box, you authorize the hospital to share your medical information with your GP.</small>
-                        <small class="text-muted d-block mb-3">Any response from your GP should be sent only to the clinic at <strong>{{ config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk') }}</strong>.</small>
+                        <small class="text-muted d-block mb-3">By checking this box, the patient authorizes the clinic to share medical information with their GP.</small>
 
                         <script>
                         // Inline function to handle GP consent - runs immediately
