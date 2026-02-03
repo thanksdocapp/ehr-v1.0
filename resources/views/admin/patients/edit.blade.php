@@ -469,6 +469,9 @@
                             <small class="form-text text-muted">
                                 By checking this box, you authorize the hospital to share your medical information with your GP.
                             </small>
+                            <small class="form-text text-muted d-block mt-1">
+                                Any response from your GP should be sent only to the clinic at <strong>{{ config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk') }}</strong>.
+                            </small>
                         </div>
 
                         <script>

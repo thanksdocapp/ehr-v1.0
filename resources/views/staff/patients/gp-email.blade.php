@@ -232,6 +232,10 @@
                             Ensure patient has consented to share information with GP
                         </li>
                         <li class="mb-2">
+                            <i class="fas fa-envelope text-primary me-2"></i>
+                            Replies from the GP must be sent only to the clinic at <strong>{{ config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk') }}</strong>
+                        </li>
+                        <li class="mb-2">
                             <i class="fas fa-check-circle text-success me-2"></i>
                             Use clear and professional language
                         </li>

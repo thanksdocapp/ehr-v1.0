@@ -630,10 +630,11 @@
                                    {{ old('consent_share_with_gp') ? 'checked' : '' }}
                                    onchange="handleGpConsentChange(this)">
                             <label class="form-check-label" for="consent_share_with_gp" onclick="setTimeout(function(){handleGpConsentChange(document.getElementById('consent_share_with_gp'));}, 10);">
-                                <strong>I consent for you to share information with my GP.</strong>
-                            </label>
+<strong>I consent for you to share information with my GP.</strong>
+                                </label>
                         </div>
                         <small class="text-muted d-block mb-3">By checking this box, you authorize the hospital to share your medical information with your GP.</small>
+                        <small class="text-muted d-block mb-3">Any response from your GP should be sent only to the clinic at <strong>{{ config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk') }}</strong>.</small>
 
                         <script>
                         // Inline function to handle GP consent - runs immediately

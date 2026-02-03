@@ -52,6 +52,9 @@
                             <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0;">
                                 If you have any questions or need further information, please do not hesitate to contact us.
                             </p>
+                            <p style="color: #2d3748; font-size: 14px; line-height: 1.6; margin: 16px 0 0 0; font-weight: 600;">
+                                Please send any reply only to the clinic at: <a href="mailto:{{ $gp_reply_to_email ?? 'gpsurgeryresponses@thanksdoc.co.uk' }}" style="color: #1a202c;">{{ $gp_reply_to_email ?? 'gpsurgeryresponses@thanksdoc.co.uk' }}</a>
+                            </p>
                         </td>
                     </tr>
                     
