@@ -137,9 +137,15 @@
         </div>
     </div>
 
+    @php
+        $totalMins = (int) ($summary['total_duration_minutes'] ?? 0);
+        $summaryHours = (int) floor($totalMins / 60);
+        $summaryMinutes = $totalMins % 60;
+        $summaryDurationText = $summaryHours . ' hours ' . $summaryMinutes . ' minutes';
+    @endphp
     <!-- Summary Cards -->
     <div class="row g-3 mb-4 fade-in-up" style="animation-delay: 0.1s;">
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="stat-card-enhanced">
                 <div class="stat-card-content">
                     <div class="stat-icon-wrapper" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
@@ -152,28 +158,15 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="stat-card-enhanced">
                 <div class="stat-card-content">
                     <div class="stat-icon-wrapper" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                         <i class="fas fa-clock"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-number">{{ number_format($summary['total_duration_hours'], 2) }}</div>
-                        <div class="stat-label">Total Hours</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-card-enhanced">
-                <div class="stat-card-content">
-                    <div class="stat-icon-wrapper" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-number">{{ number_format($summary['average_duration_minutes'], 1) }}</div>
-                        <div class="stat-label">Avg Duration (Minutes)</div>
+                        <div class="stat-number" style="font-size: 1.1rem;">{{ $summaryDurationText }}</div>
+                        <div class="stat-label">Total Duration</div>
                     </div>
                 </div>
             </div>
@@ -195,9 +188,7 @@
                             <th>Month</th>
                             <th>Clinic/Department</th>
                             <th class="text-end">Consultations</th>
-                            <th class="text-end">Total Duration (Hours)</th>
-                            <th class="text-end">Total Duration (Minutes)</th>
-                            <th class="text-end">Average Duration (Minutes)</th>
+                            <th class="text-end">Total Duration</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -217,22 +208,22 @@
                                     <span class="badge bg-primary">{{ $monthData->department_name }}</span>
                                 @endif
                             </td>
+                            @php
+                                $rowMins = (int) $monthData->total_duration_minutes;
+                                $rowH = (int) floor($rowMins / 60);
+                                $rowM = $rowMins % 60;
+                                $rowDurationText = $rowH . ' hours ' . $rowM . ' minutes';
+                            @endphp
                             <td class="text-end">
                                 <span class="fw-semibold">{{ number_format($monthData->total_consultations) }}</span>
                             </td>
                             <td class="text-end">
-                                <span class="fw-semibold text-info">{{ number_format($monthData->total_duration_minutes / 60, 2) }}</span>
-                            </td>
-                            <td class="text-end">
-                                <span class="text-muted">{{ number_format($monthData->total_duration_minutes) }}</span>
-                            </td>
-                            <td class="text-end">
-                                <span class="badge bg-success">{{ number_format($monthData->average_duration_minutes, 1) }} min</span>
+                                <span class="fw-semibold text-info">{{ $rowDurationText }}</span>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center py-5">
+                            <td colspan="4" class="text-center py-5">
                                 <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                                 <p class="text-muted">No consultations found for the selected period.</p>
                             </td>

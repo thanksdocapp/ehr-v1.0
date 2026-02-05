@@ -26,13 +26,11 @@ class ConsultationsReportController extends Controller
         $reportData = (clone $reportQuery)->get();
         $paginator = $reportQuery->paginate(12)->appends($request->query());
 
-        // Summary stats
+        // Summary stats (total duration in minutes for "X hours Y minutes" formatting in view)
+        $totalMinutes = (int) $reportData->sum('total_duration_minutes');
         $summary = [
             'total_consultations' => $reportData->sum('total_consultations'),
-            'total_duration_hours' => round($reportData->sum('total_duration_minutes') / 60, 2),
-            'average_duration_minutes' => $reportData->sum('total_consultations') > 0 
-                ? round($reportData->sum('total_duration_minutes') / $reportData->sum('total_consultations'), 2)
-                : 0,
+            'total_duration_minutes' => $totalMinutes,
         ];
 
         return view('admin.reports.consultations.index', compact(
@@ -56,13 +54,16 @@ class ConsultationsReportController extends Controller
         $reportData = $this->buildReportQuery($startDate, $endDate, $departmentId, $groupBy)
             ->get()
             ->map(function ($row) {
+                $mins = (int) $row->total_duration_minutes;
+                $h = (int) floor($mins / 60);
+                $m = $mins % 60;
+                $durationFormatted = $h . ' hours ' . $m . ' minutes';
                 return [
                     'Month' => $row->month_name,
                     'Department' => $row->department_name,
                     'Total Consultations' => $row->total_consultations,
-                    'Total Duration (Minutes)' => $row->total_duration_minutes,
-                    'Total Duration (Hours)' => $row->total_duration_hours,
-                    'Average Duration (Minutes)' => $row->average_duration_minutes,
+                    'Total Duration (Minutes)' => $mins,
+                    'Total Duration' => $durationFormatted,
                 ];
             });
 
@@ -105,13 +106,11 @@ class ConsultationsReportController extends Controller
         $department = $departmentId ? Department::find($departmentId) : null;
         $reportData = $this->buildReportQuery($startDate, $endDate, $departmentId, $groupBy)->get();
 
-        // Summary
+        // Summary (total_duration_minutes for "X hours Y minutes" in PDF view)
+        $totalMinutes = (int) $reportData->sum('total_duration_minutes');
         $summary = [
             'total_consultations' => $reportData->sum('total_consultations'),
-            'total_duration_hours' => round($reportData->sum('total_duration_minutes') / 60, 2),
-            'average_duration_minutes' => $reportData->sum('total_consultations') > 0 
-                ? round($reportData->sum('total_duration_minutes') / $reportData->sum('total_consultations'), 2)
-                : 0,
+            'total_duration_minutes' => $totalMinutes,
         ];
 
         $html = view('admin.reports.consultations.pdf', [
@@ -310,9 +309,7 @@ class ConsultationsReportController extends Controller
                 {$departmentNameExpression} as department_name,
                 {$departmentIdExpression} as department_id,
                 COUNT(*) as total_consultations,
-                SUM(duration_minutes) as total_duration_minutes,
-                ROUND(SUM(duration_minutes) / 60, 2) as total_duration_hours,
-                ROUND(SUM(duration_minutes) / NULLIF(COUNT(*), 0), 2) as average_duration_minutes
+                SUM(duration_minutes) as total_duration_minutes
             ")
             ->orderByRaw("DATE_FORMAT(MIN(record_date), '%Y-%m')");
 

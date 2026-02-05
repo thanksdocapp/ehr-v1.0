@@ -85,6 +85,12 @@
         @endif
     </div>
 
+    @php
+        $totalMins = (int) ($summary['total_duration_minutes'] ?? 0);
+        $pdfHours = (int) floor($totalMins / 60);
+        $pdfMinutes = $totalMins % 60;
+        $pdfDurationText = $pdfHours . ' hours ' . $pdfMinutes . ' minutes';
+    @endphp
     <div class="summary">
         <div class="summary-row">
             <div class="summary-label">Total Consultations:</div>
@@ -92,11 +98,7 @@
         </div>
         <div class="summary-row">
             <div class="summary-label">Total Duration:</div>
-            <div class="summary-value">{{ number_format($summary['total_duration_hours'], 2) }} hours</div>
-        </div>
-        <div class="summary-row">
-            <div class="summary-label">Average Duration:</div>
-            <div class="summary-value">{{ number_format($summary['average_duration_minutes'], 2) }} minutes</div>
+            <div class="summary-value">{{ $pdfDurationText }}</div>
         </div>
     </div>
 
@@ -106,20 +108,22 @@
                 <th>Month</th>
                 <th>Clinic/Department</th>
                 <th class="text-right">Consultations</th>
-                <th class="text-right">Total Duration (Hours)</th>
-                <th class="text-right">Total Duration (Minutes)</th>
-                <th class="text-right">Average Duration (Minutes)</th>
+                <th class="text-right">Total Duration</th>
             </tr>
         </thead>
         <tbody>
             @foreach($reportData as $monthData)
+            @php
+                $rowMins = (int) $monthData->total_duration_minutes;
+                $rowH = (int) floor($rowMins / 60);
+                $rowM = $rowMins % 60;
+                $rowDurationText = $rowH . ' hours ' . $rowM . ' minutes';
+            @endphp
             <tr>
                 <td>{{ $monthData->month_name }}</td>
                 <td>{{ $monthData->department_name }}</td>
                 <td class="text-right">{{ number_format($monthData->total_consultations) }}</td>
-                <td class="text-right">{{ number_format($monthData->total_duration_hours, 2) }}</td>
-                <td class="text-right">{{ number_format($monthData->total_duration_minutes) }}</td>
-                <td class="text-right">{{ number_format($monthData->average_duration_minutes, 2) }}</td>
+                <td class="text-right">{{ $rowDurationText }}</td>
             </tr>
             @endforeach
         </tbody>
