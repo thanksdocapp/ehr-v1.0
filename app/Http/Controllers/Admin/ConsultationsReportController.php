@@ -269,6 +269,7 @@ class ConsultationsReportController extends Controller
             ->leftJoin('booking_services', 'appointments.service_id', '=', 'booking_services.id')
             ->whereBetween('appointments.appointment_date', [$startDate, $endDate])
             ->whereIn('appointments.type', ['consultation', 'followup'])
+            ->whereNotIn('appointments.status', ['pending', 'cancelled'])
             ->selectRaw("
                 appointments.appointment_date as record_date,
                 appointments.department_id as department_id,
@@ -340,6 +341,7 @@ class ConsultationsReportController extends Controller
             ->whereBetween('appointments.appointment_date', [$startDate, $endDate])
             ->where('appointments.department_id', $departmentId)
             ->whereIn('appointments.type', ['consultation', 'followup'])
+            ->whereNotIn('appointments.status', ['pending', 'cancelled'])
             ->selectRaw("
                 appointments.id as appointment_id,
                 NULL as medical_record_id,
