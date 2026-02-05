@@ -283,17 +283,19 @@ class ConsultationsReportController extends Controller
 
         $recordDateExpression = "DATE(COALESCE(medical_records.record_date, medical_records.created_at))";
 
+        // Group standalone medical records by same calendar day + department: count as 1 consultation per group (within 24h)
         $medicalRecordRows = DB::table('medical_records')
             ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
             ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
             ->whereNull('medical_records.appointment_id')
             ->whereIn('medical_records.record_type', ['consultation', 'followup'])
             ->whereBetween(DB::raw($recordDateExpression), [$startDate, $endDate])
+            ->groupByRaw("{$recordDateExpression}, doctors.department_id, departments.name")
             ->selectRaw("
-                $recordDateExpression as record_date,
+                {$recordDateExpression} as record_date,
                 doctors.department_id as department_id,
                 departments.name as department_name,
-                20 as duration_minutes
+                (20 * COUNT(*)) as duration_minutes
             ");
 
         if (!empty($departmentId)) {
@@ -356,24 +358,39 @@ class ConsultationsReportController extends Controller
 
         $recordDateExpression = "DATE(COALESCE(medical_records.record_date, medical_records.created_at))";
 
-        $medicalRecordRows = DB::table('medical_records')
-            ->leftJoin('patients', 'medical_records.patient_id', '=', 'patients.id')
+        // Group standalone medical records by same calendar day + department (within 24h = one consultation)
+        $medicalRecordGroups = DB::table('medical_records')
             ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
             ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
             ->whereNull('medical_records.appointment_id')
             ->where('doctors.department_id', $departmentId)
             ->whereIn('medical_records.record_type', ['consultation', 'followup'])
             ->whereBetween(DB::raw($recordDateExpression), [$startDate, $endDate])
+            ->groupByRaw("{$recordDateExpression}, doctors.department_id, departments.name")
+            ->selectRaw("
+                {$recordDateExpression} as record_date,
+                doctors.department_id as department_id,
+                departments.name as department_name,
+                MIN(medical_records.id) as first_record_id,
+                COUNT(*) as record_count
+            ");
+
+        $medicalRecordRows = DB::table(DB::raw("({$medicalRecordGroups->toSql()}) as mr_grp"))
+            ->mergeBindings($medicalRecordGroups)
+            ->join('medical_records', 'medical_records.id', '=', 'mr_grp.first_record_id')
+            ->leftJoin('patients', 'medical_records.patient_id', '=', 'patients.id')
+            ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
+            ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
             ->selectRaw("
                 NULL as appointment_id,
                 medical_records.id as medical_record_id,
-                $recordDateExpression as record_date,
-                CONCAT(patients.first_name, ' ', patients.last_name) as patient_name,
-                CONCAT(doctors.first_name, ' ', doctors.last_name) as doctor_name,
+                mr_grp.record_date as record_date,
+                CONCAT(COALESCE(patients.first_name, ''), ' ', COALESCE(patients.last_name, '')) as patient_name,
+                CONCAT(COALESCE(doctors.first_name, ''), ' ', COALESCE(doctors.last_name, '')) as doctor_name,
                 departments.name as department_name,
                 medical_records.record_type as consultation_type,
                 'medical_record' as source,
-                20 as duration_minutes
+                (20 * mr_grp.record_count) as duration_minutes
             ");
 
         return DB::query()->fromSub($appointmentRows->unionAll($medicalRecordRows), 'consultation_details');
