@@ -19,11 +19,25 @@ class AllowBookingEmbed
     {
         $response = $next($request);
 
+        // Only allow framing for booking paths (and homepage when it is the booking page)
+        if (!$this->isEmbeddablePath($request)) {
+            return $response;
+        }
+
         // Allow this response to be embedded in iframes (WordPress, other sites)
         $response->headers->remove('X-Frame-Options');
         $response->headers->set('Content-Security-Policy', $this->cspWithFrameAncestors(), true);
 
         return $response;
+    }
+
+    /**
+     * Whether the request is for a path that may be embedded (booking or homepage).
+     */
+    private function isEmbeddablePath(Request $request): bool
+    {
+        $path = trim($request->path(), '/');
+        return $path === '' || $path === 'book' || str_starts_with($path, 'book/');
     }
 
     /**
