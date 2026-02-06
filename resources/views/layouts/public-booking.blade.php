@@ -3,11 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    @if($embed)
-    <meta name="viewport" content="width=1100, initial-scale=1.0">
-    @else
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    @endif
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" id="booking-viewport">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title') - {{ $site_settings['hospital_name'] ?? getAppName() }}</title>
 
@@ -506,8 +502,8 @@
         body.embed-mode .booking-container { padding-top: 0.5rem; padding-bottom: 0.5rem; }
         body.embed-mode .booking-header { margin-bottom: 1.5rem; }
         body.embed-mode .booking-header h1 { font-size: 1.5rem; }
-        /* Keep desktop layout in iframe: min-width prevents mobile breakpoint (768px) from applying */
-        body.embed-mode .booking-container { min-width: 900px; }
+        /* Desktop layout only when iframe is wide (script adds .embed-desktop); mobile keeps fluid layout */
+        body.embed-mode.embed-desktop .booking-container { min-width: 900px; }
 
         @yield('styles')
     </style>
@@ -516,6 +512,17 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body class="{{ $embed ? 'embed-mode' : '' }}">
+    @if($embed)
+    <script>
+    (function() {
+        var vp = document.getElementById('booking-viewport');
+        if (vp && window.innerWidth >= 768) {
+            vp.setAttribute('content', 'width=1100, initial-scale=1.0');
+            document.body.classList.add('embed-desktop');
+        }
+    })();
+    </script>
+    @endif
     <div class="booking-container" style="max-width: @yield('container-width', '1200px')">
         @yield('content')
     </div>
