@@ -24,8 +24,10 @@ class AllowBookingEmbed
             return $response;
         }
 
-        // Allow this response to be embedded in iframes (WordPress, other sites)
+        // Allow this response to be embedded in iframes (WordPress, other sites).
+        // Remove all framing restrictions (CSP can still add frame-ancestors *).
         $response->headers->remove('X-Frame-Options');
+        $response->headers->remove('Content-Security-Policy');
         $response->headers->set('Content-Security-Policy', $this->cspWithFrameAncestors(), true);
 
         return $response;
@@ -33,11 +35,17 @@ class AllowBookingEmbed
 
     /**
      * Whether the request is for a path that may be embedded (booking or homepage).
+     * Uses path() and raw request URI so we catch booking even behind proxies/subdir.
      */
     private function isEmbeddablePath(Request $request): bool
     {
         $path = trim($request->path(), '/');
-        return $path === '' || $path === 'book' || str_starts_with($path, 'book/');
+        if ($path === '' || $path === 'book' || str_starts_with($path, 'book/')) {
+            return true;
+        }
+        $uri = $request->getRequestUri();
+        $uriPath = trim((string) parse_url($uri, PHP_URL_PATH), '/');
+        return $uriPath === '' || $uriPath === 'book' || str_starts_with($uriPath, 'book/');
     }
 
     /**
