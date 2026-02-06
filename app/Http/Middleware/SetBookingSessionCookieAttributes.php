@@ -20,6 +20,8 @@ class SetBookingSessionCookieAttributes
                 'session.same_site' => 'none',
                 'session.secure' => true,
             ]);
+            // Persist embed flag so layout keeps desktop viewport after redirects (forms don't pass ?embed=1)
+            session(['embed' => $request->boolean('embed')]);
         }
 
         return $next($request);

@@ -1,8 +1,13 @@
 <!DOCTYPE html>
+@php $embed = $embed ?? request()->boolean('embed') || session('embed', false); @endphp
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    @if($embed)
+    <meta name="viewport" content="width=1100, initial-scale=1.0">
+    @else
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    @endif
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title') - {{ $site_settings['hospital_name'] ?? getAppName() }}</title>
 
@@ -501,13 +506,14 @@
         body.embed-mode .booking-container { padding-top: 0.5rem; padding-bottom: 0.5rem; }
         body.embed-mode .booking-header { margin-bottom: 1.5rem; }
         body.embed-mode .booking-header h1 { font-size: 1.5rem; }
+        /* Keep desktop layout in iframe: min-width prevents mobile breakpoint (768px) from applying */
+        body.embed-mode .booking-container { min-width: 900px; }
 
         @yield('styles')
     </style>
     
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    @php $embed = $embed ?? request()->boolean('embed'); @endphp
 </head>
 <body class="{{ $embed ? 'embed-mode' : '' }}">
     <div class="booking-container" style="max-width: @yield('container-width', '1200px')">
