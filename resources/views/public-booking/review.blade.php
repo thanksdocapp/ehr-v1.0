@@ -37,16 +37,11 @@
         <div class="step-line completed"></div>
         <div class="step completed">
             <div class="step-circle"><i class="fas fa-check"></i></div>
-            <div class="step-label">Date & Time</div>
-        </div>
-        <div class="step-line completed"></div>
-        <div class="step completed">
-            <div class="step-circle"><i class="fas fa-check"></i></div>
             <div class="step-label">Your Details</div>
         </div>
         <div class="step-line completed"></div>
         <div class="step active">
-            <div class="step-circle">4</div>
+            <div class="step-circle">3</div>
             <div class="step-label">Confirm</div>
         </div>
     </div>

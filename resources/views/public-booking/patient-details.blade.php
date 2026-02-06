@@ -15,18 +15,13 @@
             <div class="step-label">Service</div>
         </div>
         <div class="step-line completed"></div>
-        <div class="step completed">
-            <div class="step-circle"><i class="fas fa-check"></i></div>
-            <div class="step-label">Date & Time</div>
-        </div>
-        <div class="step-line completed"></div>
         <div class="step active">
-            <div class="step-circle">3</div>
+            <div class="step-circle">2</div>
             <div class="step-label">Your Details</div>
         </div>
         <div class="step-line"></div>
         <div class="step">
-            <div class="step-circle">4</div>
+            <div class="step-circle">3</div>
             <div class="step-label">Confirm</div>
         </div>
     </div>
@@ -152,4 +147,38 @@
     <div class="text-center mt-5 mb-3">
         <small class="text-muted">Powered by ThanksDoc</small>
     </div>
+@endsection
+
+@section('scripts')
+<script>
+(function() {
+    function initDobPicker() {
+        var el = document.getElementById('date_of_birth');
+        if (!el || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
+        try {
+            flatpickr(el, {
+                dateFormat: 'd/m/Y',
+                allowInput: true,
+                clickOpens: true,
+                maxDate: 'today',
+                minDate: new Date(new Date().setFullYear(new Date().getFullYear() - 150)),
+                locale: { firstDayOfWeek: 1 },
+                onChange: function(selectedDates, dateStr, instance) {
+                    if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        var d = new Date(dateStr);
+                        instance.input.value = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
+                    }
+                    instance.input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+            el.setAttribute('data-flatpickr-initialized', 'true');
+        } catch (e) { console.error('DOB Flatpickr init error:', e); }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { setTimeout(initDobPicker, 150); });
+    } else {
+        setTimeout(initDobPicker, 150);
+    }
+})();
+</script>
 @endsection
