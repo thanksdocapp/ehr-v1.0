@@ -52,7 +52,7 @@
 
         <div class="form-card">
             <label class="form-label">Select Date</label>
-            <input type="date" name="appointment_date" id="appointment-date" class="form-control" min="{{ date('Y-m-d') }}" required>
+            <input type="text" name="appointment_date" id="appointment-date" class="form-control uk-date" data-min-date="{{ date('Y-m-d') }}" data-uk-date="true" placeholder="dd/mm/yyyy" required autocomplete="off">
             <small class="text-muted d-block mt-2">Select a date to see available time slots</small>
 
             <div id="time-slots-container" style="display: none; margin-top: 2rem;">
@@ -99,8 +99,19 @@
         const form = document.getElementById('datetime-form');
         let selectedTime = null;
 
-        dateInput.addEventListener('change', function() {
-            const selectedDate = this.value;
+        function getDateValueYmd(input) {
+            var val = (input && input.value) ? input.value.trim() : '';
+            if (!val) return '';
+            if (val.match(/^\d{4}-\d{2}-\d{2}$/)) return val;
+            if (val.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                var parts = val.split('/');
+                return parts[2] + '-' + parts[1] + '-' + parts[0];
+            }
+            return '';
+        }
+
+        function onDateChange() {
+            const selectedDate = getDateValueYmd(dateInput);
             if (!selectedDate) {
                 timeSlotsContainer.style.display = 'none';
                 continueBtn.disabled = true;
@@ -151,7 +162,10 @@
                 loadingSlots.style.display = 'none';
                 alert('Failed to load available time slots. Please try again.');
             });
-        });
+        }
+
+        dateInput.addEventListener('change', onDateChange);
+        dateInput.addEventListener('blur', function() { if (getDateValueYmd(dateInput)) onDateChange(); });
 
         form.addEventListener('submit', function(e) {
             if (!selectedTime) {

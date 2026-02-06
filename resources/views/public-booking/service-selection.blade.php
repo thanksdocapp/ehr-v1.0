@@ -265,9 +265,13 @@
     }
 
     @media (max-width: 768px) {
-        .time-slots-calendar {
-            grid-template-columns: 1fr;
-        }
+        .date-navigation { flex-wrap: wrap; gap: 0.5rem; }
+        .date-display { gap: 0.5rem; }
+        .date-item { min-width: 72px; padding: 0.5rem; min-height: 44px; }
+        .date-item .date-day { font-size: 0.65rem; }
+        .date-item .date-date { font-size: 0.75rem; }
+        .time-slots-calendar { grid-template-columns: 1fr; gap: 1rem; }
+        .date-column .time-slot-btn { min-height: 44px; padding: 0.5rem; }
     }
 
     /* Compact Service Selection Row */

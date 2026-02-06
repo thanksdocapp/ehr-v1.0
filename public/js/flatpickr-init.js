@@ -47,6 +47,7 @@
                         const yyyy = date.getFullYear();
                         instance.input.value = dd + '/' + mm + '/' + yyyy;
                     }
+                    instance.input.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             };
 

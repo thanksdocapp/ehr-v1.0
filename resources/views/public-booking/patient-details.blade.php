@@ -93,14 +93,14 @@
                 <div class="col-md-6 mb-3">
                     <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
                     <input type="text" 
-                           class="form-control @error('date_of_birth') is-invalid @enderror" 
+                           class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror" 
                            id="date_of_birth" 
                            name="date_of_birth" 
+                           data-uk-date="true"
                            required 
                            value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : '' }}" 
                            placeholder="dd/mm/yyyy"
-                           pattern="\d{2}/\d{2}/\d{4}"
-                           maxlength="10">
+                           autocomplete="off">
                     <small class="form-text text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
                     @error('date_of_birth')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -148,52 +148,7 @@
             </button>
         </div>
     </form>
-@endsection
 
-@section('scripts')
-<script>
-    // Date input formatting for UK format (dd/mm/yyyy)
-    document.addEventListener('DOMContentLoaded', function() {
-        const dobInput = document.getElementById('date_of_birth');
-        
-        if (dobInput) {
-            // Format date as user types (dd/mm/yyyy)
-            dobInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-                
-                // Add slashes automatically
-                if (value.length > 2) {
-                    value = value.substring(0, 2) + '/' + value.substring(2);
-                }
-                if (value.length > 5) {
-                    value = value.substring(0, 5) + '/' + value.substring(5, 9);
-                }
-                
-                e.target.value = value;
-            });
-            
-            // Convert dd/mm/yyyy to yyyy-mm-dd before form submission
-            const form = document.getElementById('patient-details-form');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    const dobValue = dobInput.value.trim();
-                    
-                    if (dobValue) {
-                        // Check if it's in dd/mm/yyyy format
-                        if (dobValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                            const parts = dobValue.split('/');
-                            // Convert to yyyy-mm-dd format
-                            const convertedDate = parts[2] + '-' + parts[1] + '-' + parts[0];
-                            dobInput.value = convertedDate;
-                        }
-                    }
-                });
-            }
-        }
-    });
-</script>
-
-    <!-- Footer -->
     <div class="text-center mt-5 mb-3">
         <small class="text-muted">Powered by ThanksDoc</small>
     </div>

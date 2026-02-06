@@ -40,11 +40,17 @@
             color: #1a202c;
             line-height: 1.6;
         }
+        /* Touch scroll in iframe (iOS): momentum scrolling and allow vertical pan */
+        html { -webkit-overflow-scrolling: touch; }
+        body { overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 
         .booking-container {
             max-width: @yield('container-width', '1200px');
             margin: 0 auto;
-            padding: 2rem 1rem;
+            padding: 1rem 0.75rem;
+        }
+        @media (min-width: 768px) {
+            .booking-container { padding: 2rem 1rem; }
         }
 
         .booking-header {
@@ -237,7 +243,9 @@
             padding: 0.75rem 1rem;
             font-size: 1rem;
             transition: all 0.2s;
+            min-height: 44px;
         }
+        select.form-control { cursor: pointer; }
 
         .form-control:focus {
             border-color: var(--booking-primary);
@@ -267,7 +275,13 @@
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--booking-primary) 10%, transparent);
         }
 
-        /* Buttons */
+        /* Buttons - touch-friendly min height */
+        .btn {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
         .btn-primary {
             background-color: var(--booking-primary) !important;
             border-color: var(--booking-primary) !important;
@@ -315,6 +329,12 @@
             font-weight: 600;
             padding: 0.75rem 2rem;
             border-radius: 8px;
+        }
+        .btn-lg { padding: 0.875rem 1.5rem; min-height: 48px; }
+        @media (max-width: 767px) {
+            .btn-lg { width: 100%; justify-content: center; }
+            .d-flex.justify-content-between { flex-direction: column; gap: 0.75rem; }
+            .d-flex.justify-content-between .btn { width: 100%; }
         }
 
         /* Review Section */
@@ -479,23 +499,26 @@
             border-radius: 8px;
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .booking-header h1 {
-                font-size: 1.5rem;
-            }
-
-            .services-grid, .doctors-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .time-slots-grid {
-                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            }
-
-        .step-line {
-            width: 30px;
+        /* Responsive - mobile first */
+        @media (max-width: 767px) {
+            .booking-header { margin-bottom: 2rem; }
+            .booking-header h1 { font-size: 1.35rem; }
+            .booking-header p { font-size: 0.9rem; }
+            .progress-steps { flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 2rem; }
+            .step-line { width: 24px; margin-top: -22px; }
+            .step-circle { width: 36px; height: 36px; font-size: 0.8rem; }
+            .step-label { font-size: 0.65rem; max-width: 60px; text-align: center; }
+            .info-card, .summary-card, .form-card, .review-card { padding: 1rem; margin-bottom: 1.5rem; }
+            .form-card, .review-card { padding: 1.25rem; }
+            .services-grid, .doctors-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .service-card, .doctor-card { padding: 1.25rem; min-height: 44px; }
+            .time-slots-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+            .time-slot-btn { padding: 0.875rem 0.5rem; min-height: 44px; font-size: 0.9rem; }
+            .summary-row, .review-row { flex-wrap: wrap; gap: 0.25rem; }
+            .review-value { text-align: left; }
         }
+        @media (min-width: 768px) {
+            .time-slots-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
         }
 
         /* Embed mode: compact when shown in iframe (e.g. WordPress) */
