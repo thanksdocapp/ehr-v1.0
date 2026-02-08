@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Allows the public booking flow to be embedded in iframes (e.g. WordPress).
- * Sets headers so /book/* pages can be framed by any site; other routes keep default strict headers.
+ * Sets headers so /book/* and /pay/* (post-confirm payment) can be framed by any site; other routes keep default strict headers.
  */
 class AllowBookingEmbed
 {
@@ -43,9 +43,14 @@ class AllowBookingEmbed
         if ($path === '' || $path === 'book' || str_starts_with($path, 'book/')) {
             return true;
         }
+        // Post-confirm payment flow (redirect from booking confirm) must stay in iframe
+        if ($path === 'pay' || str_starts_with($path, 'pay/')) {
+            return true;
+        }
         $uri = $request->getRequestUri();
         $uriPath = trim((string) parse_url($uri, PHP_URL_PATH), '/');
-        return $uriPath === '' || $uriPath === 'book' || str_starts_with($uriPath, 'book/');
+        return $uriPath === '' || $uriPath === 'book' || str_starts_with($uriPath, 'book/')
+            || $uriPath === 'pay' || str_starts_with($uriPath, 'pay/');
     }
 
     /**

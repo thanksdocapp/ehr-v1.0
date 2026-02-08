@@ -18,8 +18,9 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Mark booking and homepage so we can allow iframe embedding (set before front controller)
+    # Mark booking, payment (post-confirm), and homepage so we can allow iframe embedding (set before front controller)
     RewriteRule ^book - [E=allow_booking_embed:1]
+    RewriteRule ^pay - [E=allow_booking_embed:1]
     RewriteRule ^$ - [E=allow_booking_embed:1]
 
     # Handle Front Controller...
@@ -30,8 +31,9 @@
 
 # Security Headers
 <IfModule mod_headers.c>
-    # Allow embedding booking pages in iframes (WordPress etc.); block framing for all other paths
+    # Allow embedding booking and post-confirm payment pages in iframes (WordPress etc.); block framing for all other paths
     SetEnvIf Request_URI "^/book" allow_booking_embed
+    SetEnvIf Request_URI "^/pay" allow_booking_embed
     SetEnvIf Request_URI "^/?$" allow_booking_embed
 
     Header always set X-Content-Type-Options nosniff
