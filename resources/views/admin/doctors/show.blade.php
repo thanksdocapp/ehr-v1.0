@@ -278,11 +278,11 @@ use Illuminate\Support\Facades\Storage;
                         </div>
                         
                         <div class="col-md-4">
-                            <div class="doctor-card">
-                                <div class="doctor-card-header">
-                                    <h6 class="doctor-card-title mb-0">Doctor Information</h6>
+                            <div class="modern-card">
+                                <div class="modern-card-header">
+                                    <h6 class="modern-card-title mb-0"><i class="fas fa-user-md me-2"></i>Doctor Information</h6>
                                 </div>
-                                <div class="doctor-card-body">
+                                <div class="modern-card-body">
                                     <dl class="row">
                                         <dt class="col-sm-5">Status:</dt>
                                         <dd class="col-sm-7">
@@ -352,11 +352,11 @@ use Illuminate\Support\Facades\Storage;
                             </div>
 
                             @if(isset($todayAppointments) && $todayAppointments->count() > 0)
-                                <div class="doctor-card mt-3">
-                                    <div class="doctor-card-header">
-                                        <h6 class="doctor-card-title mb-0">Today's Appointments</h6>
+                                <div class="modern-card mt-3">
+                                    <div class="modern-card-header">
+                                        <h6 class="modern-card-title mb-0"><i class="fas fa-calendar-day me-2"></i>Today's Appointments</h6>
                                     </div>
-                                    <div class="doctor-card-body">
+                                    <div class="modern-card-body">
                                         @foreach($todayAppointments as $appointment)
                                             <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
                                                 <div>
@@ -372,11 +372,11 @@ use Illuminate\Support\Facades\Storage;
                                 </div>
                             @endif
 
-                            <div class="doctor-card mt-3">
-                                <div class="doctor-card-header">
-                                    <h6 class="doctor-card-title mb-0">Quick Actions</h6>
+                            <div class="modern-card mt-3">
+                                <div class="modern-card-header">
+                                    <h6 class="modern-card-title mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h6>
                                 </div>
-                                <div class="doctor-card-body">
+                                <div class="modern-card-body">
                                     <div class="d-grid gap-2">
                                         <button class="btn btn-{{ $doctor->is_active ? 'warning' : 'success' }} btn-sm toggle-status" 
                                                 data-url="{{ contextRoute('doctors.toggle-status', $doctor->id) }}">
@@ -384,29 +384,33 @@ use Illuminate\Support\Facades\Storage;
                                             {{ $doctor->is_active ? 'Deactivate' : 'Activate' }}
                                         </button>
                                         
-                                        <a href="{{ contextRoute('doctors.create') }}" class="btn btn-doctor-primary btn-sm">
+                                        <a href="{{ contextRoute('doctors.create') }}" class="btn btn-primary btn-sm">
                                             <i class="fas fa-plus"></i> Add New Doctor
                                         </a>
                                         
-                                        <a href="{{ contextRoute('departments.show', $doctor->department->id) }}" class="btn btn-info btn-sm">
-                                            <i class="fas fa-building"></i> View Department
-                                        </a>
-
-                                        @if(isset($doctor->schedule))
-                                            <a href="{{ contextRoute('doctors.schedule', $doctor->id) }}" class="btn btn-secondary btn-sm">
-                                                <i class="fas fa-calendar"></i> View Schedule
+                                        @if($doctor->department)
+                                            <a href="{{ contextRoute('departments.show', $doctor->department->id) }}" class="btn btn-info btn-sm">
+                                                <i class="fas fa-building"></i> View Department
                                             </a>
+                                        @else
+                                            <span class="btn btn-outline-secondary btn-sm disabled">
+                                                <i class="fas fa-building"></i> No department assigned
+                                            </span>
                                         @endif
+
+                                        <a href="{{ contextRoute('doctors.edit', $doctor->id) }}#availability" class="btn btn-secondary btn-sm">
+                                            <i class="fas fa-calendar-alt"></i> Edit availability
+                                        </a>
                                     </div>
                                 </div>
                             </div>
 
                             @if(isset($recentTestimonials) && $recentTestimonials->count() > 0)
-                                <div class="doctor-card mt-3">
-                                    <div class="doctor-card-header">
-                                        <h6 class="doctor-card-title mb-0">Recent Reviews</h6>
+                                <div class="modern-card mt-3">
+                                    <div class="modern-card-header">
+                                        <h6 class="modern-card-title mb-0"><i class="fas fa-star me-2"></i>Recent Reviews</h6>
                                     </div>
-                                    <div class="doctor-card-body">
+                                    <div class="modern-card-body">
                                         @foreach($recentTestimonials as $testimonial)
                                             <div class="mb-3 pb-2 border-bottom">
                                                 <div class="d-flex justify-content-between">
