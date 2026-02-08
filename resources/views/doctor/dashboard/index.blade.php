@@ -63,7 +63,7 @@
         <div class="doctor-card-body p-4">
             <div class="d-flex justify-content-between align-items-center flex-wrap">
                 <div>
-                    <h2 class="mb-2 fw-bold" style="font-size: 1.75rem; color: #212529;">Welcome back, Dr. {{ Auth::user()->name }}!</h2>
+                    <h2 class="mb-2 fw-bold" style="font-size: 1.75rem; color: #212529;">Welcome back, {{ formatDoctorName(Auth::user()->name) }}!</h2>
                     <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                         @php
                             $ratingAvg = isset($doctorRating['avg']) && $doctorRating['avg'] !== null ? (float) $doctorRating['avg'] : null;

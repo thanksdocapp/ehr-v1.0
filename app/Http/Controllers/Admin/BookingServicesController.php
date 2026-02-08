@@ -227,7 +227,7 @@ class BookingServicesController extends Controller
 
             $doctor = Doctor::findOrFail($request->doctor_id);
             return redirect()->route('admin.booking-services.show', $bookingService)
-                ->with('success', "Service assigned to Dr. {$doctor->full_name} successfully.");
+                ->with('success', "Service assigned to " . formatDoctorName($doctor->full_name) . " successfully.");
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to assign service: ' . $e->getMessage())->withInput();
         }

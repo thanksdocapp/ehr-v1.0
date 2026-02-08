@@ -143,7 +143,7 @@
                             </div>
                         </div>
                         <div>
-                            <div class="fw-bold">Dr. {{ $prescription->doctor->user->name }}</div>
+                            <div class="fw-bold">{{ formatDoctorName($prescription->doctor->user->name) }}</div>
                             <div class="text-muted">{{ $prescription->doctor->specialization ?? 'GP' }}</div>
                             <small class="text-muted">{{ $prescription->doctor->user->email }}</small>
                         </div>
@@ -525,7 +525,7 @@
                     <strong>Prescription Summary:</strong>
                     <ul class="mb-0 mt-2">
                         <li>Patient: <strong>{{ $prescription->patient ? $prescription->patient->first_name . ' ' . $prescription->patient->last_name : 'Unknown Patient' }}</strong></li>
-                        <li>Doctor: <strong>Dr. {{ $prescription->doctor->user->name }}</strong></li>
+                        <li>Doctor: <strong>{{ formatDoctorName($prescription->doctor->user->name) }}</strong></li>
                         <li>Total Medications: <strong>{{ count($medications) }}</strong></li>
                     </ul>
                 </div>

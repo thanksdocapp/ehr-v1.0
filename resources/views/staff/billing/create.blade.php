@@ -83,7 +83,7 @@
                                         </label>
                                         @if(auth()->user()->role === 'doctor' && isset($currentDoctor) && $currentDoctor)
                                             {{-- For doctors: Show read-only field with hidden input --}}
-                                            <input type="text" class="form-control" value="Dr. {{ $currentDoctor->first_name }} {{ $currentDoctor->last_name }} - {{ $currentDoctor->specialization ?? 'General' }}" readonly>
+                                            <input type="text" class="form-control" value="{{ formatDoctorName($currentDoctor->name) }} - {{ $currentDoctor->specialization ?? 'General' }}" readonly>
                                             <input type="hidden" name="doctor_id" value="{{ $currentDoctor->id }}">
                                             <div class="form-text">This bill will be assigned to you</div>
                                         @else
@@ -92,7 +92,7 @@
                                                 <option value="">Select a doctor</option>
                                                 @foreach($doctors as $doctor)
                                                     <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>
-                                                        Dr. {{ $doctor->first_name }} {{ $doctor->last_name }} - {{ $doctor->specialization ?? 'General' }}
+                                                        {{ formatDoctorName($doctor->name) }} - {{ $doctor->specialization ?? 'General' }}
                                                     </option>
                                                 @endforeach
                                             </select>

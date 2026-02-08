@@ -154,7 +154,7 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label text-muted"><i class="fas fa-user-tie me-1"></i>Doctor Name</label>
-                                <div class="fw-bold">Dr. {{ $billing->doctor->name ?? $billing->doctor->full_name }}</div>
+                                <div class="fw-bold">{{ formatDoctorName($billing->doctor->name ?? $billing->doctor->full_name) }}</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label text-muted"><i class="fas fa-stethoscope me-1"></i>Specialisation</label>

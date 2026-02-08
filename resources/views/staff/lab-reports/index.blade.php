@@ -198,7 +198,7 @@
                                 </td>
                                 <td>
                                     @if($report->doctor)
-                                        <div class="fw-bold text-success">Dr. {{ $report->doctor->first_name }} {{ $report->doctor->last_name }}</div>
+                                        <div class="fw-bold text-success">{{ formatDoctorName($report->doctor->name) }}</div>
                                         <small class="text-muted">Ordered by</small>
                                     @endif
                                     @if($report->technician)

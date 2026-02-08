@@ -32,6 +32,18 @@ class HospitalEmailNotificationService
     }
 
     /**
+     * Doctor name for email templates that already include "Dr." (e.g. "Hello Dr. {{ doctor_name }}").
+     * Strips leading "Dr." to avoid "Dr. Dr. Smith".
+     */
+    protected function doctorNameForTemplate(?string $name): string
+    {
+        if (!$name) {
+            return 'Doctor';
+        }
+        return trim(preg_replace('/^Dr\.?\s*/i', '', $name)) ?: 'Doctor';
+    }
+
+    /**
      * Send appointment confirmation email to patient.
      *
      * @param Appointment $appointment
@@ -156,7 +168,7 @@ class HospitalEmailNotificationService
         }
 
         $variables = [
-            'doctor_name' => $doctor->name,
+            'doctor_name' => $this->doctorNameForTemplate($doctor->name),
             'doctor_title' => $doctor->title ?? 'Dr.',
             'patient_name' => $patient ? $patient->full_name : 'N/A',
             'patient_phone' => $patient ? ($patient->phone ?? 'N/A') : 'N/A',
@@ -1041,7 +1053,7 @@ class HospitalEmailNotificationService
         }
 
         $variables = [
-            'doctor_name' => $doctor->name,
+            'doctor_name' => $this->doctorNameForTemplate($doctor->name),
             'patient_name' => $patient->full_name,
             'patient_phone' => $patient->phone ?? 'Not provided',
             'appointment_date' => $appointment->appointment_date->format('F d, Y'),
@@ -1472,7 +1484,7 @@ class HospitalEmailNotificationService
         $patient = $labReport->patient;
 
         $variables = [
-            'doctor_name' => $doctor->name,
+            'doctor_name' => $this->doctorNameForTemplate($doctor->name),
             'patient_name' => $patient ? $patient->full_name : 'Patient',
             'test_name' => $labReport->test_name,
             'test_type' => $labReport->test_type,
@@ -1924,7 +1936,7 @@ class HospitalEmailNotificationService
         }
 
         $variables = [
-            'doctor_name' => $doctor->name,
+            'doctor_name' => $this->doctorNameForTemplate($doctor->name),
             'patient_name' => $patient ? $patient->full_name : 'Patient',
             'appointment_date' => $appointment->appointment_date->format('F d, Y'),
             'appointment_time' => $appointmentTime,
@@ -1958,7 +1970,7 @@ class HospitalEmailNotificationService
         $patient = $appointment->patient;
 
         $variables = [
-            'doctor_name' => $doctor->name,
+            'doctor_name' => $this->doctorNameForTemplate($doctor->name),
             'patient_name' => $patient ? $patient->full_name : 'Patient',
             'old_date' => $oldDate,
             'old_time' => $oldTime,

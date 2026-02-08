@@ -415,7 +415,7 @@
                         </div>
                         <div class="mb-3">
                             <small class="text-muted d-block">Doctor</small>
-                            <strong>Dr. {{ $labReport->doctor->name }}</strong>
+                            <strong>{{ formatDoctorName($labReport->doctor->name) }}</strong>
                         </div>
                         @if($labReport->technician)
                             <div class="mb-3">

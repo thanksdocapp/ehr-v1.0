@@ -716,7 +716,7 @@ class MedicalRecordsController extends Controller
                     'time' => $appointment->appointment_time,
                     'doctor' => $appointment->doctor->full_name,
                     'status' => $appointment->status,
-                    'display' => "#{$appointment->appointment_number} - {$appointment->appointment_date->format('M d, Y')} - Dr. {$appointment->doctor->full_name}"
+                    'display' => "#{$appointment->appointment_number} - {$appointment->appointment_date->format('M d, Y')} - " . formatDoctorName($appointment->doctor->full_name)
                 ];
             });
 

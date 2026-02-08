@@ -27,7 +27,7 @@
                                 <option value="{{ $doctor->id }}" 
                                         {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}
                                         {{ in_array($doctor->id, $assignedDoctorIds) ? 'data-assigned="true"' : '' }}>
-                                    Dr. {{ $doctor->full_name }} 
+                                    {{ formatDoctorName($doctor->full_name) }} 
                                     @if($doctor->specialization)
                                     - {{ $doctor->specialization }}
                                     @endif

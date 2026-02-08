@@ -515,7 +515,7 @@ class DoctorsController extends Controller
                 ->count();
 
             if ($upcomingAppointments > 0) {
-                $errors[] = "Cannot delete Dr. {$doctor->first_name} {$doctor->last_name} - has {$upcomingAppointments} upcoming appointments.";
+                $errors[] = "Cannot delete " . formatDoctorName($doctor->name) . " - has {$upcomingAppointments} upcoming appointments.";
                 continue;
             }
 

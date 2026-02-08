@@ -173,7 +173,7 @@ class NotificationApiController extends BaseApiController
                     'id' => $appointment->id,
                     'type' => 'appointment_reminder',
                     'title' => 'Upcoming Appointment',
-                    'message' => "You have an appointment with Dr. {$appointment->doctor->name} on " . 
+                    'message' => "You have an appointment with " . formatDoctorName($appointment->doctor->name) . " on " . 
                                 $appointmentDateTime->format('M d, Y') . " at " . 
                                 $appointmentDateTime->format('h:i A'),
                     'appointment' => $appointment,

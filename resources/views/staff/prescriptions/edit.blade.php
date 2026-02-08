@@ -76,7 +76,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="doctor_id" class="form-label fw-semibold">Doctor</label>
-                                <input type="text" class="form-control" readonly value="Dr. {{ $prescription->doctor->first_name }} {{ $prescription->doctor->last_name }}">
+                                <input type="text" class="form-control" readonly value="{{ formatDoctorName($prescription->doctor->name) }}">
                             </div>
                         </div>
                         <div class="row">

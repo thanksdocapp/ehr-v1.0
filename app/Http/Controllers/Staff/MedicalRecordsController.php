@@ -1030,7 +1030,7 @@ class MedicalRecordsController extends Controller
                     'text' => "#{$appointment->appointment_number} - " . 
                              $appointment->appointment_date->format('M d, Y') . 
                              " at {$appointment->appointment_time}" .
-                             ($appointment->doctor ? " with Dr. {$appointment->doctor->name}" : ''),
+                             ($appointment->doctor ? ' with ' . formatDoctorName($appointment->doctor->name) : ''),
                     'date' => $appointment->appointment_date->format('Y-m-d'),
                     'time' => $appointment->appointment_time,
                     'doctor' => $appointment->doctor ? $appointment->doctor->name : null,

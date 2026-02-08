@@ -82,7 +82,7 @@
                                             <i class="fas fa-user-md me-1"></i>Doctor
                                         </label>
                                         @if($currentDoctor)
-                                            <input type="text" class="form-control" value="Dr. {{ $currentDoctor->full_name }}" disabled>
+                                            <input type="text" class="form-control" value="{{ formatDoctorName($currentDoctor->full_name) }}" disabled>
                                             <input type="hidden" name="doctor_id" value="{{ $currentDoctor->id }}">
                                         @else
                                             <select name="doctor_id" id="doctor" class="form-control @error('doctor_id') is-invalid @enderror">

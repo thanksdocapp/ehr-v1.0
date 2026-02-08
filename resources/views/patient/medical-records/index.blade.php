@@ -221,7 +221,7 @@
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
                                             <h6 class="mb-1">{{ $prescription->medication_name }}</h6>
-                                            <p class="mb-1 text-muted">Dr. {{ $prescription->doctor->full_name }}</p>
+                                            <p class="mb-1 text-muted">{{ formatDoctorName($prescription->doctor->full_name) }}</p>
                                             <small class="text-muted">{{ $prescription->created_at->format('M d, Y') }}</small>
                                         </div>
                                         <span class="badge bg-{{ $prescription->status === 'active' ? 'success' : 'secondary' }}">

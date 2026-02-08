@@ -181,7 +181,7 @@
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <div class="fw-bold">Dr. {{ auth()->user()->name }}</div>
+                                                    <div class="fw-bold">{{ formatDoctorName(auth()->user()->name) }}</div>
                                                     <small class="text-muted">{{ auth()->user()->specialization ?? (auth()->user()->doctor->specialization ?? 'GP') }}</small>
                                                 </div>
                                             </div>
@@ -199,7 +199,7 @@
                                             <option value="">Select Doctor</option>
                                             @foreach(\App\Models\User::where('role', 'doctor')->get() as $doctor)
                                                 <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>
-                                                    Dr. {{ $doctor->name }} - {{ $doctor->specialization ?? 'General' }}
+                                                    {{ formatDoctorName($doctor->name) }} - {{ $doctor->specialization ?? 'General' }}
                                                 </option>
                                             @endforeach
                                         </select>
@@ -386,7 +386,7 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">Dr. {{ auth()->user()->name }}</div>
+                                    <div class="fw-bold">{{ formatDoctorName(auth()->user()->name) }}</div>
                                     <div class="text-muted">{{ auth()->user()->specialization ?? (auth()->user()->doctor->specialization ?? 'GP') }}</div>
                                     <small class="text-muted">{{ auth()->user()->email }}</small>
                                 </div>

@@ -165,7 +165,7 @@
                                         {{ $record->record_date ? formatDate($record->record_date) : formatDate($record->created_at) }} - 
                                         {{ ucfirst($record->record_type) }}
                                         @if($record->doctor)
-                                            - Dr. {{ $record->doctor->full_name }}
+                                            - {{ formatDoctorName($record->doctor->full_name) }}
                                         @endif
                                         @if($record->diagnosis)
                                             - {{ Str::limit($record->diagnosis, 50) }}

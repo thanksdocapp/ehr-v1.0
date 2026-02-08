@@ -151,7 +151,7 @@
                                                 @if($patient->assignedDoctor)
                                                     <div>
                                                         <i class="fas fa-user-md me-1 text-primary"></i>
-                                                        <strong>Dr. {{ $patient->assignedDoctor->first_name }} {{ $patient->assignedDoctor->last_name }}</strong>
+                                                        <strong>{{ formatDoctorName($patient->assignedDoctor->name) }}</strong>
                                                         @if($patient->assignedDoctor->employee_id)
                                                             <small class="text-muted">({{ $patient->assignedDoctor->employee_id }})</small>
                                                         @endif
@@ -258,7 +258,7 @@
                                                 @if($patient->createdByDoctor)
                                                     <div>
                                                         <i class="fas fa-user-md me-1 text-secondary"></i>
-                                                        <strong>Dr. {{ $patient->createdByDoctor->first_name }} {{ $patient->createdByDoctor->last_name }}</strong>
+                                                        <strong>{{ formatDoctorName($patient->createdByDoctor->name) }}</strong>
                                                         @if($patient->createdByDoctor->employee_id)
                                                             <small class="text-muted">({{ $patient->createdByDoctor->employee_id }})</small>
                                                         @endif
@@ -544,7 +544,7 @@
                                                             <td>{{ $appointment->appointment_time->format('g:i A') }}</td>
                                                             <td>
                                                                 @if($appointment->doctor)
-                                                                    Dr. {{ $appointment->doctor->first_name }} {{ $appointment->doctor->last_name }}
+                                                                    {{ formatDoctorName($appointment->doctor->name) }}
                                                                 @else
                                                                     <span class="text-muted">Not assigned</span>
                                                                 @endif

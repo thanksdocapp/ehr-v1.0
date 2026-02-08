@@ -164,7 +164,7 @@
                     <option value="">All Doctors</option>
                     @foreach($doctors as $doctor)
                         <option value="{{ $doctor->id }}" {{ request('doctor_id') == $doctor->id ? 'selected' : '' }}>
-                            Dr. {{ $doctor->full_name }}
+                            {{ formatDoctorName($doctor->full_name) }}
                         </option>
                     @endforeach
                 </select>
@@ -273,7 +273,7 @@
                                     </td>
                                     <td>
                                         <div>
-                                            <strong>Dr. {{ $prescription->doctor->full_name }}</strong><br>
+                                            <strong>{{ formatDoctorName($prescription->doctor->full_name) }}</strong><br>
                                             <small class="text-muted">{{ $prescription->doctor->specialization }}</small>
                                         </div>
                                     </td>

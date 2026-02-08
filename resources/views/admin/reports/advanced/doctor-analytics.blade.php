@@ -237,7 +237,7 @@
                                     {{ strtoupper(substr($doctor->first_name, 0, 1)) }}{{ strtoupper(substr($doctor->last_name, 0, 1)) }}
                                 </div>
                                 <div>
-                                    <h6 class="mb-0">Dr. {{ $doctor->first_name }} {{ $doctor->last_name }}</h6>
+                                    <h6 class="mb-0">{{ formatDoctorName($doctor->name) }}</h6>
                                     <small class="text-muted">
                                         {{ $doctor->department }} • {{ $doctor->total_appointments }} appointments
                                     </small>

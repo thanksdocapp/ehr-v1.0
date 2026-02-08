@@ -105,7 +105,7 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-user-md text-success me-2"></i>
                                 <div>
-                                    <strong>Dr. {{ $labReport->doctor->full_name }}</strong><br>
+                                    <strong>{{ formatDoctorName($labReport->doctor->full_name) }}</strong><br>
                                     <span class="text-muted">{{ $labReport->doctor->specialization }}</span>
                                 </div>
                             </div>

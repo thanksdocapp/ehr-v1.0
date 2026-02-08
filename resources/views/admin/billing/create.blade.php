@@ -176,7 +176,7 @@
                                             <option value="">Select a doctor</option>
                                             @foreach($doctors as $doctor)
                                                 <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>
-                                                    Dr. {{ $doctor->first_name }} {{ $doctor->last_name }} - {{ $doctor->specialization ?? 'General' }}
+                                                    {{ formatDoctorName($doctor->name) }} - {{ $doctor->specialization ?? 'General' }}
                                                 </option>
                                             @endforeach
                                         </select>

@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\Storage;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dr. {{ $doctor->full_name }} - Doctor Profile</title>
-    <meta name="description" content="Meet Dr. {{ $doctor->full_name }}, {{ $doctor->specialization }} at ThankDoc EHR.">
+    <title>{{ formatDoctorName($doctor->full_name) }} - Doctor Profile</title>
+    <meta name="description" content="Meet {{ formatDoctorName($doctor->full_name) }}, {{ $doctor->specialization }} at ThankDoc EHR.">
     
     <!-- Bootstrap 5.3 CSS -->
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
@@ -41,7 +41,7 @@ use Illuminate\Support\Facades\Storage;
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8" data-aos="fade-up">
-                    <h1 class="display-4 fw-bold mb-3">Dr. {{ $doctor->full_name }}</h1>
+                    <h1 class="display-4 fw-bold mb-3">{{ formatDoctorName($doctor->full_name) }}</h1>
                     <p class="lead mb-4">{{ $doctor->specialization }} - Expert Medical Professional</p>
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb justify-content-center">
@@ -149,7 +149,7 @@ use Illuminate\Support\Facades\Storage;
                                 <i class="fas fa-user-md text-info fs-1"></i>
                             </div>
                             <div>
-                                <h2 class="fw-bold mb-1">Dr. {{ $doctor->full_name }}</h2>
+                                <h2 class="fw-bold mb-1">{{ formatDoctorName($doctor->full_name) }}</h2>
                                 <p class="text-muted mb-0">Expert Medical Professional</p>
                             </div>
                         </div>
@@ -299,7 +299,7 @@ use Illuminate\Support\Facades\Storage;
             <div class="row align-items-center" data-aos="fade-up">
                 <div class="col-lg-8">
                     <h2 class="h1 mb-3">Ready to Schedule Your Appointment?</h2>
-                    <p class="lead mb-0">Dr. {{ $doctor->full_name }} is ready to provide you with expert medical care. Book your appointment today.</p>
+                    <p class="lead mb-0">{{ formatDoctorName($doctor->full_name) }} is ready to provide you with expert medical care. Book your appointment today.</p>
                 </div>
                 <div class="col-lg-4 text-lg-end">
                     <a href="{{ route('appointments.create') }}" class="btn btn-light btn-lg me-3">

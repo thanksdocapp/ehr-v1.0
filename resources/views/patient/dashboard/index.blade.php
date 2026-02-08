@@ -58,7 +58,7 @@
                         Your Next Appointment
                     </h5>
                     <p class="mb-1">
-                        <strong>{{ $nextAppointment->doctor->full_name }}</strong> 
+                        <strong>{{ formatDoctorName($nextAppointment->doctor->full_name) }}</strong> 
                         - {{ $nextAppointment->department->name }}
                     </p>
                     <p class="mb-0">
@@ -140,7 +140,7 @@
                                 <div class="list-group-item border-0 px-0">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
-                                            <h6 class="mb-1">{{ $appointment->doctor->full_name }}</h6>
+                                            <h6 class="mb-1">{{ formatDoctorName($appointment->doctor->full_name) }}</h6>
                                             <p class="mb-1 text-muted">{{ $appointment->department->name }}</p>
                                             <small class="text-muted">
                                                 <i class="fas fa-calendar me-1"></i>
@@ -192,7 +192,7 @@
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
                                             <h6 class="mb-1">{{ $record->diagnosis ?? 'General Consultation' }}</h6>
-                                            <p class="mb-1 text-muted">Dr. {{ $record->doctor->full_name }}</p>
+                                            <p class="mb-1 text-muted">{{ formatDoctorName($record->doctor->full_name) }}</p>
                                             <small class="text-muted">
                                                 {{ $record->created_at->format('M d, Y') }}
                                             </small>
@@ -238,7 +238,7 @@
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
                                             <h6 class="mb-1">{{ $prescription->medication_name ?? 'Prescription' }}</h6>
-                                            <p class="mb-1 text-muted">Prescribed by Dr. {{ $prescription->doctor->full_name }}</p>
+                                            <p class="mb-1 text-muted">Prescribed by {{ formatDoctorName($prescription->doctor->full_name) }}</p>
                                             <small class="text-muted">
                                                 {{ $prescription->created_at->format('M d, Y') }}
                                             </small>

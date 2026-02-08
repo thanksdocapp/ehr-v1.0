@@ -95,7 +95,7 @@
                                 <i class="fas fa-calendar-check text-primary me-2"></i>
                                 <span>{{ $invoice->appointment->appointment_date->format('M d, Y g:i A') }}</span>
                                 @if($invoice->appointment->doctor)
-                                    <span class="ms-2 text-muted">with Dr. {{ $invoice->appointment->doctor->full_name }}</span>
+                                    <span class="ms-2 text-muted">with {{ formatDoctorName($invoice->appointment->doctor->full_name) }}</span>
                                 @endif
                             </div>
                         </div>

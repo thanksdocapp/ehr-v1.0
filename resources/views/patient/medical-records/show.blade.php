@@ -75,7 +75,7 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-user-md text-success me-2"></i>
                                 <div>
-                                    <strong>Dr. {{ $record->doctor->full_name }}</strong><br>
+                                    <strong>{{ formatDoctorName($record->doctor->full_name) }}</strong><br>
                                     <span class="text-muted">{{ $record->doctor->specialization }}</span>
                                 </div>
                             </div>
@@ -423,7 +423,7 @@
                     </div>
                     
                     <div class="text-center">
-                        <h6 class="mb-1">Dr. {{ $record->doctor->full_name }}</h6>
+                        <h6 class="mb-1">{{ formatDoctorName($record->doctor->full_name) }}</h6>
                         <p class="text-muted mb-2">{{ $record->doctor->specialization }}</p>
                         @if($record->doctor->experience_years)
                             <small class="text-muted">

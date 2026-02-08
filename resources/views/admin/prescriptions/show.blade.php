@@ -182,7 +182,7 @@
                     <div class="info-row">
                         <div class="info-label"><i class="fas fa-user-md me-1"></i>Doctor:</div>
                         <div class="info-value">
-                            <strong>Dr. {{ $prescription->doctor->full_name }}</strong>
+                            <strong>{{ formatDoctorName($prescription->doctor->full_name) }}</strong>
                             <small class="text-muted">({{ $prescription->doctor->specialization }})</small>
                         </div>
                     </div>
