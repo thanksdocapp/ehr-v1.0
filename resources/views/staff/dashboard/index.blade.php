@@ -41,6 +41,23 @@
         </div>
     @endif
 
+    <!-- Pending appointments that have passed - flag for action -->
+    @if(isset($pendingPastCount) && $pendingPastCount > 0)
+        <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                <div class="flex-grow-1">
+                    <strong>Pending appointments need action</strong>
+                    <p class="mb-0 mt-1">There {{ $pendingPastCount === 1 ? 'is' : 'are' }} {{ $pendingPastCount }} pending {{ \Illuminate\Support\Str::plural('appointment', $pendingPastCount) }} that {{ $pendingPastCount === 1 ? 'has' : 'have' }} passed. Please confirm, complete, or cancel {{ $pendingPastCount === 1 ? 'it' : 'them' }}.</p>
+                </div>
+                <a href="{{ route('staff.appointments.index', ['status' => 'pending', 'overdue' => '1']) }}" class="btn btn-warning ms-3">
+                    <i class="fas fa-tasks me-1"></i> View & take action
+                </a>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    @endif
+
     <!-- Calendar Widget - Moved to top for visibility -->
     <div class="row g-4 mb-4">
         <div class="col-12">

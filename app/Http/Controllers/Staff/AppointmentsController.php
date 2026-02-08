@@ -162,8 +162,8 @@ class AppointmentsController extends Controller
 
         // ===== OVERDUE / CONFLICT FILTERS =====
         if ($request->filled('overdue')) {
-            $query->where('appointment_date', '<', today())
-                  ->whereIn('status', ['pending', 'confirmed']);
+            // Pending appointments whose date/time has passed (doctor should take action)
+            $query->pendingPast();
         }
         if ($request->filled('has_conflict')) {
             // Find appointments where same doctor has multiple appointments at same time
@@ -235,12 +235,18 @@ class AppointmentsController extends Controller
         });
         $departments = Department::where('is_active', true)->orderBy('name')->get();
 
+        // Pending appointments that have passed (flag for doctor to take action)
+        $pendingPastCount = (clone $query)->pendingPast()->count();
+        $pendingPastAppointments = (clone $query)->pendingPast()
+            ->orderBy('appointment_date')->orderBy('appointment_time')
+            ->take(10)->get();
+
         // Sort by date and time
         $appointments = $query->orderBy('appointment_date', 'desc')
                               ->orderBy('appointment_time', 'desc')
                               ->paginate(15)->appends($request->query());
 
-        return view('staff.appointments.index', compact('appointments', 'doctors', 'departments'));
+        return view('staff.appointments.index', compact('appointments', 'doctors', 'departments', 'pendingPastCount', 'pendingPastAppointments'));
     }
 
     public function show($id)

@@ -116,6 +116,38 @@ class Appointment extends Model
         return $query->where('status', 'confirmed');
     }
 
+    /**
+     * Pending appointments whose date/time has passed (doctor should confirm, complete, or cancel).
+     */
+    public function scopePendingPast($query)
+    {
+        return $query->where('status', 'pending')->where(function ($q) {
+            $q->where('appointment_date', '<', today())
+                ->orWhere(function ($q2) {
+                    $q2->whereDate('appointment_date', today())
+                        ->whereTime('appointment_time', '<', now());
+                });
+        });
+    }
+
+    /**
+     * Whether this appointment is pending and its date/time has passed (requires doctor action).
+     */
+    public function getNeedsActionAttribute(): bool
+    {
+        if ($this->status !== 'pending') {
+            return false;
+        }
+        $date = $this->appointment_date;
+        $time = $this->appointment_time;
+        if (!$date || !$time) {
+            return false;
+        }
+        $timeStr = $time instanceof \DateTimeInterface ? $time->format('H:i') : (string) $time;
+        $datetime = Carbon::parse($date->format('Y-m-d') . ' ' . $timeStr);
+        return $datetime->isPast();
+    }
+
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');

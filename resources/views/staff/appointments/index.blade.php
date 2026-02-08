@@ -116,6 +116,27 @@
         </div>
     </div>
 
+    @if(isset($pendingPastCount) && $pendingPastCount > 0)
+    <div class="alert alert-warning alert-dismissible fade show d-flex align-items-start mb-4" role="alert">
+        <i class="fas fa-exclamation-triangle fa-2x me-3 mt-1"></i>
+        <div class="flex-grow-1">
+            <h6 class="alert-heading mb-1">Pending appointments that have passed</h6>
+            <p class="mb-2">You have <strong>{{ $pendingPastCount }}</strong> pending appointment(s) whose date/time has passed. Please confirm, complete, or cancel them.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ route('staff.appointments.index', ['status' => 'pending', 'overdue' => '1']) }}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-list me-1"></i>View pending past
+                </a>
+                @foreach($pendingPastAppointments->take(3) as $pa)
+                    <a href="{{ route('staff.appointments.show', $pa->id) }}" class="btn btn-outline-warning btn-sm">
+                        {{ $pa->appointment_number }}
+                    </a>
+                @endforeach
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
+
     <!-- Quick Search Bar -->
     <div class="doctor-card mb-3">
         <div class="doctor-card-body">
@@ -450,7 +471,7 @@
                         </thead>
                         <tbody>
                             @foreach($appointments as $appointment)
-                            <tr>
+                            <tr class="{{ $appointment->needs_action ? 'table-warning' : '' }}">
                                 <td>
                                     <div class="fw-bold text-primary">{{ $appointment->appointment_number }}</div>
                                     @if($appointment->department)
@@ -535,6 +556,11 @@
                                         $color = $statusColors[$appointment->status] ?? 'secondary';
                                     @endphp
                                     <span class="badge bg-{{ $color }}">{{ ucfirst($appointment->status) }}</span>
+                                    @if($appointment->needs_action)
+                                        <span class="badge bg-danger ms-1" title="Date/time has passed – please confirm, complete, or cancel">
+                                            <i class="fas fa-exclamation-circle me-1"></i>Requires action
+                                        </span>
+                                    @endif
                                     @if($appointment->completed_at)
                                         <div><small class="text-muted">{{ formatDate($appointment->completed_at) }}</small></div>
                                     @endif
