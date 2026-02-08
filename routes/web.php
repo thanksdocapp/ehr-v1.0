@@ -74,7 +74,16 @@ Route::post('/password/reset/update', [\App\Http\Controllers\Auth\AdminPasswordR
 
 // Main Application Routes (only accessible if installed)
 Route::group(['middleware' => 'installed'], function () {
-    
+
+    // Serve booking-critical JS when document root is not public/ (avoids 404 for flatpickr-init.js)
+    Route::get('/js/flatpickr-init.js', function () {
+        $path = public_path('js/flatpickr-init.js');
+        if (!File::exists($path)) {
+            abort(404);
+        }
+        return response()->file($path, ['Content-Type' => 'application/javascript; charset=UTF-8']);
+    })->name('asset.flatpickr-init');
+
     // Public Routes - Protected by frontend.enabled middleware
     Route::middleware('frontend.enabled')->group(function () {
         // Home page removed - homepage is now the booking page
