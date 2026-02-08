@@ -9,10 +9,10 @@ use App\Models\Billing;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class PublicBillingController extends Controller
 {
@@ -91,7 +91,7 @@ class PublicBillingController extends Controller
 
         // Check if invoice is already paid
         if ($invoice->status === 'paid') {
-            return view('public.billing.paid', compact('invoice'));
+            return view('public.billing.paid', array_merge(compact('invoice'), ['logo_only' => true]));
         }
 
         $invoice->load(['patient', 'appointment', 'billing.doctor']);
@@ -117,7 +117,7 @@ class PublicBillingController extends Controller
             'invoice_id' => $invoice->id,
         ]);
 
-        return view('public.billing.show', compact('invoice', 'gateways', 'token', 'routeType', 'routeParams'));
+        return view('public.billing.show', array_merge(compact('invoice', 'gateways', 'token', 'routeType', 'routeParams'), ['logo_only' => true]));
     }
 
     /**
@@ -194,7 +194,7 @@ class PublicBillingController extends Controller
             'token' => $token
         ] : ['token' => $token];
 
-        return view('public.billing.payment-form', compact('invoice', 'selectedGateway', 'token', 'routeType', 'routeParams'));
+        return view('public.billing.payment-form', array_merge(compact('invoice', 'selectedGateway', 'token', 'routeType', 'routeParams'), ['logo_only' => true]));
     }
 
     /**
@@ -372,7 +372,8 @@ class PublicBillingController extends Controller
             // This ensures the redirect works even if server-side redirect is blocked
             return response()->view('public.billing.redirect', [
                 'redirect_url' => $response['payment_url'],
-                'payment_id' => $response['payment_id'] ?? null
+                'payment_id' => $response['payment_id'] ?? null,
+                'logo_only' => true
             ], 200);
         } catch (\Exception $e) {
             \Log::error('Exception in processStripePayment', [
@@ -502,7 +503,7 @@ class PublicBillingController extends Controller
             ])->with('payment_success', true);
         }
 
-        return view('public.billing.success', compact('invoice', 'token'));
+        return view('public.billing.success', array_merge(compact('invoice', 'token'), ['logo_only' => true]));
     }
 
     /**
@@ -753,7 +754,7 @@ class PublicBillingController extends Controller
      */
     public function invalid(): View
     {
-        return view('public.billing.invalid');
+        return view('public.billing.invalid', ['logo_only' => true]);
     }
 
     /**

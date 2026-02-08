@@ -6,9 +6,10 @@ use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\PaymentController;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -604,7 +605,7 @@ Route::group(['middleware' => 'installed'], function () {
             })->first();
         
         // Debug information
-        \Log::info('Stripe checkout debug', [
+        Log::info('Stripe checkout debug', [
             'intent' => $intent,
             'payment_found' => !!$payment,
             'gateway_response' => $payment ? $payment->gateway_response : null,

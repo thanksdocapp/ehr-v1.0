@@ -38,7 +38,9 @@
                 <a href="/" class="text-decoration-none">
                     <div class="d-flex align-items-center justify-content-center">
                         <x-application-logo style="height: 40px; width: 40px; fill: #6b7280;" />
+                        @if(empty($logo_only))
                         <span class="ms-2 fs-4 fw-bold text-secondary">ThanksDoc</span>
+                        @endif
                     </div>
                 </a>
             </div>
