@@ -396,6 +396,7 @@ Route::group(['middleware' => 'installed'], function () {
             Route::get('/', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'index'])->name('index');
             Route::get('/create', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'create'])->name('create');
             Route::post('/', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'store'])->name('store');
+            Route::post('/reorder', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'reorder'])->name('reorder');
             Route::get('/{bookingService}/edit', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'edit'])->name('edit');
             Route::put('/{bookingService}', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'update'])->name('update');
             Route::post('/{bookingService}/toggle-status', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'toggleStatus'])->name('toggle-status');

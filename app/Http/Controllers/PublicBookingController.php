@@ -612,10 +612,10 @@ class PublicBookingController extends Controller
     {
         $doctor = Doctor::findOrFail($doctorId);
         
-        // Only get services created by this doctor's user account
+        // Only get services created by this doctor's user account (order by sort_order)
         return BookingService::where('created_by', $doctor->user_id)
             ->where('is_active', true)
-            ->orderBy('name')
+            ->ordered()
             ->get();
     }
 }

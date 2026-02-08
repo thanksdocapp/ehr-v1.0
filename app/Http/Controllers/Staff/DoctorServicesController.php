@@ -43,9 +43,9 @@ class DoctorServicesController extends Controller
                 ->with('error', 'Doctor service prices table not found. Please create the doctor_service_prices table. See create_booking_tables.sql');
         }
 
-        // Get only services created by this doctor (private by default)
+        // Get only services created by this doctor (private by default), ordered by sort_order
         $globalServices = BookingService::where('created_by', $user->id)
-            ->orderBy('name')
+            ->ordered()
             ->get();
 
         // Get doctor's service overrides
@@ -110,7 +110,8 @@ class DoctorServicesController extends Controller
                 $tags = array_filter(array_map('trim', explode(',', $request->tags_input)));
             }
 
-            // Create global service
+            // Create global service (sort_order = next for this doctor)
+            $nextSortOrder = (int) BookingService::where('created_by', $user->id)->max('sort_order') + 1;
             $service = BookingService::create([
                 'name' => $request->name,
                 'description' => $request->description,
@@ -118,6 +119,7 @@ class DoctorServicesController extends Controller
                 'default_price' => $request->default_price,
                 'tags' => $tags,
                 'created_by' => $user->id,
+                'sort_order' => $nextSortOrder,
                 'is_active' => $request->boolean('is_active', true),
             ]);
 
@@ -371,6 +373,30 @@ class DoctorServicesController extends Controller
             ]);
             return back()->with('error', 'Failed to generate booking link: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Reorder services for the authenticated doctor.
+     */
+    public function reorder(Request $request)
+    {
+        $user = Auth::user();
+        $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'required|integer|exists:booking_services,id',
+        ]);
+
+        $ids = $request->order;
+        $services = BookingService::where('created_by', $user->id)->whereIn('id', $ids)->get();
+        if ($services->count() !== count($ids)) {
+            return response()->json(['error' => 'Invalid service list.'], 403);
+        }
+
+        foreach ($ids as $position => $id) {
+            BookingService::where('id', $id)->where('created_by', $user->id)->update(['sort_order' => $position]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Order saved.']);
     }
 
 }

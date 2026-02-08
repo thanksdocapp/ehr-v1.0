@@ -19,14 +19,16 @@ class BookingService extends Model
         'default_price',
         'tags',
         'created_by',
-        'is_active'
+        'is_active',
+        'sort_order',
     ];
 
     protected $casts = [
         'tags' => 'array',
         'is_active' => 'boolean',
         'default_price' => 'decimal:2',
-        'default_duration_minutes' => 'integer'
+        'default_duration_minutes' => 'integer',
+        'sort_order' => 'integer',
     ];
 
     // Relationships
@@ -49,6 +51,11 @@ class BookingService extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order', 'asc')->orderBy('name', 'asc');
     }
 
     // Helper methods

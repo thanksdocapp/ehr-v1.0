@@ -69,13 +69,14 @@
                     <h5 class="doctor-card-title mb-0">
                         <i class="fas fa-briefcase-medical me-2"></i>My Services
                     </h5>
-                    <small class="text-muted">Create and manage your private services. Only you can see and edit services you create.</small>
+                    <small class="text-muted">Create and manage your private services. Drag rows to change the order shown on your booking page.</small>
                 </div>
                 <div class="doctor-card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
+                                    <th style="width: 36px;" class="text-center" title="Drag to reorder"><i class="fas fa-grip-vertical text-muted"></i></th>
                                     <th style="width: 25%;">Service Name</th>
                                     <th style="width: 15%;">Duration</th>
                                     <th style="width: 15%;">Price</th>
@@ -84,9 +85,12 @@
                                     <th style="width: 20%;" class="text-end">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="doctor-services-sortable">
                                 @forelse($services as $service)
-                                    <tr>
+                                    <tr class="doctor-service-row" data-id="{{ $service['id'] }}">
+                                        <td class="text-center align-middle" style="cursor: grab;">
+                                            <i class="fas fa-grip-vertical text-muted drag-handle" style="opacity: 0.6;"></i>
+                                        </td>
                                         <td>
                                             <div>
                                                 <div class="fw-semibold">{{ $service['name'] }}</div>
@@ -185,7 +189,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center py-5">
+                                        <td colspan="7" class="text-center py-5">
                                             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                                             <p class="text-muted">No services available.</p>
                                         </td>
@@ -283,4 +287,39 @@ function showCopyFeedback(button) {
 }
 </script>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tbody = document.getElementById('doctor-services-sortable');
+    if (!tbody || typeof Sortable === 'undefined') return;
+    new Sortable(tbody, {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: function() {
+            var rows = tbody.querySelectorAll('tr.doctor-service-row');
+            var order = Array.from(rows).map(function(row) { return parseInt(row.getAttribute('data-id'), 10); });
+            fetch('{{ route("staff.doctor-services.reorder") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ order: order })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.success) {
+                    var toast = document.createElement('div');
+                    toast.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                    toast.style.cssText = 'top: 1rem; right: 1rem; z-index: 9999; min-width: 200px;';
+                    toast.innerHTML = '<span>' + (data.message || 'Order saved.') + '</span><button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                    document.body.appendChild(toast);
+                    setTimeout(function() { toast.remove(); }, 3000);
+                }
+            }).catch(function() {});
+        }
+    });
+});
+</script>
+@endpush
 
