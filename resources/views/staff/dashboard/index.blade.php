@@ -433,27 +433,27 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-6">
-                            <div class="text-center p-3 bg-light rounded">
-                                <div class="fs-4 fw-bold text-primary">{{ $stats['total_patients'] ?? 0 }}</div>
-                                <small class="text-muted">Total Patients</small>
+                            <div class="text-center p-3 rounded quick-insight-stat-card">
+                                <div class="fs-4 fw-bold text-white">{{ $stats['total_patients'] ?? 0 }}</div>
+                                <small class="text-white text-opacity-90">Total Patients</small>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="text-center p-3 bg-light rounded">
-                                <div class="fs-4 fw-bold text-success">{{ $stats['today_appointments'] ?? 0 }}</div>
-                                <small class="text-muted">Today</small>
+                            <div class="text-center p-3 rounded quick-insight-stat-card">
+                                <div class="fs-4 fw-bold text-white">{{ $stats['today_appointments'] ?? 0 }}</div>
+                                <small class="text-white text-opacity-90">Today</small>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="text-center p-3 bg-light rounded">
-                                <div class="fs-4 fw-bold text-warning">{{ $stats['pending_appointments'] ?? 0 }}</div>
-                                <small class="text-muted">Pending</small>
+                            <div class="text-center p-3 rounded quick-insight-stat-card">
+                                <div class="fs-4 fw-bold text-white">{{ $stats['pending_appointments'] ?? 0 }}</div>
+                                <small class="text-white text-opacity-90">Pending</small>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="text-center p-3 bg-light rounded">
-                                <div class="fs-4 fw-bold text-info">{{ date('d') }}</div>
-                                <small class="text-muted">Day of Month</small>
+                            <div class="text-center p-3 rounded quick-insight-stat-card">
+                                <div class="fs-4 fw-bold text-white">{{ date('d') }}</div>
+                                <small class="text-white text-opacity-90">Day of Month</small>
                             </div>
                         </div>
                     </div>
@@ -493,6 +493,11 @@
 <!-- FullCalendar CSS -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
 <style>
+    .quick-insight-stat-card {
+        background: var(--doctor-primary, var(--primary, #0d6efd));
+        color: #fff;
+    }
+
     .avatar-xs {
         width: 24px;
         height: 24px;
