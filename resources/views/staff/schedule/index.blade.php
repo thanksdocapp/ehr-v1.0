@@ -71,9 +71,9 @@
                                                 <div class="sessions-container {{ $isAvailable ? '' : 'opacity-50' }}" data-day="{{ $day }}">
                                                     @foreach($sessions as $idx => $session)
                                                         <div class="d-flex align-items-center gap-2 mb-2 session-row">
-                                                            <input type="time" class="form-control form-control-sm session-start" name="availability[{{ $day }}][sessions][{{ $idx }}][start]" value="{{ $session['start'] ?? '09:00' }}" style="width: 100px;" {{ $isAvailable ? '' : 'disabled' }}>
+                                                            <input type="time" class="form-control form-control-sm session-start" name="availability[{{ $day }}][sessions][{{ $idx }}][start]" value="{{ $session['start'] ?? '09:00' }}" style="width: 120px; min-width: 120px;" {{ $isAvailable ? '' : 'disabled' }}>
                                                             <span class="text-muted">to</span>
-                                                            <input type="time" class="form-control form-control-sm session-end" name="availability[{{ $day }}][sessions][{{ $idx }}][end]" value="{{ $session['end'] ?? '17:00' }}" style="width: 100px;" {{ $isAvailable ? '' : 'disabled' }}>
+                                                            <input type="time" class="form-control form-control-sm session-end" name="availability[{{ $day }}][sessions][{{ $idx }}][end]" value="{{ $session['end'] ?? '17:00' }}" style="width: 120px; min-width: 120px;" {{ $isAvailable ? '' : 'disabled' }}>
                                                             <button type="button" class="btn btn-sm btn-outline-danger remove-session" title="Remove this window"><i class="fas fa-minus"></i></button>
                                                         </div>
                                                     @endforeach
@@ -318,9 +318,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const row = document.createElement('div');
             row.className = 'd-flex align-items-center gap-2 mb-2 session-row';
             const idx = container.querySelectorAll('.session-row').length;
-            row.innerHTML = '<input type="time" class="form-control form-control-sm session-start" name="availability[' + day + '][sessions][' + idx + '][start]" value="09:00" style="width: 100px;">' +
+            row.innerHTML = '<input type="time" class="form-control form-control-sm session-start" name="availability[' + day + '][sessions][' + idx + '][start]" value="09:00" style="width: 120px; min-width: 120px;">' +
                 '<span class="text-muted">to</span>' +
-                '<input type="time" class="form-control form-control-sm session-end" name="availability[' + day + '][sessions][' + idx + '][end]" value="17:00" style="width: 100px;">' +
+                '<input type="time" class="form-control form-control-sm session-end" name="availability[' + day + '][sessions][' + idx + '][end]" value="17:00" style="width: 120px; min-width: 120px;">' +
                 '<button type="button" class="btn btn-sm btn-outline-danger remove-session" title="Remove this window"><i class="fas fa-minus"></i></button>';
             this.parentElement.insertBefore(row, this);
             row.querySelector('.remove-session').addEventListener('click', function() {
@@ -373,9 +373,9 @@ document.addEventListener('DOMContentLoaded', function() {
             mondaySessions.forEach(function(sess, i) {
                 const sessionRow = document.createElement('div');
                 sessionRow.className = 'd-flex align-items-center gap-2 mb-2 session-row';
-                sessionRow.innerHTML = '<input type="time" class="form-control form-control-sm session-start" value="' + sess.start + '" style="width: 100px;">' +
+                sessionRow.innerHTML = '<input type="time" class="form-control form-control-sm session-start" value="' + sess.start + '" style="width: 120px; min-width: 120px;">' +
                     '<span class="text-muted">to</span>' +
-                    '<input type="time" class="form-control form-control-sm session-end" value="' + sess.end + '" style="width: 100px;">' +
+                    '<input type="time" class="form-control form-control-sm session-end" value="' + sess.end + '" style="width: 120px; min-width: 120px;">' +
                     '<button type="button" class="btn btn-sm btn-outline-danger remove-session" title="Remove this window"><i class="fas fa-minus"></i></button>';
                 container.insertBefore(sessionRow, addBtn);
                 sessionRow.querySelector('.remove-session').addEventListener('click', function() {
