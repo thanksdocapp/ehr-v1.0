@@ -43,17 +43,13 @@ class SlotAvailabilityService
             }
         }
 
-        // Get doctor's working hours for this day
+        // Get doctor's working sessions (one or more time windows) for this day
         $dayName = strtolower($dateObj->format('l')); // monday, tuesday, etc.
-        $workingHours = $this->getWorkingHours($doctor, $dayName);
+        $sessions = $this->getWorkingSessions($doctor, $dayName);
 
-        if (!$workingHours || !$workingHours['available']) {
+        if (empty($sessions)) {
             return []; // Doctor not available on this day
         }
-
-        // Parse working hours
-        $startTime = Carbon::parse($workingHours['start']);
-        $endTime = Carbon::parse($workingHours['end']);
 
         // Get existing appointments for this date
         $existingAppointments = Appointment::where('doctor_id', $doctorId)
@@ -61,28 +57,31 @@ class SlotAvailabilityService
             ->whereIn('status', ['pending', 'confirmed', 'rescheduled'])
             ->get();
 
-        // Get blocked times (breaks + partial day blocks)
+        // Get blocked times (breaks within a session + partial day blocks)
         $blockedTimes = $this->getBlockedTimes($doctor, $dateObj);
 
-        // Generate time slots
+        // Generate time slots for each session
         $slots = [];
-        $currentTime = $dateObj->copy()->setTimeFromTimeString($startTime->format('H:i'));
+        foreach ($sessions as $session) {
+            $startTime = Carbon::parse($session['start']);
+            $endTime = Carbon::parse($session['end']);
+            $currentTime = $dateObj->copy()->setTimeFromTimeString($startTime->format('H:i'));
+            $dayEnd = $dateObj->copy()->setTimeFromTimeString($endTime->format('H:i'));
 
-        while ($currentTime->copy()->addMinutes($duration)->lte($dateObj->copy()->setTimeFromTimeString($endTime->format('H:i')))) {
-            $slotStart = $currentTime->copy();
-            $slotEnd = $currentTime->copy()->addMinutes($duration);
+            while ($currentTime->copy()->addMinutes($duration)->lte($dayEnd)) {
+                $slotStart = $currentTime->copy();
+                $slotEnd = $currentTime->copy()->addMinutes($duration);
 
-            // Check if slot is available
-            if ($this->isSlotAvailable($slotStart, $slotEnd, $existingAppointments, $blockedTimes)) {
-                $slots[] = [
-                    'start' => $slotStart->format('H:i'),
-                    'end' => $slotEnd->format('H:i'),
-                    'display' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A')
-                ];
+                if ($this->isSlotAvailable($slotStart, $slotEnd, $existingAppointments, $blockedTimes)) {
+                    $slots[] = [
+                        'start' => $slotStart->format('H:i'),
+                        'end' => $slotEnd->format('H:i'),
+                        'display' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A')
+                    ];
+                }
+
+                $currentTime->addMinutes(15);
             }
-
-            // Move to next slot (15-minute intervals)
-            $currentTime->addMinutes(15);
         }
 
         return $slots;
@@ -119,7 +118,87 @@ class SlotAvailabilityService
     }
 
     /**
-     * Get working hours for a doctor on a specific day.
+     * Get working sessions (time windows) for a doctor on a specific day.
+     * Supports multiple sessions per day (e.g. morning 09-12, afternoon 14-17, evening 18-21).
+     * Returns array of ['start' => 'HH:MM', 'end' => 'HH:MM'].
+     *
+     * @param Doctor $doctor
+     * @param string $dayName
+     * @return array
+     */
+    private function getWorkingSessions($doctor, $dayName): array
+    {
+        if (!$doctor->availability || !isset($doctor->availability[$dayName])) {
+            $weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+            if (in_array($dayName, $weekdays)) {
+                return [['start' => '09:00', 'end' => '17:00']];
+            }
+            return [];
+        }
+
+        $dayAvailability = $doctor->availability[$dayName];
+
+        // New format: multiple sessions per day
+        if (!empty($dayAvailability['sessions']) && is_array($dayAvailability['sessions'])) {
+            $sessions = [];
+            foreach ($dayAvailability['sessions'] as $s) {
+                if (!empty($s['start']) && !empty($s['end']) && $s['start'] < $s['end']) {
+                    $sessions[] = ['start' => $s['start'], 'end' => $s['end']];
+                }
+            }
+            return $sessions;
+        }
+
+        // Legacy format: single start/end with optional breaks
+        if (empty($dayAvailability['available'])) {
+            return [];
+        }
+        $start = $dayAvailability['start'] ?? $dayAvailability['from'] ?? '09:00';
+        $end = $dayAvailability['end'] ?? $dayAvailability['to'] ?? '17:00';
+        $breaks = $dayAvailability['breaks'] ?? [];
+        return $this->splitRangeByBreaks($start, $end, $breaks);
+    }
+
+    /**
+     * Split a time range into sessions by subtracting break periods.
+     *
+     * @param string $start
+     * @param string $end
+     * @param array $breaks
+     * @return array
+     */
+    private function splitRangeByBreaks(string $start, string $end, array $breaks): array
+    {
+        if (empty($breaks)) {
+            return $start < $end ? [['start' => $start, 'end' => $end]] : [];
+        }
+        $ranges = [['start' => $start, 'end' => $end]];
+        foreach ($breaks as $break) {
+            if (empty($break['start']) || empty($break['end'])) {
+                continue;
+            }
+            $newRanges = [];
+            foreach ($ranges as $r) {
+                $bStart = $break['start'];
+                $bEnd = $break['end'];
+                if ($bEnd <= $r['start'] || $bStart >= $r['end']) {
+                    $newRanges[] = $r;
+                    continue;
+                }
+                if ($r['start'] < $bStart) {
+                    $newRanges[] = ['start' => $r['start'], 'end' => $bStart];
+                }
+                if ($bEnd < $r['end']) {
+                    $newRanges[] = ['start' => $bEnd, 'end' => $r['end']];
+                }
+            }
+            $ranges = $newRanges;
+        }
+        return array_values(array_filter($ranges, fn($r) => $r['start'] < $r['end']));
+    }
+
+    /**
+     * Get working hours for a doctor on a specific day (single window; for backward compatibility).
      *
      * @param Doctor $doctor
      * @param string $dayName
@@ -127,45 +206,16 @@ class SlotAvailabilityService
      */
     private function getWorkingHours($doctor, $dayName)
     {
-        // Check availability from doctor model
-        if ($doctor->availability && isset($doctor->availability[$dayName])) {
-            $dayAvailability = $doctor->availability[$dayName];
-            if (isset($dayAvailability['available']) && $dayAvailability['available']) {
-                // Support both 'start'/'end' (new format) and 'from'/'to' (old format)
-                $start = $dayAvailability['start'] ?? $dayAvailability['from'] ?? '09:00';
-                $end = $dayAvailability['end'] ?? $dayAvailability['to'] ?? '17:00';
-                
-                return [
-                    'available' => true,
-                    'start' => $start,
-                    'end' => $end
-                ];
-            }
-            // If explicitly set to not available
-            if (isset($dayAvailability['available']) && !$dayAvailability['available']) {
-                return [
-                    'available' => false,
-                    'start' => null,
-                    'end' => null
-                ];
-            }
+        $sessions = $this->getWorkingSessions($doctor, $dayName);
+        if (empty($sessions)) {
+            return ['available' => false, 'start' => null, 'end' => null];
         }
-
-        // Default working hours if not set (Monday-Friday)
-        $weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-        if (in_array($dayName, $weekdays)) {
-            return [
-                'available' => true,
-                'start' => '09:00',
-                'end' => '17:00'
-            ];
-        }
-
-        // Weekend - not available by default
+        $starts = array_column($sessions, 'start');
+        $ends = array_column($sessions, 'end');
         return [
-            'available' => false,
-            'start' => null,
-            'end' => null
+            'available' => true,
+            'start' => min($starts),
+            'end' => max($ends)
         ];
     }
 

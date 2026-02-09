@@ -23,7 +23,7 @@
                 <div class="doctor-card-body">
                     <div class="alert alert-light border mb-4">
                         <i class="fas fa-lightbulb text-warning me-2"></i>
-                        <strong>How it works:</strong> Set your regular working hours below. Patients will only be able to book appointments during these times. You can block specific dates for holidays or time off in the section on the right.
+                        <strong>How it works:</strong> For each day you can add one or more <strong>time windows</strong> (e.g. morning 09:00–12:00, afternoon 14:00–17:00, evening 18:00–21:00). Patients can only book during these windows. Block specific dates for time off in the section on the right.
                     </div>
 
                     <form action="{{ route('staff.schedule.update-availability') }}" method="POST" id="availabilityForm">
@@ -34,21 +34,20 @@
                             <table class="table table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 150px;">Day</th>
+                                        <th style="width: 140px;">Day</th>
                                         <th style="width: 100px;" class="text-center">Available</th>
-                                        <th>Working Hours</th>
-                                        <th>Break Time</th>
+                                        <th>Time windows</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($daysOfWeek as $day)
                                         @php
-                                            $dayData = $availability[$day] ?? ['available' => false, 'start' => '09:00', 'end' => '17:00', 'breaks' => []];
+                                            $dayData = $availability[$day] ?? ['available' => false, 'sessions' => [['start' => '09:00', 'end' => '17:00']]];
                                             $isAvailable = $dayData['available'] ?? false;
-                                            $startTime = $dayData['start'] ?? '09:00';
-                                            $endTime = $dayData['end'] ?? '17:00';
-                                            $breaks = $dayData['breaks'] ?? [];
-                                            $firstBreak = $breaks[0] ?? ['start' => '12:00', 'end' => '13:00'];
+                                            $sessions = $dayData['sessions'] ?? [];
+                                            if (empty($sessions) && $isAvailable) {
+                                                $sessions = [['start' => '09:00', 'end' => '17:00']];
+                                            }
                                         @endphp
                                         <tr class="day-row {{ $isAvailable ? '' : 'table-secondary' }}" data-day="{{ $day }}">
                                             <td>
@@ -69,38 +68,16 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <div class="d-flex align-items-center gap-2 working-hours {{ $isAvailable ? '' : 'opacity-50' }}">
-                                                    <input type="time"
-                                                           class="form-control form-control-sm"
-                                                           name="availability[{{ $day }}][start]"
-                                                           value="{{ $startTime }}"
-                                                           style="width: 120px;"
-                                                           {{ $isAvailable ? '' : 'disabled' }}>
-                                                    <span class="text-muted">to</span>
-                                                    <input type="time"
-                                                           class="form-control form-control-sm"
-                                                           name="availability[{{ $day }}][end]"
-                                                           value="{{ $endTime }}"
-                                                           style="width: 120px;"
-                                                           {{ $isAvailable ? '' : 'disabled' }}>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center gap-2 break-times {{ $isAvailable ? '' : 'opacity-50' }}">
-                                                    <input type="time"
-                                                           class="form-control form-control-sm"
-                                                           name="availability[{{ $day }}][breaks][0][start]"
-                                                           value="{{ $firstBreak['start'] ?? '12:00' }}"
-                                                           style="width: 110px;"
-                                                           {{ $isAvailable ? '' : 'disabled' }}>
-                                                    <span class="text-muted">-</span>
-                                                    <input type="time"
-                                                           class="form-control form-control-sm"
-                                                           name="availability[{{ $day }}][breaks][0][end]"
-                                                           value="{{ $firstBreak['end'] ?? '13:00' }}"
-                                                           style="width: 110px;"
-                                                           {{ $isAvailable ? '' : 'disabled' }}>
-                                                    <small class="text-muted">(lunch)</small>
+                                                <div class="sessions-container {{ $isAvailable ? '' : 'opacity-50' }}" data-day="{{ $day }}">
+                                                    @foreach($sessions as $idx => $session)
+                                                        <div class="d-flex align-items-center gap-2 mb-2 session-row">
+                                                            <input type="time" class="form-control form-control-sm session-start" name="availability[{{ $day }}][sessions][{{ $idx }}][start]" value="{{ $session['start'] ?? '09:00' }}" style="width: 100px;" {{ $isAvailable ? '' : 'disabled' }}>
+                                                            <span class="text-muted">to</span>
+                                                            <input type="time" class="form-control form-control-sm session-end" name="availability[{{ $day }}][sessions][{{ $idx }}][end]" value="{{ $session['end'] ?? '17:00' }}" style="width: 100px;" {{ $isAvailable ? '' : 'disabled' }}>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger remove-session" title="Remove this window"><i class="fas fa-minus"></i></button>
+                                                        </div>
+                                                    @endforeach
+                                                    <button type="button" class="btn btn-sm btn-outline-primary add-session" data-day="{{ $day }}" title="Add another time window"><i class="fas fa-plus me-1"></i>Add window</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -251,15 +228,19 @@
                     @php
                         $workingDays = collect($availability)->filter(fn($day) => $day['available'] ?? false)->count();
                         $totalHours = collect($availability)->filter(fn($day) => $day['available'] ?? false)->sum(function($day) {
-                            $start = Carbon\Carbon::parse($day['start'] ?? '09:00');
-                            $end = Carbon\Carbon::parse($day['end'] ?? '17:00');
-                            $breakHours = 0;
-                            foreach ($day['breaks'] ?? [] as $break) {
-                                $breakStart = Carbon\Carbon::parse($break['start']);
-                                $breakEnd = Carbon\Carbon::parse($break['end']);
-                                $breakHours += $breakEnd->diffInHours($breakStart);
+                            $sessions = $day['sessions'] ?? [];
+                            if (empty($sessions)) {
+                                $start = Carbon\Carbon::parse($day['start'] ?? '09:00');
+                                $end = Carbon\Carbon::parse($day['end'] ?? '17:00');
+                                return $end->diffInMinutes($start) / 60;
                             }
-                            return $end->diffInHours($start) - $breakHours;
+                            $mins = 0;
+                            foreach ($sessions as $s) {
+                                $sStart = Carbon\Carbon::parse($s['start']);
+                                $sEnd = Carbon\Carbon::parse($s['end']);
+                                $mins += $sEnd->diffInMinutes($sStart);
+                            }
+                            return $mins / 60;
                         });
                     @endphp
 
@@ -303,45 +284,107 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.day-toggle').forEach(function(toggle) {
         toggle.addEventListener('change', function() {
             const row = this.closest('.day-row');
-            const workingHours = row.querySelector('.working-hours');
-            const breakTimes = row.querySelector('.break-times');
-            const inputs = row.querySelectorAll('.working-hours input, .break-times input');
+            const container = row.querySelector('.sessions-container');
+            const inputs = container.querySelectorAll('input, button');
 
             if (this.checked) {
                 row.classList.remove('table-secondary');
-                workingHours.classList.remove('opacity-50');
-                breakTimes.classList.remove('opacity-50');
-                inputs.forEach(input => input.disabled = false);
+                container.classList.remove('opacity-50');
+                inputs.forEach(input => { if (input) input.disabled = false; });
             } else {
                 row.classList.add('table-secondary');
-                workingHours.classList.add('opacity-50');
-                breakTimes.classList.add('opacity-50');
-                inputs.forEach(input => input.disabled = true);
+                container.classList.add('opacity-50');
+                inputs.forEach(input => { if (input) input.disabled = true; });
             }
         });
     });
 
-    // Copy Monday to all weekdays
+    // Reindex session inputs for a day (0, 1, 2, ...)
+    function reindexSessions(day) {
+        const container = document.querySelector('.sessions-container[data-day="' + day + '"]');
+        if (!container) return;
+        const rows = container.querySelectorAll('.session-row');
+        rows.forEach(function(row, idx) {
+            row.querySelector('.session-start').setAttribute('name', 'availability[' + day + '][sessions][' + idx + '][start]');
+            row.querySelector('.session-end').setAttribute('name', 'availability[' + day + '][sessions][' + idx + '][end]');
+        });
+    }
+
+    // Add session row
+    document.querySelectorAll('.add-session').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const day = this.getAttribute('data-day');
+            const container = this.closest('.sessions-container');
+            const row = document.createElement('div');
+            row.className = 'd-flex align-items-center gap-2 mb-2 session-row';
+            const idx = container.querySelectorAll('.session-row').length;
+            row.innerHTML = '<input type="time" class="form-control form-control-sm session-start" name="availability[' + day + '][sessions][' + idx + '][start]" value="09:00" style="width: 100px;">' +
+                '<span class="text-muted">to</span>' +
+                '<input type="time" class="form-control form-control-sm session-end" name="availability[' + day + '][sessions][' + idx + '][end]" value="17:00" style="width: 100px;">' +
+                '<button type="button" class="btn btn-sm btn-outline-danger remove-session" title="Remove this window"><i class="fas fa-minus"></i></button>';
+            this.parentElement.insertBefore(row, this);
+            row.querySelector('.remove-session').addEventListener('click', function() {
+                if (container.querySelectorAll('.session-row').length <= 1) return;
+                row.remove();
+                reindexSessions(day);
+            });
+            reindexSessions(day);
+        });
+    });
+
+    // Remove session row
+    document.querySelectorAll('.remove-session').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const row = this.closest('.session-row');
+            const container = row.closest('.sessions-container');
+            const day = container.getAttribute('data-day');
+            if (container.querySelectorAll('.session-row').length <= 1) return;
+            row.remove();
+            reindexSessions(day);
+        });
+    });
+
+    // Copy Monday to all weekdays (copy all time windows)
     document.getElementById('copyMondayBtn').addEventListener('click', function() {
         const mondayRow = document.querySelector('[data-day="monday"]');
         const mondayAvailable = mondayRow.querySelector('.day-toggle').checked;
-        const mondayStart = mondayRow.querySelector('input[name*="[start]"]').value;
-        const mondayEnd = mondayRow.querySelector('input[name*="[end]"]').value;
-        const mondayBreakStart = mondayRow.querySelector('input[name*="[breaks][0][start]"]').value;
-        const mondayBreakEnd = mondayRow.querySelector('input[name*="[breaks][0][end]"]').value;
+        const mondayContainer = mondayRow.querySelector('.sessions-container');
+        const mondaySessions = [];
+        mondayContainer.querySelectorAll('.session-row').forEach(function(r) {
+            mondaySessions.push({
+                start: r.querySelector('.session-start').value,
+                end: r.querySelector('.session-end').value
+            });
+        });
+        if (mondaySessions.length === 0) {
+            mondaySessions.push({ start: '09:00', end: '17:00' });
+        }
 
         const weekdays = ['tuesday', 'wednesday', 'thursday', 'friday'];
         weekdays.forEach(function(day) {
             const row = document.querySelector('[data-day="' + day + '"]');
             const toggle = row.querySelector('.day-toggle');
-
+            const container = row.querySelector('.sessions-container');
             toggle.checked = mondayAvailable;
             toggle.dispatchEvent(new Event('change'));
 
-            row.querySelector('input[name*="[start]"]').value = mondayStart;
-            row.querySelector('input[name*="[end]"]').value = mondayEnd;
-            row.querySelector('input[name*="[breaks][0][start]"]').value = mondayBreakStart;
-            row.querySelector('input[name*="[breaks][0][end]"]').value = mondayBreakEnd;
+            container.querySelectorAll('.session-row').forEach(r => r.remove());
+            const addBtn = container.querySelector('.add-session');
+            mondaySessions.forEach(function(sess, i) {
+                const sessionRow = document.createElement('div');
+                sessionRow.className = 'd-flex align-items-center gap-2 mb-2 session-row';
+                sessionRow.innerHTML = '<input type="time" class="form-control form-control-sm session-start" value="' + sess.start + '" style="width: 100px;">' +
+                    '<span class="text-muted">to</span>' +
+                    '<input type="time" class="form-control form-control-sm session-end" value="' + sess.end + '" style="width: 100px;">' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger remove-session" title="Remove this window"><i class="fas fa-minus"></i></button>';
+                container.insertBefore(sessionRow, addBtn);
+                sessionRow.querySelector('.remove-session').addEventListener('click', function() {
+                    if (container.querySelectorAll('.session-row').length <= 1) return;
+                    sessionRow.remove();
+                    reindexSessions(day);
+                });
+            });
+            reindexSessions(day);
         });
 
         Swal.fire({
