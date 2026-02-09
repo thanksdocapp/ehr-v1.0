@@ -8,6 +8,7 @@ use App\Models\DoctorAvailabilityException;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class ScheduleController extends Controller
@@ -37,7 +38,7 @@ class ScheduleController extends Controller
                 ->get();
         } catch (\Exception $e) {
             // Log the error and use empty collection as fallback
-            \Log::error('Error fetching blocked dates: ' . $e->getMessage(), [
+            Log::error('Error fetching blocked dates: ' . $e->getMessage(), [
                 'doctor_id' => $doctor->id,
                 'exception' => $e
             ]);
