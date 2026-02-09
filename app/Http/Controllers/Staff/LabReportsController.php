@@ -13,22 +13,78 @@ use Illuminate\Support\Facades\Storage;
 
 class LabReportsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
-        
+
         // Build query based on user role
         $query = LabReport::with(['patient', 'doctor', 'medicalRecord']);
-        
+
         // Apply visibility rules based on user role (uses patient-department-doctor logic)
-        // Technicians see all, others filtered by visibility
         if ($user->role !== 'technician') {
             $query->visibleTo($user);
         }
-        
-        $labReports = $query->latest()->paginate(15);
-        
-        return view('staff.lab-reports.index', compact('labReports'));
+
+        // Apply filters from request
+        if ($request->filled('patient_search')) {
+            $term = $request->patient_search;
+            $query->whereHas('patient', function ($q) use ($term) {
+                $q->where('first_name', 'like', "%{$term}%")
+                  ->orWhere('last_name', 'like', "%{$term}%");
+            });
+        }
+        if ($request->filled('test_type')) {
+            $query->where('test_type', $request->test_type);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('test_date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('test_date', '<=', $request->date_to);
+        }
+
+        $labReports = $query->latest()->paginate(15)->appends($request->query());
+
+        // Stats for the cards (counts across all matching reports, not just current page)
+        $baseQuery = LabReport::query();
+        if ($user->role !== 'technician') {
+            $baseQuery->visibleTo($user);
+        }
+        if ($request->filled('patient_search')) {
+            $term = $request->patient_search;
+            $baseQuery->whereHas('patient', function ($q) use ($term) {
+                $q->where('first_name', 'like', "%{$term}%")
+                  ->orWhere('last_name', 'like', "%{$term}%");
+            });
+        }
+        if ($request->filled('test_type')) {
+            $baseQuery->where('test_type', $request->test_type);
+        }
+        if ($request->filled('status')) {
+            $baseQuery->where('status', $request->status);
+        }
+        if ($request->filled('date_from')) {
+            $baseQuery->whereDate('test_date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $baseQuery->whereDate('test_date', '<=', $request->date_to);
+        }
+        $stats = [
+            'total' => (clone $baseQuery)->count(),
+            'pending' => (clone $baseQuery)->where('status', 'pending')->count(),
+            'completed' => (clone $baseQuery)->where('status', 'completed')->count(),
+        ];
+        $doctorId = null;
+        if ($user->role === 'doctor') {
+            $doctor = Doctor::where('user_id', $user->id)->first();
+            $doctorId = $doctor ? $doctor->id : null;
+        }
+        $stats['my_orders'] = $doctorId ? (clone $baseQuery)->where('doctor_id', $doctorId)->count() : 0;
+
+        return view('staff.lab-reports.index', compact('labReports', 'stats'));
     }
 
     public function create()

@@ -6,13 +6,15 @@
 
 @section('content')
 <div class="fade-in-up">
-                
-                <div class="btn-group">
-                    <a href="{{ route('staff.lab-reports.create') }}" class="btn btn-doctor-primary">
-                        <i class="fas fa-plus me-2"></i>New Lab Report
-                    </a>
-                </div>
-            </div>
+    <div class="row mb-4">
+        <div class="col">
+            <h5 class="mb-0">Lab Reports</h5>
+            <p class="text-muted small mb-0">Create and manage lab reports</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ route('staff.lab-reports.create') }}" class="btn btn-doctor-primary">
+                <i class="fas fa-plus me-2"></i>New Lab Report
+            </a>
         </div>
     </div>
 
@@ -25,7 +27,7 @@
                         <i class="fas fa-vial"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-number">{{ $labReports->total() }}</div>
+                        <div class="stat-number">{{ $stats['total'] ?? $labReports->total() }}</div>
                         <div class="stat-label">Total Reports</div>
                     </div>
                 </div>
@@ -39,9 +41,7 @@
                         <i class="fas fa-hourglass-half"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-number">
-                            {{ $labReports->filter(function($report) { return $report->status === 'pending'; })->count() }}
-                        </div>
+                        <div class="stat-number">{{ $stats['pending'] ?? 0 }}</div>
                         <div class="stat-label">Pending</div>
                     </div>
                 </div>
@@ -55,9 +55,7 @@
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-number">
-                            {{ $labReports->filter(function($report) { return $report->status === 'completed'; })->count() }}
-                        </div>
+                        <div class="stat-number">{{ $stats['completed'] ?? 0 }}</div>
                         <div class="stat-label">Completed</div>
                     </div>
                 </div>
@@ -72,13 +70,7 @@
                         <i class="fas fa-user-md"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-number">
-                            @php
-                                $userDoctor = \App\Models\Doctor::where('user_id', auth()->id())->first();
-                                $doctorId = $userDoctor ? $userDoctor->id : null;
-                            @endphp
-                            {{ $labReports->filter(function($report) use ($doctorId) { return $report->doctor_id == $doctorId; })->count() }}
-                        </div>
+                        <div class="stat-number">{{ $stats['my_orders'] ?? 0 }}</div>
                         <div class="stat-label">My Orders</div>
                     </div>
                 </div>
