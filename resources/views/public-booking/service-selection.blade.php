@@ -541,6 +541,19 @@
             });
         }
 
+        // Map consultation type to display label (remote types must not show as In-Person)
+        function getConsultationTypeDisplay(consultationType, serviceName) {
+            const name = (serviceName || '').toLowerCase();
+            const type = (consultationType || 'in_person').toLowerCase();
+            // Service name suggests telephone/remote
+            if (/\b(telephone|phone|video call|remote)\b/.test(name)) {
+                return { display: 'Telephone / Remote Consultation', submitValue: 'online' };
+            }
+            if (type === 'online') return { display: 'Online Consultation', submitValue: 'online' };
+            if (type === 'phone' || type === 'telephone') return { display: 'Telephone Consultation', submitValue: 'online' };
+            return { display: 'In-Person Consultation', submitValue: 'in_person' };
+        }
+
         // Update service details
         function updateServiceDetails() {
             const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
@@ -549,7 +562,8 @@
                 const duration = selectedOption.dataset.duration + ' minutes';
                 const price = '£' + parseFloat(selectedOption.dataset.price).toFixed(2);
                 const consultationType = selectedOption.dataset.consultationType || 'in_person';
-                
+                const serviceName = selectedOption.textContent || '';
+
                 const descriptionEl = document.getElementById('service-description');
                 if (description && description.trim()) {
                     descriptionEl.textContent = description;
@@ -557,14 +571,11 @@
                 } else {
                     descriptionEl.style.display = 'none';
                 }
-                
-                // Update consultation type display
-                const consultationTypeDisplay = consultationType === 'online' ? 'Online Consultation' : 'In-Person Consultation';
+
+                const { display: consultationTypeDisplay, submitValue } = getConsultationTypeDisplay(consultationType, serviceName);
                 document.getElementById('service-consultation-type').textContent = consultationTypeDisplay;
-                
-                // Update hidden input for form submission
-                document.getElementById('consultation-type-input').value = consultationType;
-                
+                document.getElementById('consultation-type-input').value = submitValue;
+
                 document.getElementById('service-duration').textContent = duration;
                 document.getElementById('service-price').textContent = price;
                 serviceDetails.style.display = 'block';
