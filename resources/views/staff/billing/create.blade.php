@@ -181,33 +181,6 @@
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="discount" class="form-label">
-                                            <i class="fas fa-percentage me-1"></i>Discount
-                                        </label>
-                                        <input type="text" class="form-control @error('discount') is-invalid @enderror" 
-                                               id="discount" name="discount" value="{{ old('discount') }}">
-                                        @error('discount')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="tax" class="form-label">
-                                            <i class="fas fa-coins me-1"></i>Tax
-                                        </label>
-                                        <input type="text" class="form-control @error('tax') is-invalid @enderror" 
-                                               id="tax" name="tax" value="{{ old('tax') }}">
-                                        @error('tax')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-
                             <div class="mb-3">
                                 <label for="notes" class="form-label">
                                     <i class="fas fa-sticky-note me-1"></i>Notes
@@ -231,16 +204,6 @@
                             </div>
 
                         </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="text-end">
-                        <button type="submit" class="btn btn-doctor-primary">
-                            <i class="fas fa-save me-2"></i>Save Bill
-                        </button>
-                        <a href="{{ contextRoute('billing.index') }}" class="btn btn-secondary ms-2">
-                            <i class="fas fa-times me-2"></i>Cancel
-                        </a>
                     </div>
                 </form>
             </div>
@@ -607,7 +570,7 @@ $(document).ready(function() {
     }
 
     // Auto-format amount inputs
-    $('#subtotal, #discount, #tax').on('blur', function() {
+    $('#subtotal').on('blur', function() {
         const value = $(this).val();
         if (value) {
             const numericValue = parseFloat(value.replace(/[^0-9.-]+/g, ''));
@@ -701,7 +664,7 @@ $(document).ready(function() {
     });
 
     // Amount input formatting on type
-    $('#subtotal, #discount, #tax').on('input', function() {
+    $('#subtotal').on('input', function() {
         let value = $(this).val();
         // Remove any non-numeric characters except decimal point
         value = value.replace(/[^0-9.]/g, '');

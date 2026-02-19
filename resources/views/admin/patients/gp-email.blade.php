@@ -78,7 +78,7 @@
                                 @if($patient->date_of_birth)
                                 <div class="col-md-6 mb-2">
                                     <strong style="color: #4a5568;">Date of Birth:</strong>
-                                    <span style="color: #2d3748;">{{ $patient->date_of_birth->format('F d, Y') }}</span>
+                                    <span style="color: #2d3748;">{{ formatDateUkLong($patient->date_of_birth) }}</span>
                                 </div>
                                 @endif
                             </div>
@@ -162,7 +162,7 @@
                                 @endphp
                                 @foreach($medicalRecords as $record)
                                     <option value="{{ $record->id }}" {{ in_array($record->id, old('medical_record_ids', [])) ? 'selected' : '' }}>
-                                        {{ $record->record_date ? $record->record_date->format('M d, Y') : $record->created_at->format('M d, Y') }} - 
+                                        {{ $record->record_date ? formatDateUk($record->record_date) : formatDateUk($record->created_at) }} - 
                                         {{ ucfirst($record->record_type) }}
                                         @if($record->doctor)
                                             - {{ formatDoctorName($record->doctor->full_name) }}

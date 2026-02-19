@@ -115,7 +115,7 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex flex-column">
-                                            <strong>{{ $prescription->created_at->format('M d, Y') }}</strong>
+                                            <strong>{{ formatDateUk($prescription->created_at) }}</strong>
                                             <small class="text-muted">{{ $prescription->created_at->format('g:i A') }}</small>
                                         </div>
                                     </td>
@@ -191,7 +191,7 @@
                             <div class="col-md-6">
                                 <h6 class="fw-bold mb-3">Basic Information</h6>
                                 <p><strong>Prescription #:</strong> {{ $prescription->prescription_number ?? 'N/A' }}</p>
-                                <p><strong>Date:</strong> {{ $prescription->created_at->format('M d, Y g:i A') }}</p>
+                                <p><strong>Date:</strong> {{ formatDateTimeUkAmPm($prescription->created_at) }}</p>
                                 <p><strong>Doctor:</strong> {{ $prescription->doctor->full_name }}</p>
                                 <p><strong>Status:</strong> 
                                     @php

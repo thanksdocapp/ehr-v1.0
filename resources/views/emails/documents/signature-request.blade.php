@@ -124,7 +124,7 @@
             <div class="document-info">
                 <h3>{{ $document->title }}</h3>
                 <p><strong>Document Type:</strong> {{ ucfirst($document->type) }}</p>
-                <p><strong>Created:</strong> {{ $document->created_at->format('F d, Y') }}</p>
+                <p><strong>Created:</strong> {{ formatDateUkLong($document->created_at) }}</p>
             </div>
 
             @if($customMessage)

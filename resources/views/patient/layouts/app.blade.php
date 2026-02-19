@@ -579,7 +579,7 @@
                 <div class="header-right-section d-flex align-items-center">
                     <div class="header-info d-flex align-items-center me-3">
                         <span class="text-muted me-3">Welcome back, {{ Auth::guard('patient')->user()->first_name }}!</span>
-                        <span class="badge bg-primary">{{ now()->format('M d, Y') }}</span>
+                        <span class="badge bg-primary">{{ formatDateUk(now()) }}</span>
                     </div>
                     {{-- Patient Notification Bell - Positioned at far right --}}
                     <div class="notification-bell-container position-relative">

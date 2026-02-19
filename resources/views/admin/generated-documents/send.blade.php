@@ -28,7 +28,7 @@
                                 <br>
                                 <small>
                                     Patient: {{ $generatedDocument->patient->full_name ?? 'Unknown' }}
-                                    | Created: {{ $generatedDocument->created_at->format('M d, Y') }}
+                                    | Created: {{ formatDateUk($generatedDocument->created_at) }}
                                 </small>
                             </div>
                         </div>

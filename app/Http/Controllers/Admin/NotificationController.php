@@ -213,7 +213,7 @@ class NotificationController extends Controller
                     'icon' => 'fas fa-file-invoice-dollar',
                     'count' => 1,
                     'url' => $notification->action_url ?? route('admin.billing.index'),
-                    'created_at' => $notification->created_at->format('M j, g:i A'),
+                    'created_at' => $notification->created_at->format('j M, g:i A'),
                     'notification_id' => $notification->id, // For marking as read
                 ];
             });
@@ -399,8 +399,8 @@ class NotificationController extends Controller
         $notification->load('user');
         
         // Add formatted dates and other computed properties
-        $notification->created_at_formatted = $notification->created_at->format('M j, Y g:i A');
-        $notification->read_at_formatted = $notification->read_at ? $notification->read_at->format('M j, Y g:i A') : null;
+        $notification->created_at_formatted = formatDateTimeUkAmPm($notification->created_at);
+        $notification->read_at_formatted = $notification->read_at ? formatDateTimeUkAmPm($notification->read_at) : null;
         
         // Add type-specific styling
         $notification->type_color = $this->getTypeColor($notification->type);

@@ -543,7 +543,7 @@ class PublicBookingService
     private function createPublicBookingNotifications(Appointment $appointment, Patient $patient)
     {
         $patientName = trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? ''));
-        $appointmentDate = \Carbon\Carbon::parse($appointment->appointment_date)->format('M d, Y');
+        $appointmentDate = formatDateUk($appointment->appointment_date);
         $appointmentTime = \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A');
 
         $notificationData = [

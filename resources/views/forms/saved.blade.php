@@ -132,7 +132,7 @@
                         <li>Your form is not yet submitted</li>
                         <li>Keep your link safe to return later</li>
                         @if($formRequest->expires_at)
-                        <li>Complete by {{ $formRequest->expires_at->format('F d, Y') }}</li>
+                        <li>Complete by {{ formatDateUkLong($formRequest->expires_at) }}</li>
                         @endif
                     </ul>
                 </div>

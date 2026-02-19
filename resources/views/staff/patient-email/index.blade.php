@@ -162,7 +162,7 @@
                             @foreach($emailLogs as $emailLog)
                                 <tr>
                                     <td>
-                                        <div>{{ $emailLog->created_at->format('M d, Y') }}</div>
+                                        <div>{{ formatDateUk($emailLog->created_at) }}</div>
                                         <small class="text-muted">{{ $emailLog->created_at->format('g:i A') }}</small>
                                     </td>
                                     <td>

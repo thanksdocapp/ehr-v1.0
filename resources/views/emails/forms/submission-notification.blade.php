@@ -117,7 +117,7 @@
                 </tr>
                 <tr>
                     <td>Submitted:</td>
-                    <td>{{ $formRequest->completed_at->format('F d, Y \a\t H:i') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($formRequest->completed_at)->format('j F Y \a\t H:i') }}</td>
                 </tr>
                 <tr>
                     <td>Reference:</td>

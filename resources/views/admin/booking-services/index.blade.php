@@ -93,7 +93,7 @@
                                             <small class="text-muted">
                                                 {{ $service->creator->name ?? 'System' }}
                                                 <br>
-                                                <span class="text-muted">{{ $service->created_at->format('M d, Y') }}</span>
+                                                <span class="text-muted">{{ formatDateUk($service->created_at) }}</span>
                                             </small>
                                         </td>
                                         <td>

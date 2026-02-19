@@ -246,12 +246,12 @@
                     </div>
                     <div class="mb-3">
                         <small class="text-muted d-block">Member Since</small>
-                        <strong>{{ $user->created_at->format('M d, Y') }}</strong>
+                        <strong>{{ formatDateUk($user->created_at) }}</strong>
                     </div>
                     @if($user->last_login_at)
                     <div class="mb-0">
                         <small class="text-muted d-block">Last Login</small>
-                        <strong>{{ $user->last_login_at->format('M d, Y H:i') }}</strong>
+                        <strong>{{ formatDateTimeUk($user->last_login_at) }}</strong>
                     </div>
                     @endif
                 </div>

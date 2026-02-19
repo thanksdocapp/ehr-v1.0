@@ -106,7 +106,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label text-muted">Date of Birth</label>
-                            <p class="fw-medium">{{ $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : 'Not provided' }}</p>
+                            <p class="fw-medium">{{ $patient->date_of_birth ? formatDateUk($patient->date_of_birth) : 'Not provided' }}</p>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label text-muted">Gender</label>

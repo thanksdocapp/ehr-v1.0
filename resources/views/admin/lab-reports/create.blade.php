@@ -179,7 +179,7 @@
                                         @if($selectedAppointment)
                                             <option value="{{ $selectedAppointment->id }}" selected>
                                                 #{{ $selectedAppointment->appointment_number }} - {{ $selectedAppointment->patient->full_name }}
-                                                ({{ $selectedAppointment->appointment_date->format('M d, Y') }})
+                                                ({{ formatDateUk($selectedAppointment->appointment_date) }})
                                             </option>
                                         @endif
                                     </select>
@@ -198,7 +198,7 @@
                                         @if($selectedMedicalRecord)
                                             <option value="{{ $selectedMedicalRecord->id }}" selected>
                                                 {{ $selectedMedicalRecord->patient->full_name }} - 
-                                                {{ $selectedMedicalRecord->created_at->format('M d, Y') }}
+                                                {{ formatDateUk($selectedMedicalRecord->created_at) }}
                                             </option>
                                         @endif
                                     </select>

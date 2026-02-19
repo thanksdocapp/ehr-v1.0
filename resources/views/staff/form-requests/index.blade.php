@@ -82,13 +82,13 @@
                                     </td>
                                     <td>
                                         <small class="text-muted">
-                                            {{ $formRequest->sent_at ? $formRequest->sent_at->format('M d, Y H:i') : '-' }}
+                                            {{ $formRequest->sent_at ? formatDateTimeUk($formRequest->sent_at) : '-' }}
                                         </small>
                                     </td>
                                     <td>
                                         @if($formRequest->completed_at)
                                             <small class="text-success">
-                                                {{ $formRequest->completed_at->format('M d, Y H:i') }}
+                                                {{ formatDateTimeUk($formRequest->completed_at) }}
                                             </small>
                                         @else
                                             <small class="text-muted">-</small>

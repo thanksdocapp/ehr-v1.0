@@ -126,13 +126,13 @@
                                         </span>
                                         @if($document->sent_at)
                                             <small class="text-muted d-block">
-                                                Sent: {{ $document->sent_at->format('M d, Y') }}
+                                                Sent: {{ formatDateUk($document->sent_at) }}
                                             </small>
                                         @endif
                                     </td>
                                     <td>{{ $document->generator->name ?? 'Unknown' }}</td>
                                     <td>
-                                        {{ $document->created_at->format('M d, Y') }}
+                                        {{ formatDateUk($document->created_at) }}
                                         <small class="text-muted d-block">{{ $document->created_at->format('H:i') }}</small>
                                     </td>
                                     <td class="text-end">

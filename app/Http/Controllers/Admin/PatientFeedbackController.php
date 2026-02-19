@@ -145,7 +145,7 @@ class PatientFeedbackController extends Controller
         $variables = [
             'patient_name' => $patientName,
             'doctor_name' => $doctorName,
-            'appointment_date' => $appointment->appointment_date?->format('F d, Y') ?? '',
+            'appointment_date' => $appointment->appointment_date ? formatDateUkLong($appointment->appointment_date) : '',
             'appointment_time' => $appointmentTime,
             'department' => $appointment->department ? $appointment->department->name : 'General',
             'hospital_name' => config('app.name', 'Hospital'),

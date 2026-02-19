@@ -21,7 +21,7 @@
             <strong>Type:</strong> {{ ucfirst($document->type) }}<br>
             <strong>Patient:</strong> {{ $patient->full_name }}<br>
             @if($document->created_at)
-                <strong>Date:</strong> {{ $document->created_at->format('F d, Y') }}
+                <strong>Date:</strong> {{ formatDateUkLong($document->created_at) }}
             @endif
         </div>
         

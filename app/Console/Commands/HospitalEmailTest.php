@@ -420,7 +420,7 @@ class HospitalEmailTest extends Command
             case 'appointment_confirmation':
                 return array_merge($baseData, [
                     'doctor_name' => 'Dr. Test Doctor',
-                    'appointment_date' => now()->addDays(7)->format('F d, Y'),
+                    'appointment_date' => formatDateUkLong(now()->addDays(7)),
                     'appointment_time' => '2:00 PM',
                 ]);
             

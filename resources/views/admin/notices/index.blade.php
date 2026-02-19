@@ -98,10 +98,10 @@
                                     @if($notice->starts_at || $notice->expires_at)
                                         <small class="text-muted">
                                             @if($notice->starts_at)
-                                                <div><i class="fas fa-play text-success me-1"></i>{{ $notice->starts_at->format('M d, Y') }}</div>
+                                                <div><i class="fas fa-play text-success me-1"></i>{{ formatDateUk($notice->starts_at) }}</div>
                                             @endif
                                             @if($notice->expires_at)
-                                                <div><i class="fas fa-stop text-danger me-1"></i>{{ $notice->expires_at->format('M d, Y') }}</div>
+                                                <div><i class="fas fa-stop text-danger me-1"></i>{{ formatDateUk($notice->expires_at) }}</div>
                                             @endif
                                         </small>
                                     @else
@@ -109,7 +109,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <small class="text-muted">{{ $notice->created_at->format('M d, Y') }}</small>
+                                    <small class="text-muted">{{ formatDateUk($notice->created_at) }}</small>
                                     @if($notice->creator)
                                         <br><small class="text-muted">by {{ $notice->creator->name }}</small>
                                     @endif

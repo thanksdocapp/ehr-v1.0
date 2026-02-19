@@ -407,7 +407,7 @@ class AppointmentsController extends Controller
                     'id' => $appointment->department_id,
                     'name' => $appointment->department->name ?? 'N/A'
                 ],
-                'appointment_date' => $appointment->appointment_date->format('M d, Y'),
+                'appointment_date' => formatDateUk($appointment->appointment_date),
                 'appointment_time' => $appointment->appointment_time->format('h:i A'),
                 'status' => $appointment->status,
                 'type' => $appointment->type ?? 'consultation',

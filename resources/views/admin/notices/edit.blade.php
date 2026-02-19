@@ -304,14 +304,14 @@
                     <div class="modern-card-body">
                         <div class="mb-3">
                             <h6 class="text-muted mb-2"><i class="fas fa-calendar me-2"></i>Created</h6>
-                            <p class="mb-0">{{ $notice->created_at->format('M d, Y H:i') }}</p>
+                            <p class="mb-0">{{ formatDateTimeUk($notice->created_at) }}</p>
                             @if($notice->creator)
                                 <small class="text-muted">by {{ $notice->creator->name }}</small>
                             @endif
                         </div>
                         <div class="mb-3">
                             <h6 class="text-muted mb-2"><i class="fas fa-clock me-2"></i>Last Updated</h6>
-                            <p class="mb-0">{{ $notice->updated_at->format('M d, Y H:i') }}</p>
+                            <p class="mb-0">{{ formatDateTimeUk($notice->updated_at) }}</p>
                         </div>
                         <div>
                             <h6 class="text-muted mb-2"><i class="fas fa-lightbulb me-2"></i>Best Practices</h6>

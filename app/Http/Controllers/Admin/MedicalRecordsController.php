@@ -712,11 +712,11 @@ class MedicalRecordsController extends Controller
                 return [
                     'id' => $appointment->id,
                     'appointment_number' => $appointment->appointment_number,
-                    'date' => $appointment->appointment_date->format('M d, Y'),
+                    'date' => formatDateUk($appointment->appointment_date),
                     'time' => $appointment->appointment_time,
                     'doctor' => $appointment->doctor->full_name,
                     'status' => $appointment->status,
-                    'display' => "#{$appointment->appointment_number} - {$appointment->appointment_date->format('M d, Y')} - " . formatDoctorName($appointment->doctor->full_name)
+                    'display' => "#{$appointment->appointment_number} - " . formatDateUk($appointment->appointment_date) . " - " . formatDoctorName($appointment->doctor->full_name)
                 ];
             });
 
@@ -743,7 +743,7 @@ class MedicalRecordsController extends Controller
             $recordInfo = [
                 'doctor_name' => $doctor ? $doctor->full_name : 'Medical Team',
                 'record_type' => ucfirst($medicalRecord->record_type),
-                'creation_date' => $medicalRecord->created_at->format('F d, Y'),
+                'creation_date' => formatDateUkLong($medicalRecord->created_at),
                 'has_diagnosis' => !empty($medicalRecord->diagnosis),
                 'has_treatment' => !empty($medicalRecord->treatment),
                 'follow_up_required' => !empty($medicalRecord->follow_up_date),
@@ -795,7 +795,7 @@ class MedicalRecordsController extends Controller
                 'explanation' => $emailContent['explanation'],
                 'treatment_options' => $medicalRecord->treatment ?? 'Treatment options will be discussed with your doctor.',
                 'follow_up_instructions' => $medicalRecord->follow_up_date ? 
-                    'Please schedule a follow-up appointment for ' . $medicalRecord->follow_up_date->format('F d, Y') : 
+                    'Please schedule a follow-up appointment for ' . formatDateUkLong($medicalRecord->follow_up_date) : 
                     'Follow-up care will be discussed with your healthcare provider.',
                 'urgency_level' => $emailContent['urgency_level'],
                 'next_steps' => $emailContent['next_steps']
@@ -1133,11 +1133,11 @@ class MedicalRecordsController extends Controller
             $diagnosisInfo = [
                 'diagnosis' => $medicalRecord->diagnosis,
                 'doctor_name' => $doctor ? $doctor->full_name : 'Medical Team',
-                'diagnosis_date' => $medicalRecord->updated_at->format('F d, Y'),
+                'diagnosis_date' => formatDateUkLong($medicalRecord->updated_at),
                 'explanation' => 'A significant diagnosis has been added to your medical record.',
                 'treatment_options' => $medicalRecord->treatment ?? 'Treatment options will be discussed with your doctor.',
                 'follow_up_instructions' => $medicalRecord->follow_up_date ? 
-                    'Please schedule a follow-up appointment for ' . $medicalRecord->follow_up_date->format('F d, Y') : 
+                    'Please schedule a follow-up appointment for ' . formatDateUkLong($medicalRecord->follow_up_date) : 
                     'Follow-up care will be discussed with your healthcare provider.',
                 'urgency_level' => $changes['diagnosis']['significance'] === 'high' ? 'High' : 'Standard',
                 'next_steps' => 'Please contact your healthcare provider to discuss this diagnosis in detail.'
@@ -1154,7 +1154,7 @@ class MedicalRecordsController extends Controller
                 'new_medications' => 'Please refer to your updated medical record for medication details.',
                 'special_instructions' => $medicalRecord->notes ?? 'Follow the updated care instructions provided.',
                 'next_appointment' => $medicalRecord->follow_up_date ? 
-                    $medicalRecord->follow_up_date->format('F d, Y') : 
+                    formatDateUkLong($medicalRecord->follow_up_date) : 
                     'Please schedule as recommended by your doctor.',
                 'monitoring_requirements' => 'Follow up with your healthcare provider as scheduled.'
             ];

@@ -411,11 +411,11 @@
                         </div>
                         <div class="mb-3">
                             <small class="text-muted d-block">Registered Date</small>
-                            <strong>{{ $patient->created_at->format('M d, Y') }}</strong>
+                            <strong>{{ formatDateUk($patient->created_at) }}</strong>
                         </div>
                         <div class="mb-0">
                             <small class="text-muted d-block">Last Updated</small>
-                            <strong>{{ $patient->updated_at->format('M d, Y g:i A') }}</strong>
+                            <strong>{{ formatDateTimeUkAmPm($patient->updated_at) }}</strong>
                         </div>
                     </div>
                 </div>

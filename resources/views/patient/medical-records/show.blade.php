@@ -65,7 +65,7 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-calendar text-primary me-2"></i>
                                 <div>
-                                    <strong>{{ $record->created_at->format('l, M d, Y') }}</strong><br>
+                                    <strong>{{ $record->created_at->format('l, j M Y') }}</strong><br>
                                     <span class="text-muted">{{ $record->created_at->format('g:i A') }}</span>
                                 </div>
                             </div>
@@ -87,7 +87,7 @@
                                 <i class="fas fa-calendar-check text-info me-2"></i>
                                 <div>
                                     <strong>#{{ $record->appointment->appointment_number }}</strong><br>
-                                    <span class="text-muted">{{ $record->appointment->appointment_date->format('M d, Y') }}</span>
+                                    <span class="text-muted">{{ formatDateUk($record->appointment->appointment_date) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -98,7 +98,7 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-calendar-plus text-warning me-2"></i>
                                 <div>
-                                    <strong>{{ \Carbon\Carbon::parse($record->follow_up_date)->format('M d, Y') }}</strong><br>
+                                    <strong>{{ formatDateUk($record->follow_up_date) }}</strong><br>
                                     <span class="text-muted">
                                         @if(\Carbon\Carbon::parse($record->follow_up_date)->isFuture())
                                             {{ \Carbon\Carbon::parse($record->follow_up_date)->diffForHumans() }}
@@ -383,7 +383,7 @@
                     @if($record->follow_up_date && \Carbon\Carbon::parse($record->follow_up_date)->isFuture())
                         <div class="alert alert-info mb-2">
                             <i class="fas fa-info-circle me-1"></i>
-                            <small>You have a follow-up appointment scheduled for {{ \Carbon\Carbon::parse($record->follow_up_date)->format('M d, Y') }}.</small>
+                            <small>You have a follow-up appointment scheduled for {{ formatDateUk($record->follow_up_date) }}.</small>
                         </div>
                     @endif
 
@@ -454,7 +454,7 @@
                             <div class="timeline-marker bg-primary"></div>
                             <div class="timeline-content">
                                 <h6 class="mb-1">Record Created</h6>
-                                <p class="text-muted mb-0">{{ $record->created_at->format('M d, Y g:i A') }}</p>
+                                <p class="text-muted mb-0">{{ formatDateTimeUkAmPm($record->created_at) }}</p>
                             </div>
                         </div>
                         
@@ -463,7 +463,7 @@
                                 <div class="timeline-marker bg-info"></div>
                                 <div class="timeline-content">
                                     <h6 class="mb-1">Record Updated</h6>
-                                    <p class="text-muted mb-0">{{ $record->updated_at->format('M d, Y g:i A') }}</p>
+                                    <p class="text-muted mb-0">{{ formatDateTimeUkAmPm($record->updated_at) }}</p>
                                 </div>
                             </div>
                         @endif
@@ -473,7 +473,7 @@
                                 <div class="timeline-marker bg-warning"></div>
                                 <div class="timeline-content">
                                     <h6 class="mb-1">Follow-up Scheduled</h6>
-                                    <p class="text-muted mb-0">{{ \Carbon\Carbon::parse($record->follow_up_date)->format('M d, Y') }}</p>
+                                    <p class="text-muted mb-0">{{ formatDateUk($record->follow_up_date) }}</p>
                                 </div>
                             </div>
                         @endif

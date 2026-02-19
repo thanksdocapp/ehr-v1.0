@@ -171,7 +171,7 @@
                 @if($formRequest->expires_at)
                     <div class="expires-notice">
                         <i class="fas fa-clock me-2"></i>
-                        This form expires on {{ $formRequest->expires_at->format('F d, Y \a\t H:i') }}
+                        This form expires on {{ \Carbon\Carbon::parse($formRequest->expires_at)->format('j F Y \a\t H:i') }}
                     </div>
                 @endif
 

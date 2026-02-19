@@ -158,7 +158,7 @@
                         <div>
                             <div class="fw-semibold">Consultation</div>
                             <div class="text-muted small">
-                                {{ $survey->appointment?->appointment_date?->format('F d, Y') ?? 'N/A' }}
+                                {{ $survey->appointment && $survey->appointment->appointment_date ? formatDateUkLong($survey->appointment->appointment_date) : 'N/A' }}
                             </div>
                         </div>
                         <div class="text-md-end">

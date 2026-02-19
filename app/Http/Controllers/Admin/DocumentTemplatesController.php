@@ -420,7 +420,7 @@ class DocumentTemplatesController extends Controller
                         'id' => $version->id,
                         'version' => $version->version,
                         'is_latest' => $version->is_latest,
-                        'created_at' => $version->created_at->format('M j, Y H:i'),
+                        'created_at' => formatDateTimeUk($version->created_at),
                         'creator' => $version->creator?->name ?? 'System',
                     ];
                 }),

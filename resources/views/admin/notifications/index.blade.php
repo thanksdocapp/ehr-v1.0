@@ -90,7 +90,7 @@
                                 <div class="small text-muted">
                                     {{ $notification->created_at->diffForHumans() }}
                                     <br>
-                                    {{ $notification->created_at->format('M j, Y g:i A') }}
+                                    {{ formatDateTimeUkAmPm($notification->created_at) }}
                                 </div>
                             </td>
                             <td>

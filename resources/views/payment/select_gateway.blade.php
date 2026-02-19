@@ -113,12 +113,12 @@
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Invoice Date:</span>
-                        <span>{{ $invoice->invoice_date->format('M d, Y') }}</span>
+                        <span>{{ formatDateUk($invoice->invoice_date) }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Due Date:</span>
                         <span class="{{ $invoice->due_date->lt(today()) && $invoice->status !== 'paid' ? 'text-danger' : '' }}">
-                            {{ $invoice->due_date->format('M d, Y') }}
+                            {{ formatDateUk($invoice->due_date) }}
                         </span>
                     </div>
                     <hr>

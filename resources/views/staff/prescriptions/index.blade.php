@@ -179,7 +179,7 @@
                                 <td>
                                     <div class="fw-bold text-primary">{{ $prescription->prescription_number }}</div>
                                     @if($prescription->follow_up_date)
-                                        <small class="text-muted">Follow-up: {{ $prescription->follow_up_date->format('M d, Y') }}</small>
+                                        <small class="text-muted">Follow-up: {{ formatDateUk($prescription->follow_up_date) }}</small>
                                     @endif
                                 </td>
                                 <td>
@@ -221,7 +221,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ $prescription->created_at->format('M d, Y') }}</div>
+                                    <div class="fw-bold">{{ formatDateUk($prescription->created_at) }}</div>
                                     <small class="text-muted">{{ $prescription->created_at->format('h:i A') }}</small>
                                 </td>
                                 <td>
@@ -236,7 +236,7 @@
                                     @endphp
                                     <span class="badge bg-{{ $color }}">{{ ucfirst($prescription->status) }}</span>
                                     @if($prescription->dispensed_at)
-                                        <div><small class="text-muted">{{ $prescription->dispensed_at->format('M d, Y') }}</small></div>
+                                        <div><small class="text-muted">{{ formatDateUk($prescription->dispensed_at) }}</small></div>
                                     @endif
                                 </td>
                                 <td>

@@ -231,7 +231,7 @@ class BillingsController extends Controller
                 $billingInfo = [
                     'invoice_number' => $billing->id,
                     'amount_due' => number_format($billing->total_amount, 2),
-                    'due_date' => $billing->due_date ? $billing->due_date->format('F d, Y') : date('F d, Y', strtotime('+30 days')),
+                    'due_date' => $billing->due_date ? formatDateUkLong($billing->due_date) : formatDateUkLong(now()->addDays(30)),
                     'service_description' => $billing->description,
                 ];
                 $this->emailService->sendPaymentReminder($billing->patient, $billingInfo);
@@ -514,7 +514,7 @@ class BillingsController extends Controller
             'invoice_number' => $invoice->invoice_number,
             'invoice_status' => ucfirst(str_replace('_', ' ', $invoice->status)),
             'payments_made' => number_format($paymentsTotal, 2),
-            'last_payment_date' => $lastPayment ? $lastPayment->created_at->format('M d, Y') : null,
+            'last_payment_date' => $lastPayment ? formatDateUk($lastPayment->created_at) : null,
         ]);
     }
 

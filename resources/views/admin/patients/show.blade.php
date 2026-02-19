@@ -632,7 +632,7 @@
                                                             <span class="badge bg-{{ $statusColor }}">{{ ucfirst($document->status) }}</span>
                                                         </td>
                                                         <td>
-                                                            <small>{{ $document->created_at->format('M d, Y') }}</small>
+                                                            <small>{{ formatDateUk($document->created_at) }}</small>
                                                         </td>
                                                         <td>
                                                             <small>{{ $document->creator->name ?? 'N/A' }}</small>

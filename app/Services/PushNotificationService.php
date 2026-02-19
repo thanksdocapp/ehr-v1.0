@@ -183,7 +183,7 @@ class PushNotificationService
         $patient = $appointment->patient;
         $title = 'New Appointment';
         $message = "New appointment scheduled with {$patient->full_name} on " .
-                   $appointment->appointment_date->format('M d, Y') . " at " .
+                   formatDateUk($appointment->appointment_date) . " at " .
                    $appointment->appointment_time->format('h:i A');
 
         return $this->sendToUser($doctor, $title, $message, [
@@ -207,7 +207,7 @@ class PushNotificationService
 
         $title = 'Appointment Update';
         $message = ($statusMessages[$status] ?? 'Your appointment status has changed') .
-                   " for " . $appointment->appointment_date->format('M d, Y');
+                   " for " . formatDateUk($appointment->appointment_date);
 
         return $this->sendToPatient($patient, $title, $message, [
             'type' => 'appointment',

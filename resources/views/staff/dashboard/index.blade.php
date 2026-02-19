@@ -29,7 +29,7 @@
                                 @if($notice->expires_at)
                                     <small class="text-muted">
                                         <i class="fas fa-clock me-1"></i>
-                                        Expires: {{ $notice->expires_at->format('M d, Y H:i') }}
+                                        Expires: {{ formatDateTimeUk($notice->expires_at) }}
                                     </small>
                                 @endif
                             </div>
@@ -374,7 +374,7 @@
                                         </td>
                                         <td>
                                             <div>
-                                                <div class="fw-medium">{{ $appointment->appointment_date->format('M d, Y') }}</div>
+                                                <div class="fw-medium">{{ formatDateUk($appointment->appointment_date) }}</div>
                                                 <small class="text-muted">{{ $appointment->appointment_time ?? 'TBD' }}</small>
                                             </div>
                                         </td>

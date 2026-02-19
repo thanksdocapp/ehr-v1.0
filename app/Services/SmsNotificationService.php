@@ -162,7 +162,7 @@ class SmsNotificationService
     public function sendAppointmentReminder(Patient $patient, $appointment): array
     {
         $message = "Reminder: You have an appointment on " .
-                   $appointment->appointment_date->format('M d, Y') . " at " .
+                   formatDateUk($appointment->appointment_date) . " at " .
                    $appointment->appointment_time->format('h:i A') . ". " .
                    "Please arrive 15 minutes early. - " . config('app.name');
 
@@ -175,7 +175,7 @@ class SmsNotificationService
     public function sendAppointmentConfirmation(Patient $patient, $appointment): array
     {
         $message = "Your appointment has been confirmed for " .
-                   $appointment->appointment_date->format('M d, Y') . " at " .
+                   formatDateUk($appointment->appointment_date) . " at " .
                    $appointment->appointment_time->format('h:i A') . ". " .
                    "Thank you for choosing " . config('app.name');
 

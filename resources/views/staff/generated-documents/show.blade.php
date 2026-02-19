@@ -91,12 +91,12 @@
                         </tr>
                         <tr>
                             <td class="text-muted">Created</td>
-                            <td class="text-end">{{ $generatedDocument->created_at->format('M d, Y H:i') }}</td>
+                            <td class="text-end">{{ formatDateTimeUk($generatedDocument->created_at) }}</td>
                         </tr>
                         @if($generatedDocument->sent_at)
                         <tr>
                             <td class="text-muted">Sent</td>
-                            <td class="text-end">{{ $generatedDocument->sent_at->format('M d, Y H:i') }}</td>
+                            <td class="text-end">{{ formatDateTimeUk($generatedDocument->sent_at) }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Sent To</td>

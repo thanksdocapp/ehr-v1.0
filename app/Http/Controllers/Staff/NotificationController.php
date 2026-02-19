@@ -288,7 +288,7 @@ class NotificationController extends Controller
                     'type' => $notification->type ?? 'info',
                     'icon' => $this->getTypeIcon($notification->type),
                     'url' => $notification->action_url ?? route('staff.dashboard'),
-                    'created_at' => $notification->created_at->format('M j, g:i A'),
+                    'created_at' => $notification->created_at->format('j M, g:i A'),
                     'notification_id' => $notification->id,
                 ];
             });

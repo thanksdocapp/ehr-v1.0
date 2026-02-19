@@ -78,8 +78,8 @@
 <body>
     <div class="header">
         <h1>Consultations Report</h1>
-        <p>Generated on: {{ \Carbon\Carbon::now()->format('F d, Y h:i A') }}</p>
-        <p>Period: {{ \Carbon\Carbon::parse($startDate)->format('F d, Y') }} to {{ \Carbon\Carbon::parse($endDate)->format('F d, Y') }}</p>
+        <p>Generated on: {{ formatDateTimeUkAmPm(now()) }}</p>
+        <p>Period: {{ formatDateUkLong($startDate) }} to {{ formatDateUkLong($endDate) }}</p>
         @if($department)
         <p>Clinic: {{ $department->name }}</p>
         @endif

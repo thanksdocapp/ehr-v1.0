@@ -114,7 +114,7 @@
 
         <div class="details">
             <p><strong><i class="fas fa-file-alt me-2 text-muted"></i>Form:</strong> {{ $formRequest->template->name ?? ($formRequest->patientDocument->title ?? 'Form') }}</p>
-            <p><strong><i class="fas fa-calendar me-2 text-muted"></i>Submitted:</strong> {{ $formRequest->completed_at->format('F d, Y \a\t H:i') }}</p>
+            <p><strong><i class="fas fa-calendar me-2 text-muted"></i>Submitted:</strong> {{ \Carbon\Carbon::parse($formRequest->completed_at)->format('j F Y \a\t H:i') }}</p>
             <p><strong><i class="fas fa-hashtag me-2 text-muted"></i>Reference:</strong> #{{ $formRequest->id }}</p>
         </div>
 

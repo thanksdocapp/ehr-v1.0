@@ -203,9 +203,9 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ $report->collection_date->format('M d, Y') }}</div>
+                                    <div class="fw-bold">{{ formatDateUk($report->collection_date) }}</div>
                                     @if($report->report_date)
-                                        <small class="text-muted">Report: {{ $report->report_date->format('M d, Y') }}</small>
+                                        <small class="text-muted">Report: {{ formatDateUk($report->report_date) }}</small>
                                     @endif
                                 </td>
                                 <td>

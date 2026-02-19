@@ -289,7 +289,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ $document->created_at->format('M d, Y') }}</div>
+                                    <div class="fw-bold">{{ formatDateUk($document->created_at) }}</div>
                                     <small class="text-muted">{{ $document->created_at->format('h:i A') }}</small>
                                 </td>
                                 <td>

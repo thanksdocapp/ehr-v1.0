@@ -244,7 +244,7 @@ class AppointmentController extends Controller
                 'appointment' => [
                     'id' => $appointment->id,
                     'number' => $appointment->appointment_number,
-                    'date' => Carbon::parse($appointment->appointment_date)->format('M d, Y'),
+                    'date' => formatDateUk($appointment->appointment_date),
                     'time' => Carbon::parse($appointment->appointment_time)->format('g:i A'),
                     'doctor' => $appointment->doctor->full_name,
                     'department' => $appointment->department->name,
@@ -731,7 +731,7 @@ class AppointmentController extends Controller
             return [
                 'id' => $appointment->id,
                 'appointment_number' => $appointment->appointment_number,
-                'date' => Carbon::parse($appointment->appointment_date)->format('M d, Y'),
+                'date' => formatDateUk($appointment->appointment_date),
                 'time' => Carbon::parse($appointment->appointment_time)->format('g:i A'),
                 'status' => ucfirst($appointment->status),
                 'status_color' => $statusColors[$appointment->status] ?? 'secondary',
@@ -827,7 +827,7 @@ class AppointmentController extends Controller
                 'phone' => $patient->phone,
                 'appointments_count' => $patient->appointments->count(),
                 'last_appointment' => $patient->appointments->first() ? $patient->appointments->first()->appointment_date : null,
-                'registration_date' => $patient->created_at->format('M d, Y'),
+                'registration_date' => formatDateUk($patient->created_at),
             ];
         })->toArray();
         

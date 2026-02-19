@@ -354,14 +354,14 @@
                     @if($labReport->appointment)
                         <div class="related-info">
                             <strong><i class="fas fa-calendar-check me-2"></i>Related Appointment</strong><br>
-                            <small>Appointment #{{ $labReport->appointment->id }} - {{ $labReport->appointment->appointment_date->format('M j, Y g:i A') }}</small>
+                            <small>Appointment #{{ $labReport->appointment->id }} - {{ formatDateTimeUkAmPm($labReport->appointment->appointment_date) }}</small>
                         </div>
                     @endif
 
                     @if($labReport->medicalRecord)
                         <div class="related-info">
                             <strong><i class="fas fa-file-medical me-2"></i>Related Medical Record</strong><br>
-                            <small>Record #{{ $labReport->medicalRecord->id }} - {{ $labReport->medicalRecord->created_at->format('M j, Y') }}</small>
+                            <small>Record #{{ $labReport->medicalRecord->id }} - {{ formatDateUk($labReport->medicalRecord->created_at) }}</small>
                         </div>
                     @endif
                 </div>
@@ -466,12 +466,12 @@
                 <h6><i class="fas fa-clock me-2"></i>Report Timeline</h6>
                 <div class="timeline">
                     <div class="timeline-item">
-                        <strong>Created:</strong> {{ $labReport->created_at->format('M j, Y g:i A') }}<br>
+                        <strong>Created:</strong> {{ formatDateTimeUkAmPm($labReport->created_at) }}<br>
                         <small class="text-muted">{{ $labReport->created_at->diffForHumans() }}</small>
                     </div>
                     @if($labReport->updated_at != $labReport->created_at)
                         <div class="timeline-item mt-2">
-                            <strong>Last Updated:</strong> {{ $labReport->updated_at->format('M j, Y g:i A') }}<br>
+                            <strong>Last Updated:</strong> {{ formatDateTimeUkAmPm($labReport->updated_at) }}<br>
                             <small class="text-muted">{{ $labReport->updated_at->diffForHumans() }}</small>
                         </div>
                     @endif

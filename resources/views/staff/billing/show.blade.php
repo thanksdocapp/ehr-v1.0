@@ -77,11 +77,11 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label text-muted"><i class="fas fa-calendar me-1"></i>Billing Date</label>
-                            <div class="fw-bold">{{ $billing->billing_date->format('F j, Y') }}</div>
+                            <div class="fw-bold">{{ formatDateUkLong($billing->billing_date) }}</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted"><i class="fas fa-calendar-alt me-1"></i>Due Date</label>
-                            <div class="fw-bold">{{ $billing->due_date ? $billing->due_date->format('F j, Y') : 'N/A' }}</div>
+                            <div class="fw-bold">{{ $billing->due_date ? formatDateUkLong($billing->due_date) : 'N/A' }}</div>
                         </div>
                     </div>
 
@@ -219,18 +219,18 @@
                     @if($billing->paid_at)
                         <div class="mb-3">
                             <label class="form-label text-muted">Paid At</label>
-                            <div class="fw-bold">{{ $billing->paid_at->format('M j, Y h:i A') }}</div>
+                            <div class="fw-bold">{{ formatDateTimeUkAmPm($billing->paid_at) }}</div>
                         </div>
                     @endif
 
                     <div class="mb-3">
                         <label class="form-label text-muted">Created</label>
-                        <div class="fw-bold">{{ $billing->created_at->format('M j, Y h:i A') }}</div>
+                        <div class="fw-bold">{{ formatDateTimeUkAmPm($billing->created_at) }}</div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label text-muted">Last Updated</label>
-                        <div class="fw-bold">{{ $billing->updated_at->format('M j, Y h:i A') }}</div>
+                        <div class="fw-bold">{{ formatDateTimeUkAmPm($billing->updated_at) }}</div>
                     </div>
                 </div>
             </div>

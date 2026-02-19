@@ -125,7 +125,7 @@
                         </tr>
                         <tr>
                             <td class="text-muted">Created</td>
-                            <td class="text-end">{{ $template->created_at->format('M d, Y') }}</td>
+                            <td class="text-end">{{ formatDateUk($template->created_at) }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Created By</td>
@@ -134,7 +134,7 @@
                         @if($template->updated_by)
                             <tr>
                                 <td class="text-muted">Last Updated</td>
-                                <td class="text-end">{{ $template->updated_at->format('M d, Y') }}</td>
+                                <td class="text-end">{{ formatDateUk($template->updated_at) }}</td>
                             </tr>
                         @endif
                     </table>
@@ -215,7 +215,7 @@
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <div class="fw-bold">{{ $doc->patient->full_name ?? 'Unknown Patient' }}</div>
-                                        <small class="text-muted">{{ $doc->created_at->format('M d, Y') }}</small>
+                                        <small class="text-muted">{{ formatDateUk($doc->created_at) }}</small>
                                     </div>
                                     <span class="badge {{ $doc->status_badge_class }}">{{ $doc->status_label }}</span>
                                 </div>

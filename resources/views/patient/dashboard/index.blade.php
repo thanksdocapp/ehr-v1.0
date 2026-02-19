@@ -63,7 +63,7 @@
                     </p>
                     <p class="mb-0">
                         <i class="fas fa-clock me-1"></i>
-                        {{ $nextAppointment->appointment_date->format('M d, Y') }} at 
+                        {{ formatDateUk($nextAppointment->appointment_date) }} at 
                         {{ \Carbon\Carbon::parse($nextAppointment->appointment_time)->format('g:i A') }}
                     </p>
                 </div>
@@ -144,7 +144,7 @@
                                             <p class="mb-1 text-muted">{{ $appointment->department->name }}</p>
                                             <small class="text-muted">
                                                 <i class="fas fa-calendar me-1"></i>
-                                                {{ $appointment->appointment_date->format('M d, Y') }}
+                                                {{ formatDateUk($appointment->appointment_date) }}
                                                 <i class="fas fa-clock ms-2 me-1"></i>
                                                 {{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}
                                             </small>
@@ -194,7 +194,7 @@
                                             <h6 class="mb-1">{{ $record->diagnosis ?? 'General Consultation' }}</h6>
                                             <p class="mb-1 text-muted">{{ formatDoctorName($record->doctor->full_name) }}</p>
                                             <small class="text-muted">
-                                                {{ $record->created_at->format('M d, Y') }}
+                                                {{ formatDateUk($record->created_at) }}
                                             </small>
                                         </div>
                                         <span class="badge bg-secondary">
@@ -240,7 +240,7 @@
                                             <h6 class="mb-1">{{ $prescription->medication_name ?? 'Prescription' }}</h6>
                                             <p class="mb-1 text-muted">Prescribed by {{ formatDoctorName($prescription->doctor->full_name) }}</p>
                                             <small class="text-muted">
-                                                {{ $prescription->created_at->format('M d, Y') }}
+                                                {{ formatDateUk($prescription->created_at) }}
                                             </small>
                                         </div>
                                         <span class="badge bg-success">
@@ -284,7 +284,7 @@
                                             <h6 class="mb-1">Invoice #{{ $invoice->invoice_number }}</h6>
                                             <p class="mb-1 text-muted">{{ CurrencyHelper::format($invoice->total_amount) }}</p>
                                             <small class="text-muted">
-                                                Due: {{ $invoice->due_date->format('M d, Y') }}
+                                                Due: {{ formatDateUk($invoice->due_date) }}
                                             </small>
                                         </div>
                                         <span class="badge bg-{{ $invoice->due_date->isPast() ? 'danger' : 'warning' }}">

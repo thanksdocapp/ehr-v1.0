@@ -72,7 +72,7 @@ class SavedReport extends Model
      */
     public function getFormattedCreatedAtAttribute(): string
     {
-        return $this->created_at->format('M d, Y');
+        return formatDateUk($this->created_at);
     }
 
     /**

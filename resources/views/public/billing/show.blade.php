@@ -183,12 +183,12 @@
                     <div class="row mb-4">
                         <div class="col-md-4">
                             <h6 class="text-muted mb-2">Invoice Date</h6>
-                            <p class="mb-0">{{ $invoice->invoice_date->format('M d, Y') }}</p>
+                            <p class="mb-0">{{ formatDateUk($invoice->invoice_date) }}</p>
                         </div>
                         <div class="col-md-4">
                             <h6 class="text-muted mb-2">Due Date</h6>
                             <p class="mb-0 {{ $invoice->due_date && $invoice->due_date->lt(today()) && $invoice->status !== 'paid' ? 'text-danger' : '' }}">
-                                {{ $invoice->due_date ? $invoice->due_date->format('M d, Y') : 'N/A' }}
+                                {{ $invoice->due_date ? formatDateUk($invoice->due_date) : 'N/A' }}
                                 @if($invoice->due_date && $invoice->due_date->lt(today()) && $invoice->status !== 'paid')
                                     <i class="fas fa-exclamation-triangle ms-1"></i>
                                 @endif

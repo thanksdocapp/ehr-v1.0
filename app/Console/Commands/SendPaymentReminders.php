@@ -76,7 +76,7 @@ class SendPaymentReminders extends Command
                             $billingInfo = [
                                 'invoice_number' => $bill->invoice_number,
                                 'amount_due' => number_format($bill->amount_due, 2),
-                                'due_date' => $bill->due_date->format('F d, Y'),
+                                'due_date' => formatDateUkLong($bill->due_date),
                                 'service_description' => $bill->description ?? 'Medical Services',
                                 'days_overdue' => $days,
                             ];
@@ -119,7 +119,7 @@ class SendPaymentReminders extends Command
                     $mockBillingInfo = [
                         'invoice_number' => 'DEMO-' . now()->format('YmdHis'),
                         'amount_due' => rand(100, 1000) . '.00',
-                        'due_date' => now()->subDays(rand(7, 30))->format('F d, Y'),
+                        'due_date' => formatDateUkLong(now()->subDays(rand(7, 30))),
                         'service_description' => 'Medical Consultation Services',
                         'days_overdue' => rand(7, 30),
                     ];

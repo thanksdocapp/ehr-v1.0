@@ -44,7 +44,7 @@
                                     <strong>Paid Date:</strong>
                                 </div>
                                 <div class="col-6 mb-2">
-                                    {{ $invoice->paid_date->format('M d, Y g:i A') }}
+                                    {{ formatDateTimeUkAmPm($invoice->paid_date) }}
                                 </div>
                                 @endif
                             </div>

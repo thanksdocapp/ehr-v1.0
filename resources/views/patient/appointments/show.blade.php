@@ -94,7 +94,7 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-clock text-warning me-2"></i>
                                 <div>
-                                    <strong>{{ $appointment->created_at->format('M d, Y') }}</strong><br>
+                                    <strong>{{ formatDateUk($appointment->created_at) }}</strong><br>
                                     <span class="text-muted">{{ $appointment->created_at->format('g:i A') }}</span>
                                 </div>
                             </div>
@@ -210,7 +210,7 @@
                             <div class="timeline-marker bg-primary"></div>
                             <div class="timeline-content">
                                 <h6 class="mb-1">Appointment Booked</h6>
-                                <p class="text-muted mb-0">{{ $appointment->created_at->format('M d, Y g:i A') }}</p>
+                                <p class="text-muted mb-0">{{ formatDateTimeUkAmPm($appointment->created_at) }}</p>
                             </div>
                         </div>
                         
@@ -229,7 +229,7 @@
                                 <div class="timeline-marker bg-info"></div>
                                 <div class="timeline-content">
                                     <h6 class="mb-1">Appointment Completed</h6>
-                                    <p class="text-muted mb-0">{{ $appointment->appointment_date->format('M d, Y') }}</p>
+                                    <p class="text-muted mb-0">{{ formatDateUk($appointment->appointment_date) }}</p>
                                 </div>
                             </div>
                         @endif
@@ -240,7 +240,7 @@
                                 <div class="timeline-content">
                                     <h6 class="mb-1">Appointment Cancelled</h6>
                                     <p class="text-muted mb-0">
-                                        {{ $appointment->cancelled_at ? $appointment->cancelled_at->format('M d, Y g:i A') : 'Recently cancelled' }}
+                                        {{ $appointment->cancelled_at ? formatDateTimeUkAmPm($appointment->cancelled_at) : 'Recently cancelled' }}
                                         @if($appointment->cancelled_by)
                                             <br><small>Cancelled by: {{ ucfirst($appointment->cancelled_by) }}</small>
                                         @endif
@@ -385,7 +385,7 @@
                         
                         <div class="appointment-summary bg-light p-3 rounded">
                             <h6 class="mb-2">Appointment Details:</h6>
-                            <p class="mb-1"><strong>Date:</strong> {{ $appointment->appointment_date->format('M d, Y') }}</p>
+                            <p class="mb-1"><strong>Date:</strong> {{ formatDateUk($appointment->appointment_date) }}</p>
                             <p class="mb-1"><strong>Time:</strong> {{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</p>
                             <p class="mb-0"><strong>Doctor:</strong> {{ $appointment->doctor->full_name }}</p>
                         </div>

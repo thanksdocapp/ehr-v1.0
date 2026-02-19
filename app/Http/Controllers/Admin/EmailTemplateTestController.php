@@ -135,8 +135,8 @@ class EmailTemplateTestController extends Controller
                 'variables' => $template->variables ?? [],
                 'sender_name' => $template->sender_name,
                 'sender_email' => $template->sender_email,
-                'created_at' => $template->created_at->format('M d, Y h:i A'),
-                'updated_at' => $template->updated_at->format('M d, Y h:i A')
+                'created_at' => formatDateTimeUkAmPm($template->created_at),
+                'updated_at' => formatDateTimeUkAmPm($template->updated_at)
             ]
         ]);
     }

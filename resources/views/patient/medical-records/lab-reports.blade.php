@@ -152,7 +152,7 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex flex-column">
-                                            <strong>{{ $report->test_date->format('M d, Y') }}</strong>
+                                            <strong>{{ formatDateUk($report->test_date) }}</strong>
                                             <small class="text-muted">{{ $report->test_date->format('g:i A') }}</small>
                                         </div>
                                     </td>

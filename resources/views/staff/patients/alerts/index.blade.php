@@ -145,7 +145,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <small>{{ $alert->created_at->format('M d, Y') }}</small>
+                                        <small>{{ formatDateUk($alert->created_at) }}</small>
                                         @if($alert->creator)
                                             <br><small class="text-muted">by {{ $alert->creator->name }}</small>
                                         @endif

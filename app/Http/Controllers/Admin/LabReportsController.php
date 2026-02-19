@@ -202,7 +202,7 @@ class LabReportsController extends Controller
             try {
                 $labResult = [
                     'test_name' => $labReport->test_name,
-                    'test_date' => $labReport->test_date->format('F d, Y'),
+                    'test_date' => formatDateUkLong($labReport->test_date),
                     'doctor_name' => $labReport->doctor ? $labReport->doctor->name : 'Your Doctor',
                 ];
                 $emailService->sendTestResultsReady($labResult, $labReport->patient);
@@ -309,7 +309,7 @@ class LabReportsController extends Controller
                 try {
                     $labResult = [
                     'test_name' => $labReport->test_name,
-                    'test_date' => $labReport->test_date->format('F d, Y'),
+                    'test_date' => formatDateUkLong($labReport->test_date),
                     'doctor_name' => $labReport->doctor ? $labReport->doctor->name : 'Your Doctor',
                 ];
                 $emailService->sendTestResultsReady($labResult, $labReport->patient);

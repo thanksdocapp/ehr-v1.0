@@ -634,7 +634,7 @@
                                             <span class="badge bg-{{ $statusColor }} ms-2">{{ ucfirst($document->status) }}</span>
                                         </div>
                                         <div class="text-muted small">
-                                            <i class="fas fa-calendar me-1"></i>{{ $document->created_at->format('M d, Y') }}
+                                            <i class="fas fa-calendar me-1"></i>{{ formatDateUk($document->created_at) }}
                                             @if($document->creator)
                                                 <span class="ms-2"><i class="fas fa-user me-1"></i>{{ $document->creator->name }}</span>
                                             @endif
@@ -879,7 +879,7 @@
                     <div class="doctor-card-body">
                     <div class="mb-3">
                         <small class="text-muted d-block">Registered</small>
-                        <strong>{{ $patient->created_at ? $patient->created_at->format('M d, Y') : 'Unknown' }}</strong>
+                        <strong>{{ $patient->created_at ? formatDateUk($patient->created_at) : 'Unknown' }}</strong>
                     </div>
                     <div class="mb-3">
                         <small class="text-muted d-block">Last Updated</small>

@@ -173,7 +173,7 @@
                         </div>
                         <div class="mb-0">
                             <small class="text-muted d-block">Date of Birth</small>
-                            <strong>{{ $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : 'Not provided' }}</strong>
+                            <strong>{{ $patient->date_of_birth ? formatDateUk($patient->date_of_birth) : 'Not provided' }}</strong>
                             @if($patient->date_of_birth)
                                 <small class="text-muted">({{ $patient->age }} years old)</small>
                             @endif

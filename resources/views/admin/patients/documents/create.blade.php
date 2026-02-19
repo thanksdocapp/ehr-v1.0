@@ -72,7 +72,7 @@
                             <div class="col-md-6">
                                 <label class="form-label text-muted small">Date of Birth</label>
                                 <div>
-                                    {{ $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : 'N/A' }}
+                                    {{ $patient->date_of_birth ? formatDateUk($patient->date_of_birth) : 'N/A' }}
                                     @if($patient->date_of_birth)
                                         <span class="badge bg-secondary ms-1">{{ $patient->age }} years</span>
                                     @endif

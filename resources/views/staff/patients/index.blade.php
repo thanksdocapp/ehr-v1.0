@@ -671,7 +671,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ $patient->created_at->format('M d, Y') }}</div>
+                                    <div class="fw-bold">{{ formatDateUk($patient->created_at) }}</div>
                                     <small class="text-muted">{{ $patient->created_at->format('h:i A') }}</small>
                                 </td>
                                 <td>
@@ -877,7 +877,7 @@
                                         <div class="mb-3">
                                             <small class="text-muted d-block mb-2 fw-semibold"><i class="fas fa-calendar me-1"></i>Registration</small>
                                             <div class="ps-3">
-                                                <div class="fw-semibold small">{{ $patient->created_at->format('M d, Y') }}</div>
+                                                <div class="fw-semibold small">{{ formatDateUk($patient->created_at) }}</div>
                                                 <small class="text-muted">{{ $patient->created_at->format('h:i A') }}</small>
                                             </div>
                                         </div>

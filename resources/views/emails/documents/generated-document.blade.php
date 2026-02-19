@@ -95,7 +95,7 @@
                 </tr>
                 <tr>
                     <td>Date:</td>
-                    <td>{{ $document->created_at->format('F d, Y') }}</td>
+                    <td>{{ formatDateUkLong($document->created_at) }}</td>
                 </tr>
             </table>
         </div>

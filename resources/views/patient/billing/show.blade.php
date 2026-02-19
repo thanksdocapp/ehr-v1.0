@@ -62,12 +62,12 @@
                     <div class="row mb-4">
                         <div class="col-md-4">
                             <h6 class="text-muted mb-2">Invoice Date</h6>
-                            <p class="mb-0">{{ $invoice->invoice_date->format('M d, Y') }}</p>
+                            <p class="mb-0">{{ formatDateUk($invoice->invoice_date) }}</p>
                         </div>
                         <div class="col-md-4">
                             <h6 class="text-muted mb-2">Due Date</h6>
                             <p class="mb-0 {{ $invoice->due_date->lt(today()) && $invoice->status !== 'paid' ? 'text-danger' : '' }}">
-                                {{ $invoice->due_date->format('M d, Y') }}
+                                {{ formatDateUk($invoice->due_date) }}
                                 @if($invoice->due_date->lt(today()) && $invoice->status !== 'paid')
                                     <i class="fas fa-exclamation-triangle ms-1"></i>
                                 @endif
@@ -76,7 +76,7 @@
                         <div class="col-md-4">
                             @if($invoice->paid_date)
                                 <h6 class="text-muted mb-2">Paid Date</h6>
-                                <p class="mb-0 text-success">{{ $invoice->paid_date->format('M d, Y') }}</p>
+                                <p class="mb-0 text-success">{{ formatDateUk($invoice->paid_date) }}</p>
                             @endif
                         </div>
                     </div>
@@ -93,7 +93,7 @@
                             <h6 class="text-muted mb-2">Related Appointment</h6>
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-calendar-check text-primary me-2"></i>
-                                <span>{{ $invoice->appointment->appointment_date->format('M d, Y g:i A') }}</span>
+                                <span>{{ formatDateTimeUkAmPm($invoice->appointment->appointment_date) }}</span>
                                 @if($invoice->appointment->doctor)
                                     <span class="ms-2 text-muted">with {{ formatDoctorName($invoice->appointment->doctor->full_name) }}</span>
                                 @endif
@@ -204,7 +204,7 @@
                                 <div>
                                     <div class="fw-bold">{{ CurrencyHelper::format($payment->amount) }}</div>
                                     <small class="text-muted">
-                                        {{ $payment->payment_date->format('M d, Y g:i A') }}
+                                        {{ formatDateTimeUkAmPm($payment->payment_date) }}
                                     </small>
                                     @if($payment->transaction_id)
                                         <br><small class="text-muted">{{ $payment->transaction_id }}</small>

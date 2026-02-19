@@ -77,9 +77,9 @@
                         <tr>
                             <td><strong>Date Sent:</strong></td>
                             <td>
-                                {{ $emailLog->created_at->format('F j, Y g:i A') }}
+                                {{ formatDateTimeUkAmPm($emailLog->created_at) }}
                                 @if($emailLog->sent_at)
-                                    <br><small class="text-muted">Sent: {{ $emailLog->sent_at->format('F j, Y g:i A') }}</small>
+                                    <br><small class="text-muted">Sent: {{ formatDateTimeUkAmPm($emailLog->sent_at) }}</small>
                                 @endif
                             </td>
                         </tr>
@@ -90,7 +90,7 @@
                                     <span class="badge bg-success">
                                         <i class="fas fa-check-circle me-1"></i>Opened
                                     </span>
-                                    <br><small class="text-muted">{{ $emailLog->opened_at->format('F j, Y g:i A') }}</small>
+                                    <br><small class="text-muted">{{ formatDateTimeUkAmPm($emailLog->opened_at) }}</small>
                                 @else
                                     <span class="badge bg-secondary">
                                         <i class="fas fa-envelope me-1"></i>Not Opened

@@ -133,7 +133,7 @@
 
         @if($formRequest->expires_at)
             <div class="expires-notice">
-                <strong>Important:</strong> This form link will expire on {{ $formRequest->expires_at->format('F d, Y') }}.
+                <strong>Important:</strong> This form link will expire on {{ formatDateUkLong($formRequest->expires_at) }}.
                 Please complete it before then.
             </div>
         @endif

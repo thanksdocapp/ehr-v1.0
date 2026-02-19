@@ -121,7 +121,7 @@
                                                     data-patient-id="{{ $record->patient_id }}"
                                                     {{ old('medical_record_id') == $record->id ? 'selected' : '' }}>
                                                 {{ $record->patient->first_name }} {{ $record->patient->last_name }} - 
-                                                {{ $record->created_at->format('M d, Y') }} 
+                                                {{ formatDateUk($record->created_at) }} 
                                                 ({{ $record->presenting_complaint ?? $record->chief_complaint ?? 'No complaint' }})
                                             </option>
                                         @endforeach

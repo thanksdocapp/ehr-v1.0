@@ -94,7 +94,7 @@
                                         <label class="form-label fw-semibold">Created By</label>
                                         <div>
                                             {{ $alert->creator->name }}
-                                            <br><small class="text-muted">{{ $alert->created_at->format('M d, Y H:i') }}</small>
+                                            <br><small class="text-muted">{{ formatDateTimeUk($alert->created_at) }}</small>
                                         </div>
                                     </div>
                                     @endif
@@ -104,7 +104,7 @@
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold">Review Date</label>
                                     <div>
-                                        {{ $alert->expires_at->format('M d, Y H:i') }}
+                                        {{ formatDateTimeUk($alert->expires_at) }}
                                         @if($alert->isExpired())
                                             <span class="badge bg-danger ms-2">Expired</span>
                                         @else

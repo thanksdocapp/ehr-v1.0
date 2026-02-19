@@ -76,7 +76,7 @@
                             <td class="text-muted">Sent:</td>
                             <td>
                                 @if($formRequest->sent_at)
-                                    {{ $formRequest->sent_at->format('M d, Y H:i') }}
+                                    {{ formatDateTimeUk($formRequest->sent_at) }}
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif
@@ -86,7 +86,7 @@
                             <td class="text-muted">Opened:</td>
                             <td>
                                 @if($formRequest->opened_at)
-                                    {{ $formRequest->opened_at->format('M d, Y H:i') }}
+                                    {{ formatDateTimeUk($formRequest->opened_at) }}
                                 @else
                                     <span class="text-muted">Not yet opened</span>
                                 @endif
@@ -97,7 +97,7 @@
                             <td>
                                 @if($formRequest->completed_at)
                                     <span class="text-success">
-                                        {{ $formRequest->completed_at->format('M d, Y H:i') }}
+                                        {{ formatDateTimeUk($formRequest->completed_at) }}
                                     </span>
                                 @else
                                     <span class="text-muted">Not yet completed</span>
@@ -110,10 +110,10 @@
                                 @if($formRequest->expires_at)
                                     @if($formRequest->isExpired())
                                         <span class="text-danger">
-                                            Expired {{ $formRequest->expires_at->format('M d, Y') }}
+                                            Expired {{ formatDateUk($formRequest->expires_at) }}
                                         </span>
                                     @else
-                                        {{ $formRequest->expires_at->format('M d, Y') }}
+                                        {{ formatDateUk($formRequest->expires_at) }}
                                     @endif
                                 @else
                                     <span class="text-muted">No expiry</span>
@@ -226,7 +226,7 @@
                             <i class="fas fa-edit fa-3x text-info mb-3"></i>
                             <h5>Form Opened</h5>
                             <p class="text-muted">The patient has opened the form but has not yet submitted it.</p>
-                            <small class="text-muted">Opened on {{ $formRequest->opened_at->format('M d, Y H:i') }}</small>
+                            <small class="text-muted">Opened on {{ formatDateTimeUk($formRequest->opened_at) }}</small>
                         </div>
                     @elseif($formRequest->isExpired())
                         <div class="text-center py-5">

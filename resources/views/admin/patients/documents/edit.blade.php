@@ -346,7 +346,7 @@
                         </div>
                         <div class="mb-2">
                             <small class="text-muted">Created</small>
-                            <div class="fw-bold small">{{ $document->created_at->format('M d, Y h:i A') }}</div>
+                            <div class="fw-bold small">{{ formatDateTimeUkAmPm($document->created_at) }}</div>
                         </div>
                         @if($document->updated_at != $document->created_at)
                         <div class="mb-0">

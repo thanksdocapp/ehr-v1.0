@@ -1,5 +1,85 @@
 <?php
 
+if (!function_exists('formatDateUk')) {
+    /**
+     * Format a date in UK style (day first): 31 Dec 2025
+     *
+     * @param \Carbon\Carbon|string|null $date
+     * @return string
+     */
+    function formatDateUk($date)
+    {
+        if (!$date) {
+            return '';
+        }
+        try {
+            return \Carbon\Carbon::parse($date)->format('j M Y');
+        } catch (\Exception $e) {
+            return (string) $date;
+        }
+    }
+}
+
+if (!function_exists('formatDateUkLong')) {
+    /**
+     * Format a date in UK style long: 31 December 2025
+     *
+     * @param \Carbon\Carbon|string|null $date
+     * @return string
+     */
+    function formatDateUkLong($date)
+    {
+        if (!$date) {
+            return '';
+        }
+        try {
+            return \Carbon\Carbon::parse($date)->format('j F Y');
+        } catch (\Exception $e) {
+            return (string) $date;
+        }
+    }
+}
+
+if (!function_exists('formatDateTimeUk')) {
+    /**
+     * Format date and time in UK style: 31 Dec 2025, 14:30
+     *
+     * @param \Carbon\Carbon|string|null $date
+     * @return string
+     */
+    function formatDateTimeUk($date)
+    {
+        if (!$date) {
+            return '';
+        }
+        try {
+            return \Carbon\Carbon::parse($date)->format('j M Y, H:i');
+        } catch (\Exception $e) {
+            return (string) $date;
+        }
+    }
+}
+
+if (!function_exists('formatDateTimeUkAmPm')) {
+    /**
+     * Format date and time in UK style with AM/PM: 31 Dec 2025, 2:30 pm
+     *
+     * @param \Carbon\Carbon|string|null $date
+     * @return string
+     */
+    function formatDateTimeUkAmPm($date)
+    {
+        if (!$date) {
+            return '';
+        }
+        try {
+            return \Carbon\Carbon::parse($date)->format('j M Y g:i A');
+        } catch (\Exception $e) {
+            return (string) $date;
+        }
+    }
+}
+
 if (!function_exists('formatDate')) {
     /**
      * Format a date according to hospital settings

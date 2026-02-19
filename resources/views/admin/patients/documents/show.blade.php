@@ -360,10 +360,10 @@
                                         <div class="text-end">
                                             <div class="small text-muted">
                                                 @if($delivery->sent_at)
-                                                    {{ $delivery->sent_at->format('M d, Y') }}<br>
+                                                    {{ formatDateUk($delivery->sent_at) }}<br>
                                                     {{ $delivery->sent_at->format('h:i A') }}
                                                 @else
-                                                    {{ $delivery->created_at->format('M d, Y') }}<br>
+                                                    {{ formatDateUk($delivery->created_at) }}<br>
                                                     {{ $delivery->created_at->format('h:i A') }}
                                                 @endif
                                             </div>
@@ -397,7 +397,7 @@
                             <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
                             <h5 class="mb-2">Document Signed</h5>
                             <p class="text-muted mb-0">
-                                Signed by {{ $patient->full_name }} on {{ $document->signed_at ? $document->signed_at->format('F d, Y \a\t h:i A') : 'Unknown date' }}
+                                Signed by {{ $patient->full_name }} on {{ $document->signed_at ? formatDateTimeUkAmPm($document->signed_at) : 'Unknown date' }}
                             </p>
                         </div>
                     @else
@@ -541,7 +541,7 @@
                     @endif
                     <div class="info-row">
                         <span class="label">Created</span>
-                        <span class="value">{{ $document->created_at->format('M d, Y h:i A') }}</span>
+                        <span class="value">{{ formatDateTimeUkAmPm($document->created_at) }}</span>
                     </div>
                     <div class="info-row">
                         <span class="label">Created By</span>

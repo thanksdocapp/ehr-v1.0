@@ -70,7 +70,7 @@ class EmailTemplateService
             'user_account_status' => $user->account_status,
             'user_kyc_status' => $user->kyc_status,
             'user_is_verified' => $user->is_verified ? 'Yes' : 'No',
-            'user_registration_date' => $user->created_at->format('M d, Y'),
+            'user_registration_date' => formatDateUk($user->created_at),
             'user_address' => $user->address,
             'user_city' => $user->city,
             'user_state' => $user->state,
@@ -84,7 +84,7 @@ class EmailTemplateService
             'support_phone' => '+1-800-SUPPORT',
             
             // Date/Time
-            'current_date' => now()->format('M d, Y'),
+            'current_date' => formatDateUk(now()),
             'current_time' => now()->format('h:i A'),
             'current_year' => now()->year,
         ];
@@ -100,7 +100,7 @@ class EmailTemplateService
                 'transaction_reference' => $transaction->reference,
                 'transaction_description' => $transaction->description,
                 'transaction_status' => ucfirst($transaction->status),
-                'transaction_date' => $transaction->created_at->format('M d, Y h:i A'),
+                'transaction_date' => formatDateTimeUkAmPm($transaction->created_at),
                 'transaction_type' => ucfirst($transaction->type),
                 'transaction_category' => ucfirst($transaction->category),
                 'balance_before' => number_format($transaction->balance_before, 2),
@@ -285,7 +285,7 @@ class EmailTemplateService
     {
         return $this->processTemplate('password_reset', $user, null, [
             'reset_url' => $resetUrl,
-            'request_time' => now()->format('M d, Y h:i A')
+            'request_time' => formatDateTimeUkAmPm(now())
         ]);
     }
 

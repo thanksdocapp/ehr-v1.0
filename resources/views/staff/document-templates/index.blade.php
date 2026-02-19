@@ -126,7 +126,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ $template->created_at->format('M d, Y') }}</div>
+                                    <div class="fw-bold">{{ formatDateUk($template->created_at) }}</div>
                                     <small class="text-muted">{{ $template->created_at->format('h:i A') }}</small>
                                 </td>
                                 <td>

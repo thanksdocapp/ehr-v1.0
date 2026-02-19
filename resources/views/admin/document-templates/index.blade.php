@@ -456,7 +456,7 @@
                             </div>
                             <div class="small text-muted">
                                 <i class="fas fa-calendar me-1"></i>
-                                {{ $template->created_at->format('M d, Y') }}
+                                {{ formatDateUk($template->created_at) }}
                             </div>
 
                             <div class="template-stats">
@@ -530,7 +530,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="small">{{ $template->created_at->format('M d, Y') }}</div>
+                                        <div class="small">{{ formatDateUk($template->created_at) }}</div>
                                         <div class="small text-muted">{{ $template->creator->name ?? 'Unknown' }}</div>
                                     </td>
                                     <td>

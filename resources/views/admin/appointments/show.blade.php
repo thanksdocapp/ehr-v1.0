@@ -449,14 +449,14 @@
                     @if($appointment->check_in_time)
                         <div class="mb-3">
                             <label class="form-label text-muted">Check-in Time</label>
-                            <div class="fw-bold">{{ $appointment->check_in_time->format('M j, Y h:i A') }}</div>
+                            <div class="fw-bold">{{ formatDateTimeUkAmPm($appointment->check_in_time) }}</div>
                         </div>
                     @endif
 
                     @if($appointment->check_out_time)
                         <div class="mb-3">
                             <label class="form-label text-muted">Check-out Time</label>
-                            <div class="fw-bold">{{ $appointment->check_out_time->format('M j, Y h:i A') }}</div>
+                            <div class="fw-bold">{{ formatDateTimeUkAmPm($appointment->check_out_time) }}</div>
                         </div>
                     @endif
 
@@ -469,12 +469,12 @@
 
                     <div class="mb-3">
                         <label class="form-label text-muted">Created</label>
-                        <div class="fw-bold">{{ $appointment->created_at->format('M j, Y h:i A') }}</div>
+                        <div class="fw-bold">{{ formatDateTimeUkAmPm($appointment->created_at) }}</div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label text-muted">Last Updated</label>
-                        <div class="fw-bold">{{ $appointment->updated_at->format('M j, Y h:i A') }}</div>
+                        <div class="fw-bold">{{ formatDateTimeUkAmPm($appointment->updated_at) }}</div>
                     </div>
                 </div>
             </div>

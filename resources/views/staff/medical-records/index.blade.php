@@ -457,7 +457,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ $record->created_at->format('M d, Y') }}</div>
+                                    <div class="fw-bold">{{ formatDateUk($record->created_at) }}</div>
                                     <small class="text-muted">{{ $record->created_at->format('h:i A') }}</small>
                                 </td>
                                 <td>

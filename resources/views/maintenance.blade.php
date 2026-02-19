@@ -218,7 +218,7 @@
             
             <p class="mb-0">
                 <i class="fas fa-clock me-2"></i>
-                Expected completion: <strong id="estimated-time">{{ now()->addMinutes($retryAfter ?? 60)->format('M d, Y H:i') }}</strong>
+                Expected completion: <strong id="estimated-time">{{ formatDateTimeUk(now()->addMinutes($retryAfter ?? 60)) }}</strong>
             </p>
         </div>
         

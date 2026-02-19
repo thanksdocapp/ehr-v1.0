@@ -64,13 +64,13 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="small text-muted d-block">Created</label>
-                                <div>{{ $notification->created_at->format('M j, Y g:i A') }}</div>
+                                <div>{{ formatDateTimeUkAmPm($notification->created_at) }}</div>
                                 <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
                             </div>
                             @if($notification->read_at)
                             <div class="mb-3">
                                 <label class="small text-muted d-block">Read At</label>
-                                <div>{{ $notification->read_at->format('M j, Y g:i A') }}</div>
+                                <div>{{ formatDateTimeUkAmPm($notification->read_at) }}</div>
                                 <small class="text-muted">{{ $notification->read_at->diffForHumans() }}</small>
                             </div>
                             @endif

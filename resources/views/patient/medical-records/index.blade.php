@@ -141,7 +141,7 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex flex-column">
-                                            <strong>{{ $record->created_at->format('M d, Y') }}</strong>
+                                            <strong>{{ formatDateUk($record->created_at) }}</strong>
                                             <small class="text-muted">{{ $record->created_at->format('g:i A') }}</small>
                                         </div>
                                     </td>
@@ -222,7 +222,7 @@
                                         <div>
                                             <h6 class="mb-1">{{ $prescription->medication_name }}</h6>
                                             <p class="mb-1 text-muted">{{ formatDoctorName($prescription->doctor->full_name) }}</p>
-                                            <small class="text-muted">{{ $prescription->created_at->format('M d, Y') }}</small>
+                                            <small class="text-muted">{{ formatDateUk($prescription->created_at) }}</small>
                                         </div>
                                         <span class="badge bg-{{ $prescription->status === 'active' ? 'success' : 'secondary' }}">
                                             {{ ucfirst($prescription->status) }}
@@ -262,7 +262,7 @@
                                         <div>
                                             <h6 class="mb-1">{{ $report->test_name }}</h6>
                                             <p class="mb-1 text-muted">{{ $report->test_type }}</p>
-                                            <small class="text-muted">{{ $report->test_date->format('M d, Y') }}</small>
+                                            <small class="text-muted">{{ formatDateUk($report->test_date) }}</small>
                                         </div>
                                         <span class="badge bg-{{ $report->status === 'completed' ? 'success' : ($report->status === 'pending' ? 'warning' : 'secondary') }}">
                                             {{ ucfirst($report->status) }}

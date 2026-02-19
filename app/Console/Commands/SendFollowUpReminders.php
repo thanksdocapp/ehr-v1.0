@@ -104,7 +104,7 @@ class SendFollowUpReminders extends Command
             'type' => UserNotification::TYPE_MEDICAL_RECORD,
             'category' => UserNotification::CATEGORY_MEDICAL,
             'title' => 'Follow-up Appointment Reminder',
-            'message' => "Reminder: You have a follow-up appointment recommended by " . formatDoctorName($doctorName) . " due by {$medicalRecord->follow_up_date->format('F j, Y')}. Please schedule your appointment soon.",
+            'message' => "Reminder: You have a follow-up appointment recommended by " . formatDoctorName($doctorName) . " due by " . formatDateUkLong($medicalRecord->follow_up_date) . ". Please schedule your appointment soon.",
             'action_url' => route('patient.appointments.create'),
             'priority' => 'high',
             'data' => [
@@ -124,7 +124,7 @@ class SendFollowUpReminders extends Command
                 'type' => UserNotification::TYPE_MEDICAL_RECORD,
                 'category' => UserNotification::CATEGORY_MEDICAL,
                 'title' => 'Patient Follow-up Due',
-                'message' => "Follow-up reminder sent to {$patient->name} for follow-up due {$medicalRecord->follow_up_date->format('F j, Y')}.",
+                'message' => "Follow-up reminder sent to {$patient->name} for follow-up due " . formatDateUkLong($medicalRecord->follow_up_date) . ".",
                 'action_url' => route('staff.patients.show', $medicalRecord->patient_id),
                 'priority' => 'medium',
                 'data' => [

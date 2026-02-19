@@ -157,7 +157,7 @@ class QuincyService extends BaseIntegrationService
                     'patient_name' => $order->patient ? $order->patient->full_name : 'Unknown',
                     'status' => $order->status,
                     'rejection_reason' => $order->rejection_reason ?? ($order->integrationRequest->notes ?? 'Unknown error'),
-                    'created_at' => $order->created_at->format('M d, Y H:i'),
+                    'created_at' => formatDateTimeUk($order->created_at),
                     'prescription_id' => $order->prescription_id,
                 ];
             })

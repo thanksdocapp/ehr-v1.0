@@ -128,7 +128,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted">Created At</label>
-                            <div class="fw-bold">{{ $documentTemplate->created_at->format('M d, Y') }}</div>
+                            <div class="fw-bold">{{ formatDateUk($documentTemplate->created_at) }}</div>
                             <small class="text-muted">{{ $documentTemplate->created_at->format('h:i A') }}</small>
                         </div>
                     </div>
@@ -137,7 +137,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <label class="form-label text-muted">Last Updated</label>
-                            <div class="fw-bold">{{ $documentTemplate->updated_at->format('M d, Y') }}</div>
+                            <div class="fw-bold">{{ formatDateUk($documentTemplate->updated_at) }}</div>
                             <small class="text-muted">{{ $documentTemplate->updated_at->diffForHumans() }}</small>
                         </div>
                         @if($documentTemplate->updater)

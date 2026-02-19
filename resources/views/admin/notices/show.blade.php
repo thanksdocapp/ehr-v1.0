@@ -162,7 +162,7 @@
                                 <label class="modern-form-label">
                                     <i class="fas fa-play-circle me-1"></i>Start Date & Time
                                 </label>
-                                <div class="fw-bold">{{ $notice->starts_at->format('M d, Y H:i') }}</div>
+                                <div class="fw-bold">{{ formatDateTimeUk($notice->starts_at) }}</div>
                             </div>
                         </div>
                         @endif
@@ -172,7 +172,7 @@
                                 <label class="modern-form-label">
                                     <i class="fas fa-stop-circle me-1"></i>Expiry Date & Time
                                 </label>
-                                <div class="fw-bold">{{ $notice->expires_at->format('M d, Y H:i') }}</div>
+                                <div class="fw-bold">{{ formatDateTimeUk($notice->expires_at) }}</div>
                             </div>
                         </div>
                         @endif
@@ -197,7 +197,7 @@
                         <label class="modern-form-label">
                             <i class="fas fa-calendar me-1"></i>Created
                         </label>
-                        <div class="fw-bold">{{ $notice->created_at->format('M d, Y H:i') }}</div>
+                        <div class="fw-bold">{{ formatDateTimeUk($notice->created_at) }}</div>
                         @if($notice->creator)
                             <small class="text-muted">by {{ $notice->creator->name }}</small>
                         @endif
@@ -206,7 +206,7 @@
                         <label class="modern-form-label">
                             <i class="fas fa-clock me-1"></i>Last Updated
                         </label>
-                        <div class="fw-bold">{{ $notice->updated_at->format('M d, Y H:i') }}</div>
+                        <div class="fw-bold">{{ formatDateTimeUk($notice->updated_at) }}</div>
                     </div>
                 </div>
             </div>

@@ -457,7 +457,7 @@
                             <tr>
                                 <td>
                                     <div class="fw-bold text-primary">#{{ $bill->bill_number }}</div>
-                                    <small class="text-muted">{{ $bill->created_at->format('M d, Y') }}</small>
+                                    <small class="text-muted">{{ formatDateUk($bill->created_at) }}</small>
                                     @if($bill->appointment_id && $bill->appointment)
                                     <br><small class="text-info"><i class="fas fa-calendar-check me-1"></i>Appt: {{ $bill->appointment->appointment_number }}</small>
                                     @endif
@@ -492,9 +492,9 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div>{{ $bill->billing_date->format('M d, Y') }}</div>
+                                    <div>{{ formatDateUk($bill->billing_date) }}</div>
                                     @if($bill->due_date)
-                                        <small class="text-muted">Due: {{ $bill->due_date->format('M d, Y') }}</small>
+                                        <small class="text-muted">Due: {{ formatDateUk($bill->due_date) }}</small>
                                     @endif
                                 </td>
                                 <td>

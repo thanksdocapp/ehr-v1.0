@@ -114,7 +114,7 @@
                                 <tr>
                                     <td>
                                         <div>
-                                            <strong>{{ $appointment->appointment_date->format('M d, Y') }}</strong><br>
+                                            <strong>{{ formatDateUk($appointment->appointment_date) }}</strong><br>
                                             <small class="text-muted">{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</small>
                                         </div>
                                     </td>
@@ -231,7 +231,7 @@
                                 <div class="row">
                                     <div class="col-sm-6">
                                         <p class="mb-1"><strong>Number:</strong> {{ $appointment->appointment_number }}</p>
-                                        <p class="mb-1"><strong>Date:</strong> {{ $appointment->appointment_date->format('M d, Y') }}</p>
+                                        <p class="mb-1"><strong>Date:</strong> {{ formatDateUk($appointment->appointment_date) }}</p>
                                         <p class="mb-1"><strong>Time:</strong> {{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</p>
                                     </div>
                                     <div class="col-sm-6">

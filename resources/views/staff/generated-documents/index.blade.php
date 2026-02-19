@@ -123,7 +123,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div>{{ $document->created_at->format('M d, Y') }}</div>
+                                    <div>{{ formatDateUk($document->created_at) }}</div>
                                     <small class="text-muted">{{ $document->created_at->format('H:i') }}</small>
                                 </td>
                                 <td>

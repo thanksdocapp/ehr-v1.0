@@ -261,7 +261,7 @@
                 </div>
                 <div class="info-row">
                     <span class="info-label">Date of Birth:</span>
-                    <span class="info-value">{{ $prescription->patient->date_of_birth ? $prescription->patient->date_of_birth->format('M d, Y') : 'N/A' }}</span>
+                    <span class="info-value">{{ $prescription->patient->date_of_birth ? formatDateUk($prescription->patient->date_of_birth) : 'N/A' }}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Phone:</span>
@@ -277,7 +277,7 @@
                 </div>
                 <div class="info-row">
                     <span class="info-label">Date Prescribed:</span>
-                    <span class="info-value">{{ $prescription->prescription_date ? \Carbon\Carbon::parse($prescription->prescription_date)->format('M d, Y') : 'N/A' }}</span>
+                    <span class="info-value">{{ $prescription->prescription_date ? formatDateUk($prescription->prescription_date) : 'N/A' }}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Type:</span>
@@ -388,7 +388,7 @@
             @if($prescription->follow_up_date)
             <div class="notes-section">
                 <h4>Follow-up Date</h4>
-                <p>{{ \Carbon\Carbon::parse($prescription->follow_up_date)->format('M d, Y') }}</p>
+                <p>{{ formatDateUk($prescription->follow_up_date) }}</p>
             </div>
             @endif
         </div>

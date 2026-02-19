@@ -76,7 +76,7 @@
                                 </tr>
                                 <tr>
                                     <th>Created At:</th>
-                                    <td>{{ $bookingService->created_at->format('F d, Y \a\t g:i A') }}</td>
+                                    <td>{{ formatDateTimeUkAmPm($bookingService->created_at) }}</td>
                                 </tr>
                             </table>
                         </div>

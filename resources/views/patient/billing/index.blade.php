@@ -181,7 +181,7 @@
                                     </td>
                                     <td>
                                         <div class="d-flex flex-column">
-                                            <strong>{{ $invoice->invoice_date->format('M d, Y') }}</strong>
+                                            <strong>{{ formatDateUk($invoice->invoice_date) }}</strong>
                                             <small class="text-muted">{{ $invoice->invoice_date->format('g:i A') }}</small>
                                         </div>
                                     </td>
@@ -189,7 +189,7 @@
                                         <div class="d-flex flex-column">
                                             <strong>{{ $invoice->description ?? 'Medical Services' }}</strong>
                                             @if($invoice->appointment)
-                                                <small class="text-muted">Appointment: {{ $invoice->appointment->appointment_date->format('M d, Y') }}</small>
+                                                <small class="text-muted">Appointment: {{ formatDateUk($invoice->appointment->appointment_date) }}</small>
                                             @endif
                                         </div>
                                     </td>
@@ -206,7 +206,7 @@
                                     <td>
                                         <div class="d-flex flex-column">
                                             <strong class="{{ $invoice->due_date->lt(today()) && $invoice->status !== 'paid' ? 'text-danger' : '' }}">
-                                                {{ $invoice->due_date->format('M d, Y') }}
+                                                {{ formatDateUk($invoice->due_date) }}
                                             </strong>
                                             @if($invoice->due_date->lt(today()) && $invoice->status !== 'paid')
                                                 <small class="text-danger">

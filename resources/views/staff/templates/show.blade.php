@@ -83,11 +83,11 @@
                         </tr>
                         <tr>
                             <td class="text-muted">Created</td>
-                            <td class="text-end">{{ $template->created_at->format('M d, Y') }}</td>
+                            <td class="text-end">{{ formatDateUk($template->created_at) }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Last Updated</td>
-                            <td class="text-end">{{ $template->updated_at->format('M d, Y') }}</td>
+                            <td class="text-end">{{ formatDateUk($template->updated_at) }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Status</td>

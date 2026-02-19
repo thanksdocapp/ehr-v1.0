@@ -314,7 +314,7 @@
                                             <i class="fas fa-signature me-1"></i>Signed
                                         </span>
                                         @if($document->signed_at)
-                                            <br><small class="text-muted">{{ $document->signed_at->format('M d, Y') }}</small>
+                                            <br><small class="text-muted">{{ formatDateUk($document->signed_at) }}</small>
                                         @endif
                                     @elseif($document->isFinal())
                                         <span class="badge bg-warning text-dark">
@@ -325,7 +325,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="fw-medium small">{{ $document->created_at->format('M d, Y') }}</div>
+                                    <div class="fw-medium small">{{ formatDateUk($document->created_at) }}</div>
                                     <small class="text-muted">{{ $document->created_at->format('h:i A') }}</small>
                                     @if($document->creator)
                                         <br><small class="text-muted">by {{ $document->creator->name }}</small>

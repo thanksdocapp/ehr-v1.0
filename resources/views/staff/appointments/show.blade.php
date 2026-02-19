@@ -610,18 +610,18 @@
                     @if($appointment->completed_at)
                         <div class="mb-3">
                             <label class="form-label text-muted">Completed At</label>
-                            <div class="fw-bold">{{ $appointment->completed_at->format('M j, Y h:i A') }}</div>
+                            <div class="fw-bold">{{ formatDateTimeUkAmPm($appointment->completed_at) }}</div>
                         </div>
                     @endif
 
                     <div class="mb-3">
                         <label class="form-label text-muted">Created</label>
-                        <div class="fw-bold">{{ $appointment->created_at->format('M j, Y h:i A') }}</div>
+                        <div class="fw-bold">{{ formatDateTimeUkAmPm($appointment->created_at) }}</div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label text-muted">Last Updated</label>
-                        <div class="fw-bold">{{ $appointment->updated_at->format('M j, Y h:i A') }}</div>
+                        <div class="fw-bold">{{ formatDateTimeUkAmPm($appointment->updated_at) }}</div>
                     </div>
 
                     @if($appointment->created_by)

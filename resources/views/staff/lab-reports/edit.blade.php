@@ -438,11 +438,11 @@
                         </div>
                         <div class="mb-3">
                             <small class="text-muted d-block">Created Date</small>
-                            <strong>{{ $labReport->created_at->format('M d, Y') }}</strong>
+                            <strong>{{ formatDateUk($labReport->created_at) }}</strong>
                         </div>
                         <div class="mb-0">
                             <small class="text-muted d-block">Last Updated</small>
-                            <strong>{{ $labReport->updated_at->format('M d, Y g:i A') }}</strong>
+                            <strong>{{ formatDateTimeUkAmPm($labReport->updated_at) }}</strong>
                         </div>
                     </div>
                 </div>

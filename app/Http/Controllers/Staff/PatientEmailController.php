@@ -159,7 +159,7 @@ class PatientEmailController extends Controller
             'subject' => $emailLog->subject,
             'body' => $emailLog->body,
             'patient_name' => $metadata['patient_name'] ?? ($patient ? $patient->full_name : ($emailLog->recipient_name ?? 'N/A')),
-            'patient_dob' => $metadata['patient_dob'] ?? ($patient && $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : null),
+            'patient_dob' => $metadata['patient_dob'] ?? ($patient && $patient->date_of_birth ? formatDateUk($patient->date_of_birth) : null),
             'doctor_name' => $metadata['doctor_name'] ?? ($doctor->name ?? $user->name),
             'doctor_specialization' => $metadata['doctor_specialization'] ?? ($doctor->specialization ?? 'GP'),
             'doctor_phone' => $metadata['doctor_phone'] ?? ($doctor->phone ?? $user->phone ?? null),
@@ -169,7 +169,7 @@ class PatientEmailController extends Controller
             'department_logo' => $logoUrl,
             'primary_color' => $metadata['primary_color'] ?? Setting::get('primary_color', '#007bff'),
             'date_sent' => $metadata['date_sent']
-                ?? ($emailLog->sent_at ? $emailLog->sent_at->format('F j, Y') : $emailLog->created_at->format('F j, Y')),
+                ?? ($emailLog->sent_at ? formatDateUkLong($emailLog->sent_at) : formatDateUkLong($emailLog->created_at)),
         ];
 
         $previewHtml = (string) view('emails.patient-email-preview', [
@@ -252,7 +252,7 @@ class PatientEmailController extends Controller
             $patient = $emailLog->patient;
             $patientName = $metadata['patient_name'] ?? ($patient ? $patient->full_name : 'N/A');
             $patientId = $metadata['patient_id'] ?? ($patient ? ($patient->patient_id ?? $patient->id) : null);
-            $patientDob = $metadata['patient_dob'] ?? ($patient && $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : null);
+            $patientDob = $metadata['patient_dob'] ?? ($patient && $patient->date_of_birth ? formatDateUk($patient->date_of_birth) : null);
             $primaryColor = $metadata['primary_color'] ?? Setting::get('primary_color', '#007bff');
 
             $emailData = [
@@ -270,7 +270,7 @@ class PatientEmailController extends Controller
                 'department_name' => $departmentName,
                 'department_logo' => $logoUrl,
                 'primary_color' => $primaryColor,
-                'date_sent' => $metadata['date_sent'] ?? ($emailLog->sent_at ? $emailLog->sent_at->format('F j, Y') : $emailLog->created_at->format('F j, Y')),
+                'date_sent' => $metadata['date_sent'] ?? ($emailLog->sent_at ? formatDateUkLong($emailLog->sent_at) : formatDateUkLong($emailLog->created_at)),
             ];
 
             // Do not include tracking pixel in staff preview
@@ -444,7 +444,7 @@ class PatientEmailController extends Controller
                 'body' => $request->body,
                 'patient_name' => $patient->full_name,
                 'patient_id' => $patient->patient_id ?? $patient->id,
-                'patient_dob' => $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : null,
+                'patient_dob' => $patient->date_of_birth ? formatDateUk($patient->date_of_birth) : null,
                 'patient_email' => $patient->email,
                 'doctor_name' => $doctor->name ?? $user->name,
                 'doctor_specialization' => $doctor->specialization ?? 'General Practitioner',
@@ -454,7 +454,7 @@ class PatientEmailController extends Controller
                 'department_name' => $department ? $department->name : null,
                 'department_logo' => $logoUrl,
                 'primary_color' => Setting::get('primary_color', '#007bff'),
-                'date_sent' => now()->format('F j, Y'),
+                'date_sent' => formatDateUkLong(now()),
                 'tracking_token' => $trackingToken,
                 'email_log_id' => $emailLog->id,
             ];

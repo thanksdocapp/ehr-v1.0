@@ -29,7 +29,7 @@
                                 @if($notice->expires_at)
                                     <small class="text-muted">
                                         <i class="fas fa-clock me-1"></i>
-                                        Expires: {{ $notice->expires_at->format('M d, Y H:i') }}
+                                        Expires: {{ formatDateTimeUk($notice->expires_at) }}
                                     </small>
                                 @endif
                             </div>
@@ -843,7 +843,7 @@
                             <div class="flex-grow-1">
                                 <div class="fw-semibold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
                                 <small class="text-muted">
-                                    <i class="fas fa-calendar me-1"></i>{{ $appointment->appointment_date->format('M d, Y') }}
+                                    <i class="fas fa-calendar me-1"></i>{{ formatDateUk($appointment->appointment_date) }}
                                 </small>
                             </div>
                             <a href="{{ route('staff.patients.show', $appointment->patient_id) }}" class="btn btn-sm btn-outline-primary">

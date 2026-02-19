@@ -107,7 +107,7 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold">Expires At (Review Date)</label>
                             <div class="form-control-plaintext">
-                                {{ $alert->expires_at->format('M d, Y H:i') }}
+                                {{ formatDateTimeUk($alert->expires_at) }}
                                 @if($alert->isExpired())
                                     <br><small class="text-danger">Expired {{ $alert->expires_at->diffForHumans() }}</small>
                                 @else
@@ -159,7 +159,7 @@
                                 @else
                                     <span class="text-muted">Unknown</span>
                                 @endif
-                                <br><small class="text-muted">{{ $alert->created_at->format('M d, Y H:i') }}</small>
+                                <br><small class="text-muted">{{ formatDateTimeUk($alert->created_at) }}</small>
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
@@ -172,7 +172,7 @@
                                     <span class="text-muted">Never updated</span>
                                 @endif
                                 @if($alert->updated_at && $alert->updated_at->ne($alert->created_at))
-                                    <br><small class="text-muted">{{ $alert->updated_at->format('M d, Y H:i') }}</small>
+                                    <br><small class="text-muted">{{ formatDateTimeUk($alert->updated_at) }}</small>
                                 @endif
                             </div>
                         </div>

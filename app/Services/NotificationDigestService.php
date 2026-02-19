@@ -335,7 +335,7 @@ class NotificationDigestService
 
             foreach ($categoryNotifications->take(5) as $notification) {
                 $priorityClass = $notification->priority === 'high' ? 'high' : '';
-                $time = Carbon::parse($notification->created_at)->format('M j, g:i A');
+                $time = Carbon::parse($notification->created_at)->format('j M, g:i A');
                 $html .= "
                     <div class='notification-item {$priorityClass}'>
                         <div class='notification-title'>{$notification->title}</div>
@@ -428,7 +428,7 @@ class NotificationDigestService
 
             foreach ($categoryNotifications->take(5) as $notification) {
                 $priorityClass = $notification->priority === 'high' ? 'high' : '';
-                $time = Carbon::parse($notification->created_at)->format('M j, g:i A');
+                $time = Carbon::parse($notification->created_at)->format('j M, g:i A');
                 $html .= "
                     <div class='notification-item {$priorityClass}'>
                         <div class='notification-title'>{$notification->title}</div>

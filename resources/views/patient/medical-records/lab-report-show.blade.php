@@ -95,7 +95,7 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-calendar text-primary me-2"></i>
                                 <div>
-                                    <strong>{{ $labReport->test_date->format('l, M d, Y') }}</strong><br>
+                                    <strong>{{ $labReport->test_date->format('l, j M Y') }}</strong><br>
                                     <small class="text-muted">Report #{{ $labReport->report_number }}</small>
                                 </div>
                             </div>
@@ -128,7 +128,7 @@
                                 <i class="fas fa-calendar-check text-info me-2"></i>
                                 <div>
                                     <strong>#{{ $labReport->appointment->appointment_number ?? 'N/A' }}</strong><br>
-                                    <span class="text-muted">{{ $labReport->appointment->appointment_date->format('M d, Y') }}</span>
+                                    <span class="text-muted">{{ formatDateUk($labReport->appointment->appointment_date) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -265,16 +265,16 @@
                 </div>
                 <div class="card-body">
                     <div class="timeline-item mb-3">
-                        <strong>Test Ordered:</strong> {{ $labReport->created_at->format('M j, Y g:i A') }}<br>
+                        <strong>Test Ordered:</strong> {{ formatDateTimeUkAmPm($labReport->created_at) }}<br>
                         <small class="text-muted">{{ $labReport->created_at->diffForHumans() }}</small>
                     </div>
                     <div class="timeline-item mb-3">
-                        <strong>Test Date:</strong> {{ $labReport->test_date->format('M j, Y') }}<br>
+                        <strong>Test Date:</strong> {{ formatDateUk($labReport->test_date) }}<br>
                         <small class="text-muted">{{ $labReport->test_date->diffForHumans() }}</small>
                     </div>
                     @if($labReport->updated_at != $labReport->created_at)
                         <div class="timeline-item">
-                            <strong>Last Updated:</strong> {{ $labReport->updated_at->format('M j, Y g:i A') }}<br>
+                            <strong>Last Updated:</strong> {{ formatDateTimeUkAmPm($labReport->updated_at) }}<br>
                             <small class="text-muted">{{ $labReport->updated_at->diffForHumans() }}</small>
                         </div>
                     @endif

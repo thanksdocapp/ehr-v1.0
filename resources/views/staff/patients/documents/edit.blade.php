@@ -227,13 +227,13 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-muted">Created</label>
-                            <div class="fw-bold">{{ $document->created_at->format('M d, Y') }}</div>
+                            <div class="fw-bold">{{ formatDateUk($document->created_at) }}</div>
                             <small class="text-muted">{{ $document->created_at->format('h:i A') }}</small>
                         </div>
                         @if($document->updated_at != $document->created_at)
                         <div class="mb-0">
                             <label class="form-label text-muted">Last Updated</label>
-                            <div class="fw-bold">{{ $document->updated_at->format('M d, Y') }}</div>
+                            <div class="fw-bold">{{ formatDateUk($document->updated_at) }}</div>
                             <small class="text-muted">{{ $document->updated_at->diffForHumans() }}</small>
                         </div>
                         @endif

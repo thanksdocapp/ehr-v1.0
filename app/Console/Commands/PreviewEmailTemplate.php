@@ -44,7 +44,7 @@ class PreviewEmailTemplate extends Command
             'patient_email' => 'test.patient@example.com',
             'doctor_name' => 'Dr Test Doctor',
             'department' => 'General',
-            'appointment_date' => now()->addDay()->format('F d, Y'),
+            'appointment_date' => formatDateUkLong(now()->addDay()),
             'appointment_time' => '2:00 PM',
             'appointment_type' => 'consultation',
             'meeting_platform' => 'Whereby',

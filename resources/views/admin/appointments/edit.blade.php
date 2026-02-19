@@ -684,22 +684,22 @@ textarea.form-control {
                 @if($appointment->check_in_time)
                     <div class="mb-3">
                         <strong>Check-in Time:</strong><br>
-                        <span class="text-muted">{{ $appointment->check_in_time->format('M j, Y h:i A') }}</span>
+                        <span class="text-muted">{{ formatDateTimeUkAmPm($appointment->check_in_time) }}</span>
                     </div>
                 @endif
                 @if($appointment->check_out_time)
                     <div class="mb-3">
                         <strong>Check-out Time:</strong><br>
-                        <span class="text-muted">{{ $appointment->check_out_time->format('M j, Y h:i A') }}</span>
+                        <span class="text-muted">{{ formatDateTimeUkAmPm($appointment->check_out_time) }}</span>
                     </div>
                 @endif
                 <div class="mb-3">
                     <strong>Created:</strong><br>
-                    <span class="text-muted">{{ $appointment->created_at->format('M j, Y h:i A') }}</span>
+                    <span class="text-muted">{{ formatDateTimeUkAmPm($appointment->created_at) }}</span>
                 </div>
                 <div class="mb-3">
                     <strong>Last Updated:</strong><br>
-                    <span class="text-muted">{{ $appointment->updated_at->format('M j, Y h:i A') }}</span>
+                    <span class="text-muted">{{ formatDateTimeUkAmPm($appointment->updated_at) }}</span>
                 </div>
             </div>
 

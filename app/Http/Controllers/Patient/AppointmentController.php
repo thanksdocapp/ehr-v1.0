@@ -200,7 +200,7 @@ class AppointmentController extends Controller
 
         // Store appointment details for success message
         $appointmentNumber = $appointment->appointment_number;
-        $appointmentDate = $appointment->appointment_date->format('M d, Y');
+        $appointmentDate = formatDateUk($appointment->appointment_date);
 
         // Delete the appointment
         $appointment->delete();

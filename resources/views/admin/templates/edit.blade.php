@@ -222,10 +222,10 @@
                     </div>
                     <div class="card-body">
                         <small class="text-muted">
-                            <strong>Created:</strong> {{ $template->created_at->format('M d, Y H:i') }}<br>
+                            <strong>Created:</strong> {{ formatDateTimeUk($template->created_at) }}<br>
                             <strong>By:</strong> {{ $template->creator->name ?? 'Unknown' }}<br>
                             @if($template->updated_by)
-                                <strong>Last Updated:</strong> {{ $template->updated_at->format('M d, Y H:i') }}<br>
+                                <strong>Last Updated:</strong> {{ formatDateTimeUk($template->updated_at) }}<br>
                             @endif
                             <strong>Usage Count:</strong> {{ $template->usage_count }}
                         </small>

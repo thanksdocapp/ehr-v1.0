@@ -454,7 +454,7 @@ class NotificationService
     {
         $patientName = $appointment->patient->first_name . ' ' . $appointment->patient->last_name;
         $doctorName = $appointment->doctor ? $appointment->doctor->first_name . ' ' . $appointment->doctor->last_name : 'Doctor';
-        $appointmentDateTime = $appointment->appointment_date->format('F j, Y') . ' at ' . $appointment->appointment_time;
+        $appointmentDateTime = formatDateUkLong($appointment->appointment_date) . ' at ' . $appointment->appointment_time;
 
         $patientMessages = [
             'created' => [
