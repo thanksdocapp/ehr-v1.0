@@ -485,23 +485,23 @@ class PatientEmailController extends Controller
                     'emailLogId' => null,
                 ])->render();
 
-                // Send email with attachments
+                // Send email with attachments (use in-memory paths so files are definitely attached)
                 $mailable = new PatientEmail($emailData);
-                
-                // Attach files to email (reload attachments in case they were just created)
-                $emailLog->load('attachments');
-                if ($emailLog->attachments && $emailLog->attachments->count() > 0) {
-                    foreach ($emailLog->attachments as $attachment) {
-                        $filePath = Storage::disk($attachment->storage_disk)->path($attachment->file_path);
-                        if (file_exists($filePath)) {
-                            $mailable->attach($filePath, [
-                                'as' => $attachment->file_name,
-                                'mime' => $attachment->file_type,
-                            ]);
-                        }
+                foreach ($attachmentPaths as $attachmentData) {
+                    $fullPath = Storage::disk('public')->path($attachmentData['path']);
+                    if (file_exists($fullPath)) {
+                        $mailable->attach($fullPath, [
+                            'as' => $attachmentData['original_name'],
+                            'mime' => $attachmentData['mime_type'],
+                        ]);
+                    } else {
+                        Log::warning('Patient email attachment file missing when sending', [
+                            'path' => $attachmentData['path'],
+                            'email_log_id' => $emailLog->id,
+                        ]);
                     }
                 }
-                
+
                 Mail::to($patient->email, $patient->full_name)
                     ->send($mailable);
 
