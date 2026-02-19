@@ -42,52 +42,51 @@
                     <div class="doctor-card mb-4">
                         <div class="doctor-card-header">
                             <h5 class="doctor-card-title mb-0">
-                                <i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Billing Information
+                                <i class="fas fa-info-circle me-2 text-primary"></i>Billing Information
                             </h5>
                         </div>
                         <div class="doctor-card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="patient" class="form-label">
-                                            <i class="fas fa-user me-1"></i>Patient *
-                                        </label>
-                                        <div class="input-group mb-2">
-                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                            <input type="text"
-                                                   class="form-control"
-                                                   id="patientSearchInput"
-                                                   placeholder="Search patient by name or email…"
-                                                   autocomplete="off">
-                                            <button type="button" class="btn btn-outline-secondary" id="patientSearchClearBtn" style="display:none;">
-                                                Clear
-                                            </button>
-                                        </div>
-                                        <small class="text-muted d-block mb-2" id="patientSearchMeta" style="display:none;"></small>
-                                        <select name="patient_id" id="patient" class="form-select @error('patient_id') is-invalid @enderror" required>
-                                            <option value="">Select a patient</option>
-                                            @foreach($patients as $patient)
-                                                <option value="{{ $patient->id }}" {{ old('patient_id') == $patient->id ? 'selected' : '' }}>
-                                                    {{ $patient->first_name }} {{ $patient->last_name }} - {{ $patient->email }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        @error('patient_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+                            <!-- Patient (full width) -->
+                            <div class="mb-4">
+                                <label for="patient" class="form-label fw-semibold">
+                                    <i class="fas fa-user me-1 text-muted"></i>Patient <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="patientSearchInput"
+                                           placeholder="Search patient by name or email…"
+                                           autocomplete="off">
+                                    <button type="button" class="btn btn-outline-secondary" id="patientSearchClearBtn" style="display:none;">
+                                        Clear
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mb-2" id="patientSearchMeta" style="display:none;"></small>
+                                <select name="patient_id" id="patient" class="form-select @error('patient_id') is-invalid @enderror" required>
+                                    <option value="">Select a patient</option>
+                                    @foreach($patients as $patient)
+                                        <option value="{{ $patient->id }}" {{ old('patient_id') == $patient->id ? 'selected' : '' }}>
+                                            {{ $patient->first_name }} {{ $patient->last_name }} - {{ $patient->email }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('patient_id')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
 
-                                    <div class="mb-3">
-                                        <label for="doctor" class="form-label">
-                                            <i class="fas fa-user-md me-1"></i>Doctor
-                                        </label>
+                            <!-- Doctor & Dates row -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-5">
+                                    <label for="doctor" class="form-label fw-semibold">
+                                        <i class="fas fa-user-md me-1 text-muted"></i>Doctor
+                                    </label>
                                         @if(auth()->user()->role === 'doctor' && isset($currentDoctor) && $currentDoctor)
-                                            {{-- For doctors: Show read-only field with hidden input --}}
-                                            <input type="text" class="form-control" value="{{ formatDoctorName($currentDoctor->name) }} - {{ $currentDoctor->specialization ?? 'General' }}" readonly>
+                                            <input type="text" class="form-control bg-light" value="{{ formatDoctorName($currentDoctor->name) }} - {{ $currentDoctor->specialization ?? 'General' }}" readonly>
                                             <input type="hidden" name="doctor_id" value="{{ $currentDoctor->id }}">
-                                            <div class="form-text">This bill will be assigned to you</div>
+                                            <small class="form-text text-muted">This bill will be assigned to you</small>
                                         @else
-                                            {{-- For other staff: Show dropdown --}}
                                             <select name="doctor_id" id="doctor" class="form-select @error('doctor_id') is-invalid @enderror">
                                                 <option value="">Select a doctor</option>
                                                 @foreach($doctors as $doctor)
@@ -97,110 +96,101 @@
                                                 @endforeach
                                             </select>
                                             @error('doctor_id')
-                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
                                             @enderror
                                         @endif
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="billing_date" class="form-label">
-                                            <i class="fas fa-calendar me-1"></i>Billing Date *
-                                        </label>
-                                        <input type="text" class="form-control uk-date @error('billing_date') is-invalid @enderror"
-                                               id="billing_date" name="billing_date" 
-                                               value="{{ old('billing_date') ? (old('billing_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('billing_date')) ? \Carbon\Carbon::parse(old('billing_date'))->format('d/m/Y') : old('billing_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}"
-                                               placeholder="dd/mm/yyyy"
-                                               pattern="\d{2}/\d{2}/\d{4}"
-                                               maxlength="10"
-                                               data-min-date="today"
-                                               data-default-date="today"
-                                               required>
-                                        @error('billing_date')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
                                 </div>
-
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="due_date" class="form-label">
-                                            <i class="fas fa-calendar-alt me-1"></i>Due Date
-                                        </label>
-                                        <input type="text" class="form-control uk-date @error('due_date') is-invalid @enderror" 
-                                               id="due_date" name="due_date" 
-                                               value="{{ old('due_date') ? (old('due_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('due_date')) ? \Carbon\Carbon::parse(old('due_date'))->format('d/m/Y') : old('due_date')) : '' }}"
-                                               placeholder="dd/mm/yyyy"
-                                               pattern="\d{2}/\d{2}/\d{4}"
-                                               maxlength="10">
-                                        @error('due_date')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="subtotal" class="form-label">
-                                            <i class="fas fa-pound-sign me-1"></i>Subtotal *
-                                        </label>
-                                        <input type="text" class="form-control @error('subtotal') is-invalid @enderror"
-                                               id="subtotal" name="subtotal" value="{{ old('subtotal') }}" required>
-                                        @error('subtotal')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="type" class="form-label">
-                                            <i class="fas fa-tags me-1"></i>Bill Type
-                                        </label>
-                                        <select name="type" id="type" class="form-select @error('type') is-invalid @enderror">
-                                            <option value="consultation" {{ old('type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
-                                            <option value="procedure" {{ old('type') == 'procedure' ? 'selected' : '' }}>Procedure</option>
-                                            <option value="medication" {{ old('type') == 'medication' ? 'selected' : '' }}>Medication</option>
-                                            <option value="lab_test" {{ old('type') == 'lab_test' ? 'selected' : '' }}>Lab Test</option>
-                                            <option value="other" {{ old('type') == 'other' ? 'selected' : '' }}>Other</option>
-                                        </select>
-                                        @error('type')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="mb-3">
-                                        <label for="description" class="form-label">
-                                            <i class="fas fa-info-circle me-1"></i>Description *
-                                        </label>
-                                        <input type="text" class="form-control @error('description') is-invalid @enderror" 
-                                               id="description" name="description" value="{{ old('description') }}" required>
-                                        @error('description')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="notes" class="form-label">
-                                    <i class="fas fa-sticky-note me-1"></i>Notes
-                                </label>
-                                <textarea name="notes" id="notes" class="form-control" rows="3">{{ old('notes') }}</textarea>
-                                <div class="form-text">Additional details about the billing transaction</div>
-                            </div>
-
-                            <!-- Send to Patient Option -->
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="send_to_patient" id="send_to_patient" value="1" {{ old('send_to_patient') ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="send_to_patient">
-                                        <i class="fas fa-envelope me-1"></i>
-                                        <strong>Send billing notification to patient</strong>
+                                <div class="col-md-4">
+                                    <label for="billing_date" class="form-label fw-semibold">
+                                        <i class="fas fa-calendar me-1 text-muted"></i>Billing Date <span class="text-danger">*</span>
                                     </label>
-                                    <div class="form-text">
-                                        Patient will receive an email with a secure payment link to pay online without logging in.
-                                    </div>
+                                    <input type="text" class="form-control uk-date @error('billing_date') is-invalid @enderror"
+                                           id="billing_date" name="billing_date"
+                                           value="{{ old('billing_date') ? (old('billing_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('billing_date')) ? \Carbon\Carbon::parse(old('billing_date'))->format('d/m/Y') : old('billing_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}"
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
+                                           maxlength="10"
+                                           data-min-date="today"
+                                           data-default-date="today"
+                                           required>
+                                    @error('billing_date')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
                                 </div>
+                                <div class="col-md-3">
+                                    <label for="due_date" class="form-label fw-semibold">
+                                        <i class="fas fa-calendar-alt me-1 text-muted"></i>Due Date
+                                    </label>
+                                    <input type="text" class="form-control uk-date @error('due_date') is-invalid @enderror"
+                                           id="due_date" name="due_date"
+                                           value="{{ old('due_date') ? (old('due_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('due_date')) ? \Carbon\Carbon::parse(old('due_date'))->format('d/m/Y') : old('due_date')) : '' }}"
+                                           placeholder="dd/mm/yyyy"
+                                           pattern="\d{2}/\d{2}/\d{4}"
+                                           maxlength="10">
+                                    @error('due_date')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Amount & Type -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label for="subtotal" class="form-label fw-semibold">
+                                        <i class="fas fa-pound-sign me-1 text-muted"></i>Subtotal <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control @error('subtotal') is-invalid @enderror"
+                                           id="subtotal" name="subtotal" value="{{ old('subtotal') }}" placeholder="0.00" required>
+                                    @error('subtotal')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="type" class="form-label fw-semibold">
+                                        <i class="fas fa-tags me-1 text-muted"></i>Bill Type
+                                    </label>
+                                    <select name="type" id="type" class="form-select @error('type') is-invalid @enderror">
+                                        <option value="consultation" {{ old('type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
+                                        <option value="procedure" {{ old('type') == 'procedure' ? 'selected' : '' }}>Procedure</option>
+                                        <option value="medication" {{ old('type') == 'medication' ? 'selected' : '' }}>Medication</option>
+                                        <option value="lab_test" {{ old('type') == 'lab_test' ? 'selected' : '' }}>Lab Test</option>
+                                        <option value="other" {{ old('type') == 'other' ? 'selected' : '' }}>Other</option>
+                                    </select>
+                                    @error('type')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="mb-4">
+                                <label for="description" class="form-label fw-semibold">
+                                    <i class="fas fa-align-left me-1 text-muted"></i>Description <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control @error('description') is-invalid @enderror"
+                                       id="description" name="description" value="{{ old('description') }}" placeholder="e.g. GP consultation, blood test" required>
+                                @error('description')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="mb-4">
+                                <label for="notes" class="form-label fw-semibold">
+                                    <i class="fas fa-sticky-note me-1 text-muted"></i>Notes
+                                </label>
+                                <textarea name="notes" id="notes" class="form-control" rows="3" placeholder="Additional details about the billing transaction">{{ old('notes') }}</textarea>
+                            </div>
+
+                            <!-- Send to Patient -->
+                            <div class="pt-2 border-top">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="send_to_patient" id="send_to_patient" value="1" {{ old('send_to_patient') ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-semibold" for="send_to_patient">
+                                        <i class="fas fa-envelope me-1 text-muted"></i>Send billing notification to patient
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted d-block mt-1 ms-4">Patient will receive an email with a secure payment link.</small>
                             </div>
 
                         </div>
