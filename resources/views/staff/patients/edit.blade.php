@@ -84,23 +84,6 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="blood_group" class="form-label fw-semibold">Blood Group</label>
-                                <select name="blood_group" id="blood_group" class="form-select @error('blood_group') is-invalid @enderror">
-                                    <option value="">Select Blood Group</option>
-                                    <option value="A+" {{ old('blood_group', $patient->blood_group) == 'A+' ? 'selected' : '' }}>A+</option>
-                                    <option value="A-" {{ old('blood_group', $patient->blood_group) == 'A-' ? 'selected' : '' }}>A-</option>
-                                    <option value="B+" {{ old('blood_group', $patient->blood_group) == 'B+' ? 'selected' : '' }}>B+</option>
-                                    <option value="B-" {{ old('blood_group', $patient->blood_group) == 'B-' ? 'selected' : '' }}>B-</option>
-                                    <option value="AB+" {{ old('blood_group', $patient->blood_group) == 'AB+' ? 'selected' : '' }}>AB+</option>
-                                    <option value="AB-" {{ old('blood_group', $patient->blood_group) == 'AB-' ? 'selected' : '' }}>AB-</option>
-                                    <option value="O+" {{ old('blood_group', $patient->blood_group) == 'O+' ? 'selected' : '' }}>O+</option>
-                                    <option value="O-" {{ old('blood_group', $patient->blood_group) == 'O-' ? 'selected' : '' }}>O-</option>
-                                </select>
-                                @error('blood_group')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-6 mb-3">
                                 <label for="patient_id" class="form-label fw-semibold">Patient ID</label>
                                 <input type="text" name="patient_id" id="patient_id" 
                                        class="form-control @error('patient_id') is-invalid @enderror" 
@@ -161,10 +144,10 @@
                                 @enderror
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="state" class="form-label fw-semibold">State</label>
+                                <label for="state" class="form-label fw-semibold">County</label>
                                 <input type="text" name="state" id="state" 
                                        class="form-control @error('state') is-invalid @enderror" 
-                                       value="{{ old('state', $patient->state) }}" placeholder="Enter state">
+                                       value="{{ old('state', $patient->state) }}" placeholder="Enter county">
                                 @error('state')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror

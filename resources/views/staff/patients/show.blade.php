@@ -95,26 +95,19 @@
             <!-- Personal Information -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Personal Information</h5>
                 </div>
                 <div class="doctor-card-body">
-                    <!-- Patient Photo -->
                     @if($patient->photo)
                     <div class="row mb-4">
                         <div class="col-12 text-center">
-                            <div class="mb-3">
-                                <img src="{{ $patient->photo_url }}" alt="Patient Photo" 
-                                     class="img-thumbnail rounded-circle" 
-                                     style="width: 150px; height: 150px; object-fit: cover;">
-                                <div class="mt-2">
-                                    <small class="text-muted">Patient Photo</small>
-                                </div>
-                            </div>
+                            <img src="{{ $patient->photo_url }}" alt="Patient Photo" class="img-thumbnail rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
+                            <div class="mt-2"><small class="text-muted">Patient Photo</small></div>
                         </div>
                     </div>
                     @endif
 
-                    <div class="row">
+                    <div class="row g-3">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Patient ID</label>
@@ -158,16 +151,6 @@
                                         <a href="tel:{{ $patient->phone }}">{{ $patient->phone }}</a>
                                     @else
                                         Not provided
-                                    @endif
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Blood Group</label>
-                                <div class="form-control-plaintext">
-                                    @if($patient->blood_group)
-                                        <span class="badge bg-danger">{{ $patient->blood_group }}</span>
-                                    @else
-                                        Not specified
                                     @endif
                                 </div>
                             </div>
@@ -236,18 +219,17 @@
                     </div>
                     
                     @if($patient->address || $patient->city || $patient->state || $patient->country || $patient->postal_code)
-                    <div class="row">
+                    <hr class="my-3">
+                    <h6 class="text-muted fw-semibold mb-3"><i class="fas fa-map-marker-alt me-1"></i>Address</h6>
+                    <div class="row g-3">
                         <div class="col-12">
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Address</label>
-                                <div class="form-control-plaintext">{{ $patient->full_address ?: $patient->address }}</div>
-                            </div>
+                            <label class="form-label fw-semibold small text-muted">Street / Address</label>
+                            <div class="form-control-plaintext">{{ $patient->full_address ?: $patient->address }}</div>
                         </div>
                     </div>
                     @endif
-                    
                     @if($patient->city || $patient->state || $patient->country || $patient->postal_code)
-                    <div class="row">
+                    <div class="row g-3 mt-0">
                         <div class="col-md-6">
                             @if($patient->city)
                             <div class="mb-3">
@@ -257,7 +239,7 @@
                             @endif
                             @if($patient->state)
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">State</label>
+                                <label class="form-label fw-semibold">County</label>
                                 <div class="form-control-plaintext">{{ $patient->state }}</div>
                             </div>
                             @endif
@@ -285,7 +267,7 @@
             @if($patient->insurance_provider || $patient->insurance_number)
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-shield-alt me-2"></i>Insurance Information</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-shield-alt me-2 text-primary"></i>Insurance Information</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="row">
@@ -309,7 +291,7 @@
             <!-- Medical Information -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-heartbeat me-2"></i>Medical Information</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-heartbeat me-2 text-primary"></i>Medical Information</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="mb-3">
@@ -353,7 +335,7 @@
             @if($patient->patient_id_document_path || $patient->guardian_id_document_path)
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-file-upload me-2"></i>Uploaded Documents</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-file-upload me-2 text-primary"></i>Uploaded Documents</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="row">
@@ -405,7 +387,7 @@
             @if($patient->consent_share_with_gp || $patient->gp_name || $patient->gp_email)
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2"></i>GP (General Practitioner) Information</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2 text-primary"></i>GP (General Practitioner) Information</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="row">
@@ -468,7 +450,7 @@
             <!-- Emergency Contact -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user-shield me-2"></i>Emergency Contact</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user-shield me-2 text-primary"></i>Emergency Contact</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="row">
@@ -498,7 +480,7 @@
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
                     <h5 class="doctor-card-title mb-0">
-                        <i class="fas fa-file-medical me-2"></i>Medical Records
+                        <i class="fas fa-file-medical me-2 text-primary"></i>Medical Records
                         @if($patient->medicalRecords && $patient->medicalRecords->count() > 0)
                             <span class="badge bg-light text-dark ms-2">{{ $patient->medicalRecords->count() }}</span>
                         @endif
@@ -697,7 +679,7 @@
             @if($patient->appointments && $patient->appointments->count() > 0)
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-calendar-check me-2"></i>Recent Appointments</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-calendar-check me-2 text-primary"></i>Recent Appointments</h5>
                 </div>
                     <div class="doctor-card-body">
                     <div class="table-responsive">
@@ -758,7 +740,7 @@
             <!-- Quick Actions -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-bolt me-2 text-primary"></i>Quick Actions</h5>
                 </div>
                 <div class="doctor-card-body">
                     @if(auth()->user()->role === 'doctor')
@@ -845,7 +827,7 @@
             <!-- Quick Stats -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Quick Stats</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-chart-bar me-2 text-primary"></i>Quick Stats</h5>
                 </div>
                     <div class="doctor-card-body">
                     <div class="row text-center">
