@@ -71,7 +71,7 @@
                 <!-- Personal Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Personal Information</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="row">
@@ -114,26 +114,6 @@
                                         <option value="other" {{ old('gender') === 'other' ? 'selected' : '' }}>Other</option>
                                     </select>
                                     @error('gender')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="blood_group" class="form-label fw-semibold">Blood Group</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-tint"></i></span>
-                                    <select name="blood_group" id="blood_group" class="form-select @error('blood_group') is-invalid @enderror">
-                                        <option value="">Select Blood Group</option>
-                                        <option value="A+" {{ old('blood_group') == 'A+' ? 'selected' : '' }}>A+</option>
-                                        <option value="A-" {{ old('blood_group') == 'A-' ? 'selected' : '' }}>A-</option>
-                                        <option value="B+" {{ old('blood_group') == 'B+' ? 'selected' : '' }}>B+</option>
-                                        <option value="B-" {{ old('blood_group') == 'B-' ? 'selected' : '' }}>B-</option>
-                                        <option value="AB+" {{ old('blood_group') == 'AB+' ? 'selected' : '' }}>AB+</option>
-                                        <option value="AB-" {{ old('blood_group') == 'AB-' ? 'selected' : '' }}>AB-</option>
-                                        <option value="O+" {{ old('blood_group') == 'O+' ? 'selected' : '' }}>O+</option>
-                                        <option value="O-" {{ old('blood_group') == 'O-' ? 'selected' : '' }}>O-</option>
-                                    </select>
-                                    @error('blood_group')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -424,7 +404,7 @@
                 <!-- Contact Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-address-book me-2"></i>Contact Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-address-book me-2 text-primary"></i>Contact Information</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="row">
@@ -522,7 +502,7 @@
                 <!-- Emergency Contact Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-shield me-2"></i>Emergency Contact</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-shield me-2 text-primary"></i>Emergency Contact</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="row">
@@ -574,7 +554,7 @@
                 @if($user->role === 'doctor' || $user->is_admin || $user->role === 'admin')
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-building me-2"></i>Clinic Assignment</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-building me-2 text-primary"></i>Clinic Assignment</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="mb-3">
@@ -621,7 +601,7 @@
                 <!-- GP Consent & Details -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2"></i>GP Consent & Details</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2 text-primary"></i>GP Consent & Details</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="form-check mb-3">
@@ -750,7 +730,7 @@
                 <!-- Medical Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-stethoscope me-2"></i>Medical Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-stethoscope me-2 text-primary"></i>Medical Information</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="row">
