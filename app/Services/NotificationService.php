@@ -226,8 +226,9 @@ class NotificationService
     {
         // Determine who should receive the notification based on event type
         if (in_array($eventType, ['payment_received', 'payment_completed'])) {
-            // Payment-related events should notify admins
+            // Payment-related events: notify admins and the assigned doctor
             $this->notifyAdminsForPayment($billing, $eventType, $amount);
+            $this->notifyDoctorForPayment($billing, $eventType, $amount);
         } else {
             // Invoice-related events should notify patients
             $this->notifyPatientForInvoice($billing, $eventType, $amount);
@@ -307,6 +308,73 @@ class NotificationService
                 'related_patient_id' => $billing->patient_id,
             ]));
         }
+    }
+
+    /**
+     * Notify the doctor assigned to the billing when their patient pays.
+     *
+     * @param Billing $billing
+     * @param string $eventType
+     * @param float|null $amount
+     * @return void
+     */
+    protected function notifyDoctorForPayment(Billing $billing, string $eventType, $amount = null)
+    {
+        $billing->loadMissing(['doctor.user', 'patient']);
+
+        if (!$billing->doctor || !$billing->doctor->user) {
+            Log::debug('No doctor or doctor user for payment notification', [
+                'billing_id' => $billing->id,
+                'doctor_id' => $billing->doctor_id,
+            ]);
+            return;
+        }
+
+        $user = $billing->doctor->user;
+        if (!$user->is_active) {
+            return;
+        }
+
+        $notificationData = $this->getDoctorBillingNotificationData($billing, $eventType, $amount);
+        $this->createNotification($user, array_merge($notificationData, [
+            'related_patient_id' => $billing->patient_id,
+        ]));
+
+        try {
+            app(HospitalEmailNotificationService::class)->notifyDoctorPaymentReceived($billing, $amount);
+        } catch (\Exception $e) {
+            Log::warning('Doctor payment email not sent', [
+                'billing_id' => $billing->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        Log::info('Doctor notified of patient payment', [
+            'billing_id' => $billing->id,
+            'doctor_id' => $billing->doctor_id,
+            'patient_id' => $billing->patient_id,
+        ]);
+    }
+
+    /**
+     * Get doctor billing notification data (payment received).
+     */
+    protected function getDoctorBillingNotificationData(Billing $billing, string $eventType, $amount = null): array
+    {
+        $currencySymbol = class_exists(\App\Helpers\CurrencyHelper::class)
+            ? \App\Helpers\CurrencyHelper::getCurrencySymbol()
+            : '£';
+        $amountFormatted = $currencySymbol . number_format((float) ($amount ?? $billing->paid_amount), 2);
+        $patientName = $billing->patient ? $billing->patient->full_name : 'Patient';
+
+        return [
+            'type' => UserNotification::TYPE_BILLING,
+            'category' => UserNotification::CATEGORY_BILLING,
+            'title' => 'Patient payment received',
+            'message' => "Payment of {$amountFormatted} received from {$patientName}.",
+            'action_url' => '/staff/billing/' . $billing->id,
+            'priority' => 'medium',
+        ];
     }
 
     /**

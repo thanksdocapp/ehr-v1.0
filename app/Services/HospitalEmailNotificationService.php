@@ -9,6 +9,7 @@ use App\Models\Patient;
 use App\Models\MedicalRecord;
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\Billing;
 use App\Models\LabReport;
 use App\Models\ContactMessage;
 use App\Models\SiteSetting;
@@ -1986,6 +1987,60 @@ class HospitalEmailNotificationService
             [$doctor->user->email => $doctor->name],
             $variables
         );
+    }
+
+    /**
+     * Notify doctor by email when their patient pays an invoice/bill.
+     *
+     * @param Billing $billing
+     * @param float|null $amount Payment amount (defaults to billing paid_amount)
+     * @return EmailLog|null
+     */
+    public function notifyDoctorPaymentReceived(Billing $billing, $amount = null)
+    {
+        $billing->loadMissing(['doctor.user', 'patient']);
+
+        if (!$billing->doctor || !$billing->doctor->user || !$billing->doctor->user->email) {
+            Log::debug('Cannot send doctor payment email: no doctor or email', [
+                'billing_id' => $billing->id,
+                'doctor_id' => $billing->doctor_id,
+            ]);
+            return null;
+        }
+
+        $doctor = $billing->doctor;
+        $doctorEmail = $doctor->user->email;
+        $currencySymbol = class_exists(\App\Helpers\CurrencyHelper::class)
+            ? \App\Helpers\CurrencyHelper::getCurrencySymbol()
+            : '£';
+        $amountFormatted = $currencySymbol . number_format((float) ($amount ?? $billing->paid_amount), 2);
+        $patientName = $billing->patient ? $billing->patient->full_name : 'Patient';
+        $billingUrl = url('/staff/billing/' . $billing->id);
+
+        $variables = [
+            'doctor_name' => $this->doctorNameForTemplate($doctor->name),
+            'patient_name' => $patientName,
+            'amount' => $amountFormatted,
+            'description' => $billing->description ?? 'Invoice',
+            'billing_id' => (string) $billing->id,
+            'billing_url' => $billingUrl,
+            'hospital_name' => config('app.name', 'Hospital'),
+        ];
+
+        try {
+            return $this->emailService->sendTemplateEmail(
+                'doctor_payment_received',
+                [$doctorEmail => $doctor->name],
+                $variables
+            );
+        } catch (Exception $e) {
+            Log::error('Failed to send doctor payment received email', [
+                'billing_id' => $billing->id,
+                'doctor_id' => $billing->doctor_id,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
     }
 
     /**
