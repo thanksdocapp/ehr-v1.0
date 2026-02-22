@@ -47,6 +47,17 @@ class Billing extends Model
         'balance' => 'decimal:2',
     ];
 
+    /**
+     * Always derive balance from total_amount and paid_amount so display is correct
+     * even if the stored balance column was not updated (e.g. after direct DB update).
+     */
+    public function getBalanceAttribute($value)
+    {
+        $total = (float) ($this->attributes['total_amount'] ?? 0);
+        $paid = (float) ($this->attributes['paid_amount'] ?? 0);
+        return round($total - $paid, 2);
+    }
+
     // Relationships
     public function patient(): BelongsTo
     {
