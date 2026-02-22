@@ -86,13 +86,13 @@
                 <!-- Appointment Details -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-calendar-plus me-2"></i>Appointment Details</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-calendar-plus me-2 text-primary"></i>Appointment Details</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
-                                    <label for="patient_id" class="form-label">Patient <span class="text-danger">*</span></label>
+                                    <label for="patient_id" class="form-label fw-semibold">Patient <span class="text-danger">*</span></label>
                                     <div class="input-group mb-2">
                                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                                         <input type="text"
@@ -125,7 +125,7 @@
                                 </div>
 
                                 <div class="form-group mb-3">
-                                    <label for="appointment_type" class="form-label">Appointment Type <span class="text-danger">*</span></label>
+                                    <label for="appointment_type" class="form-label fw-semibold">Appointment Type <span class="text-danger">*</span></label>
                                     <select class="form-control @error('appointment_type') is-invalid @enderror" 
                                             id="appointment_type" name="appointment_type" required>
                                         <option value="">Select Type</option>
@@ -140,7 +140,7 @@
 
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
-                                    <label for="department_id" class="form-label">Clinic @if(auth()->user()->role !== 'doctor' || !$currentDepartment)<span class="text-danger">*</span>@endif</label>
+                                    <label for="department_id" class="form-label fw-semibold">Clinic @if(auth()->user()->role !== 'doctor' || !$currentDepartment)<span class="text-danger">*</span>@endif</label>
                                     @if(auth()->user()->role === 'doctor' && $currentDepartment)
                                         <input type="hidden" name="department_id" value="{{ $currentDepartment->id }}">
                                         <div class="form-control bg-light" style="min-height: 38px; padding-top: 8px;">
@@ -165,7 +165,7 @@
                                 </div>
 
                                 <div class="form-group mb-3">
-                                    <label for="doctor_id" class="form-label">Doctor @if(auth()->user()->role !== 'doctor' || !$currentDoctor)<span class="text-danger">*</span>@endif</label>
+                                    <label for="doctor_id" class="form-label fw-semibold">Doctor @if(auth()->user()->role !== 'doctor' || !$currentDoctor)<span class="text-danger">*</span>@endif</label>
                                     @if(auth()->user()->role === 'doctor' && $currentDoctor)
                                         <input type="hidden" name="doctor_id" value="{{ $currentDoctor->id }}">
                                         <div class="form-control bg-light" style="min-height: 38px; padding-top: 8px;">
@@ -194,7 +194,7 @@
                                 </div>
 
                                 <div class="form-group mb-3">
-                                    <label for="service_id" class="form-label">Service</label>
+                                    <label for="service_id" class="form-label fw-semibold">Service</label>
                                     <select class="form-control @error('service_id') is-invalid @enderror" 
                                             id="service_id" name="service_id">
                                         <option value="">Select Service (Optional)</option>
@@ -207,11 +207,11 @@
                             </div>
                         </div>
 
-                        <!-- Appointment Date / Duration / Time (full-width, below Appointment Type) -->
+                        <!-- Appointment Date / Duration / Time -->
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group mb-3">
-                                    <label for="appointment_date" class="form-label">Appointment Date <span class="text-danger">*</span></label>
+                                    <label for="appointment_date" class="form-label fw-semibold">Appointment Date <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control uk-date @error('appointment_date') is-invalid @enderror"
                                            id="appointment_date" name="appointment_date"
                                            value="{{ old('appointment_date') ? (old('appointment_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('appointment_date')) ? \Carbon\Carbon::parse(old('appointment_date'))->format('d/m/Y') : old('appointment_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}" 
@@ -230,7 +230,7 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group mb-3">
-                                    <label for="estimated_duration" class="form-label">Estimated Duration <span class="text-danger">*</span></label>
+                                    <label for="estimated_duration" class="form-label fw-semibold">Estimated Duration <span class="text-danger">*</span></label>
                                     <select class="form-control @error('estimated_duration') is-invalid @enderror"
                                             id="estimated_duration" name="estimated_duration" required>
                                         <option value="15" {{ old('estimated_duration') === '15' ? 'selected' : '' }}>15 minutes</option>
@@ -248,7 +248,7 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group mb-3">
-                                    <label for="appointment_time" class="form-label">Appointment Time <span class="text-danger">*</span></label>
+                                    <label for="appointment_time" class="form-label fw-semibold">Appointment Time <span class="text-danger">*</span></label>
                                     <select class="form-control @error('appointment_time') is-invalid @enderror"
                                             id="appointment_time" name="appointment_time" required>
                                         <option value="">Select Time</option>
@@ -284,11 +284,11 @@
                             </div>
                         </div>
 
-                        <!-- Reason for Visit (full-width) -->
-                        <div class="row">
+                        <!-- Reason for Visit -->
+                        <div class="row pt-3 border-top mt-3">
                             <div class="col-12">
                                 <div class="form-group mb-3">
-                                    <label for="reason" class="form-label">Reason for Visit</label>
+                                    <label for="reason" class="form-label fw-semibold">Reason for Visit</label>
                                     <textarea class="form-control @error('reason') is-invalid @enderror"
                                               id="reason" name="reason" rows="3"
                                               placeholder="Brief description of the appointment reason...">{{ old('reason') }}</textarea>
@@ -300,7 +300,7 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="consultation_type" class="form-label">Consultation Type</label>
+                            <label for="consultation_type" class="form-label fw-semibold">Consultation Type</label>
                             <select class="form-control @error('consultation_type') is-invalid @enderror" id="consultation_type" name="consultation_type">
                                 <option value="in_person" {{ old('consultation_type', 'in_person') === 'in_person' ? 'selected' : '' }}>In Person</option>
                                 <option value="online" {{ old('consultation_type') === 'online' ? 'selected' : '' }}>Online (Video)</option>
