@@ -89,227 +89,220 @@
                         <h5 class="doctor-card-title mb-0"><i class="fas fa-calendar-plus me-2 text-primary"></i>Appointment Details</h5>
                     </div>
                     <div class="doctor-card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="patient_id" class="form-label fw-semibold">Patient <span class="text-danger">*</span></label>
-                                    <div class="input-group mb-2">
-                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                        <input type="text"
-                                               class="form-control"
-                                               id="patientSearchInput"
-                                               placeholder="Search patient by name or phone…"
-                                               autocomplete="off">
-                                        <button type="button" class="btn btn-outline-secondary" id="patientSearchClearBtn" style="display:none;">
-                                            Clear
-                                        </button>
-                                    </div>
-                                    <small class="text-muted d-block mb-2" id="patientSearchMeta" style="display:none;"></small>
-                                    <select class="form-control @error('patient_id') is-invalid @enderror" 
-                                            id="patient_id" name="patient_id" required>
-                                        <option value="">Select Patient</option>
-                                        @foreach($patients as $patient)
-                                            <option value="{{ $patient->id }}" {{ old('patient_id') == $patient->id ? 'selected' : '' }}>
-                                                {{ $patient->first_name }} {{ $patient->last_name }} - {{ $patient->phone ?? 'No phone' }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('patient_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="text-muted">
-                                        <a href="{{ route('staff.patients.create') }}" class="text-decoration-none">
-                                            <i class="fas fa-plus"></i> Add new patient
-                                        </a>
-                                    </small>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label for="appointment_type" class="form-label fw-semibold">Appointment Type <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('appointment_type') is-invalid @enderror" 
-                                            id="appointment_type" name="appointment_type" required>
-                                        <option value="">Select Type</option>
-                                        <option value="consultation" {{ old('appointment_type') === 'consultation' ? 'selected' : '' }}>Consultation</option>
-                                        <option value="follow_up" {{ old('appointment_type') === 'follow_up' ? 'selected' : '' }}>Follow Up</option>
-                                    </select>
-                                    @error('appointment_type')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="department_id" class="form-label fw-semibold">Clinic @if(auth()->user()->role !== 'doctor' || !$currentDepartment)<span class="text-danger">*</span>@endif</label>
-                                    @if(auth()->user()->role === 'doctor' && $currentDepartment)
-                                        <input type="hidden" name="department_id" value="{{ $currentDepartment->id }}">
-                                        <div class="form-control bg-light" style="min-height: 38px; padding-top: 8px;">
-                                            <i class="fas fa-hospital-symbol text-primary me-2"></i>
-                                            <strong>{{ $currentDepartment->name }}</strong>
-                                            <span class="text-muted small ms-2">(Your Clinic)</span>
-                                        </div>
-                                    @else
-                                        <select class="form-control @error('department_id') is-invalid @enderror" 
-                                                id="department_id" name="department_id" required>
-                                            <option value="">Select Clinic</option>
-                                            @foreach($departments as $department)
-                                                <option value="{{ $department->id }}" {{ old('department_id') == $department->id ? 'selected' : '' }}>
-                                                    {{ $department->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    @endif
-                                    @error('department_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label for="doctor_id" class="form-label fw-semibold">Doctor @if(auth()->user()->role !== 'doctor' || !$currentDoctor)<span class="text-danger">*</span>@endif</label>
-                                    @if(auth()->user()->role === 'doctor' && $currentDoctor)
-                                        <input type="hidden" name="doctor_id" value="{{ $currentDoctor->id }}">
-                                        <div class="form-control bg-light" style="min-height: 38px; padding-top: 8px;">
-                                            <i class="fas fa-user-md text-success me-2"></i>
-                                            <strong>{{ formatDoctorName($currentDoctor->name) }}</strong>
-                                            @if($currentDoctor->specialization)
-                                                <span class="text-muted small ms-2">({{ $currentDoctor->specialization }})</span>
-                                            @endif
-                                            <span class="text-muted small ms-2">(You)</span>
-                                        </div>
-                                    @else
-                                        <select class="form-control @error('doctor_id') is-invalid @enderror" 
-                                                id="doctor_id" name="doctor_id" required>
-                                            <option value="">Select Doctor</option>
-                                            @foreach($doctors as $doctor)
-                                                <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>
-                                                    {{ formatDoctorName($doctor->name) }} - {{ $doctor->specialization ?? 'General' }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <small class="text-muted">Leave empty to assign later</small>
-                                    @endif
-                                    @error('doctor_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label for="service_id" class="form-label fw-semibold">Service</label>
-                                    <select class="form-control @error('service_id') is-invalid @enderror" 
-                                            id="service_id" name="service_id">
-                                        <option value="">Select Service (Optional)</option>
-                                    </select>
-                                    <small class="text-muted">Select a service to auto-set consultation type</small>
-                                    @error('service_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Appointment Date / Duration / Time -->
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group mb-3">
-                                    <label for="appointment_date" class="form-label fw-semibold">Appointment Date <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control uk-date @error('appointment_date') is-invalid @enderror"
-                                           id="appointment_date" name="appointment_date"
-                                           value="{{ old('appointment_date') ? (old('appointment_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('appointment_date')) ? \Carbon\Carbon::parse(old('appointment_date'))->format('d/m/Y') : old('appointment_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}" 
-                                           placeholder="dd/mm/yyyy"
-                                           pattern="\d{2}/\d{2}/\d{4}"
-                                           maxlength="10"
-                                           data-min-date="today"
-                                           data-default-date="today"
-                                           data-max-date="{{ \Carbon\Carbon::now()->addYears(2)->format('Y-m-d') }}"
-                                           required>
-                                    <small class="text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
-                                    @error('appointment_date')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-3">
-                                    <label for="estimated_duration" class="form-label fw-semibold">Estimated Duration <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('estimated_duration') is-invalid @enderror"
-                                            id="estimated_duration" name="estimated_duration" required>
-                                        <option value="15" {{ old('estimated_duration') === '15' ? 'selected' : '' }}>15 minutes</option>
-                                        <option value="30" {{ old('estimated_duration', '30') === '30' ? 'selected' : '' }}>30 minutes</option>
-                                        <option value="45" {{ old('estimated_duration') === '45' ? 'selected' : '' }}>45 minutes</option>
-                                        <option value="60" {{ old('estimated_duration') === '60' ? 'selected' : '' }}>1 hour</option>
-                                        <option value="90" {{ old('estimated_duration') === '90' ? 'selected' : '' }}>1.5 hours</option>
-                                        <option value="120" {{ old('estimated_duration') === '120' ? 'selected' : '' }}>2 hours</option>
-                                    </select>
-                                    @error('estimated_duration')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="text-muted">Duration affects available time ranges</small>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-3">
-                                    <label for="appointment_time" class="form-label fw-semibold">Appointment Time <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('appointment_time') is-invalid @enderror"
-                                            id="appointment_time" name="appointment_time" required>
-                                        <option value="">Select Time</option>
-                                        @for($hour = 8; $hour <= 17; $hour++)
-                                            @for($minute = 0; $minute < 60; $minute += 30)
-                                                @php
-                                                    $time = sprintf('%02d:%02d', $hour, $minute);
-                                                    $displayTime = date('g:i A', strtotime($time));
-                                                @endphp
-                                                <option value="{{ $time }}" {{ old('appointment_time') === $time ? 'selected' : '' }}>
-                                                    {{ $displayTime }}
-                                                </option>
-                                            @endfor
-                                        @endfor
-                                    </select>
-                                    @error('appointment_time')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <div id="timeSlotNotice" class="alert mt-2 mb-0" style="display:none;">
-                                        <div class="d-flex flex-column align-items-start gap-2">
-                                            <div class="time-slot-notice__title">
-                                                <i class="fas fa-exclamation-triangle me-1"></i>Appointment time unavailable
-                                            </div>
-                                            <div id="timeSlotNoticeText" class="small mb-0">
-                                                This time is unavailable (past/closed). Please choose a later time or change the day.
-                                            </div>
-                                            <button type="button" id="timeSlotTomorrowBtn" class="btn btn-sm btn-outline-warning">
-                                                Set date to tomorrow
+                        {{-- 1. Patient & visit type (who, what kind of visit) --}}
+                        <div class="mb-4">
+                            <p class="text-uppercase small fw-semibold text-muted mb-3"><i class="fas fa-user me-1"></i>Patient & visit type</p>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="form-group mb-3">
+                                        <label for="patient_id" class="form-label fw-semibold">Patient <span class="text-danger">*</span></label>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   id="patientSearchInput"
+                                                   placeholder="Search patient by name or phone…"
+                                                   autocomplete="off">
+                                            <button type="button" class="btn btn-outline-secondary" id="patientSearchClearBtn" style="display:none;">
+                                                Clear
                                             </button>
                                         </div>
+                                        <small class="text-muted d-block mb-2" id="patientSearchMeta" style="display:none;"></small>
+                                        <select class="form-control @error('patient_id') is-invalid @enderror"
+                                                id="patient_id" name="patient_id" required>
+                                            <option value="">Select Patient</option>
+                                            @foreach($patients as $patient)
+                                                <option value="{{ $patient->id }}" {{ old('patient_id') == $patient->id ? 'selected' : '' }}>
+                                                    {{ $patient->first_name }} {{ $patient->last_name }} - {{ $patient->phone ?? 'No phone' }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error('patient_id')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <small class="text-muted">
+                                            <a href="{{ route('staff.patients.create') }}" class="text-decoration-none"><i class="fas fa-plus"></i> Add new patient</a>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group mb-3">
+                                        <label for="appointment_type" class="form-label fw-semibold">Visit type <span class="text-danger">*</span></label>
+                                        <select class="form-control @error('appointment_type') is-invalid @enderror"
+                                                id="appointment_type" name="appointment_type" required>
+                                            <option value="">Select</option>
+                                            <option value="consultation" {{ old('appointment_type') === 'consultation' ? 'selected' : '' }}>Consultation</option>
+                                            <option value="follow_up" {{ old('appointment_type') === 'follow_up' ? 'selected' : '' }}>Follow up</option>
+                                        </select>
+                                        @error('appointment_type')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Reason for Visit -->
-                        <div class="row pt-3 border-top mt-3">
-                            <div class="col-12">
-                                <div class="form-group mb-3">
-                                    <label for="reason" class="form-label fw-semibold">Reason for Visit</label>
-                                    <textarea class="form-control @error('reason') is-invalid @enderror"
-                                              id="reason" name="reason" rows="3"
-                                              placeholder="Brief description of the appointment reason...">{{ old('reason') }}</textarea>
-                                    @error('reason')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                        {{-- 2. Location & clinician (where, who provides care) --}}
+                        <div class="mb-4 pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-3"><i class="fas fa-hospital me-1"></i>Location & clinician</p>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="form-group mb-0">
+                                        <label for="department_id" class="form-label fw-semibold">Clinic @if(auth()->user()->role !== 'doctor' || !$currentDepartment)<span class="text-danger">*</span>@endif</label>
+                                        @if(auth()->user()->role === 'doctor' && $currentDepartment)
+                                            <input type="hidden" name="department_id" value="{{ $currentDepartment->id }}">
+                                            <div class="form-control bg-light" style="min-height: 38px; padding-top: 8px;">
+                                                <i class="fas fa-hospital-symbol text-primary me-2"></i>
+                                                <strong>{{ $currentDepartment->name }}</strong>
+                                                <span class="text-muted small ms-2">(Your clinic)</span>
+                                            </div>
+                                        @else
+                                            <select class="form-control @error('department_id') is-invalid @enderror"
+                                                    id="department_id" name="department_id" required>
+                                                <option value="">Select clinic</option>
+                                                @foreach($departments as $department)
+                                                    <option value="{{ $department->id }}" {{ old('department_id') == $department->id ? 'selected' : '' }}>{{ $department->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        @endif
+                                        @error('department_id')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group mb-0">
+                                        <label for="doctor_id" class="form-label fw-semibold">Doctor @if(auth()->user()->role !== 'doctor' || !$currentDoctor)<span class="text-danger">*</span>@endif</label>
+                                        @if(auth()->user()->role === 'doctor' && $currentDoctor)
+                                            <input type="hidden" name="doctor_id" value="{{ $currentDoctor->id }}">
+                                            <div class="form-control bg-light" style="min-height: 38px; padding-top: 8px;">
+                                                <i class="fas fa-user-md text-success me-2"></i>
+                                                <strong>{{ formatDoctorName($currentDoctor->name) }}</strong>
+                                                @if($currentDoctor->specialization)
+                                                    <span class="text-muted small ms-2">({{ $currentDoctor->specialization }})</span>
+                                                @endif
+                                                <span class="text-muted small ms-2">(You)</span>
+                                            </div>
+                                        @else
+                                            <select class="form-control @error('doctor_id') is-invalid @enderror"
+                                                    id="doctor_id" name="doctor_id" required>
+                                                <option value="">Select doctor</option>
+                                                @foreach($doctors as $doctor)
+                                                    <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>
+                                                        {{ formatDoctorName($doctor->name) }} - {{ $doctor->specialization ?? 'General' }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <small class="text-muted">Optional – assign later if needed</small>
+                                        @endif
+                                        @error('doctor_id')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group mb-0">
+                                        <label for="service_id" class="form-label fw-semibold">Service</label>
+                                        <select class="form-control @error('service_id') is-invalid @enderror"
+                                                id="service_id" name="service_id">
+                                            <option value="">None (optional)</option>
+                                        </select>
+                                        <small class="text-muted">Can set consultation type</small>
+                                        @error('service_id')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-group mb-3">
-                            <label for="consultation_type" class="form-label fw-semibold">Consultation Type</label>
-                            <select class="form-control @error('consultation_type') is-invalid @enderror" id="consultation_type" name="consultation_type">
-                                <option value="in_person" {{ old('consultation_type', 'in_person') === 'in_person' ? 'selected' : '' }}>In Person</option>
-                                <option value="online" {{ old('consultation_type') === 'online' ? 'selected' : '' }}>Online (Video)</option>
-                                <option value="telephone" {{ old('consultation_type') === 'telephone' ? 'selected' : '' }}>Telephone</option>
-                            </select>
-                            @error('consultation_type')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        {{-- 3. Date & time (when) --}}
+                        <div class="mb-4 pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-3"><i class="fas fa-clock me-1"></i>Date & time</p>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group mb-3">
+                                        <label for="appointment_date" class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control uk-date @error('appointment_date') is-invalid @enderror"
+                                               id="appointment_date" name="appointment_date"
+                                               value="{{ old('appointment_date') ? (old('appointment_date') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('appointment_date')) ? \Carbon\Carbon::parse(old('appointment_date'))->format('d/m/Y') : old('appointment_date')) : \Carbon\Carbon::now()->format('d/m/Y') }}"
+                                               placeholder="dd/mm/yyyy"
+                                               pattern="\d{2}/\d{2}/\d{4}"
+                                               maxlength="10"
+                                               data-min-date="today"
+                                               data-default-date="today"
+                                               data-max-date="{{ \Carbon\Carbon::now()->addYears(2)->format('Y-m-d') }}"
+                                               required>
+                                        <small class="text-muted">dd/mm/yyyy</small>
+                                        @error('appointment_date')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group mb-3">
+                                        <label for="estimated_duration" class="form-label fw-semibold">Duration <span class="text-danger">*</span></label>
+                                        <select class="form-control @error('estimated_duration') is-invalid @enderror"
+                                                id="estimated_duration" name="estimated_duration" required>
+                                            <option value="15" {{ old('estimated_duration') === '15' ? 'selected' : '' }}>15 min</option>
+                                            <option value="30" {{ old('estimated_duration', '30') === '30' ? 'selected' : '' }}>30 min</option>
+                                            <option value="45" {{ old('estimated_duration') === '45' ? 'selected' : '' }}>45 min</option>
+                                            <option value="60" {{ old('estimated_duration') === '60' ? 'selected' : '' }}>1 hour</option>
+                                            <option value="90" {{ old('estimated_duration') === '90' ? 'selected' : '' }}>1.5 hours</option>
+                                            <option value="120" {{ old('estimated_duration') === '120' ? 'selected' : '' }}>2 hours</option>
+                                        </select>
+                                        @error('estimated_duration')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group mb-3">
+                                        <label for="appointment_time" class="form-label fw-semibold">Time <span class="text-danger">*</span></label>
+                                        <select class="form-control @error('appointment_time') is-invalid @enderror"
+                                                id="appointment_time" name="appointment_time" required>
+                                            <option value="">Select time</option>
+                                            @for($hour = 8; $hour <= 17; $hour++)
+                                                @for($minute = 0; $minute < 60; $minute += 30)
+                                                    @php
+                                                        $time = sprintf('%02d:%02d', $hour, $minute);
+                                                        $displayTime = date('g:i A', strtotime($time));
+                                                    @endphp
+                                                    <option value="{{ $time }}" {{ old('appointment_time') === $time ? 'selected' : '' }}>{{ $displayTime }}</option>
+                                                @endfor
+                                            @endfor
+                                        </select>
+                                        @error('appointment_time')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <div id="timeSlotNotice" class="alert mt-2 mb-0" style="display:none;">
+                                            <div class="d-flex flex-column align-items-start gap-2">
+                                                <div class="time-slot-notice__title">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>Appointment time unavailable
+                                                </div>
+                                                <div id="timeSlotNoticeText" class="small mb-0"></div>
+                                                <button type="button" id="timeSlotTomorrowBtn" class="btn btn-sm btn-outline-warning">Set date to tomorrow</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                        {{-- 4. Modality (how the consultation takes place) --}}
+                        <div class="mb-4 pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-3"><i class="fas fa-video me-1"></i>Consultation method</p>
+                            <div class="form-group mb-3">
+                                <label for="consultation_type" class="form-label fw-semibold">Type</label>
+                                <select class="form-control @error('consultation_type') is-invalid @enderror" id="consultation_type" name="consultation_type">
+                                    <option value="in_person" {{ old('consultation_type', 'in_person') === 'in_person' ? 'selected' : '' }}>In person</option>
+                                    <option value="online" {{ old('consultation_type') === 'online' ? 'selected' : '' }}>Online (video)</option>
+                                    <option value="telephone" {{ old('consultation_type') === 'telephone' ? 'selected' : '' }}>Telephone</option>
+                                </select>
+                                @error('consultation_type')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
 
                         <script>
                         // Show meeting link row only when "Online (Video)" is selected.
@@ -364,6 +357,21 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        {{-- 5. Clinical context (reason for visit) --}}
+                        <div class="pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-3"><i class="fas fa-stethoscope me-1"></i>Reason for visit</p>
+                            <div class="form-group mb-0">
+                                <label for="reason" class="form-label fw-semibold">Reason / presenting complaint</label>
+                                <textarea class="form-control @error('reason') is-invalid @enderror"
+                                          id="reason" name="reason" rows="3"
+                                          placeholder="Brief description of the appointment reason or presenting complaint…">{{ old('reason') }}</textarea>
+                                @error('reason')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
                     </div>
