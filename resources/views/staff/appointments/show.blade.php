@@ -314,172 +314,183 @@
                 </div>
             @endif
 
-            <!-- Patient Information -->
+            <!-- Patient Information (grouped by relationship) -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
                     <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Patient Information</h5>
                     @if($appointment->patient->is_guest)
-                        <span class="badge bg-secondary ms-2">
-                            <i class="fas fa-user-clock me-1"></i>Guest Patient
-                        </span>
+                        <span class="badge bg-secondary ms-2"><i class="fas fa-user-clock me-1"></i>Guest Patient</span>
                     @endif
                 </div>
                 <div class="doctor-card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-id-card me-1"></i>Full Name</label>
-                            <div class="fw-bold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
-                        </div>
-                        @if($appointment->patient->patient_id)
+                    {{-- 1. Identity --}}
+                    <div class="mb-4">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-id-card me-1"></i>Identity</p>
+                        <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-barcode me-1"></i>Patient ID</label>
-                                <div class="fw-bold">{{ $appointment->patient->patient_id }}</div>
+                                <label class="form-label text-muted small mb-0">Full name</label>
+                                <div class="fw-bold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
                             </div>
-                        @endif
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-envelope me-1"></i>Email</label>
-                            <div class="fw-bold">
-                                @if($appointment->patient->email)
-                                    <a href="mailto:{{ $appointment->patient->email }}" class="text-decoration-none">
-                                        {{ $appointment->patient->email }}
-                                    </a>
-                                @else
-                                    <span class="text-muted">N/A</span>
-                                @endif
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-phone me-1"></i>Phone</label>
-                            <div class="fw-bold">
-                                @if($appointment->patient->phone)
-                                    <a href="tel:{{ $appointment->patient->phone }}" class="text-decoration-none">
-                                        {{ $appointment->patient->phone }}
-                                    </a>
-                                @else
-                                    <span class="text-muted">N/A</span>
-                                @endif
-                            </div>
+                            @if($appointment->patient->patient_id)
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Patient ID</label>
+                                    <div class="fw-bold">{{ $appointment->patient->patient_id }}</div>
+                                </div>
+                            @endif
                         </div>
                     </div>
 
-                    @if($appointment->patient->date_of_birth)
-                        <div class="row mb-3">
+                    {{-- 2. Contact --}}
+                    <div class="mb-4 pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-address-book me-1"></i>Contact</p>
+                        <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-birthday-cake me-1"></i>Date of Birth</label>
-                                <div class="fw-bold">{{ formatDate($appointment->patient->date_of_birth) }}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-calculator me-1"></i>Age</label>
-                                <div class="fw-bold">{{ \Carbon\Carbon::parse($appointment->patient->date_of_birth)->age }} years</div>
-                            </div>
-                        </div>
-                    @endif
-
-                    @if($appointment->patient->gender)
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-venus-mars me-1"></i>Gender</label>
-                                <div class="fw-bold">{{ ucfirst($appointment->patient->gender) }}</div>
-                            </div>
-                        </div>
-                    @endif
-
-                    @if($appointment->patient->address)
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label text-muted"><i class="fas fa-map-marker-alt me-1"></i>Address</label>
-                                <div class="fw-bold">{{ $appointment->patient->address }}</div>
-                            </div>
-                        </div>
-                    @endif
-
-                    @php
-                        // Safely get emergency contact info (handles encrypted fields)
-                        $emergencyContact = null;
-                        $emergencyPhone = null;
-                        try {
-                            $emergencyContact = $appointment->patient->emergency_contact;
-                            $emergencyPhone = $appointment->patient->emergency_phone;
-                        } catch (\Exception $e) {
-                            // If decryption fails, fields are null
-                            $emergencyContact = null;
-                            $emergencyPhone = null;
-                        }
-                    @endphp
-                    @if($emergencyContact || $emergencyPhone)
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-user-shield me-1"></i>Emergency Contact</label>
-                                <div class="fw-bold">{{ $emergencyContact ?? 'N/A' }}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-phone-alt me-1"></i>Emergency Phone</label>
+                                <label class="form-label text-muted small mb-0">Email</label>
                                 <div class="fw-bold">
-                                    @if($emergencyPhone)
-                                        <a href="tel:{{ $emergencyPhone }}" class="text-decoration-none">
-                                            {{ $emergencyPhone }}
-                                        </a>
+                                    @if($appointment->patient->email)
+                                        <a href="mailto:{{ $appointment->patient->email }}" class="text-decoration-none">{{ $appointment->patient->email }}</a>
+                                    @else
+                                        <span class="text-muted">N/A</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Phone</label>
+                                <div class="fw-bold">
+                                    @if($appointment->patient->phone)
+                                        <a href="tel:{{ $appointment->patient->phone }}" class="text-decoration-none">{{ $appointment->patient->phone }}</a>
                                     @else
                                         <span class="text-muted">N/A</span>
                                     @endif
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    @if($appointment->patient->date_of_birth || $appointment->patient->gender)
+                    {{-- 3. Demographics --}}
+                    <div class="mb-4 pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user-clock me-1"></i>Demographics</p>
+                        <div class="row">
+                            @if($appointment->patient->date_of_birth)
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small mb-0">Date of birth</label>
+                                    <div class="fw-bold">{{ formatDate($appointment->patient->date_of_birth) }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small mb-0">Age</label>
+                                    <div class="fw-bold">{{ \Carbon\Carbon::parse($appointment->patient->date_of_birth)->age }} years</div>
+                                </div>
+                            @endif
+                            @if($appointment->patient->gender)
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small mb-0">Gender</label>
+                                    <div class="fw-bold">{{ ucfirst($appointment->patient->gender) }}</div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($appointment->patient->address)
+                    {{-- 4. Address --}}
+                    <div class="mb-4 pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-map-marker-alt me-1"></i>Address</p>
+                        <label class="form-label text-muted small mb-0">Address</label>
+                        <div class="fw-bold">{{ $appointment->patient->address }}</div>
+                    </div>
+                    @endif
+
+                    @php
+                        $emergencyContact = null;
+                        $emergencyPhone = null;
+                        try {
+                            $emergencyContact = $appointment->patient->emergency_contact;
+                            $emergencyPhone = $appointment->patient->emergency_phone;
+                        } catch (\Exception $e) {
+                            $emergencyContact = null;
+                            $emergencyPhone = null;
+                        }
+                    @endphp
+                    @if($emergencyContact || $emergencyPhone)
+                    {{-- 5. Emergency contact --}}
+                    <div class="pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user-shield me-1"></i>Emergency contact</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Contact name</label>
+                                <div class="fw-bold">{{ $emergencyContact ?? 'N/A' }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Phone</label>
+                                <div class="fw-bold">
+                                    @if($emergencyPhone)
+                                        <a href="tel:{{ $emergencyPhone }}" class="text-decoration-none">{{ $emergencyPhone }}</a>
+                                    @else
+                                        <span class="text-muted">N/A</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     @endif
                 </div>
             </div>
 
-            <!-- Doctor Information -->
+            <!-- Doctor Information (grouped by relationship) -->
             @if($appointment->doctor)
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
                         <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2 text-primary"></i>Doctor Information</h5>
                     </div>
                     <div class="doctor-card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-user-tie me-1"></i>Doctor Name</label>
-                                <div class="fw-bold">{{ formatDoctorName($appointment->doctor->name) }}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-stethoscope me-1"></i>Specialisation</label>
-                                <div class="fw-bold">{{ $appointment->doctor->specialization ?? 'GP' }}</div>
+                        {{-- 1. Clinician --}}
+                        <div class="mb-4">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user-tie me-1"></i>Clinician</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Name</label>
+                                    <div class="fw-bold">{{ formatDoctorName($appointment->doctor->name) }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Specialisation</label>
+                                    <div class="fw-bold">{{ $appointment->doctor->specialization ?? 'GP' }}</div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="row mb-3">
-                            @if($appointment->department)
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted"><i class="fas fa-hospital me-1"></i>Clinic</label>
-                                    <div class="fw-bold">{{ $appointment->department->name }}</div>
-                                </div>
-                            @endif
-                            @if($appointment->doctor->email)
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted"><i class="fas fa-envelope me-1"></i>Email</label>
-                                    <div class="fw-bold">
-                                        <a href="mailto:{{ $appointment->doctor->email }}" class="text-decoration-none">
-                                            {{ $appointment->doctor->email }}
-                                        </a>
-                                    </div>
-                                </div>
-                            @endif
+                        @if($appointment->department)
+                        {{-- 2. Location --}}
+                        <div class="mb-4 pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-hospital me-1"></i>Location</p>
+                            <label class="form-label text-muted small mb-0">Clinic</label>
+                            <div class="fw-bold">{{ $appointment->department->name }}</div>
                         </div>
+                        @endif
 
-                        @if($appointment->doctor->phone)
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted"><i class="fas fa-phone me-1"></i>Phone</label>
-                                    <div class="fw-bold">
-                                        <a href="tel:{{ $appointment->doctor->phone }}" class="text-decoration-none">
-                                            {{ $appointment->doctor->phone }}
-                                        </a>
+                        @if($appointment->doctor->email || $appointment->doctor->phone)
+                        {{-- 3. Contact --}}
+                        <div class="{{ $appointment->department ? 'pt-3 border-top' : '' }}">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-address-book me-1"></i>Contact</p>
+                            <div class="row">
+                                @if($appointment->doctor->email)
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small mb-0">Email</label>
+                                        <div class="fw-bold">
+                                            <a href="mailto:{{ $appointment->doctor->email }}" class="text-decoration-none">{{ $appointment->doctor->email }}</a>
+                                        </div>
                                     </div>
-                                </div>
+                                @endif
+                                @if($appointment->doctor->phone)
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small mb-0">Phone</label>
+                                        <div class="fw-bold">
+                                            <a href="tel:{{ $appointment->doctor->phone }}" class="text-decoration-none">{{ $appointment->doctor->phone }}</a>
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
+                        </div>
                         @endif
                     </div>
                 </div>
