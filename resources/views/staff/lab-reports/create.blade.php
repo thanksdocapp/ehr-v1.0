@@ -56,9 +56,10 @@
                 <!-- Patient & Test Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Patient & Test Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Patient & test information</h5>
                     </div>
                     <div class="doctor-card-body">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user me-1"></i>Patient</p>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">

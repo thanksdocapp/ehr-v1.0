@@ -42,15 +42,13 @@
                     <div class="doctor-card mb-4">
                         <div class="doctor-card-header">
                             <h5 class="doctor-card-title mb-0">
-                                <i class="fas fa-info-circle me-2 text-primary"></i>Billing Information
+                                <i class="fas fa-info-circle me-2 text-primary"></i>Billing information
                             </h5>
                         </div>
                         <div class="doctor-card-body">
-                            <!-- Patient (full width) -->
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user me-1"></i>Patient</p>
                             <div class="mb-4">
-                                <label for="patient" class="form-label fw-semibold">
-                                    <i class="fas fa-user me-1 text-muted"></i>Patient <span class="text-danger">*</span>
-                                </label>
+                                <label for="patient" class="form-label fw-semibold">Patient <span class="text-danger">*</span></label>
                                 <div class="input-group mb-2">
                                     <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
                                     <input type="text"
@@ -203,7 +201,7 @@
                 <!-- Actions -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-cogs me-2" style="color: #1a202c;"></i>Actions</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-cogs me-2 text-primary"></i>Actions</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="d-grid gap-2">
@@ -221,7 +219,7 @@
                 @if(auth()->user())
                     <div class="doctor-card mb-4">
                         <div class="doctor-card-header">
-                            <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2" style="color: #1a202c;"></i>Staff Information</h5>
+                            <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Staff information</h5>
                         </div>
                         <div class="doctor-card-body">
                             <div class="d-flex align-items-center mb-3">
@@ -243,7 +241,7 @@
                 <!-- Billing Guidelines -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Billing Guidelines</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-info-circle me-2 text-primary"></i>Billing guidelines</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="d-flex">
@@ -268,7 +266,7 @@
                 <!-- Billing Types Info -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-tags me-2" style="color: #1a202c;"></i>Billing Types</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-tags me-2 text-primary"></i>Billing types</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="d-flex">
@@ -292,7 +290,7 @@
                 <!-- Quick Tips -->
                 <div class="doctor-card">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-lightbulb me-2" style="color: #1a202c;"></i>Quick Tips</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-lightbulb me-2 text-primary"></i>Quick tips</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="d-flex">

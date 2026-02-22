@@ -64,9 +64,10 @@
                 <!-- Patient Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Patient Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Patient information</h5>
                     </div>
                     <div class="doctor-card-body">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user me-1"></i>Patient</p>
                         <div class="form-group mb-3">
                             <label for="patient_id" class="form-label">Patient <span class="text-danger">*</span></label>
                             <div class="input-group mb-2">

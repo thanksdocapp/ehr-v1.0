@@ -47,7 +47,7 @@
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-file-invoice-dollar me-2" style="color: #1a202c;"></i>Billing Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-file-invoice-dollar me-2 text-primary"></i>Billing information</h5>
                         <div class="d-flex gap-2">
                             @php
                                 $statusColors = [
@@ -63,35 +63,38 @@
                     </div>
                 </div>
                 <div class="doctor-card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-hashtag me-1"></i>Bill Number</label>
-                            <div class="fw-bold text-primary">{{ $billing->bill_number }}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-pound-sign me-1"></i>Total Amount</label>
-                            <div class="fw-bold">{{ CurrencyHelper::format($billing->total_amount) }}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-calendar me-1"></i>Billing Date</label>
-                            <div class="fw-bold">{{ formatDateUkLong($billing->billing_date) }}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-calendar-alt me-1"></i>Due Date</label>
-                            <div class="fw-bold">{{ $billing->due_date ? formatDateUkLong($billing->due_date) : 'N/A' }}</div>
-                        </div>
-                    </div>
-
-                    @if($billing->notes)
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label text-muted"><i class="fas fa-sticky-note me-1"></i>Notes</label>
-                                <div class="fw-bold">{{ $billing->notes }}</div>
+                    <div class="mb-4">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-file-invoice me-1"></i>Bill & amounts</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Bill number</label>
+                                <div class="fw-bold text-primary">{{ $billing->bill_number }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Total amount</label>
+                                <div class="fw-bold">{{ CurrencyHelper::format($billing->total_amount) }}</div>
                             </div>
                         </div>
+                    </div>
+                    <div class="mb-4 pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-calendar me-1"></i>Dates</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Billing date</label>
+                                <div class="fw-bold">{{ formatDateUkLong($billing->billing_date) }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Due date</label>
+                                <div class="fw-bold">{{ $billing->due_date ? formatDateUkLong($billing->due_date) : 'N/A' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    @if($billing->notes)
+                    <div class="pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-sticky-note me-1"></i>Notes</p>
+                        <label class="form-label text-muted small mb-0">Notes</label>
+                        <div class="fw-bold">{{ $billing->notes }}</div>
+                    </div>
                     @endif
                 </div>
             </div>
@@ -99,45 +102,46 @@
             <!-- Patient Information -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2" style="color: #1a202c;"></i>Patient Information</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Patient information</h5>
                 </div>
                 <div class="doctor-card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-id-card me-1"></i>Full Name</label>
-                            <div class="fw-bold">{{ $billing->patient->full_name }}</div>
-                        </div>
-                        @if($billing->patient->patient_id)
+                    <div class="mb-4">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-id-card me-1"></i>Identity</p>
+                        <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-barcode me-1"></i>Patient ID</label>
+                                <label class="form-label text-muted small mb-0">Full name</label>
+                                <div class="fw-bold">{{ $billing->patient->full_name }}</div>
+                            </div>
+                            @if($billing->patient->patient_id)
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Patient ID</label>
                                 <div class="fw-bold">{{ $billing->patient->patient_id }}</div>
                             </div>
-                        @endif
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-envelope me-1"></i>Email</label>
-                            <div class="fw-bold">
-                                @if($billing->patient->email)
-                                    <a href="mailto:{{ $billing->patient->email }}" class="text-decoration-none">
-                                        {{ $billing->patient->email }}
-                                    </a>
-                                @else
-                                    <span class="text-muted">N/A</span>
-                                @endif
-                            </div>
+                            @endif
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-phone me-1"></i>Phone</label>
-                            <div class="fw-bold">
-                                @if($billing->patient->phone)
-                                    <a href="tel:{{ $billing->patient->phone }}" class="text-decoration-none">
-                                        {{ $billing->patient->phone }}
-                                    </a>
-                                @else
-                                    <span class="text-muted">N/A</span>
-                                @endif
+                    </div>
+                    <div class="pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-address-book me-1"></i>Contact</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Email</label>
+                                <div class="fw-bold">
+                                    @if($billing->patient->email)
+                                        <a href="mailto:{{ $billing->patient->email }}" class="text-decoration-none">{{ $billing->patient->email }}</a>
+                                    @else
+                                        <span class="text-muted">N/A</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Phone</label>
+                                <div class="fw-bold">
+                                    @if($billing->patient->phone)
+                                        <a href="tel:{{ $billing->patient->phone }}" class="text-decoration-none">{{ $billing->patient->phone }}</a>
+                                    @else
+                                        <span class="text-muted">N/A</span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -148,16 +152,17 @@
             @if($billing->doctor)
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2" style="color: #1a202c;"></i>Doctor Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2 text-primary"></i>Doctor information</h5>
                     </div>
                     <div class="doctor-card-body">
-                        <div class="row mb-3">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user-tie me-1"></i>Clinician</p>
+                        <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-user-tie me-1"></i>Doctor Name</label>
+                                <label class="form-label text-muted small mb-0">Name</label>
                                 <div class="fw-bold">{{ formatDoctorName($billing->doctor->name ?? $billing->doctor->full_name) }}</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-stethoscope me-1"></i>Specialisation</label>
+                                <label class="form-label text-muted small mb-0">Specialisation</label>
                                 <div class="fw-bold">{{ $billing->doctor->specialization ?? 'GP' }}</div>
                             </div>
                         </div>
@@ -172,7 +177,7 @@
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
                     <h6 class="doctor-card-title mb-0">
-                        <i class="fas fa-cogs me-2" style="color: #1a202c;"></i>Quick Actions
+                        <i class="fas fa-cogs me-2 text-primary"></i>Quick actions
                     </h6>
                 </div>
                 <div class="doctor-card-body">
@@ -205,7 +210,7 @@
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
                     <h6 class="doctor-card-title mb-0">
-                        <i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Status Information
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Status information
                     </h6>
                 </div>
                 <div class="doctor-card-body">
@@ -239,7 +244,7 @@
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
                     <h6 class="doctor-card-title mb-0">
-                        <i class="fas fa-lightbulb me-2" style="color: #1a202c;"></i>Billing Guidelines
+                        <i class="fas fa-lightbulb me-2 text-primary"></i>Billing guidelines
                     </h6>
                 </div>
                 <div class="doctor-card-body">

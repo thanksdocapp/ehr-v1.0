@@ -74,9 +74,10 @@
                         <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Personal Information</h5>
                     </div>
                     <div class="doctor-card-body">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-id-card me-1"></i>Identity</p>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="first_name" class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                                <label for="first_name" class="form-label fw-semibold">First name <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-user"></i></span>
                                     <input type="text" name="first_name" id="first_name" 
@@ -102,6 +103,8 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="mb-4 pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-venus-mars me-1"></i>Demographics</p>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="gender" class="form-label fw-semibold">Gender <span class="text-danger">*</span></label>
@@ -119,6 +122,9 @@
                                 </div>
                             </div>
                         </div>
+                        </div>
+                        <div class="pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-barcode me-1"></i>Identifier</p>
                         <div class="row">
                             <div class="col-md-12 mb-0">
                                 <label for="patient_id" class="form-label fw-semibold">Patient ID</label>
@@ -138,15 +144,14 @@
                                 </small>
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Age & Date of Birth with Guardian Documents -->
-                <div class="doctor-card mb-4 border-primary">
-                    <div class="doctor-card-header bg-white border-bottom">
-                        <h5 class="doctor-card-title mb-0 text-primary">
-                            <i class="fas fa-birthday-cake me-2"></i>Age & Date of Birth
-                        </h5>
+                <div class="doctor-card mb-4">
+                    <div class="doctor-card-header">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-birthday-cake me-2 text-primary"></i>Age & date of birth</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="row">
@@ -372,12 +377,11 @@
 
                 <!-- Patient ID Document -->
                 <div class="doctor-card mb-4">
-                    <div class="doctor-card-header bg-white border-bottom">
-                        <h5 class="doctor-card-title mb-0">
-                            <i class="fas fa-id-card me-2"></i>Patient ID Document
-                        </h5>
+                    <div class="doctor-card-header">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-id-card me-2 text-primary"></i>Patient ID document</h5>
                     </div>
                     <div class="doctor-card-body">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-file-upload me-1"></i>Upload</p>
                         <div class="mb-3">
                             <label for="patient_id_document" class="form-label fw-semibold">
                                 Upload Patient ID Document <small class="text-muted">(Optional)</small>
@@ -404,12 +408,13 @@
                 <!-- Contact Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-address-book me-2 text-primary"></i>Contact Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-address-book me-2 text-primary"></i>Contact & address</h5>
                     </div>
                     <div class="doctor-card-body">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-address-book me-1"></i>Contact</p>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="email" class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                                <label for="email" class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-envelope"></i></span>
                                     <input type="email" name="email" id="email" 
@@ -435,9 +440,11 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="mb-4 pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-map-marker-alt me-1"></i>Address</p>
                         <div class="row">
                             <div class="col-md-12 mb-3">
-                                <label for="ideal_postcodes_finder" class="form-label fw-semibold">Find Address</label>
+                                <label for="ideal_postcodes_finder" class="form-label fw-semibold">Find address</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-search"></i></span>
                                     <input type="text"
@@ -496,18 +503,20 @@
                                 @enderror
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Emergency Contact Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-shield me-2 text-primary"></i>Emergency Contact</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-shield me-2 text-primary"></i>Emergency contact</h5>
                     </div>
                     <div class="doctor-card-body">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-phone-alt me-1"></i>Contact details</p>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="emergency_contact_name" class="form-label fw-semibold">Emergency Contact Name <span class="text-danger">*</span></label>
+                                <label for="emergency_contact_name" class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
                                 <input type="text" name="emergency_contact_name" id="emergency_contact_name" 
                                        class="form-control @error('emergency_contact_name') is-invalid @enderror" 
                                        value="{{ old('emergency_contact_name') }}" required>
@@ -516,7 +525,7 @@
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="emergency_contact_phone" class="form-label fw-semibold">Emergency Contact Phone <span class="text-danger">*</span></label>
+                                <label for="emergency_contact_phone" class="form-label fw-semibold">Phone <span class="text-danger">*</span></label>
                                 <input type="tel" name="emergency_contact_phone" id="emergency_contact_phone" 
                                        class="form-control @error('emergency_contact_phone') is-invalid @enderror" 
                                        value="{{ old('emergency_contact_phone') }}" required>

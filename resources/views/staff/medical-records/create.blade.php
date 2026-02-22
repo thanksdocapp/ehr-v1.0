@@ -62,9 +62,10 @@
                 <!-- Patient & Appointment Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Patient & Appointment Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Patient & appointment</h5>
                     </div>
                     <div class="doctor-card-body">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user me-1"></i>Patient</p>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
@@ -100,8 +101,10 @@
                                     </small>
                                 </div>
 
+                                <div class="mb-4 pt-3 border-top">
+                                    <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-calendar-check me-1"></i>Related appointment</p>
                                 <div class="form-group mb-3">
-                                    <label for="appointment_id" class="form-label">Related Appointment</label>
+                                    <label for="appointment_id" class="form-label">Related appointment</label>
                                     <select class="form-control @error('appointment_id') is-invalid @enderror" 
                                             id="appointment_id" name="appointment_id">
                                         <option value="">No Appointment (Optional)</option>
@@ -128,10 +131,13 @@
                                         @endif
                                     </small>
                                 </div>
+                                </div>
                                 
                                 @if(isset($previousRecords) && count($previousRecords) > 0 && !$selectedAppointmentId)
+                                <div class="pt-3 border-top">
+                                    <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-copy me-1"></i>Copy from previous</p>
                                 <div class="form-group mb-3">
-                                    <label class="form-label">Copy From Previous Record</label>
+                                    <label class="form-label">Copy from previous record</label>
                                     <select class="form-control" id="copy_from_record" onchange="copyFromPreviousRecord(this.value)">
                                         <option value="">-- Don't copy --</option>
                                         @foreach($previousRecords as $prevRecord)
@@ -152,6 +158,7 @@
                                         <i class="fas fa-copy me-1"></i>
                                         Copy PMH, Drug History, Allergies, Social & Family History from previous record
                                     </small>
+                                </div>
                                 </div>
                                 @endif
 

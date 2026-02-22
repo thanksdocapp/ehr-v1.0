@@ -19,14 +19,11 @@
         <div class="col-lg-8">
             <div class="doctor-card">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0">
-                        <i class="fas fa-edit me-2"></i>Service Information
-                    </h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-edit me-2 text-primary"></i>Service information</h5>
                 </div>
                 <div class="doctor-card-body">
-                    <!-- Service Details (Read-only) -->
                     <div class="mb-4 p-3 bg-light rounded">
-                        <h6 class="fw-semibold mb-3">Global Service Details</h6>
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-cog me-1"></i>Global service details</p>
                         <div class="row">
                             <div class="col-md-6 mb-2">
                                 <small class="text-muted d-block">Service Name</small>

@@ -45,56 +45,50 @@
         <div class="col-lg-8">
             <!-- Patient & Test Information -->
             <div class="doctor-card mb-4">
-                <div class="doctor-doctor-card-header">
-                    <h5 class="doctor-doctor-card-title mb-0">
-                        <i class="fas fa-user me-2"></i>Patient & Test Information
-                    </h5>
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Patient & test information</h5>
                 </div>
                 <div class="doctor-card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tbody>
-                                    <tr>
-                                        <th width="40%">Patient:</th>
-                                        <td>{{ $labReport->patient->first_name }} {{ $labReport->patient->last_name }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Patient ID:</th>
-                                        <td>{{ $labReport->patient->patient_id ?? $labReport->patient->id }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Doctor:</th>
-                                        <td>{{ $labReport->doctor ? $labReport->doctor->first_name . ' ' . $labReport->doctor->last_name : 'Not assigned' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Medical Record:</th>
-                                        <td>{{ $labReport->medicalRecord ? '#' . $labReport->medicalRecord->id : 'Not linked' }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <div class="mb-4">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-id-card me-1"></i>Patient</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Name</label>
+                                <div class="fw-bold">{{ $labReport->patient->first_name }} {{ $labReport->patient->last_name }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Patient ID</label>
+                                <div class="fw-bold">{{ $labReport->patient->patient_id ?? $labReport->patient->id }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Doctor</label>
+                                <div class="fw-bold">{{ $labReport->doctor ? $labReport->doctor->first_name . ' ' . $labReport->doctor->last_name : 'Not assigned' }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Medical record</label>
+                                <div class="fw-bold">{{ $labReport->medicalRecord ? '#' . $labReport->medicalRecord->id : 'Not linked' }}</div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tbody>
-                                    <tr>
-                                        <th width="40%">Test Name:</th>
-                                        <td>{{ $labReport->test_name }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Test Type:</th>
-                                        <td><span class="badge bg-info">{{ ucfirst($labReport->test_type) }}</span></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Category:</th>
-                                        <td><span class="badge bg-secondary">{{ ucfirst($labReport->test_category) }}</span></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Specimen:</th>
-                                        <td><span class="badge bg-warning text-dark">{{ ucfirst($labReport->specimen_type) }}</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    </div>
+                    <div class="pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-vial me-1"></i>Test details</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Test name</label>
+                                <div class="fw-bold">{{ $labReport->test_name }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Test type</label>
+                                <div class="fw-bold"><span class="badge bg-info">{{ ucfirst($labReport->test_type) }}</span></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Category</label>
+                                <div class="fw-bold"><span class="badge bg-secondary">{{ ucfirst($labReport->test_category) }}</span></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Specimen</label>
+                                <div class="fw-bold"><span class="badge bg-warning text-dark">{{ ucfirst($labReport->specimen_type) }}</span></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -102,27 +96,32 @@
 
             <!-- Test Results -->
             <div class="doctor-card mb-4">
-                <div class="doctor-doctor-card-header">
-                    <h5 class="doctor-doctor-card-title mb-0">
-                        <i class="fas fa-microscope me-2"></i>Test Results
-                    </h5>
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-microscope me-2 text-primary"></i>Test results</h5>
                 </div>
                 <div class="doctor-card-body">
+                    <div class="mb-4">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-calendar me-1"></i>Dates</p>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <strong>Collection Date:</strong><br>
-                            <span class="text-muted">{{ $labReport->collection_date ? $labReport->collection_date->format('d M, Y') : 'Not specified' }}</span>
+                            <label class="form-label text-muted small mb-0">Collection date</label>
+                            <div class="fw-bold">{{ $labReport->collection_date ? $labReport->collection_date->format('d M, Y') : 'Not specified' }}</div>
                         </div>
                         <div class="col-md-6">
-                            <strong>Report Date:</strong><br>
-                            <span class="text-muted">{{ $labReport->report_date ? $labReport->report_date->format('d M, Y') : 'Not specified' }}</span>
+                            <label class="form-label text-muted small mb-0">Report date</label>
+                            <div class="fw-bold">{{ $labReport->report_date ? $labReport->report_date->format('d M, Y') : 'Not specified' }}</div>
                         </div>
                     </div>
+                    </div>
                     
+                    @if($labReport->results || $labReport->normal_range || $labReport->interpretation || $labReport->technician_notes)
+                    <div class="pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-flask me-1"></i>Results & interpretation</p>
+                    @endif
                     @if($labReport->results)
                         <div class="mb-3">
-                            <strong>Results:</strong>
-                            <div class="border p-3 mt-2 bg-light">
+                            <label class="form-label text-muted small mb-0">Results</label>
+                            <div class="border p-3 mt-1 bg-light">
                                 {{ $labReport->results }}
                             </div>
                         </div>
@@ -130,8 +129,8 @@
 
                     @if($labReport->normal_range)
                         <div class="mb-3">
-                            <strong>Normal Range:</strong>
-                            <div class="border p-3 mt-2 bg-info bg-opacity-10">
+                            <label class="form-label text-muted small mb-0">Normal range</label>
+                            <div class="border p-3 mt-1 bg-info bg-opacity-10">
                                 {{ $labReport->normal_range }}
                             </div>
                         </div>
@@ -139,8 +138,8 @@
 
                     @if($labReport->interpretation)
                         <div class="mb-3">
-                            <strong>Interpretation:</strong>
-                            <div class="border p-3 mt-2 bg-warning bg-opacity-10">
+                            <label class="form-label text-muted small mb-0">Interpretation</label>
+                            <div class="border p-3 mt-1 bg-warning bg-opacity-10">
                                 {{ $labReport->interpretation }}
                             </div>
                         </div>
@@ -148,11 +147,14 @@
 
                     @if($labReport->technician_notes)
                         <div class="mb-3">
-                            <strong>Technician Notes:</strong>
-                            <div class="border p-3 mt-2 bg-secondary bg-opacity-10">
+                            <label class="form-label text-muted small mb-0">Technician notes</label>
+                            <div class="border p-3 mt-1 bg-secondary bg-opacity-10">
                                 {{ $labReport->technician_notes }}
                             </div>
                         </div>
+                    @endif
+                    @if($labReport->results || $labReport->normal_range || $labReport->interpretation || $labReport->technician_notes)
+                    </div>
                     @endif
                 </div>
             </div>
@@ -162,10 +164,8 @@
         <div class="col-lg-4">
             <!-- Status & Actions -->
             <div class="doctor-card mb-4">
-                <div class="doctor-doctor-card-header">
-                    <h5 class="doctor-doctor-card-title mb-0">
-                        <i class="fas fa-cog me-2"></i>Status & Actions
-                    </h5>
+                <div class="doctor-card-header">
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-cog me-2 text-primary"></i>Status & actions</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="mb-3">

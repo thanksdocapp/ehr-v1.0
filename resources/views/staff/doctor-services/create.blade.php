@@ -26,19 +26,18 @@
         <div class="col-12">
             <div class="doctor-card">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0">
-                        <i class="fas fa-plus-circle me-2"></i>Service Details
-                    </h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-plus-circle me-2 text-primary"></i>Service details</h5>
                 </div>
 
                 <div class="doctor-card-body">
                     <form action="{{ route('staff.doctor-services.store') }}" method="POST">
                         @csrf
 
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-cog me-1"></i>Service</p>
                         <div class="row">
                             <div class="col-md-8">
                                 <div class="mb-3">
-                                    <label for="name" class="form-label fw-semibold">Service Name <span class="text-danger">*</span></label>
+                                    <label for="name" class="form-label fw-semibold">Service name <span class="text-danger">*</span></label>
                                     <input type="text"
                                            class="form-control @error('name') is-invalid @enderror"
                                            id="name"

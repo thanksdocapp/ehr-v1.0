@@ -41,7 +41,7 @@
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-file-medical me-2"></i>Record Overview</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-file-medical me-2 text-primary"></i>Record overview</h5>
                         <div class="d-flex gap-2">
                             @php
                                 $typeColors = [
@@ -57,41 +57,44 @@
                     </div>
                 </div>
                 <div class="doctor-card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-hashtag me-1"></i>Record ID</label>
-                            <div class="fw-bold text-primary">#{{ str_pad($medicalRecord->id, 4, '0', STR_PAD_LEFT) }}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-calendar me-1"></i>Record Date</label>
-                            <div class="fw-bold">{{ formatDate($medicalRecord->record_date ?? $medicalRecord->created_at) }}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-clock me-1"></i>Created</label>
-                            <div class="fw-bold">{{ formatDateTime($medicalRecord->created_at) }}</div>
-                            <small class="text-muted">{{ $medicalRecord->created_at->diffForHumans() }}</small>
-                        </div>
-                        @if($medicalRecord->updated_at != $medicalRecord->created_at)
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-edit me-1"></i>Last Updated</label>
-                            <div class="fw-bold">{{ formatDateTime($medicalRecord->updated_at) }}</div>
-                            <small class="text-muted">{{ $medicalRecord->updated_at->diffForHumans() }}</small>
-                        </div>
-                        @endif
-                    </div>
-
-                    @if($medicalRecord->appointment)
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label text-muted"><i class="fas fa-calendar-check me-1"></i>Related Appointment</label>
-                            <div class="fw-bold">
-                                <a href="{{ route('staff.appointments.show', $medicalRecord->appointment) }}" class="text-decoration-none">
-                                    #{{ $medicalRecord->appointment->appointment_number }} - {{ formatDate($medicalRecord->appointment->appointment_date) }} at {{ $medicalRecord->appointment->appointment_time }}
-                                </a>
+                    <div class="mb-4">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-hashtag me-1"></i>Record</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Record ID</label>
+                                <div class="fw-bold text-primary">#{{ str_pad($medicalRecord->id, 4, '0', STR_PAD_LEFT) }}</div>
                             </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Record date</label>
+                                <div class="fw-bold">{{ formatDate($medicalRecord->record_date ?? $medicalRecord->created_at) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4 pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-clock me-1"></i>Dates</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Created</label>
+                                <div class="fw-bold">{{ formatDateTime($medicalRecord->created_at) }}</div>
+                                <small class="text-muted">{{ $medicalRecord->created_at->diffForHumans() }}</small>
+                            </div>
+                            @if($medicalRecord->updated_at != $medicalRecord->created_at)
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Last updated</label>
+                                <div class="fw-bold">{{ formatDateTime($medicalRecord->updated_at) }}</div>
+                                <small class="text-muted">{{ $medicalRecord->updated_at->diffForHumans() }}</small>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @if($medicalRecord->appointment)
+                    <div class="pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-calendar-check me-1"></i>Related appointment</p>
+                        <label class="form-label text-muted small mb-0">Appointment</label>
+                        <div class="fw-bold">
+                            <a href="{{ route('staff.appointments.show', $medicalRecord->appointment) }}" class="text-decoration-none">
+                                #{{ $medicalRecord->appointment->appointment_number }} - {{ formatDate($medicalRecord->appointment->appointment_date) }} at {{ $medicalRecord->appointment->appointment_time }}
+                            </a>
                         </div>
                     </div>
                     @endif
@@ -101,85 +104,81 @@
             <!-- Patient Information -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Patient Information</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Patient information</h5>
                 </div>
                 <div class="doctor-card-body">
                     @if($medicalRecord->patient)
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-id-card me-1"></i>Full Name</label>
-                                <div class="fw-bold">
-                                    <a href="{{ route('staff.patients.show', $medicalRecord->patient) }}" class="text-decoration-none">
-                                        {{ $medicalRecord->patient->first_name }} {{ $medicalRecord->patient->last_name }}
-                                    </a>
-                                </div>
-                            </div>
-                            @if($medicalRecord->patient->patient_id)
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-barcode me-1"></i>Patient ID</label>
-                                <div class="fw-bold">{{ $medicalRecord->patient->patient_id }}</div>
-                            </div>
-                            @endif
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-envelope me-1"></i>Email</label>
-                                <div class="fw-bold">
-                                    @if($medicalRecord->patient->email)
-                                        <a href="mailto:{{ $medicalRecord->patient->email }}" class="text-decoration-none">
-                                            {{ $medicalRecord->patient->email }}
+                        <div class="mb-4">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-id-card me-1"></i>Identity</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Full name</label>
+                                    <div class="fw-bold">
+                                        <a href="{{ route('staff.patients.show', $medicalRecord->patient) }}" class="text-decoration-none">
+                                            {{ $medicalRecord->patient->first_name }} {{ $medicalRecord->patient->last_name }}
                                         </a>
-                                    @else
-                                        <span class="text-muted">N/A</span>
-                                    @endif
+                                    </div>
                                 </div>
+                                @if($medicalRecord->patient->patient_id)
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Patient ID</label>
+                                    <div class="fw-bold">{{ $medicalRecord->patient->patient_id }}</div>
+                                </div>
+                                @endif
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-phone me-1"></i>Phone</label>
-                                <div class="fw-bold">
-                                    @if($medicalRecord->patient->phone)
-                                        <a href="tel:{{ $medicalRecord->patient->phone }}" class="text-decoration-none">
-                                            {{ $medicalRecord->patient->phone }}
-                                        </a>
-                                    @else
-                                        <span class="text-muted">N/A</span>
-                                    @endif
+                        </div>
+                        <div class="mb-4 pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-address-book me-1"></i>Contact</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Email</label>
+                                    <div class="fw-bold">
+                                        @if($medicalRecord->patient->email)
+                                            <a href="mailto:{{ $medicalRecord->patient->email }}" class="text-decoration-none">{{ $medicalRecord->patient->email }}</a>
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Phone</label>
+                                    <div class="fw-bold">
+                                        @if($medicalRecord->patient->phone)
+                                            <a href="tel:{{ $medicalRecord->patient->phone }}" class="text-decoration-none">{{ $medicalRecord->patient->phone }}</a>
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        @if($medicalRecord->patient->date_of_birth)
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-birthday-cake me-1"></i>Date of Birth</label>
-                                <div class="fw-bold">{{ formatDate($medicalRecord->patient->date_of_birth) }}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-calculator me-1"></i>Age</label>
-                                <div class="fw-bold">{{ \Carbon\Carbon::parse($medicalRecord->patient->date_of_birth)->age }} years</div>
-                            </div>
-                        </div>
-                        @endif
-
-                        @if($medicalRecord->patient->blood_group || $medicalRecord->patient->gender)
-                        <div class="row mb-3">
-                            @if($medicalRecord->patient->gender)
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-venus-mars me-1"></i>Gender</label>
-                                <div class="fw-bold">
-                                    <span class="badge bg-secondary">{{ ucfirst($medicalRecord->patient->gender) }}</span>
+                        @if($medicalRecord->patient->date_of_birth || $medicalRecord->patient->blood_group || $medicalRecord->patient->gender)
+                        <div class="pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user me-1"></i>Demographics</p>
+                            <div class="row">
+                                @if($medicalRecord->patient->date_of_birth)
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Date of birth</label>
+                                    <div class="fw-bold">{{ formatDate($medicalRecord->patient->date_of_birth) }}</div>
                                 </div>
-                            </div>
-                            @endif
-                            @if($medicalRecord->patient->blood_group)
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-tint me-1"></i>Blood Group</label>
-                                <div class="fw-bold">
-                                    <span class="badge bg-danger">{{ $medicalRecord->patient->blood_group }}</span>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Age</label>
+                                    <div class="fw-bold">{{ \Carbon\Carbon::parse($medicalRecord->patient->date_of_birth)->age }} years</div>
                                 </div>
+                                @endif
+                                @if($medicalRecord->patient->gender)
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Gender</label>
+                                    <div class="fw-bold"><span class="badge bg-secondary">{{ ucfirst($medicalRecord->patient->gender) }}</span></div>
+                                </div>
+                                @endif
+                                @if($medicalRecord->patient->blood_group)
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Blood group</label>
+                                    <div class="fw-bold"><span class="badge bg-danger">{{ $medicalRecord->patient->blood_group }}</span></div>
+                                </div>
+                                @endif
                             </div>
-                            @endif
                         </div>
                         @endif
                     @else
@@ -194,25 +193,28 @@
             <!-- Medical Information -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-notes-medical me-2"></i>Medical Information</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-notes-medical me-2 text-primary"></i>Medical information</h5>
                 </div>
                 <div class="doctor-card-body">
+                    <div class="mb-4">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-comment-medical me-1"></i>Presenting complaint & history</p>
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-primary"><i class="fas fa-comment-medical me-1"></i>PC* <small class="text-muted">(Presenting Complaint)</small></label>
+                            <label class="form-label text-muted small mb-0">PC (Presenting complaint)</label>
                             <div class="border rounded p-3 bg-light">
                                 {!! nl2br(e($medicalRecord->presenting_complaint ?? $medicalRecord->chief_complaint ?? 'N/A')) !!}
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-primary"><i class="fas fa-history me-1"></i>HPC* <small class="text-muted">(History of Presenting Complaint)</small></label>
+                            <label class="form-label text-muted small mb-0">HPC (History of presenting complaint)</label>
                             <div class="border rounded p-3 bg-light">
                                 {!! nl2br(e($medicalRecord->history_of_presenting_complaint ?? $medicalRecord->present_illness ?? 'N/A')) !!}
                             </div>
                         </div>
                     </div>
+                    </div>
 
-                    <div class="row mb-4">
+                    <div class="row mb-4 pt-3 border-top">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold text-primary"><i class="fas fa-file-medical me-1"></i>PMH* <small class="text-muted">(Past Medical History)</small></label>
                             <div class="border rounded p-3 bg-light">

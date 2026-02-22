@@ -49,30 +49,31 @@
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header py-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-info-circle me-2" style="color: #1a202c;"></i>Prescription Status</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-info-circle me-2 text-primary"></i>Prescription status</h5>
                         <span class="badge bg-{{ $prescription->status === 'dispensed' ? 'success' : ($prescription->status === 'approved' ? 'warning' : 'secondary') }} fs-6">
                             {{ ucfirst($prescription->status) }}
                         </span>
                     </div>
                 </div>
                 <div class="doctor-card-body">
+                    <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-file-prescription me-1"></i>Status & dates</p>
                     <div class="row">
                         <div class="col-md-6">
-                            <small class="text-muted">Prescription Type:</small>
+                            <label class="form-label text-muted small mb-0">Prescription type</label>
                             <div class="fw-bold mb-2">{{ ucfirst(str_replace('_', ' ', $prescription->prescription_type)) }}</div>
                         </div>
                         <div class="col-md-6">
-                            <small class="text-muted">Prescription Date:</small>
+                            <label class="form-label text-muted small mb-0">Prescription date</label>
                             <div class="fw-bold mb-2">{{ $prescription->prescription_date ? formatDate($prescription->prescription_date) : 'Not specified' }}</div>
                         </div>
                         @if($prescription->follow_up_date)
                         <div class="col-md-6">
-                            <small class="text-muted">Follow-up Date:</small>
+                            <label class="form-label text-muted small mb-0">Follow-up date</label>
                             <div class="fw-bold mb-2">{{ formatDate($prescription->follow_up_date) }}</div>
                         </div>
                         @endif
                         <div class="col-md-6">
-                            <small class="text-muted">Refills Allowed:</small>
+                            <label class="form-label text-muted small mb-0">Refills allowed</label>
                             <div class="fw-bold mb-2">{{ $prescription->refills_allowed ?? 0 }}</div>
                         </div>
                     </div>
@@ -87,40 +88,48 @@
             <!-- Patient Information -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header py-3">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2" style="color: #1a202c;"></i>Patient Information</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Patient information</h5>
                 </div>
                 <div class="doctor-card-body">
                     @if($prescription->patient)
-                        <div class="row">
-                            <div class="col-md-6">
-                                <small class="text-muted">Name:</small>
-                                <div class="fw-bold mb-2">{{ $prescription->patient->first_name }} {{ $prescription->patient->last_name }}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">Age/Gender:</small>
-                                <div class="fw-bold mb-2">
-                                    @if($prescription->patient->date_of_birth)
-                                        {{ \Carbon\Carbon::parse($prescription->patient->date_of_birth)->age }} years / {{ ucfirst($prescription->patient->gender) }}
-                                    @else
-                                        {{ ucfirst($prescription->patient->gender) }}
-                                    @endif
+                        <div class="mb-4">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-id-card me-1"></i>Identity</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Name</label>
+                                    <div class="fw-bold">{{ $prescription->patient->first_name }} {{ $prescription->patient->last_name }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Age / gender</label>
+                                    <div class="fw-bold">
+                                        @if($prescription->patient->date_of_birth)
+                                            {{ \Carbon\Carbon::parse($prescription->patient->date_of_birth)->age }} years / {{ ucfirst($prescription->patient->gender) }}
+                                        @else
+                                            {{ ucfirst($prescription->patient->gender) }}
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">Phone:</small>
-                                <div class="fw-bold mb-2">{{ $prescription->patient->phone ?? 'Not provided' }}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted">Blood Group:</small>
-                                <div class="fw-bold mb-2">{{ $prescription->patient->blood_group ?? 'Unknown' }}</div>
-                            </div>
-                            @if($prescription->patient->allergies)
-                            <div class="col-12">
-                                <small class="text-muted">Allergies:</small>
-                                <div class="fw-bold text-danger">{{ $prescription->patient->allergies }}</div>
-                            </div>
-                            @endif
                         </div>
+                        <div class="mb-4 pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-address-book me-1"></i>Contact & clinical</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Phone</label>
+                                    <div class="fw-bold">{{ $prescription->patient->phone ?? 'Not provided' }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-0">Blood group</label>
+                                    <div class="fw-bold">{{ $prescription->patient->blood_group ?? 'Unknown' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        @if($prescription->patient->allergies)
+                        <div class="pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-allergies me-1"></i>Allergies</p>
+                            <div class="fw-bold text-danger">{{ is_array($prescription->patient->allergies) ? implode(', ', $prescription->patient->allergies) : $prescription->patient->allergies }}</div>
+                        </div>
+                        @endif
                     @else
                         <div class="alert alert-warning" role="alert">
                             <i class="fas fa-exclamation-triangle me-2"></i>
@@ -133,19 +142,22 @@
             <!-- Doctor Information -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header py-3">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2" style="color: #1a202c;"></i>Prescribing Doctor</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2 text-primary"></i>Prescribing doctor</h5>
                 </div>
                 <div class="doctor-card-body">
+                    <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user-tie me-1"></i>Clinician</p>
                     <div class="d-flex align-items-center">
                         <div class="avatar-lg me-3">
                             <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                {{ strtoupper(substr($prescription->doctor->user->name, 0, 1)) }}
+                                {{ strtoupper(substr($prescription->doctor->user->name ?? '', 0, 1)) }}
                             </div>
                         </div>
                         <div>
-                            <div class="fw-bold">{{ formatDoctorName($prescription->doctor->user->name) }}</div>
-                            <div class="text-muted">{{ $prescription->doctor->specialization ?? 'GP' }}</div>
-                            <small class="text-muted">{{ $prescription->doctor->user->email }}</small>
+                            <div class="fw-bold">{{ formatDoctorName($prescription->doctor->user->name ?? '') }}</div>
+                            <label class="form-label text-muted small mb-0">Specialisation</label>
+                            <div class="fw-bold">{{ $prescription->doctor->specialization ?? 'GP' }}</div>
+                            <label class="form-label text-muted small mb-0">Email</label>
+                            <div class="fw-bold">{{ $prescription->doctor->user->email ?? '' }}</div>
                         </div>
                     </div>
                 </div>
@@ -154,7 +166,7 @@
             <!-- Medications -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header py-3">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-pills me-2" style="color: #1a202c;"></i>Prescribed Medications</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-pills me-2 text-primary"></i>Prescribed medications</h5>
                 </div>
                 <div class="doctor-card-body">
                     @php

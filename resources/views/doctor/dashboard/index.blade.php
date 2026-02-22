@@ -205,8 +205,8 @@
             <div class="doctor-card">
                 <div class="doctor-card-header">
                     <h5 class="doctor-card-title mb-0">
-                        <i class="fas fa-prescription-bottle-alt me-2"></i>
-                        Quincy Prescription Delivery Status
+                        <i class="fas fa-prescription-bottle-alt me-2 text-primary"></i>
+                        Quincy prescription delivery status
                     </h5>
                     @if(($quincyDeliveryStatus['stats']['total'] ?? 0) > 0)
                         @php
@@ -335,8 +335,8 @@
                 <div class="doctor-card-header" style="background: linear-gradient(135deg, rgba(108, 99, 255, 0.05) 0%, rgba(108, 99, 255, 0.02) 100%);">
                     <div class="d-flex align-items-center justify-content-between">
                         <h5 class="doctor-card-title mb-0">
-                            <i class="fas fa-video me-2" style="color: #6C63FF;"></i>
-                            Upcoming Video Consultations
+                            <i class="fas fa-video me-2 text-primary"></i>
+                            Upcoming video consultations
                         </h5>
                         <a href="{{ route('staff.appointments.index') }}?is_online=1&status=pending,confirmed" class="btn btn-sm btn-outline-primary">
                             View All <i class="fas fa-arrow-right ms-1"></i>
@@ -532,8 +532,8 @@
     <div class="doctor-card mb-4">
         <div class="doctor-card-header">
             <h5 class="doctor-card-title mb-0">
-                <i class="fas fa-bolt text-primary"></i>
-                Quick Actions
+                <i class="fas fa-bolt me-2 text-primary"></i>
+                Quick actions
             </h5>
         </div>
         <div class="doctor-card-body">
@@ -610,8 +610,8 @@
                 <div class="doctor-card-header">
                     <div class="d-flex align-items-center justify-content-between">
                         <h5 class="doctor-card-title mb-0">
-                            <i class="fas fa-calendar-alt text-primary"></i>
-                            Appointments Calendar
+                            <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                            Appointments calendar
                         </h5>
                         <div class="d-flex gap-2">
                             <a href="{{ route('staff.appointments.calendar') }}" class="btn btn-sm btn-doctor-primary" title="View Full Calendar">
@@ -641,8 +641,8 @@
                 <div class="doctor-card-header">
                     <div class="d-flex align-items-center justify-content-between">
                         <h6 class="doctor-card-title mb-0">
-                            <i class="fas fa-clock text-info"></i>
-                            Today's Schedule
+                            <i class="fas fa-clock me-2 text-primary"></i>
+                            Today's schedule
                         </h6>
                         <div class="d-flex align-items-center gap-2">
                             <span class="text-muted small" id="current-time">{{ now()->format('H:i A') }}</span>
@@ -723,8 +723,8 @@
                 <div class="doctor-card-header">
                     <div class="d-flex align-items-center justify-content-between">
                         <h5 class="doctor-card-title mb-0">
-                            <i class="fas fa-history text-primary"></i>
-                            Recent Appointments
+                            <i class="fas fa-history me-2 text-primary"></i>
+                            Recent appointments
                         </h5>
                         <a href="{{ route('staff.appointments.index') }}" class="btn btn-sm btn-doctor-primary">
                             View All <i class="fas fa-arrow-right ms-1"></i>
@@ -824,10 +824,10 @@
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
                     <div class="d-flex align-items-center justify-content-between">
-                        <h6 class="doctor-card-title mb-0">
-                            <i class="fas fa-users text-success"></i>
-                            Recent Patients
-                        </h6>
+                            <h6 class="doctor-card-title mb-0">
+                                <i class="fas fa-users me-2 text-primary"></i>
+                                Recent patients
+                            </h6>
                         <a href="{{ route('staff.patients.index') }}" class="btn btn-sm btn-link text-primary p-0">
                             View All <i class="fas fa-arrow-right ms-1"></i>
                         </a>
@@ -864,8 +864,8 @@
             <div class="doctor-card">
                 <div class="doctor-card-header">
                     <h6 class="doctor-card-title mb-0">
-                        <i class="fas fa-chart-line text-info"></i>
-                        Quick Insights
+                        <i class="fas fa-chart-line me-2 text-primary"></i>
+                        Quick insights
                     </h6>
                 </div>
                 <div class="doctor-card-body">

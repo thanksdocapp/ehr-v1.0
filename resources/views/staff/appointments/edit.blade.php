@@ -20,14 +20,13 @@
     <!-- Current Status Card -->
     <div class="doctor-card mb-4">
         <div class="doctor-card-header">
-            <h5 class="doctor-card-title mb-0">
-                <i class="fas fa-info-circle me-2"></i>Current Appointment Status
-            </h5>
+            <h5 class="doctor-card-title mb-0"><i class="fas fa-info-circle me-2 text-primary"></i>Current appointment status</h5>
         </div>
         <div class="doctor-card-body">
+            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-calendar-check me-1"></i>Status & schedule</p>
             <div class="row">
                 <div class="col-md-3">
-                    <div class="text-xs font-weight-bold text-uppercase mb-1">Status</div>
+                    <label class="form-label text-muted small mb-0">Status</label>
                     @php
                         $statusColors = [
                             'pending' => 'warning',
@@ -40,12 +39,12 @@
                     <span class="badge bg-{{ $color }} fs-6">{{ ucfirst($appointment->status) }}</span>
                 </div>
                 <div class="col-md-3">
-                    <div class="text-xs font-weight-bold text-uppercase mb-1">Scheduled For</div>
+                    <label class="form-label text-muted small mb-0">Scheduled for</label>
                     <div class="fw-bold">{{ formatDate($appointment->appointment_date) }}</div>
                     <small class="text-muted">{{ $appointment->appointment_time }}</small>
                 </div>
                 <div class="col-md-3">
-                    <div class="text-xs font-weight-bold text-uppercase mb-1">Doctor</div>
+                    <label class="form-label text-muted small mb-0">Doctor</label>
                     <div class="fw-bold">
                         @if($appointment->doctor)
                             {{ formatDoctorName($appointment->doctor->name) }}
@@ -55,7 +54,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="text-xs font-weight-bold text-uppercase mb-1">Created</div>
+                    <label class="form-label text-muted small mb-0">Created</label>
                     <div class="fw-bold">{{ formatDate($appointment->created_at) }}</div>
                     <small class="text-muted">{{ $appointment->created_at->diffForHumans() }}</small>
                 </div>
@@ -66,9 +65,7 @@
     <!-- Edit Form -->
     <div class="doctor-card">
         <div class="doctor-card-header">
-            <h5 class="doctor-card-title mb-0">
-                <i class="fas fa-edit me-2"></i>Edit Appointment Details
-            </h5>
+            <h5 class="doctor-card-title mb-0"><i class="fas fa-edit me-2 text-primary"></i>Edit appointment details</h5>
         </div>
         <div class="doctor-card-body">
             <form action="{{ route('staff.appointments.update', $appointment) }}" method="POST" id="appointmentEditForm">
