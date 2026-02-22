@@ -170,8 +170,8 @@ class MedicalRecordAttachment extends Model
      */
     public function canAccess($user): bool
     {
-        // Admin can always access
-        if ($user->is_admin ?? false) {
+        // Admin can always access (both is_admin flag and role-based admin)
+        if (($user->is_admin ?? false) || ($user->role === 'admin')) {
             return true;
         }
 

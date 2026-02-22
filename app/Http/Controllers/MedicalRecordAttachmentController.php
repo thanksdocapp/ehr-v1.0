@@ -140,8 +140,9 @@ class MedicalRecordAttachmentController extends Controller
     {
         $user = Auth::user();
         
-        // Only admin or the uploader can delete
-        if (!($user->is_admin ?? false) && $attachment->uploaded_by !== $user->id) {
+        // Admin (is_admin or role admin) or the uploader can delete
+        $isAdmin = ($user->is_admin ?? false) || ($user->role === 'admin');
+        if (!$isAdmin && $attachment->uploaded_by !== $user->id) {
             abort(403, 'You do not have permission to delete this file.');
         }
 

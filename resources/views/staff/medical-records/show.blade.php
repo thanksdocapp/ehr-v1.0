@@ -402,6 +402,7 @@
                                             @php
                                                 $canAccess = $attachment->canAccess(auth()->user());
                                                 $isSafe = $attachment->virus_scan_status !== 'infected';
+                                                $canDelete = (auth()->user()->is_admin ?? false) || (auth()->user()->role === 'admin') || ($attachment->uploaded_by === auth()->id());
                                             @endphp
                                             @if($canAccess && $isSafe)
                                                 @if($attachment->isViewable())
@@ -412,6 +413,23 @@
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                 @endif
+                                                <a href="{{ route('staff.medical-record-attachments.download', $attachment) }}" 
+                                                   class="btn btn-sm btn-outline-primary me-1" 
+                                                   title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                @if($canDelete)
+                                                <form action="{{ route('staff.medical-record-attachments.destroy', $attachment) }}" 
+                                                      method="POST" 
+                                                      class="d-inline"
+                                                      onsubmit="return confirm('Are you sure you want to delete this file?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                                @endif
                                             @else
                                                 @if(!$canAccess)
                                                     <span class="text-muted small" title="You don't have permission to access this file">
@@ -421,6 +439,18 @@
                                                     <span class="text-danger small" title="File failed virus scan">
                                                         <i class="fas fa-exclamation-triangle me-1"></i>Unsafe
                                                     </span>
+                                                @endif
+                                                @if($canDelete && !$isSafe)
+                                                    <form action="{{ route('staff.medical-record-attachments.destroy', $attachment) }}" 
+                                                          method="POST" 
+                                                          class="d-inline ms-1"
+                                                          onsubmit="return confirm('Are you sure you want to delete this file?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
                                                 @endif
                                             @endif
                                         </td>

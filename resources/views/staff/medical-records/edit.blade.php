@@ -368,7 +368,7 @@
                                                     <i class="fas fa-download"></i>
                                                 </a>
                                             @endif
-                                            @if(auth()->user()->is_admin || $attachment->uploaded_by === auth()->id())
+                                            @if((auth()->user()->is_admin ?? false) || auth()->user()->role === 'admin' || $attachment->uploaded_by === auth()->id())
                                             <form action="{{ route('staff.medical-record-attachments.destroy', $attachment) }}" 
                                                   method="POST" 
                                                   class="d-inline"
