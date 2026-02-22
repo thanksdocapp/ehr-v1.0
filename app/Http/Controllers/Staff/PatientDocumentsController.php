@@ -27,16 +27,20 @@ class PatientDocumentsController extends Controller
 
     /**
      * Display a listing of documents for a patient.
-     * Doctors/staff only see documents they created.
+     * Admin sees all documents; doctors/staff only see documents they created.
      */
     public function index(Patient $patient, Request $request)
     {
         $this->authorize('viewAny', [PatientDocument::class, $patient]);
 
         $user = Auth::user();
+        $isAdmin = ($user->is_admin ?? false) || ($user->role === 'admin');
 
-        // Start query filtered by ownership
-        $query = $patient->documents()->ownedBy($user);
+        // Admin sees all documents; others only see documents they created
+        $query = $patient->documents();
+        if (!$isAdmin) {
+            $query->ownedBy($user);
+        }
 
         // Filter by type
         if ($request->filled('type')) {
