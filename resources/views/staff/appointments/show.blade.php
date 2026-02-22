@@ -34,11 +34,17 @@
             }
         @endphp
         @if($patientTest)
-            @try
-                @include('components.patient-alert-bar', ['patient' => $appointment->patient])
-            @catch(\Exception $e)
-                {{-- Silently fail if there's a decryption error --}}
-            @endtry
+            @php
+                $patientAlertBarHtml = null;
+                try {
+                    $patientAlertBarHtml = view('components.patient-alert-bar', ['patient' => $appointment->patient])->render();
+                } catch (\Exception $e) {
+                    // Silently fail if there's a decryption error
+                }
+            @endphp
+            @if($patientAlertBarHtml)
+                {!! $patientAlertBarHtml !!}
+            @endif
         @endif
     @endif
 
