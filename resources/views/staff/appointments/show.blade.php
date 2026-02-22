@@ -45,137 +45,108 @@
     <div class="row">
         <!-- Main Content -->
         <div class="col-lg-8">
-            <!-- Appointment Information -->
+            <!-- Appointment Details (grouped by relationship, matches create flow) -->
+            @php
+                $visitTypeLabel = $appointment->type === 'followup' ? 'Follow up' : 'Consultation';
+                $statusColors = ['pending' => 'warning', 'confirmed' => 'success', 'completed' => 'info', 'cancelled' => 'danger', 'rescheduled' => 'secondary'];
+                $statusColor = $statusColors[$appointment->status] ?? 'secondary';
+                $ct = $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person');
+            @endphp
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-calendar-alt me-2"></i>Appointment Information</h5>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-calendar-alt me-2 text-primary"></i>Appointment Details</h5>
                         <div class="d-flex gap-2">
-                            @php
-                                $statusColors = [
-                                    'pending' => 'warning',
-                                    'confirmed' => 'success',
-                                    'completed' => 'info',
-                                    'cancelled' => 'danger'
-                                ];
-                                $statusColor = $statusColors[$appointment->status] ?? 'secondary';
-                                
-                                $typeColors = [
-                                    'consultation' => 'primary',
-                                    'follow_up' => 'info',
-                                    'routine_checkup' => 'success',
-                                    'emergency' => 'danger'
-                                ];
-                                $typeColor = $typeColors[$appointment->appointment_type] ?? 'secondary';
-                            @endphp
                             <span class="badge bg-{{ $statusColor }} fs-6">{{ ucfirst($appointment->status) }}</span>
-                            <span class="badge bg-{{ $typeColor }} fs-6">{{ ucfirst(str_replace('_', ' ', $appointment->appointment_type)) }}</span>
+                            <span class="badge bg-primary fs-6">{{ $visitTypeLabel }}</span>
                         </div>
                     </div>
                 </div>
                 <div class="doctor-card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-hashtag me-1"></i>Appointment Number</label>
-                            <div class="fw-bold text-primary">{{ $appointment->appointment_number }}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-clipboard-list me-1"></i>Type</label>
-                            <div class="fw-bold">{{ ucfirst(str_replace('_', ' ', $appointment->appointment_type)) }}</div>
+                    {{-- 1. Patient & visit type --}}
+                    <div class="mb-4">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user me-1"></i>Patient & visit type</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Appointment number</label>
+                                <div class="fw-bold text-primary">{{ $appointment->appointment_number }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Visit type</label>
+                                <div class="fw-bold">{{ $visitTypeLabel }}</div>
+                            </div>
                         </div>
                     </div>
-                    
-                    @if($appointment->service)
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-concierge-bell me-1"></i>Service Name</label>
-                                <div class="fw-bold">{{ $appointment->service->name }}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-pound-sign me-1"></i>Service Fee</label>
-                                <div class="fw-bold text-success">&pound;{{ number_format($appointment->service->default_price, 2) }}</div>
-                            </div>
-                        </div>
-                        @if($appointment->service->description)
-                            <div class="row mb-3">
-                                <div class="col-12">
-                                    <label class="form-label text-muted"><i class="fas fa-info-circle me-1"></i>Service Description</label>
-                                    <div class="fw-bold">{{ $appointment->service->description }}</div>
+
+                    {{-- 2. Location & clinician --}}
+                    <div class="mb-4 pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-hospital me-1"></i>Location & clinician</p>
+                        <div class="row g-2">
+                            @if($appointment->department)
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small mb-0">Clinic</label>
+                                    <div class="fw-bold">{{ $appointment->department->name }}</div>
                                 </div>
-                            </div>
-                        @endif
-                    @endif
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-calendar me-1"></i>Date</label>
-                            <div class="fw-bold">{{ formatDate($appointment->appointment_date) }}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted"><i class="fas fa-clock me-1"></i>Time</label>
-                            <div class="fw-bold">{{ date('g:i A', strtotime($appointment->appointment_time)) }}</div>
-                        </div>
-                    </div>
-
-                    @if($appointment->estimated_duration)
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-muted"><i class="fas fa-hourglass-half me-1"></i>Estimated Duration</label>
-                                <div class="fw-bold">{{ $appointment->estimated_duration }} minutes</div>
-                            </div>
-                            @if($appointment->priority)
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted"><i class="fas fa-exclamation me-1"></i>Priority</label>
-                                    <div class="fw-bold">
-                                        @php
-                                            $priorityColors = ['normal' => 'success', 'high' => 'warning', 'urgent' => 'danger'];
-                                            $priorityColor = $priorityColors[$appointment->priority] ?? 'secondary';
-                                        @endphp
-                                        <span class="badge bg-{{ $priorityColor }}">{{ ucfirst($appointment->priority) }}</span>
-                                    </div>
+                            @endif
+                            @if($appointment->doctor)
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small mb-0">Doctor</label>
+                                    <div class="fw-bold">{{ formatDoctorName($appointment->doctor->name) }}</div>
+                                </div>
+                            @endif
+                            @if($appointment->service)
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small mb-0">Service</label>
+                                    <div class="fw-bold">{{ $appointment->service->name }}</div>
+                                    @if($appointment->service->default_price > 0)
+                                        <small class="text-success">&pound;{{ number_format($appointment->service->default_price, 2) }}</small>
+                                    @endif
                                 </div>
                             @endif
                         </div>
-                    @endif
+                        @if($appointment->service && $appointment->service->description)
+                            <div class="mt-2">
+                                <label class="form-label text-muted small mb-0">Service description</label>
+                                <div class="small">{{ $appointment->service->description }}</div>
+                            </div>
+                        @endif
+                    </div>
 
-                    @if($appointment->reason)
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label text-muted"><i class="fas fa-notes-medical me-1"></i>Reason for Visit</label>
-                                <div class="fw-bold">{{ $appointment->reason }}</div>
+                    {{-- 3. Date & time --}}
+                    <div class="mb-4 pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-clock me-1"></i>Date & time</p>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label text-muted small mb-0">Date</label>
+                                <div class="fw-bold">{{ formatDate($appointment->appointment_date) }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-muted small mb-0">Time</label>
+                                <div class="fw-bold">{{ date('g:i A', strtotime($appointment->appointment_time)) }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                @if($appointment->estimated_duration)
+                                    <label class="form-label text-muted small mb-0">Duration</label>
+                                    <div class="fw-bold">{{ $appointment->estimated_duration }} min</div>
+                                @elseif($appointment->priority)
+                                    <label class="form-label text-muted small mb-0">Priority</label>
+                                    @php $priorityColors = ['normal' => 'success', 'high' => 'warning', 'urgent' => 'danger']; @endphp
+                                    <span class="badge bg-{{ $priorityColors[$appointment->priority] ?? 'secondary' }}">{{ ucfirst($appointment->priority) }}</span>
+                                @endif
                             </div>
                         </div>
-                    @endif
+                    </div>
 
-                    @if($appointment->notes)
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label text-muted"><i class="fas fa-sticky-note me-1"></i>Staff Notes</label>
-                                <div class="fw-bold">{{ $appointment->notes }}</div>
-                            </div>
-                        </div>
-                    @endif
-
-                    @php
-                        $ct = $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person');
-                    @endphp
+                    {{-- 4. Consultation method --}}
+                    <div class="mb-4 pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-video me-1"></i>Consultation method</p>
                     @if($ct === 'online')
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label text-muted"><i class="fas fa-video me-1"></i>Consultation Type</label>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-info fs-6">
-                                        <i class="fas fa-video me-1"></i>Online (Video)
-                                    </span>
-                                    @if($appointment->meeting_platform)
-                                        <span class="badge bg-primary fs-6">
-                                            <i class="{{ $appointment->meeting_platform_icon }} me-1"></i>{{ $appointment->meeting_platform_name }}
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="badge bg-info fs-6"><i class="fas fa-video me-1"></i>Online (Video)</span>
+                            @if($appointment->meeting_platform)
+                                <span class="badge bg-primary fs-6"><i class="{{ $appointment->meeting_platform_icon }} me-1"></i>{{ $appointment->meeting_platform_name }}</span>
+                            @endif
                         </div>
-                        
                         @if($appointment->meeting_link)
                             <div class="row mb-3">
                                 <div class="col-12">
@@ -258,23 +229,25 @@
                             </div>
                         @endif
                     @elseif($ct === 'telephone')
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label text-muted"><i class="fas fa-phone me-1"></i>Consultation Type</label>
-                                <span class="badge bg-secondary fs-6">
-                                    <i class="fas fa-phone me-1"></i>Telephone
-                                </span>
-                            </div>
-                        </div>
+                        <span class="badge bg-secondary fs-6"><i class="fas fa-phone me-1"></i>Telephone</span>
                     @else
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label text-muted"><i class="fas fa-building me-1"></i>Consultation Type</label>
-                                <span class="badge bg-secondary fs-6">
-                                    <i class="fas fa-building me-1"></i>In Person
-                                </span>
-                            </div>
-                        </div>
+                        <span class="badge bg-secondary fs-6"><i class="fas fa-building me-1"></i>In Person</span>
+                    @endif
+                    </div>
+
+                    {{-- 5. Reason for visit & notes --}}
+                    @if($appointment->reason || $appointment->notes)
+                    <div class="pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-stethoscope me-1"></i>Reason for visit</p>
+                        @if($appointment->reason)
+                            <label class="form-label text-muted small mb-0">Reason / presenting complaint</label>
+                            <div class="fw-bold mb-2">{{ $appointment->reason }}</div>
+                        @endif
+                        @if($appointment->notes)
+                            <label class="form-label text-muted small mb-0">Staff notes</label>
+                            <div class="text-muted small">{{ $appointment->notes }}</div>
+                        @endif
+                    </div>
                     @endif
                 </div>
             </div>
@@ -344,7 +317,7 @@
             <!-- Patient Information -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2"></i>Patient Information</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Patient Information</h5>
                     @if($appointment->patient->is_guest)
                         <span class="badge bg-secondary ms-2">
                             <i class="fas fa-user-clock me-1"></i>Guest Patient
@@ -463,7 +436,7 @@
             @if($appointment->doctor)
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
-                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2"></i>Doctor Information</h5>
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-md me-2 text-primary"></i>Doctor Information</h5>
                     </div>
                     <div class="doctor-card-body">
                         <div class="row mb-3">
@@ -518,7 +491,7 @@
             <!-- Quick Actions -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
-                    <h5 class="doctor-card-title mb-0"><i class="fas fa-cogs me-2"></i>Quick Actions</h5>
+                    <h5 class="doctor-card-title mb-0"><i class="fas fa-cogs me-2 text-primary"></i>Quick Actions</h5>
                 </div>
                 <div class="doctor-card-body">
                     <div class="d-grid gap-2">
