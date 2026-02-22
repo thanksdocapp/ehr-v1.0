@@ -469,6 +469,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/patients/{patient}/documents/{document}/finalise', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'finalise'])->name('patients.documents.finalise');
         Route::post('/patients/{patient}/documents/{document}/void', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'void'])->name('patients.documents.void');
         Route::get('/patients/{patient}/documents/{document}/download', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'download'])->name('patients.documents.download');
+        Route::delete('/patients/{patient}/documents/{document}', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'destroy'])->name('patients.documents.destroy');
         Route::post('/patients/{patient}/documents/bulk-action', [\App\Http\Controllers\Staff\PatientDocumentsController::class, 'bulkAction'])->name('patients.documents.bulk-action');
         
         // Document Deliveries

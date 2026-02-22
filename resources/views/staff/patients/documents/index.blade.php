@@ -351,6 +351,18 @@
                                             </form>
                                         @endif
                                         @endcan
+                                        @can('delete', $document)
+                                            <form action="{{ route('staff.patients.documents.destroy', [$patient, $document]) }}" 
+                                                  method="POST" 
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Are you sure you want to delete this document? This cannot be undone.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>

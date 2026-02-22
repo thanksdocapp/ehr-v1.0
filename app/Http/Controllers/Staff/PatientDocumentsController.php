@@ -362,6 +362,20 @@ class PatientDocumentsController extends Controller
     }
 
     /**
+     * Delete a document. Policy: admin can delete any; doctor only own draft.
+     */
+    public function destroy(Patient $patient, PatientDocument $document)
+    {
+        $this->authorize('delete', $document);
+
+        $document->delete();
+
+        return redirect()
+            ->route('staff.patients.documents.index', $patient)
+            ->with('success', 'Document deleted successfully.');
+    }
+
+    /**
      * Bulk operations on documents.
      */
     public function bulkAction(Patient $patient, Request $request)
@@ -433,12 +447,12 @@ class PatientDocumentsController extends Controller
                         break;
 
                     case 'delete':
-                        if (Auth::user()->can('delete', $document) && $document->isDraft()) {
+                        if (Auth::user()->can('delete', $document)) {
                             $document->delete();
                             $successCount++;
                         } else {
                             $errorCount++;
-                            $errors[] = "Document '{$document->title}' cannot be deleted (not draft or no permission).";
+                            $errors[] = "Document '{$document->title}' cannot be deleted (no permission).";
                         }
                         break;
                 }
