@@ -85,10 +85,13 @@
             <div class="review-row">
                 <span class="review-label">Consultation Type</span>
                 <span class="review-value">
-                    @if(isset($patient_data['consultation_type']) && $patient_data['consultation_type'] === 'online')
-                        <i class="fas fa-video me-1"></i>Online Consultation
+                    @php $pbCt = $patient_data['consultation_type'] ?? 'in_person'; @endphp
+                    @if($pbCt === 'online')
+                        <i class="fas fa-video me-1"></i>Online (Video)
+                    @elseif($pbCt === 'telephone')
+                        <i class="fas fa-phone me-1"></i>Telephone
                     @else
-                        <i class="fas fa-hospital me-1"></i>In-Person Consultation
+                        <i class="fas fa-hospital me-1"></i>In Person
                     @endif
                 </span>
             </div>

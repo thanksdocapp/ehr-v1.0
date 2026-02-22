@@ -275,9 +275,9 @@
                         <label class="form-label">Consultation Type</label>
                         <select name="consultation_type" class="form-control">
                             <option value="">All</option>
-                            <option value="online" {{ request('consultation_type') == 'online' ? 'selected' : '' }}>Online</option>
-                            <option value="in_person" {{ request('consultation_type') == 'in_person' ? 'selected' : '' }}>In-Person</option>
-                            <option value="phone" {{ request('consultation_type') == 'phone' ? 'selected' : '' }}>Phone</option>
+                            <option value="online" {{ request('consultation_type') == 'online' ? 'selected' : '' }}>Online (Video)</option>
+                            <option value="in_person" {{ request('consultation_type') == 'in_person' ? 'selected' : '' }}>In Person</option>
+                            <option value="telephone" {{ in_array(request('consultation_type'), ['phone', 'telephone']) ? 'selected' : '' }}>Telephone</option>
                         </select>
                     </div>
                     <div class="col-md-3">

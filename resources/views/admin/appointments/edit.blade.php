@@ -299,28 +299,23 @@ textarea.form-control {
                         </div>
 
                         <div class="form-group">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_online" name="is_online" value="1" 
-                                       {{ old('is_online', $appointment->is_online) ? 'checked' : '' }}
-                                       onchange="handleOnlineConsultationChange(this)">
-                                <label class="form-check-label" for="is_online" onclick="setTimeout(function(){handleOnlineConsultationChange(document.getElementById('is_online'));}, 10);">
-                                    <i class="fas fa-video me-1"></i>Online Consultation
-                                </label>
-                            </div>
+                            <label for="consultation_type" class="form-label">Consultation Type</label>
+                            <select class="form-control" id="consultation_type" name="consultation_type" onchange="handleOnlineConsultationChange(this)">
+                                @php $currentCt = old('consultation_type', $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person')); @endphp
+                                <option value="in_person" {{ $currentCt === 'in_person' ? 'selected' : '' }}>In Person</option>
+                                <option value="online" {{ $currentCt === 'online' ? 'selected' : '' }}>Online (Video)</option>
+                                <option value="telephone" {{ $currentCt === 'telephone' ? 'selected' : '' }}>Telephone</option>
+                            </select>
                         </div>
                         
                         <script>
-                        // Inline function to handle Online Consultation - runs immediately
-                        function handleOnlineConsultationChange(checkbox) {
+                        function handleOnlineConsultationChange(control) {
                             var meetingRow = document.getElementById('meeting_link_row');
                             var meetingLink = document.getElementById('meeting_link');
                             var meetingPlatform = document.getElementById('meeting_platform');
-                            
                             if (!meetingRow) return;
-                            
-                            var isChecked = checkbox && (checkbox.checked || checkbox.getAttribute('checked') !== null);
-                            
-                            if (isChecked) {
+                            var isOnline = control && control.value === 'online';
+                            if (isOnline) {
                                 // Force show - use multiple methods
                                 meetingRow.style.display = 'block';
                                 meetingRow.style.visibility = 'visible';
@@ -385,22 +380,10 @@ textarea.form-control {
                         
                         // Initialize on page load
                         (function() {
-                            var checkbox = document.getElementById('is_online');
-                            if (checkbox) {
-                                // Check initial state
-                                setTimeout(function() {
-                                    handleOnlineConsultationChange(checkbox);
-                                }, 100);
-                                
-                                // Also add event listeners
-                                checkbox.addEventListener('change', function() {
-                                    handleOnlineConsultationChange(this);
-                                });
-                                checkbox.addEventListener('click', function() {
-                                    setTimeout(function() {
-                                        handleOnlineConsultationChange(checkbox);
-                                    }, 10);
-                                });
+                            var sel = document.getElementById('consultation_type');
+                            if (sel) {
+                                setTimeout(function() { handleOnlineConsultationChange(sel); }, 100);
+                                sel.addEventListener('change', function() { handleOnlineConsultationChange(this); });
                             }
                             
                             // Setup placeholder update for meeting platform
@@ -435,7 +418,8 @@ textarea.form-control {
                         })();
                         </script>
                         
-                        <div class="row" id="meeting_link_row" style="{{ old('is_online', $appointment->is_online) ? '' : 'display: none;' }}">
+                        @php $showMeetingRow = (old('consultation_type', $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person')) === 'online'); @endphp
+                        <div class="row" id="meeting_link_row" style="{{ $showMeetingRow ? '' : 'display: none;' }}">
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="meeting_platform" class="form-label">Meeting Platform</label>
@@ -785,9 +769,8 @@ $(document).ready(function() {
         });
     });
 
-    // Handle online consultation toggle
-    $('#is_online').change(function() {
-        if (this.checked) {
+    $('#consultation_type').change(function() {
+        if ($(this).val() === 'online') {
             $('#meeting_link_row').show();
             $('#meeting_link').prop('required', true);
         } else {
@@ -919,7 +902,7 @@ $(document).ready(function() {
         });
         
         // Check meeting link if online consultation
-        if ($('#is_online').is(':checked') && !$('#meeting_link').val()) {
+        if ($('#consultation_type').val() === 'online' && !$('#meeting_link').val()) {
             $('#meeting_link').addClass('is-invalid');
             isValid = false;
         } else {

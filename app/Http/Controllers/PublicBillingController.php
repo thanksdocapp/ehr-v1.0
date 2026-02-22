@@ -701,31 +701,39 @@ class PublicBillingController extends Controller
             if ($invoice->billing_id) {
                 $billing = \App\Models\Billing::find($invoice->billing_id);
                 if ($billing) {
+                    // Cap at total_amount to avoid overpayment from duplicate payment records
+                    $paidAmount = min((float) $totalPaid, (float) $billing->total_amount);
+                    if ($totalPaid > $billing->total_amount) {
+                        \Log::warning('Payment sum exceeded billing total; capping paid_amount', [
+                            'billing_id' => $billing->id,
+                            'invoice_id' => $invoice->id,
+                            'total_paid_sum' => $totalPaid,
+                            'billing_total' => $billing->total_amount,
+                        ]);
+                    }
                     // Calculate balance
-                    $balance = $billing->total_amount - $totalPaid;
-                    
+                    $balance = $billing->total_amount - $paidAmount;
                     // Determine status based on payment
                     $status = 'pending';
-                    if ($totalPaid >= $billing->total_amount) {
+                    if ($paidAmount >= $billing->total_amount) {
                         $status = 'paid';
-                    } elseif ($totalPaid > 0) {
+                    } elseif ($paidAmount > 0) {
                         $status = 'partially_paid';
                     }
-                    
                     // Update paid_amount, balance, and status
                     $billing->update([
-                        'paid_amount' => $totalPaid,
+                        'paid_amount' => $paidAmount,
                         'balance' => $balance,
                         'status' => $status,
                         'payment_method' => $billing->payment_method ?: 'card',
                         'payment_reference' => $billing->payment_reference ?: 'ONLINE_PAYMENT',
-                        'paid_at' => $totalPaid >= $billing->total_amount ? now() : $billing->paid_at,
+                        'paid_at' => $paidAmount >= $billing->total_amount ? now() : $billing->paid_at,
                     ]);
                     
                     \Log::info('Billing updated after payment', [
                         'billing_id' => $billing->id,
                         'invoice_id' => $invoice->id,
-                        'total_paid' => $totalPaid,
+                        'total_paid' => $paidAmount,
                         'balance' => $balance,
                         'billing_status' => $billing->fresh()->status,
                         'billing_total' => $billing->total_amount

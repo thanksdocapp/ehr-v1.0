@@ -156,13 +156,16 @@
                         </div>
                     @endif
 
-                    @if($appointment->is_online)
+                    @php
+                        $ct = $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person');
+                    @endphp
+                    @if($ct === 'online')
                         <div class="row mb-3">
                             <div class="col-12">
                                 <label class="form-label text-muted"><i class="fas fa-video me-1"></i>Consultation Type</label>
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="badge bg-info fs-6">
-                                        <i class="fas fa-video me-1"></i>Online Consultation
+                                        <i class="fas fa-video me-1"></i>Online (Video)
                                     </span>
                                     @if($appointment->meeting_platform)
                                         <span class="badge bg-primary fs-6">
@@ -254,12 +257,21 @@
                                 </div>
                             </div>
                         @endif
+                    @elseif($ct === 'telephone')
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label text-muted"><i class="fas fa-phone me-1"></i>Consultation Type</label>
+                                <span class="badge bg-secondary fs-6">
+                                    <i class="fas fa-phone me-1"></i>Telephone
+                                </span>
+                            </div>
+                        </div>
                     @else
                         <div class="row mb-3">
                             <div class="col-12">
                                 <label class="form-label text-muted"><i class="fas fa-building me-1"></i>Consultation Type</label>
                                 <span class="badge bg-secondary fs-6">
-                                    <i class="fas fa-building me-1"></i>In-Person Consultation
+                                    <i class="fas fa-building me-1"></i>In Person
                                 </span>
                             </div>
                         </div>

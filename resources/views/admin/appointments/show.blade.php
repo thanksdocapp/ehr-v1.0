@@ -76,24 +76,27 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted">Consultation Mode</label>
+                            <label class="form-label text-muted">Consultation Type</label>
                             <div class="fw-bold">
-                                @if($appointment->is_online)
-                                    <span class="text-info"><i class="fas fa-video me-1"></i>Online</span>
+                                @php $ct = $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person'); @endphp
+                                @if($ct === 'online')
+                                    <span class="text-info"><i class="fas fa-video me-1"></i>Online (Video)</span>
+                                @elseif($ct === 'telephone')
+                                    <span class="text-secondary"><i class="fas fa-phone me-1"></i>Telephone</span>
                                 @else
-                                    <span class="text-primary"><i class="fas fa-hospital me-1"></i>In-Person</span>
+                                    <span class="text-primary"><i class="fas fa-hospital me-1"></i>In Person</span>
                                 @endif
                             </div>
                         </div>
                     </div>
 
-                    @if($appointment->is_online)
+                    @if($ct === 'online')
                         <div class="row mb-3">
                             <div class="col-12">
                                 <label class="form-label text-muted">Consultation Type</label>
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="badge bg-info fs-6">
-                                        <i class="fas fa-video me-1"></i>Online Consultation
+                                        <i class="fas fa-video me-1"></i>Online (Video)
                                     </span>
                                     @if($appointment->meeting_platform)
                                         <span class="badge bg-primary fs-6">

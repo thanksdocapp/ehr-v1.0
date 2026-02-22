@@ -138,44 +138,31 @@
                         </div>
 
                         <div class="form-group">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_online" name="is_online" value="1" 
-                                       {{ old('is_online') ? 'checked' : '' }}
-                                       onchange="handleOnlineConsultationChange(this)">
-                                <label class="form-check-label" for="is_online" onclick="setTimeout(function(){handleOnlineConsultationChange(document.getElementById('is_online'));}, 10);">
-                                    <i class="fas fa-video me-1"></i>Online Consultation
-                                </label>
-                            </div>
+                            <label for="consultation_type" class="form-label">Consultation Type</label>
+                            <select class="form-control" id="consultation_type" name="consultation_type" onchange="handleOnlineConsultationChange(this)">
+                                <option value="in_person" {{ old('consultation_type', 'in_person') === 'in_person' ? 'selected' : '' }}>In Person</option>
+                                <option value="online" {{ old('consultation_type') === 'online' ? 'selected' : '' }}>Online (Video)</option>
+                                <option value="telephone" {{ old('consultation_type') === 'telephone' ? 'selected' : '' }}>Telephone</option>
+                            </select>
                         </div>
                         
                         <script>
-                        // Simple function to toggle Whereby info panel visibility
-                        function handleOnlineConsultationChange(checkbox) {
+                        function handleOnlineConsultationChange(control) {
                             var meetingRow = document.getElementById('meeting_link_row');
                             if (!meetingRow) return;
-
-                            var isChecked = checkbox && (checkbox.checked || checkbox.getAttribute('checked') !== null);
-
-                            if (isChecked) {
-                                meetingRow.style.display = 'block';
-                            } else {
-                                meetingRow.style.display = 'none';
-                            }
+                            var isOnline = control && control.value === 'online';
+                            meetingRow.style.display = isOnline ? 'block' : 'none';
                         }
-
-                        // Initialize on page load
                         document.addEventListener('DOMContentLoaded', function() {
-                            var checkbox = document.getElementById('is_online');
-                            if (checkbox) {
-                                handleOnlineConsultationChange(checkbox);
-                                checkbox.addEventListener('change', function() {
-                                    handleOnlineConsultationChange(this);
-                                });
+                            var sel = document.getElementById('consultation_type');
+                            if (sel) {
+                                handleOnlineConsultationChange(sel);
+                                sel.addEventListener('change', function() { handleOnlineConsultationChange(this); });
                             }
                         });
                         </script>
 
-                        <div class="row" id="meeting_link_row" @if(!old('is_online')) style="display: none;" @endif>
+                        <div class="row" id="meeting_link_row" @if(old('consultation_type') !== 'online') style="display: none;" @endif>
                             <div class="col-12 mb-3">
                                 <!-- Hidden field to set Whereby as the platform -->
                                 <input type="hidden" name="meeting_platform" value="whereby">
@@ -703,12 +690,9 @@ $(document).ready(function() {
         });
     });
 
-    // Handle online consultation toggle - ensure checkbox state changes and handlers work
     function toggleMeetingLink() {
-        const checkbox = $('#is_online');
-        const isChecked = checkbox.is(':checked') || checkbox.prop('checked');
-        
-        if (isChecked) {
+        const isOnline = $('#consultation_type').val() === 'online';
+        if (isOnline) {
             $('#meeting_link_row').show();
             $('#meeting_link').prop('required', true);
         } else {
@@ -718,29 +702,9 @@ $(document).ready(function() {
             $('#meeting_platform').val('');
         }
     }
-    
-    // Handle checkbox change
-    $('#is_online').on('change', function() {
+    $('#consultation_type').on('change', function() {
         toggleMeetingLink();
     });
-    
-    // Handle checkbox click directly - use setTimeout to ensure state is updated
-    $('#is_online').on('click', function(e) {
-        // Use setTimeout to check state after browser processes the click
-        setTimeout(function() {
-            toggleMeetingLink();
-        }, 10);
-    });
-    
-    // Handle label click - ensure it toggles the checkbox
-    $('label[for="is_online"]').on('click', function(e) {
-        // Don't prevent default - let label naturally toggle checkbox
-        setTimeout(function() {
-            toggleMeetingLink();
-        }, 10);
-    });
-    
-    // Initialize on page load
     toggleMeetingLink();
     
     // Update meeting link UI based on selected platform
@@ -762,7 +726,7 @@ $(document).ready(function() {
             meetingLinkContainer.show();
             wherebyNotice.hide();
 
-            if ($('#is_online').is(':checked')) {
+            if ($('#consultation_type').val() === 'online') {
                 meetingLinkInput.prop('required', true);
                 meetingLinkRequired.show();
             }
@@ -943,7 +907,7 @@ $(document).ready(function() {
         
         // Check meeting link if online consultation (except for Whereby which auto-generates)
         const platform = $('#meeting_platform').val();
-        if ($('#is_online').is(':checked') && platform !== 'whereby' && !$('#meeting_link').val()) {
+        if ($('#consultation_type').val() === 'online' && platform !== 'whereby' && !$('#meeting_link').val()) {
             $('#meeting_link').addClass('is-invalid');
             isValid = false;
         } else {

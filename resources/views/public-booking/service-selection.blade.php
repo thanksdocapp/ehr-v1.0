@@ -541,17 +541,12 @@
             });
         }
 
-        // Map consultation type to display label (remote types must not show as In-Person)
+        // Map consultation type to display label and submit value
         function getConsultationTypeDisplay(consultationType, serviceName) {
-            const name = (serviceName || '').toLowerCase();
             const type = (consultationType || 'in_person').toLowerCase();
-            // Service name suggests telephone/remote
-            if (/\b(telephone|phone|video call|remote)\b/.test(name)) {
-                return { display: 'Telephone / Remote Consultation', submitValue: 'online' };
-            }
-            if (type === 'online') return { display: 'Online Consultation', submitValue: 'online' };
-            if (type === 'phone' || type === 'telephone') return { display: 'Telephone Consultation', submitValue: 'online' };
-            return { display: 'In-Person Consultation', submitValue: 'in_person' };
+            if (type === 'online') return { display: 'Online (Video)', submitValue: 'online' };
+            if (type === 'phone' || type === 'telephone') return { display: 'Telephone', submitValue: 'telephone' };
+            return { display: 'In Person', submitValue: 'in_person' };
         }
 
         // Update service details

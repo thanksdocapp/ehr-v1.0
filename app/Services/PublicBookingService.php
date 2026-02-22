@@ -92,7 +92,12 @@ class PublicBookingService
         $appointmentNumber = $this->generateAppointmentNumber();
 
         // Create appointment
-        $isOnline = isset($data['consultation_type']) && $data['consultation_type'] === 'online';
+        $consultationType = $data['consultation_type'] ?? 'in_person';
+        $validTypes = ['in_person', 'online', 'telephone'];
+        if (!in_array($consultationType, $validTypes, true)) {
+            $consultationType = 'in_person';
+        }
+        $isOnline = $consultationType === 'online';
         $useWhereby = $isOnline && $this->wherebyService->isEnabled();
 
         $appointmentData = [
@@ -108,6 +113,7 @@ class PublicBookingService
             'notes' => $data['notes'] ?? null,
             'fee' => 0,
             'is_online' => $isOnline,
+            'consultation_type' => $consultationType,
             // If Whereby is enabled and this is an online consult, mark platform up-front so
             // the AppointmentObserver can skip sending an email before the meeting link exists.
             'meeting_platform' => $useWhereby ? 'whereby' : null,
@@ -328,6 +334,10 @@ class PublicBookingService
 
             // Create appointment
             $useWhereby = $pendingBooking->is_online && $this->wherebyService->isEnabled();
+            $consultationType = $patientData['consultation_type'] ?? ($pendingBooking->is_online ? 'online' : 'in_person');
+            if (!in_array($consultationType, ['in_person', 'online', 'telephone'], true)) {
+                $consultationType = $pendingBooking->is_online ? 'online' : 'in_person';
+            }
             $appointmentData = [
                 'appointment_number' => $appointmentNumber,
                 'patient_id' => $patient->id,
@@ -340,6 +350,7 @@ class PublicBookingService
                 'notes' => $pendingBooking->notes,
                 'fee' => $pendingBooking->fee,
                 'is_online' => $pendingBooking->is_online,
+                'consultation_type' => $consultationType,
                 // Same reasoning as above: ensure observer doesn't email before meeting link exists.
                 'meeting_platform' => $useWhereby ? 'whereby' : null,
             ];

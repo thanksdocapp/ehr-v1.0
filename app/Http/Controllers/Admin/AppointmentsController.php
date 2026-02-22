@@ -53,8 +53,22 @@ class AppointmentsController extends Controller
             $query->where('doctor_id', $request->doctor_id);
         }
 
-        // Filter by online vs in-person
-        if ($request->filled('is_online')) {
+        // Filter by consultation type
+        if ($request->filled('consultation_type')) {
+            $ct = $request->consultation_type;
+            if ($ct === 'phone') {
+                $ct = 'telephone';
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('appointments', 'consultation_type')) {
+                $query->where('consultation_type', $ct);
+            } else {
+                if ($ct === 'online') {
+                    $query->where('is_online', true);
+                } elseif ($ct === 'in_person') {
+                    $query->where('is_online', false);
+                }
+            }
+        } elseif ($request->filled('is_online')) {
             $query->where('is_online', $request->boolean('is_online'));
         }
 
@@ -461,6 +475,7 @@ class AppointmentsController extends Controller
             'symptoms' => 'nullable|string',
             'notes' => 'nullable|string',
             'fee' => 'nullable|numeric|min:0',
+            'consultation_type' => 'nullable|in:in_person,online,telephone',
             'is_online' => 'boolean',
             'meeting_link' => 'nullable|url|max:500',
             'meeting_platform' => 'nullable|in:zoom,google_meet,teams,whereby,custom',
@@ -470,10 +485,15 @@ class AppointmentsController extends Controller
             'next_appointment_date' => 'nullable|date|after:appointment_date'
         ]);
 
+        $consultationType = in_array($request->consultation_type, ['in_person', 'online', 'telephone'], true)
+            ? $request->consultation_type
+            : ($request->boolean('is_online') ? 'online' : ($appointment->consultation_type ?? 'in_person'));
+        $isOnline = $consultationType === 'online';
+
         // Validate that meeting link is provided if online consultation (except for Whereby which auto-generates)
-        if ($request->boolean('is_online') && empty($request->meeting_link) && $request->meeting_platform !== 'whereby') {
+        if ($isOnline && empty($request->meeting_link) && $request->meeting_platform !== 'whereby') {
             return redirect()->back()
-                ->withErrors(['meeting_link' => 'Meeting link is required for online consultations.'])
+                ->withErrors(['meeting_link' => 'Meeting link is required for online (video) consultations.'])
                 ->withInput();
         }
 
@@ -481,8 +501,15 @@ class AppointmentsController extends Controller
         $oldStatus = $appointment->status;
         $oldDate = $appointment->appointment_date;
         $oldTime = $appointment->appointment_time;
-        
-        $appointment->update($request->all());
+
+        $data = $request->except(['consultation_type', 'is_online']);
+        $data['consultation_type'] = $consultationType;
+        $data['is_online'] = $isOnline;
+        if (!$isOnline) {
+            $data['meeting_link'] = null;
+            $data['meeting_platform'] = null;
+        }
+        $appointment->update($data);
         $appointment->load(['patient', 'doctor', 'department']);
         
         // Send notifications for status changes

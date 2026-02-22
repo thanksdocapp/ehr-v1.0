@@ -82,14 +82,18 @@ class AppointmentController extends Controller
             $query->where('is_online', $request->boolean('is_online'));
         }
         if ($request->filled('consultation_type')) {
-            if ($request->consultation_type === 'online') {
-                $query->where('is_online', true);
-            } elseif ($request->consultation_type === 'in_person') {
-                $query->where('is_online', false);
-            } elseif ($request->consultation_type === 'phone') {
-                $query->where('type', 'phone')->orWhere(function($q) {
-                    $q->where('is_online', false)->where('type', 'consultation');
-                });
+            $ct = $request->consultation_type;
+            if ($ct === 'phone') {
+                $ct = 'telephone';
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('appointments', 'consultation_type')) {
+                $query->where('consultation_type', $ct);
+            } else {
+                if ($ct === 'online') {
+                    $query->where('is_online', true);
+                } elseif ($ct === 'in_person') {
+                    $query->where('is_online', false);
+                }
             }
         }
         if ($request->filled('meeting_platform')) {
@@ -416,8 +420,9 @@ class AppointmentController extends Controller
                 'symptoms' => $request->symptoms,
                 'notes' => $request->notes,
                 'fee' => $request->fee,
-                'is_online' => $request->boolean('is_online', false),
-                'meeting_link' => $request->is_online ? $request->meeting_link : null,
+                'consultation_type' => in_array($request->consultation_type, ['in_person', 'online', 'telephone'], true) ? $request->consultation_type : ($request->boolean('is_online') ? 'online' : 'in_person'),
+                'is_online' => ($request->consultation_type ?? ($request->boolean('is_online') ? 'online' : 'in_person')) === 'online',
+                'meeting_link' => ($request->consultation_type ?? '') === 'online' ? $request->meeting_link : ($request->is_online ? $request->meeting_link : null),
             ]);
 
             // If this is an online appointment without a meeting link, auto-generate Whereby room

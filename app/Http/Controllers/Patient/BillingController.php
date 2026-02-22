@@ -829,29 +829,40 @@ class BillingController extends Controller
                 return;
             }
 
+            // Cap at total_amount to avoid overpayment from duplicate payment records
+            $paidAmount = min((float) $totalPaid, (float) $billing->total_amount);
+            if ($totalPaid > $billing->total_amount) {
+                \Log::warning('Payment sum exceeded billing total; capping paid_amount', [
+                    'billing_id' => $billing->id,
+                    'invoice_id' => $invoice->id,
+                    'total_paid_sum' => $totalPaid,
+                    'billing_total' => $billing->total_amount,
+                ]);
+            }
+
             // Update billing record with payment information
             $billing->update([
-                'paid_amount' => $totalPaid,
+                'paid_amount' => $paidAmount,
                 'payment_method' => 'card', // Most patient payments are via card/stripe
                 'payment_reference' => 'PATIENT_PORTAL_PAYMENT',
-                'paid_at' => $totalPaid >= $invoice->total_amount ? now() : $billing->paid_at,
+                'paid_at' => $paidAmount >= $invoice->total_amount ? now() : $billing->paid_at,
                 'updated_by' => null, // System update, not by specific user
             ]);
 
             \Log::info('Successfully synced patient payment to admin billing', [
                 'invoice_id' => $invoice->id,
                 'billing_id' => $billing->id,
-                'total_paid' => $totalPaid,
+                'total_paid' => $paidAmount,
                 'billing_status' => $billing->fresh()->status
             ]);
 
             // Send payment completion notification if billing is fully paid
-            if ($totalPaid >= $invoice->total_amount) {
+            if ($paidAmount >= $invoice->total_amount) {
                 try {
                     $this->notificationService->sendBillingNotification(
                         $billing,
                         'payment_received',
-                        $totalPaid
+                        $paidAmount
                     );
                 } catch (\Exception $e) {
                     \Log::error('Failed to send billing sync notification', [

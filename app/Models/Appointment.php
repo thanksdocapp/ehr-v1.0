@@ -28,6 +28,7 @@ class Appointment extends Model
         'notes',
         'fee',
         'is_online',
+        'consultation_type',
         'meeting_link',
         'meeting_platform',
         'whereby_meeting_id',
@@ -555,6 +556,19 @@ class Appointment extends Model
             'whereby' => 'Whereby',
             'custom' => 'Custom Platform',
             default => ucfirst($this->meeting_platform)
+        };
+    }
+
+    /**
+     * Human-readable consultation type: Online (Video), In Person, Telephone.
+     */
+    public function getConsultationTypeLabelAttribute(): string
+    {
+        $type = $this->consultation_type ?? ($this->is_online ? 'online' : 'in_person');
+        return match ($type) {
+            'online' => 'Online (Video)',
+            'telephone' => 'Telephone',
+            default => 'In Person',
         };
     }
 

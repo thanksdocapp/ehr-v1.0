@@ -113,7 +113,7 @@
                     </button>
                 </div>
                 <div>
-                    @if(request()->hasAny(['search', 'status', 'type', 'is_online', 'date_from', 'date_to', 'doctor_id', 'department_id']))
+                    @if(request()->hasAny(['search', 'status', 'type', 'is_online', 'consultation_type', 'date_from', 'date_to', 'doctor_id', 'department_id']))
                         <a href="{{ contextRoute('appointments.index') }}" class="btn-modern btn-modern-outline">
                             <i class="fas fa-times"></i>Clear All
                         </a>
@@ -128,7 +128,11 @@
         $activeFilters = [];
         if(request('status')) $activeFilters[] = ['key' => 'status', 'label' => 'Status: ' . ucfirst(request('status'))];
         if(request('type')) $activeFilters[] = ['key' => 'type', 'label' => 'Type: ' . ucfirst(request('type'))];
-        if(request('is_online')) $activeFilters[] = ['key' => 'is_online', 'label' => 'Consultation: ' . (request('is_online') == '1' ? 'Online' : 'In-Person')];
+        if(request('consultation_type')) {
+            $ctLabels = ['online' => 'Online (Video)', 'in_person' => 'In Person', 'telephone' => 'Telephone'];
+            $activeFilters[] = ['key' => 'consultation_type', 'label' => 'Consultation: ' . ($ctLabels[request('consultation_type')] ?? request('consultation_type'))];
+        }
+        if(request('is_online') && !request()->has('consultation_type')) $activeFilters[] = ['key' => 'is_online', 'label' => 'Consultation: ' . (request('is_online') == '1' ? 'Online' : 'In-Person')];
         if(request('date_from')) $activeFilters[] = ['key' => 'date_from', 'label' => 'Date From: ' . request('date_from')];
         if(request('date_to')) $activeFilters[] = ['key' => 'date_to', 'label' => 'Date To: ' . request('date_to')];
         if(request('doctor_id')) {
@@ -158,7 +162,7 @@
     @endif
 
     <!-- Modern Filter Panel -->
-    <div class="modern-card mb-4" id="filterPanel" style="display: {{ request()->hasAny(['status', 'type', 'is_online', 'date_from', 'date_to', 'doctor_id', 'department_id', 'date_range']) ? 'block' : 'none' }};">
+    <div class="modern-card mb-4" id="filterPanel" style="display: {{ request()->hasAny(['status', 'type', 'is_online', 'consultation_type', 'date_from', 'date_to', 'doctor_id', 'department_id', 'date_range']) ? 'block' : 'none' }};">
         <div class="modern-card-header">
             <h5 class="modern-card-title mb-0">
                 <i class="fas fa-filter"></i>Advanced Filters
@@ -197,11 +201,12 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="modern-form-label">Consultation</label>
-                        <select name="is_online" class="modern-form-select">
+                        <label class="modern-form-label">Consultation Type</label>
+                        <select name="consultation_type" class="modern-form-select">
                             <option value="">All</option>
-                            <option value="1" {{ request('is_online') === '1' ? 'selected' : '' }}>Online</option>
-                            <option value="0" {{ request('is_online') === '0' ? 'selected' : '' }}>In-Person</option>
+                            <option value="online" {{ request('consultation_type') == 'online' ? 'selected' : '' }}>Online (Video)</option>
+                            <option value="in_person" {{ request('consultation_type') == 'in_person' ? 'selected' : '' }}>In Person</option>
+                            <option value="telephone" {{ request('consultation_type') == 'telephone' ? 'selected' : '' }}>Telephone</option>
                         </select>
                     </div>
                     <div class="col-md-3">

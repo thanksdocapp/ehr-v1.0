@@ -300,44 +300,43 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_online" name="is_online" value="1" 
-                                       {{ old('is_online') ? 'checked' : '' }}
-                                       >
-                                <label class="form-check-label" for="is_online">
-                                    <i class="fas fa-video me-1"></i>Online Consultation
-                                </label>
-                            </div>
+                            <label for="consultation_type" class="form-label">Consultation Type</label>
+                            <select class="form-control @error('consultation_type') is-invalid @enderror" id="consultation_type" name="consultation_type">
+                                <option value="in_person" {{ old('consultation_type', 'in_person') === 'in_person' ? 'selected' : '' }}>In Person</option>
+                                <option value="online" {{ old('consultation_type') === 'online' ? 'selected' : '' }}>Online (Video)</option>
+                                <option value="telephone" {{ old('consultation_type') === 'telephone' ? 'selected' : '' }}>Telephone</option>
+                            </select>
+                            @error('consultation_type')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <script>
-                        // Keep the Whereby notice visible whenever "Online Consultation" is selected.
+                        // Show meeting link row only when "Online (Video)" is selected.
                         (function initWherebyNoticeToggle() {
                             function apply() {
-                                var checkbox = document.getElementById('is_online');
+                                var select = document.getElementById('consultation_type');
                                 var row = document.getElementById('meeting_link_row');
                                 var platformInput = document.getElementById('meeting_platform_whereby');
-                                if (!checkbox || !row) return;
+                                if (!select || !row) return;
 
-                                var on = !!checkbox.checked;
-                                // Use default .row display (flex) when visible
+                                var on = select.value === 'online';
                                 row.style.display = on ? '' : 'none';
-                                // Prevent accidental submission of meeting_platform when not online
                                 if (platformInput) {
                                     platformInput.disabled = !on;
                                 }
                             }
 
                             document.addEventListener('DOMContentLoaded', function() {
-                                var checkbox = document.getElementById('is_online');
-                                if (!checkbox) return;
-                                checkbox.addEventListener('change', apply);
+                                var select = document.getElementById('consultation_type');
+                                if (!select) return;
+                                select.addEventListener('change', apply);
                                 apply();
                             });
                         })();
                         </script>
                         
-                        <div class="row" id="meeting_link_row" @if(!old('is_online')) style="display: none;" @endif>
+                        <div class="row" id="meeting_link_row" @if(old('consultation_type') !== 'online') style="display: none;" @endif>
                             <div class="col-12 mb-3">
                                 <!-- Hidden field to set Whereby as the platform -->
                                 <input
@@ -345,7 +344,7 @@
                                     id="meeting_platform_whereby"
                                     name="meeting_platform"
                                     value="whereby"
-                                    @if(!old('is_online')) disabled @endif
+                                    @if(old('consultation_type') !== 'online') disabled @endif
                                 >
 
                                 <div class="alert alert-info mb-0" style="border-radius: 8px; border-left: 4px solid #6C63FF;">
@@ -1000,19 +999,14 @@ $(document).ready(function() {
             });
     }
 
-    // Auto-check/uncheck online consultation checkbox based on service consultation type
+    // Auto-set consultation type from service
     $('#service_id').on('change', function() {
-        const $serviceSelect = $(this);
-        const selectedOption = $serviceSelect.find('option:selected');
-        const consultationType = selectedOption.data('consultation-type');
-        const $isOnlineCheckbox = $('#is_online');
-
-        if (consultationType === 'online') {
-            $isOnlineCheckbox.prop('checked', true).trigger('change');
-        } else if (consultationType === 'in_person') {
-            $isOnlineCheckbox.prop('checked', false).trigger('change');
+        const selectedOption = $(this).find('option:selected');
+        const consultationType = selectedOption.data('consultation-type') || 'in_person';
+        const $consultationTypeSelect = $('#consultation_type');
+        if ($consultationTypeSelect.length && ['in_person', 'online', 'telephone'].indexOf(consultationType) !== -1) {
+            $consultationTypeSelect.val(consultationType).trigger('change');
         }
-        // If no service selected or consultation_type is not set, leave checkbox as is
     });
 
     function showTimeSlotNotice(message) {

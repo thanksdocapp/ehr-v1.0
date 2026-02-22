@@ -648,20 +648,28 @@ class PaymentController extends Controller
                             $totalPaid = $patientPayment->invoice->payments()
                                 ->where('status', 'completed')
                                 ->sum('amount');
-                            
+                            // Cap at total_amount to avoid overpayment from duplicate payment records
+                            $paidAmount = min((float) $totalPaid, (float) $adminBilling->total_amount);
+                            if ($totalPaid > $adminBilling->total_amount) {
+                                Log::warning('Payment sum exceeded billing total (webhook); capping paid_amount', [
+                                    'billing_id' => $adminBilling->id,
+                                    'total_paid_sum' => $totalPaid,
+                                    'billing_total' => $adminBilling->total_amount,
+                                ]);
+                            }
                             // Update paid_amount - the model's saving event will automatically update status to 'paid' if paid_amount >= total_amount
                             $adminBilling->update([
-                                'paid_amount' => $totalPaid,
+                                'paid_amount' => $paidAmount,
                                 'payment_method' => $patientPayment->payment_method ?? 'card',
                                 'payment_reference' => $patientPayment->transaction_id ?? 'ONLINE_PAYMENT',
-                                'paid_at' => $totalPaid >= $adminBilling->total_amount ? now() : $adminBilling->paid_at,
+                                'paid_at' => $paidAmount >= $adminBilling->total_amount ? now() : $adminBilling->paid_at,
                             ]);
                             
                             Log::info('Admin billing updated from patient payment via webhook', [
                                 'billing_id' => $adminBilling->id,
                                 'invoice_id' => $patientPayment->invoice->id,
                                 'payment_id' => $patientPayment->id,
-                                'total_paid' => $totalPaid,
+                                'total_paid' => $paidAmount,
                                 'billing_total' => $adminBilling->total_amount,
                                 'billing_status' => $adminBilling->fresh()->status
                             ]);
@@ -1189,13 +1197,24 @@ class PaymentController extends Controller
                 return;
             }
 
+            // Cap at total_amount to avoid overpayment from duplicate payment records
+            $paidAmount = min((float) $totalPaid, (float) $billing->total_amount);
+            if ($totalPaid > $billing->total_amount) {
+                Log::warning('Payment sum exceeded billing total; capping paid_amount', [
+                    'billing_id' => $billing->id,
+                    'invoice_id' => $invoice->id,
+                    'total_paid_sum' => $totalPaid,
+                    'billing_total' => $billing->total_amount,
+                ]);
+            }
+
             // Update billing record with payment information
             // Note: We update paid_amount and let the model's saving event automatically update the status
             $billing->update([
-                'paid_amount' => $totalPaid,
+                'paid_amount' => $paidAmount,
                 'payment_method' => $billing->payment_method ?: 'online', // Keep existing or set to 'online'
                 'payment_reference' => $billing->payment_reference ?: 'ONLINE_PAYMENT',
-                'paid_at' => $totalPaid >= $invoice->total_amount ? now() : $billing->paid_at,
+                'paid_at' => $paidAmount >= $invoice->total_amount ? now() : $billing->paid_at,
                 'updated_by' => null, // System update, not by specific user
             ]);
             
@@ -1207,17 +1226,17 @@ class PaymentController extends Controller
             Log::info('Successfully synced patient payment to admin billing', [
                 'invoice_id' => $invoice->id,
                 'billing_id' => $billing->id,
-                'total_paid' => $totalPaid,
+                'total_paid' => $paidAmount,
                 'billing_status' => $billing->fresh()->status
             ]);
 
             // Send payment completion notification if billing is fully paid
-            if ($totalPaid >= $invoice->total_amount) {
+            if ($paidAmount >= $invoice->total_amount) {
                 try {
                     $this->notificationService->sendBillingNotification(
                         $billing,
                         'payment_received',
-                        $totalPaid
+                        $paidAmount
                     );
                 } catch (Exception $e) {
                     Log::error('Failed to send billing sync notification', [

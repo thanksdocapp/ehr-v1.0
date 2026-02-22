@@ -101,12 +101,13 @@
                         </div>
                     </div>
 
-                    @if($appointment->is_online)
+                    @php $ct = $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person'); @endphp
+                    @if($ct === 'online')
                         <div class="alert alert-info mb-3">
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-video me-2"></i>
                                 <div class="flex-grow-1">
-                                    <strong>Online Consultation</strong>
+                                    <strong>Online (Video)</strong>
                                     @if($appointment->meeting_platform)
                                         <br><small><i class="{{ $appointment->meeting_platform_icon }} me-1"></i>{{ $appointment->meeting_platform_name }}</small>
                                     @endif

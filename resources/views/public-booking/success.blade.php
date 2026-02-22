@@ -76,15 +76,25 @@
                                 </div>
                                 @endif
 
-                                @if($appointment->is_online)
+                                @php $ct = $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person'); @endphp
                                 <hr>
                                 <div class="row">
                                     <div class="col-12">
                                         <small class="text-muted">Consultation Type</small>
                                         <div>
+                                            @if($ct === 'online')
                                             <span class="badge bg-info">
-                                                <i class="fas fa-video me-1"></i>Online Consultation
+                                                <i class="fas fa-video me-1"></i>Online (Video)
                                             </span>
+                                            @elseif($ct === 'telephone')
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-phone me-1"></i>Telephone
+                                            </span>
+                                            @else
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-hospital me-1"></i>In Person
+                                            </span>
+                                            @endif
                                         </div>
                                         @if($appointment->meeting_link)
                                         <div class="mt-2">
@@ -110,7 +120,6 @@
                                         @endif
                                     </div>
                                 </div>
-                                @endif
                             </div>
                         </div>
 

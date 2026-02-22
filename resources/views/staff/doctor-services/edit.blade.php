@@ -126,8 +126,9 @@
                                     id="consultation_type"
                                     name="consultation_type"
                                     required>
-                                <option value="in_person" {{ old('consultation_type', $override->consultation_type ?? 'in_person') == 'in_person' ? 'selected' : '' }}>In-Person Consultation</option>
-                                <option value="online" {{ old('consultation_type', $override->consultation_type ?? 'in_person') == 'online' ? 'selected' : '' }}>Online Consultation</option>
+                                <option value="in_person" {{ old('consultation_type', $override->consultation_type ?? 'in_person') == 'in_person' ? 'selected' : '' }}>In Person</option>
+                                <option value="online" {{ old('consultation_type', $override->consultation_type ?? 'in_person') == 'online' ? 'selected' : '' }}>Online (Video)</option>
+                                <option value="telephone" {{ old('consultation_type', $override->consultation_type ?? 'in_person') == 'telephone' ? 'selected' : '' }}>Telephone</option>
                             </select>
                             @error('consultation_type')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
