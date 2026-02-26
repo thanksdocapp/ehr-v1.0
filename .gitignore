@@ -21,6 +21,7 @@ yarn-error.log
 # Markdown documentation files
 *.md
 !README.md
+!AGENTS.md
 
 # Laravel specific
 /storage/app/*
