@@ -35,9 +35,9 @@ class CheckFrontendEnabled
         // Check if frontend/homepage is enabled
         $frontendEnabled = Setting::get('enable_frontend', '1');
         
-        // If frontend is disabled, redirect to staff login page
+        // If frontend is disabled, redirect to external site
         if ($frontendEnabled != '1') {
-            return redirect()->route('login');
+            return redirect()->away('https://notes.thanksdoc.co.uk');
         }
         
         return $next($request);
