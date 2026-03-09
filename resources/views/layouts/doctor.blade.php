@@ -2388,13 +2388,13 @@
 
         <!-- Content -->
         <main class="doctor-content-wrapper">
-            @if(session('success'))
+            @if(session('success') && !session('booking_link'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 12px; border: none;">
                     <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
-            
+
             @if(session('error'))
                 <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 12px; border: none;">
                     <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}

@@ -18,13 +18,12 @@
         </div>
     </div>
 
-    @if(session('success'))
+    @if(session('booking_link'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         <div class="d-flex align-items-start">
             <i class="fas fa-check-circle me-2 mt-1"></i>
             <div class="flex-grow-1">
-                <div>{{ session('success') }}</div>
-                @if(session('booking_link'))
+                <div>{{ session('success', 'Booking link generated.') }}</div>
                 <div class="mt-3 p-3 bg-white rounded border">
                     <div class="mb-2">
                         <strong class="d-block mb-2">
@@ -48,17 +47,9 @@
                     </div>
                     @endif
                 </div>
-                @endif
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    </div>
-    @endif
-
-    @if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
 
