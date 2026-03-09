@@ -180,6 +180,7 @@ class DoctorServicesController extends Controller
         }
 
         $request->validate([
+            'default_price' => 'required|numeric|min:0',
             'description' => 'nullable|string|max:1000',
             'custom_price' => 'nullable|numeric|min:0',
             'custom_duration_minutes' => 'nullable|integer|min:1',
@@ -188,23 +189,32 @@ class DoctorServicesController extends Controller
         ]);
 
         try {
-            // Update service description (since doctor owns this service)
+            $newDefaultPrice = $request->default_price;
+
+            // Update service (doctor owns this service - can edit default price)
             $bookingService->update([
+                'default_price' => $newDefaultPrice,
                 'description' => $request->description,
             ]);
 
             // Update or create doctor service override
+            $overrideData = [
+                'custom_duration_minutes' => $request->custom_duration_minutes,
+                'consultation_type' => $request->consultation_type ?? 'in_person',
+                'is_active' => $request->boolean('is_active', true),
+            ];
+
+            // Use custom_price if set, otherwise use the new default (so override stays in sync)
+            $overrideData['custom_price'] = $request->filled('custom_price')
+                ? $request->custom_price
+                : $newDefaultPrice;
+
             DoctorServicePrice::updateOrCreate(
                 [
                     'doctor_id' => $doctor->id,
                     'service_id' => $bookingService->id,
                 ],
-                [
-                    'custom_price' => $request->custom_price,
-                    'custom_duration_minutes' => $request->custom_duration_minutes,
-                    'consultation_type' => $request->consultation_type ?? 'in_person',
-                    'is_active' => $request->boolean('is_active', true),
-                ]
+                $overrideData
             );
 
             return redirect()->route('staff.doctor-services.index')

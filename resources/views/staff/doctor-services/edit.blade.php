@@ -55,6 +55,29 @@
 
                         <h6 class="fw-semibold mb-3">Service Details</h6>
 
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="default_price" class="form-label">
+                                    Default Price <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number"
+                                           class="form-control @error('default_price') is-invalid @enderror"
+                                           id="default_price"
+                                           name="default_price"
+                                           value="{{ old('default_price', $bookingService->default_price) }}"
+                                           step="0.01"
+                                           min="0"
+                                           required>
+                                </div>
+                                <small class="text-muted">Base price for this service</small>
+                                @error('default_price')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label for="description" class="form-label">
                                 Description <span class="text-muted">(optional)</span>
