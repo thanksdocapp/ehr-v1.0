@@ -132,6 +132,20 @@ class Appointment extends Model
     }
 
     /**
+     * Pending appointments that are today or in the future (awaiting confirmation).
+     */
+    public function scopePendingUpcoming($query)
+    {
+        return $query->where('status', 'pending')->where(function ($q) {
+            $q->where('appointment_date', '>', today())
+                ->orWhere(function ($q2) {
+                    $q2->whereDate('appointment_date', today())
+                        ->whereTime('appointment_time', '>=', now());
+                });
+        });
+    }
+
+    /**
      * Whether this appointment is pending and its date/time has passed (requires doctor action).
      */
     public function getNeedsActionAttribute(): bool

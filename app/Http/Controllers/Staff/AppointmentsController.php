@@ -164,6 +164,9 @@ class AppointmentsController extends Controller
             }
         }
 
+        // Clone before overdue filter for counts (overdue restricts to past only)
+        $queryForCounts = clone $query;
+
         // ===== OVERDUE / CONFLICT FILTERS =====
         if ($request->filled('overdue')) {
             // Pending appointments whose date/time has passed (doctor should take action)
@@ -245,12 +248,15 @@ class AppointmentsController extends Controller
             ->orderBy('appointment_date')->orderBy('appointment_time')
             ->take(10)->get();
 
+        // Pending appointments today/future awaiting confirmation (use pre-overdue query)
+        $pendingUpcomingCount = $queryForCounts->pendingUpcoming()->count();
+
         // Sort by date and time
         $appointments = $query->orderBy('appointment_date', 'desc')
                               ->orderBy('appointment_time', 'desc')
                               ->paginate(15)->appends($request->query());
 
-        return view('staff.appointments.index', compact('appointments', 'doctors', 'departments', 'pendingPastCount', 'pendingPastAppointments'));
+        return view('staff.appointments.index', compact('appointments', 'doctors', 'departments', 'pendingPastCount', 'pendingPastAppointments', 'pendingUpcomingCount'));
     }
 
     public function show($id)

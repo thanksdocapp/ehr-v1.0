@@ -41,6 +41,23 @@
         </div>
     @endif
 
+    <!-- Pending appointments awaiting confirmation - remind staff/doctors to confirm -->
+    @if(isset($pendingUpcomingCount) && $pendingUpcomingCount > 0)
+        <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert" style="border-left: 4px solid #d97706;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-circle fa-2x me-3 text-warning"></i>
+                <div class="flex-grow-1">
+                    <strong>Pending appointments awaiting confirmation</strong>
+                    <p class="mb-0 mt-1">There {{ $pendingUpcomingCount === 1 ? 'is' : 'are' }} {{ $pendingUpcomingCount }} pending {{ \Illuminate\Support\Str::plural('appointment', $pendingUpcomingCount) }} that {{ $pendingUpcomingCount === 1 ? 'needs' : 'need' }} confirmation. Please confirm {{ $pendingUpcomingCount === 1 ? 'it' : 'them' }} so patients know their appointment is secured.</p>
+                </div>
+                <a href="{{ route('staff.appointments.index', ['status' => 'pending']) }}" class="btn btn-warning ms-3">
+                    <i class="fas fa-check-circle me-1"></i> Confirm appointments
+                </a>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    @endif
+
     <!-- Pending appointments that have passed - flag for action -->
     @if(isset($pendingPastCount) && $pendingPastCount > 0)
         <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">

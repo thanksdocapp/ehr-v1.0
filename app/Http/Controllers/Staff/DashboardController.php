@@ -115,6 +115,9 @@ class DashboardController extends Controller
         // Pending appointments that have passed (flag for doctor/staff to take action)
         $pendingPastCount = (clone $appointmentsQuery)->pendingPast()->count();
 
+        // Pending appointments today or in the future (awaiting confirmation - doctors often forget)
+        $pendingUpcomingCount = (clone $appointmentsQuery)->pendingUpcoming()->count();
+
         // Get recent appointments filtered by department
         $recentAppointmentsQuery = Appointment::with(['patient', 'doctor']);
         if (!empty($userDepartmentIds)) {
@@ -201,10 +204,10 @@ class DashboardController extends Controller
                 ->limit(5)
                 ->get();
 
-            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations', 'notices', 'pendingPastCount', 'pendingClinicRequestsCount'));
+            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations', 'notices', 'pendingPastCount', 'pendingUpcomingCount', 'pendingClinicRequestsCount'));
         }
         
-        return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus', 'notices', 'pendingPastCount'));
+        return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus', 'notices', 'pendingPastCount', 'pendingUpcomingCount'));
     }
 
     public function getStats()

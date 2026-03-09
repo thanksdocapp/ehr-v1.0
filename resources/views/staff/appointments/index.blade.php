@@ -116,6 +116,20 @@
         </div>
     </div>
 
+    @if(isset($pendingUpcomingCount) && $pendingUpcomingCount > 0)
+    <div class="alert alert-warning alert-dismissible fade show d-flex align-items-start mb-4" role="alert" style="border-left: 4px solid #d97706;">
+        <i class="fas fa-exclamation-circle fa-2x me-3 mt-1 text-warning"></i>
+        <div class="flex-grow-1">
+            <h6 class="alert-heading mb-1">Pending appointments awaiting confirmation</h6>
+            <p class="mb-2">You have <strong>{{ $pendingUpcomingCount }}</strong> pending appointment(s) that need confirmation. Please confirm them so patients know their appointment is secured.</p>
+            <a href="{{ route('staff.appointments.index', ['status' => 'pending']) }}" class="btn btn-warning btn-sm">
+                <i class="fas fa-check-circle me-1"></i>Confirm appointments
+            </a>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
+
     @if(isset($pendingPastCount) && $pendingPastCount > 0)
     <div class="alert alert-warning alert-dismissible fade show d-flex align-items-start mb-4" role="alert">
         <i class="fas fa-exclamation-triangle fa-2x me-3 mt-1"></i>
