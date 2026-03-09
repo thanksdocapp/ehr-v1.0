@@ -812,14 +812,10 @@ class AppointmentsController extends Controller
             $start = $request->get('start', now()->startOfMonth()->format('Y-m-d'));
             $end = $request->get('end', now()->endOfMonth()->format('Y-m-d'));
 
-            $query = Appointment::with(['patient', 'doctor', 'department', 'service'])
-                ->whereBetween('appointment_date', [$start, $end]);
-
-            // Filter for doctor's own appointments if user is a doctor
             $user = Auth::user();
-            if ($user->role === 'doctor' && $user->doctor) {
-                $query->where('doctor_id', $user->doctor->id);
-            }
+            $query = Appointment::with(['patient', 'doctor', 'department', 'service'])
+                ->whereBetween('appointment_date', [$start, $end])
+                ->visibleTo($user);
 
             $appointments = $query->get()
                 ->filter(function ($appointment) {

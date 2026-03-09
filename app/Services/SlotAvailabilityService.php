@@ -52,8 +52,9 @@ class SlotAvailabilityService
             return []; // Doctor not available on this day
         }
 
-        // Get existing appointments for this date
-        $existingAppointments = Appointment::where('doctor_id', $doctorId)
+        // Get existing appointments for this date (with service for duration fallback)
+        $existingAppointments = Appointment::with('service')
+            ->where('doctor_id', $doctorId)
             ->whereDate('appointment_date', $date)
             ->whereIn('status', ['pending', 'confirmed', 'rescheduled'])
             ->get();
@@ -351,7 +352,11 @@ class SlotAvailabilityService
         // Check if slot conflicts with existing appointments
         foreach ($existingAppointments as $appointment) {
             $apptStart = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
-            $apptDuration = (int) ($appointment->estimated_duration ?? 30);
+            // Use estimated_duration if set; else service duration for doctor; else 30
+            $apptDuration = (int) ($appointment->estimated_duration ?? null);
+            if ($apptDuration <= 0 && $appointment->service_id && $appointment->doctor_id) {
+                $apptDuration = (int) ($appointment->service->getDurationForDoctor($appointment->doctor_id) ?? 30);
+            }
             if ($apptDuration <= 0) {
                 $apptDuration = 30;
             }
