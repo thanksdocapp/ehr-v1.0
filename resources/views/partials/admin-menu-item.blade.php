@@ -117,6 +117,15 @@
         </div>
         @break
 
+    @case('booking-services')
+        <div class="menu-item">
+            <a href="{{ route('admin.booking-services.index') }}" class="menu-link {{ request()->routeIs('admin.booking-services.*') ? 'active' : '' }}">
+                <i class="menu-icon fas {{ $icon }}"></i>
+                <span class="menu-text">{{ $label }}</span>
+            </a>
+        </div>
+        @break
+
     @case('staff-management')
         <div class="menu-item">
             <div class="dropdown">
