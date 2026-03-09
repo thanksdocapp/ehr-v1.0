@@ -180,6 +180,7 @@ class DoctorServicesController extends Controller
         }
 
         $request->validate([
+            'name' => 'required|string|max:255',
             'default_price' => 'required|numeric|min:0',
             'description' => 'nullable|string|max:1000',
             'custom_duration_minutes' => 'required|integer|min:5|max:480',
@@ -191,8 +192,9 @@ class DoctorServicesController extends Controller
             $newDefaultPrice = $request->default_price;
             $duration = (int) $request->custom_duration_minutes;
 
-            // Update service (doctor owns this service - can edit default price and duration)
+            // Update service (doctor owns this service - can edit name, default price and duration)
             $bookingService->update([
+                'name' => $request->name,
                 'default_price' => $newDefaultPrice,
                 'default_duration_minutes' => $duration,
                 'description' => $request->description,

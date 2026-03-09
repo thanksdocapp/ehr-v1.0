@@ -23,12 +23,8 @@
                 </div>
                 <div class="doctor-card-body">
                     <div class="mb-4 p-3 bg-light rounded">
-                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-cog me-1"></i>Global service details</p>
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-cog me-1"></i>Service details</p>
                         <div class="row">
-                            <div class="col-md-6 mb-2">
-                                <small class="text-muted d-block">Service Name</small>
-                                <strong>{{ $bookingService->name }}</strong>
-                            </div>
                             <div class="col-md-6 mb-2">
                                 <small class="text-muted d-block">Default Duration</small>
                                 <strong>{{ $bookingService->default_duration_minutes ?? 60 }} minutes</strong>
@@ -54,6 +50,21 @@
                         @method('PUT')
 
                         <h6 class="fw-semibold mb-3">Service Details</h6>
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                Service Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control @error('name') is-invalid @enderror"
+                                   id="name"
+                                   name="name"
+                                   value="{{ old('name', $bookingService->name) }}"
+                                   required>
+                            @error('name')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
