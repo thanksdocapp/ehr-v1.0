@@ -104,8 +104,15 @@
                                 <div class="col-md-4">
                                     <label class="form-label text-muted small mb-0">Service</label>
                                     <div class="fw-bold">{{ $appointment->service->name }}</div>
-                                    @if(($appointment->fee ?? 0) > 0)
-                                        <small class="text-success">&pound;{{ number_format($appointment->fee, 2) }}</small>
+                                    @php
+                                        $displayFee = ($appointment->fee ?? 0) > 0
+                                            ? (float) $appointment->fee
+                                            : ($appointment->doctor_id && $appointment->service
+                                                ? ($appointment->service->getPriceForDoctor($appointment->doctor_id) ?? 0)
+                                                : 0);
+                                    @endphp
+                                    @if($displayFee > 0)
+                                        <small class="text-success">&pound;{{ number_format($displayFee, 2) }}</small>
                                     @endif
                                 </div>
                             @endif
