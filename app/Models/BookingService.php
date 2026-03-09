@@ -66,7 +66,11 @@ class BookingService extends Model
             ->where('is_active', true)
             ->first();
 
-        return $doctorPrice ? $doctorPrice->custom_price : $this->default_price;
+        // Use default_price when doctor has no override or when custom_price is null
+        if (!$doctorPrice) {
+            return $this->default_price;
+        }
+        return $doctorPrice->custom_price ?? $this->default_price;
     }
 
     public function getDurationForDoctor($doctorId)

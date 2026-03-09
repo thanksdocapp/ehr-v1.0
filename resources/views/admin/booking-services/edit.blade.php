@@ -83,6 +83,12 @@
                                                     Also update doctor-specific prices that match the current default
                                                 </label>
                                             </div>
+                                            <div class="form-check mt-1 ms-3">
+                                                <input class="form-check-input" type="checkbox" name="propagate_price_to_all_doctors" id="propagate_price_to_all_doctors" value="1">
+                                                <label class="form-check-label" for="propagate_price_to_all_doctors">
+                                                    <strong>Reset all</strong> doctor prices to new default (fixes price not updating when selected)
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

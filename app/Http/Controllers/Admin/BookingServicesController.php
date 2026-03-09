@@ -141,11 +141,23 @@ class BookingServicesController extends Controller
             'is_active' => $request->has('is_active') ? true : false,
         ]);
 
-        // Optionally propagate new default to doctor overrides that matched the old default
-        if ($request->boolean('propagate_price_to_doctors') && $oldDefaultPrice != $newDefaultPrice) {
-            $updated = DoctorServicePrice::where('service_id', $bookingService->id)
-                ->where('custom_price', $oldDefaultPrice)
-                ->update(['custom_price' => $newDefaultPrice]);
+        // Optionally propagate new default to doctor overrides
+        if (($request->boolean('propagate_price_to_doctors') || $request->boolean('propagate_price_to_all_doctors')) && $oldDefaultPrice != $newDefaultPrice) {
+            $query = DoctorServicePrice::where('service_id', $bookingService->id);
+            if ($request->boolean('propagate_price_to_all_doctors')) {
+                // Reset ALL doctor-specific prices to the new default
+                $updated = $query->update(['custom_price' => $newDefaultPrice]);
+            } else {
+                // Only update doctors whose custom_price matched the old default (or was null)
+                if ($oldDefaultPrice === null || $oldDefaultPrice === '') {
+                    $updated = $query->whereNull('custom_price')->update(['custom_price' => $newDefaultPrice]);
+                } else {
+                    $updated = $query->where(function ($q) use ($oldDefaultPrice) {
+                        $q->where('custom_price', $oldDefaultPrice)
+                            ->orWhereRaw('ABS(COALESCE(custom_price, 0) - ?) < 0.01', [(float) $oldDefaultPrice]);
+                    })->update(['custom_price' => $newDefaultPrice]);
+                }
+            }
             if ($updated > 0) {
                 return redirect()->route('admin.booking-services.index')
                     ->with('success', "Booking service updated. Default price and {$updated} doctor-specific price(s) updated.");
