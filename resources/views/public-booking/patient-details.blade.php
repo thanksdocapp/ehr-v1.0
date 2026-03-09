@@ -126,7 +126,7 @@
             <div class="form-check">
                 <input class="form-check-input @error('consent') is-invalid @enderror" type="checkbox" id="consent" name="consent" value="1" required>
                 <label class="form-check-label" for="consent">
-                    <strong>I consent to the processing of my personal data for appointment purposes</strong> <span class="text-danger">*</span>
+                    <strong>I consent to the processing of my personal data for appointment purposes. I understand that this service is not suitable for medical emergencies.</strong> <span class="text-danger">*</span>
                 </label>
                 @error('consent')
                 <div class="invalid-feedback">{{ $message }}</div>
