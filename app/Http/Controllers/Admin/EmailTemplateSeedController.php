@@ -330,8 +330,8 @@ class EmailTemplateSeedController extends Controller
                 'subject' => 'Appointment Confirmation - {{hospital_name}}',
                 'category' => 'appointment',
                 'status' => 'active',
-                'description' => 'Sent to patients when their appointment is confirmed',
-                'body' => 'Dear {{patient_name}},\n\nYour appointment has been confirmed with the following details:\n\nDoctor: {{doctor_name}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nDepartment: {{department}}\nLocation: {{hospital_address}}\n\nAdditional Notes:\n{{notes}}\n\nPlease arrive 15 minutes early for check-in.\n\nImportant reminders:\n- Bring your ID and insurance card\n- Bring a list of current medications\n- Inform us of any changes to your health status\n\nIf you need to cancel or reschedule, please contact us at {{hospital_phone}} at least 24 hours in advance.\n\nThank you for choosing {{hospital_name}} for your healthcare needs.\n\nBest regards,\n{{hospital_name}} Team',
+                'description' => 'Sent to patients when their appointment is confirmed (staff booking, public booking, clinic booking)',
+                'body' => 'Dear {{patient_name}},\n\nYour appointment has been confirmed with the following details:\n\nDoctor: {{doctor_name}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nDepartment: {{department}}\nLocation: {{hospital_address}}\n\n{{online_consultation_section}}\n\nAdditional Notes:\n{{notes}}\n\nPlease arrive 15 minutes early for check-in.\n\nImportant reminders:\n- Bring your ID and insurance card\n- Bring a list of current medications\n- Inform us of any changes to your health status\n\nIf you need to cancel or reschedule, please contact us at {{hospital_phone}} at least 24 hours in advance.\n\nThank you for choosing {{hospital_name}} for your healthcare needs.\n\nBest regards,\n{{hospital_name}} Team',
                 'variables' => [
                     'patient_name' => 'Patient\'s full name',
                     'doctor_name' => 'Doctor\'s name',
@@ -341,7 +341,32 @@ class EmailTemplateSeedController extends Controller
                     'notes' => 'Additional appointment notes',
                     'hospital_name' => 'Hospital name',
                     'hospital_address' => 'Hospital address',
-                    'hospital_phone' => 'Hospital phone number'
+                    'hospital_phone' => 'Hospital phone number',
+                    'online_consultation_section' => 'Online consultation details (meeting link) - auto-filled for video appointments',
+                    'meeting_link' => 'Video meeting URL',
+                    'join_meeting_url' => 'Video meeting URL (alias)'
+                ],
+                'sender_name' => 'Hospital Appointments',
+                'sender_email' => 'appointments@hospital.com'
+            ],
+            [
+                'name' => 'doctor_new_appointment',
+                'subject' => 'New Appointment Assigned - {{patient_name}}',
+                'category' => 'appointment',
+                'status' => 'active',
+                'description' => 'Sent to doctor when a new appointment is booked (including public booking)',
+                'body' => 'Dear Dr. {{doctor_name}},\n\nA new appointment has been assigned to you:\n\nPatient: {{patient_name}}\nPhone: {{patient_phone}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nType: {{appointment_type}}\n{{online_consultation_section}}\nNotes: {{notes}}\n\nView Appointment Details:\n{{appointment_url}}\n\nRegards,\n{{hospital_name}}',
+                'variables' => [
+                    'doctor_name' => 'Doctor\'s name',
+                    'patient_name' => 'Patient\'s full name',
+                    'patient_phone' => 'Patient phone number',
+                    'appointment_date' => 'Appointment date',
+                    'appointment_time' => 'Appointment time',
+                    'appointment_type' => 'Appointment type',
+                    'online_consultation_section' => 'Online consultation details (meeting link)',
+                    'notes' => 'Appointment notes',
+                    'appointment_url' => 'Link to view appointment',
+                    'hospital_name' => 'Hospital name'
                 ],
                 'sender_name' => 'Hospital Appointments',
                 'sender_email' => 'appointments@hospital.com'

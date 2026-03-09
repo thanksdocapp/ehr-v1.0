@@ -59,7 +59,7 @@
                             <label for="category" class="form-label">Filter by Category:</label>
                             <select name="category" id="category" class="form-select" onchange="this.form.submit()">
                                 <option value="">All Categories</option>
-                                @foreach(['appointments', 'authentication', 'billing', 'contact', 'emergency', 'lab_reports', 'medical', 'patient_care', 'patient_notifications', 'prescriptions', 'security', 'staff_notifications', 'welcome'] as $cat)
+                                @foreach(['appointment', 'appointments', 'authentication', 'billing', 'contact', 'emergency', 'feedback', 'general', 'lab_reports', 'medical', 'notification', 'patient_care', 'patient_notifications', 'prescriptions', 'reminder', 'security', 'staff_notifications', 'welcome'] as $cat)
                                     <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>
                                         {{ ucwords(str_replace('_', ' ', $cat)) }}
                                     </option>
