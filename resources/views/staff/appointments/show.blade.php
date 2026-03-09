@@ -104,8 +104,8 @@
                                 <div class="col-md-4">
                                     <label class="form-label text-muted small mb-0">Service</label>
                                     <div class="fw-bold">{{ $appointment->service->name }}</div>
-                                    @if($appointment->service->default_price > 0)
-                                        <small class="text-success">&pound;{{ number_format($appointment->service->default_price, 2) }}</small>
+                                    @if(($appointment->fee ?? 0) > 0)
+                                        <small class="text-success">&pound;{{ number_format($appointment->fee, 2) }}</small>
                                     @endif
                                 </div>
                             @endif

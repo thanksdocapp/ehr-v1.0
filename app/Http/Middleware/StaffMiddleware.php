@@ -54,33 +54,39 @@ class StaffMiddleware
      */
     private function isStaffMember($user): bool
     {
+        $staffRoles = ['staff', 'nurse', 'receptionist', 'medical_assistant', 'doctor', 'pharmacist', 'technician'];
+
         // Option 1: If you have a role column
-        if (isset($user->role)) {
-            return in_array($user->role, ['staff', 'nurse', 'receptionist', 'medical_assistant', 'doctor']);
+        if (isset($user->role) && $user->role !== null && $user->role !== '') {
+            return in_array($user->role, $staffRoles);
         }
 
-        // Option 2: If you have a staff-specific table or relationship
+        // Option 2: Check roles relationship (e.g. user_roles pivot)
+        if (method_exists($user, 'roles') && $user->roles->isNotEmpty()) {
+            $roleNames = $user->roles->pluck('name')->map(fn ($n) => strtolower($n))->toArray();
+            return count(array_intersect($roleNames, $staffRoles)) > 0;
+        }
+
+        // Option 3: If you have a staff-specific table or relationship
         if (method_exists($user, 'isStaff')) {
             return $user->isStaff();
         }
 
-        // Option 3: If you have a is_staff boolean column
+        // Option 4: If you have a is_staff boolean column
         if (isset($user->is_staff)) {
             return $user->is_staff;
         }
 
-        // Option 4: Check based on user type or permissions
+        // Option 5: Check based on user type or permissions
         if (isset($user->user_type)) {
             return $user->user_type === 'staff';
         }
 
-        // Option 5: Check if user is not admin (fallback)
-        // This assumes all non-admin authenticated users are staff
+        // Option 6: Check if user is not admin (fallback)
         if (isset($user->is_admin)) {
             return !$user->is_admin;
         }
 
-        // Default: Allow access if authenticated (you may want to adjust this)
         return true;
     }
 

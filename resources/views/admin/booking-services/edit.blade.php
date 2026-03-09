@@ -77,6 +77,12 @@
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                             <small class="text-muted">Leave empty for "Price on request"</small>
+                                            <div class="form-check mt-2">
+                                                <input class="form-check-input" type="checkbox" name="propagate_price_to_doctors" id="propagate_price_to_doctors" value="1">
+                                                <label class="form-check-label" for="propagate_price_to_doctors">
+                                                    Also update doctor-specific prices that match the current default
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

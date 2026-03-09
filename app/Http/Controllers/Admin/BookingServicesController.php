@@ -129,14 +129,28 @@ class BookingServicesController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
+        $oldDefaultPrice = $bookingService->default_price;
+        $newDefaultPrice = $request->default_price;
+
         $bookingService->update([
             'name' => $request->name,
             'description' => $request->description,
             'default_duration_minutes' => $request->default_duration_minutes,
-            'default_price' => $request->default_price,
+            'default_price' => $newDefaultPrice,
             'tags' => $request->tags ?? [],
             'is_active' => $request->has('is_active') ? true : false,
         ]);
+
+        // Optionally propagate new default to doctor overrides that matched the old default
+        if ($request->boolean('propagate_price_to_doctors') && $oldDefaultPrice != $newDefaultPrice) {
+            $updated = DoctorServicePrice::where('service_id', $bookingService->id)
+                ->where('custom_price', $oldDefaultPrice)
+                ->update(['custom_price' => $newDefaultPrice]);
+            if ($updated > 0) {
+                return redirect()->route('admin.booking-services.index')
+                    ->with('success', "Booking service updated. Default price and {$updated} doctor-specific price(s) updated.");
+            }
+        }
 
         return redirect()->route('admin.booking-services.index')
             ->with('success', 'Booking service updated successfully.');

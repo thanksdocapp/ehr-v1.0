@@ -28,9 +28,10 @@
 
     <div class="summary-card">
         <h4>{{ $service->name }}</h4>
-        <p>{{ $service->default_duration_minutes ?? 60 }} minutes •
-        @if($service->default_price)
-        £{{ number_format($service->default_price, 2) }}
+        <p>{{ $service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 60 }} minutes •
+        @php $price = $service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0; @endphp
+        @if($price > 0)
+        £{{ number_format($price, 2) }}
         @else
         Price on request
         @endif
