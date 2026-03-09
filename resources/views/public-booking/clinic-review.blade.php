@@ -49,7 +49,6 @@
             <div class="review-row"><span class="review-label">Name</span><span class="review-value">{{ ($patient_data['first_name'] ?? '') . ' ' . ($patient_data['last_name'] ?? '') }}</span></div>
             <div class="review-row"><span class="review-label">Email</span><span class="review-value">{{ $patient_data['email'] ?? '' }}</span></div>
             <div class="review-row"><span class="review-label">Phone</span><span class="review-value">{{ $patient_data['phone'] ?? '' }}</span></div>
-            <div class="review-row"><span class="review-label">Service Type</span><span class="review-value">{{ ucfirst(str_replace('_', ' ', $patient_data['consultation_type'] ?? 'in_person')) }}</span></div>
         </div>
 
         <div class="text-center mt-4">
