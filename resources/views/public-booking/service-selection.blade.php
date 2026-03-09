@@ -98,7 +98,7 @@
                     <div class="summary-card-compact">
                         <div class="summary-description-compact" id="service-description"></div>
                         <div class="summary-row-compact">
-                            <span class="summary-label-compact">Type:</span>
+                            <span class="summary-label-compact">Consultation Type:</span>
                             <span class="summary-value-compact" id="service-consultation-type">-</span>
                         </div>
                         <div class="summary-row-compact">
@@ -499,8 +499,12 @@
                 
                 if (data.services && data.services.length > 0) {
                     data.services.forEach(service => {
-                        // Skip if this is the pre-selected service (already added)
+                        // If pre-selected service is in API response, update its consultation type from API (for correct doctor)
                         if (savedPreselectedOption && service.id == savedPreselectedOption.value) {
+                            const opt = serviceSelect.querySelector(`option[value="${service.id}"]`);
+                            if (opt) {
+                                opt.dataset.consultationType = service.consultation_type || 'in_person';
+                            }
                             return;
                         }
                         
