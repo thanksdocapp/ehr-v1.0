@@ -142,7 +142,7 @@
                 </a>
                 @foreach($pendingPastAppointments->take(3) as $pa)
                     <a href="{{ route('staff.appointments.show', $pa->id) }}" class="btn btn-outline-warning btn-sm">
-                        {{ $pa->appointment_number }}
+                        {{ $pa->patient?->full_name ?? 'Unknown' }}
                     </a>
                 @endforeach
             </div>
