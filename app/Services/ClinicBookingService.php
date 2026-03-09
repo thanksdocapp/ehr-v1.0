@@ -12,6 +12,7 @@ use App\Models\Appointment;
 use App\Models\BookingService;
 use App\Services\GuestPatientService;
 use App\Services\HospitalEmailNotificationService;
+use App\Services\WherebyService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -19,11 +20,13 @@ class ClinicBookingService
 {
     protected $guestPatientService;
     protected $emailService;
+    protected $wherebyService;
 
-    public function __construct(GuestPatientService $guestPatientService, HospitalEmailNotificationService $emailService)
+    public function __construct(GuestPatientService $guestPatientService, HospitalEmailNotificationService $emailService, WherebyService $wherebyService)
     {
         $this->guestPatientService = $guestPatientService;
         $this->emailService = $emailService;
+        $this->wherebyService = $wherebyService;
     }
 
     /**
@@ -257,6 +260,9 @@ class ClinicBookingService
 
             $fee = $service ? $service->getPriceForDoctor($doctor->id) : 0;
 
+            $isOnline = ($request->consultation_type ?? 'in_person') === 'online';
+            $useWhereby = $isOnline && $this->wherebyService->isEnabled();
+
             $appointment = Appointment::create([
                 'appointment_number' => Appointment::generateAppointmentNumber(),
                 'patient_id' => $patient->id,
@@ -268,11 +274,30 @@ class ClinicBookingService
                 'type' => 'consultation',
                 'status' => 'pending',
                 'fee' => $fee,
-                'is_online' => ($request->consultation_type ?? 'in_person') === 'online',
+                'is_online' => $isOnline,
                 'consultation_type' => $request->consultation_type ?? 'in_person',
                 'notes' => $request->notes,
                 'created_from' => 'Clinic Booking (Doctor Accepted)',
+                // Set meeting_platform so Observer skips email until we have the meeting link
+                'meeting_platform' => $useWhereby ? 'whereby' : null,
             ]);
+
+            // Create Whereby meeting for online consultations so video link is in confirmation email
+            if ($useWhereby) {
+                try {
+                    $this->wherebyService->createMeetingForAppointment($appointment);
+                    $appointment->refresh();
+                    Log::info('Whereby meeting created for clinic booking', [
+                        'appointment_id' => $appointment->id,
+                        'meeting_link' => $appointment->meeting_link,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to create Whereby meeting for clinic booking', [
+                        'appointment_id' => $appointment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             $request->update([
                 'status' => 'accepted',
@@ -282,6 +307,17 @@ class ClinicBookingService
             ]);
 
             $this->emailService->sendAppointmentConfirmation($appointment);
+
+            if ($doctor->user_id || $doctor->email) {
+                try {
+                    $this->emailService->notifyDoctorNewAppointment($appointment, $doctor);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send doctor notification for clinic booking', [
+                        'appointment_id' => $appointment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             Log::info('Clinic booking accepted', [
                 'request_id' => $request->id,
