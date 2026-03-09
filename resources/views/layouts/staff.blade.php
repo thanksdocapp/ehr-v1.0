@@ -433,6 +433,20 @@
             padding: 2rem;
         }
 
+        /* Pending Appointments Bar - sticky below header */
+        .pending-appointments-bar {
+            position: sticky;
+            top: 0;
+            z-index: 998;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-bottom: 2px solid #d97706;
+            padding: 0.75rem 2rem;
+            box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2);
+        }
+        .pending-appointments-bar i {
+            color: #d97706;
+        }
+
         /* Cards */
         .card {
             background: white;
@@ -2300,6 +2314,29 @@
                 </ul>
             </div>
         </div>
+
+        <!-- Pending Appointments Bar (fixed, shown on all pages until resolved) -->
+        @if((isset($layoutPendingPastCount) && $layoutPendingPastCount > 0) || (isset($layoutPendingUpcomingCount) && $layoutPendingUpcomingCount > 0))
+        <div class="pending-appointments-bar">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-exclamation-triangle fa-lg"></i>
+                    <span>
+                        @if($layoutPendingPastCount > 0 && $layoutPendingUpcomingCount > 0)
+                            {{ $layoutPendingPastCount }} overdue and {{ $layoutPendingUpcomingCount }} pending appointment(s) need your action.
+                        @elseif($layoutPendingPastCount > 0)
+                            {{ $layoutPendingPastCount }} pending appointment(s) have passed. Please confirm, complete, or cancel.
+                        @else
+                            {{ $layoutPendingUpcomingCount }} pending appointment(s) awaiting confirmation.
+                        @endif
+                    </span>
+                </div>
+                <a href="{{ route('staff.appointments.index', ['status' => 'pending']) }}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-check-circle me-1"></i>View & take action
+                </a>
+            </div>
+        </div>
+        @endif
 
         <!-- Content -->
         <div class="content-wrapper">

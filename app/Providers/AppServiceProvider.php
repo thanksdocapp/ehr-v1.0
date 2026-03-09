@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
 use App\Models\User;
 use App\Observers\UserObserver;
+use App\View\Composers\PendingAppointmentsComposer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -73,5 +75,8 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('embed', request()->boolean('embed'));
             }
         });
+
+        // Pending appointments for staff/doctor layouts (fixed bar)
+        View::composer(['layouts.doctor', 'layouts.staff'], PendingAppointmentsComposer::class);
     }
 }
