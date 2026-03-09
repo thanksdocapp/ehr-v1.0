@@ -74,9 +74,12 @@ class HospitalEmailNotificationService
 
         // Build online consultation section if applicable
         $onlineConsultationSection = '';
+        $notesWithVideoLink = $appointment->notes ?? 'Please arrive 15 minutes early.';
         if ($appointment->is_online && $appointment->meeting_link) {
             $platformName = $appointment->meeting_platform_name ?? 'Video Call';
             $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nParticipant link: {$appointment->meeting_link}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
+            // Also append to notes so link appears even if template lacks {{online_consultation_section}}
+            $notesWithVideoLink = trim($notesWithVideoLink) . "\n\n---\nONLINE VIDEO CONSULTATION\nJoin your video call here: " . $appointment->meeting_link . "\nPlease join 5 minutes before your scheduled time.";
         }
 
         $variables = [
@@ -96,7 +99,7 @@ class HospitalEmailNotificationService
             'hospital_address' => config('hospital.address', ''),
             'hospital_phone' => config('hospital.phone', ''),
             'appointment_id' => $appointment->id,
-            'notes' => $appointment->notes ?? 'Please arrive 15 minutes early.',
+            'notes' => $notesWithVideoLink,
             'is_online' => $appointment->is_online ?? false,
             'meeting_link' => $appointment->meeting_link ?? null,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
