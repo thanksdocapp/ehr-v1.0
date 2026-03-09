@@ -162,7 +162,7 @@
     @endif
 
     <!-- Modern Filter Panel -->
-    <div class="modern-card mb-4" id="filterPanel" style="display: {{ request()->hasAny(['status', 'type', 'is_online', 'consultation_type', 'date_from', 'date_to', 'doctor_id', 'department_id', 'date_range']) ? 'block' : 'none' }};">
+    <div class="modern-card mb-4" id="filterPanel" style="display: none;">
         <div class="modern-card-header">
             <h5 class="modern-card-title mb-0">
                 <i class="fas fa-filter"></i>Advanced Filters

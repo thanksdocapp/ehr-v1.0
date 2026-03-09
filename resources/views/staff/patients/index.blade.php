@@ -185,7 +185,7 @@
     @endif
 
     <!-- Filter Sidebar (Collapsible) -->
-    <div class="doctor-card mb-4" id="filterPanel" style="display: {{ request()->hasAny(['first_name', 'last_name', 'gender', 'age_min', 'age_max', 'status', 'has_alert', 'department_id', 'assigned_doctor_id']) ? 'block' : 'none' }};">
+    <div class="doctor-card mb-4" id="filterPanel" style="display: none;">
         <div class="doctor-card-header">
             <h6 class="doctor-card-title mb-0">
                 <i class="fas fa-filter me-2"></i>Advanced Filters

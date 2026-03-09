@@ -248,7 +248,7 @@
     @endif
 
     <!-- Filter Sidebar (Collapsible) -->
-    <div class="doctor-card mb-4" id="filterPanel" style="display: {{ request()->hasAny(['status', 'appointment_type', 'is_online', 'date_from', 'date_to', 'doctor_id', 'department_id', 'date_range']) ? 'block' : 'none' }};">
+    <div class="doctor-card mb-4" id="filterPanel" style="display: none;">
         <div class="doctor-card-header">
             <h6 class="doctor-card-title mb-0">
                 <i class="fas fa-filter me-2"></i>Advanced Filters

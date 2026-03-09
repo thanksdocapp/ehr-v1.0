@@ -161,7 +161,7 @@
     @endif
 
     <!-- Modern Filter Panel -->
-    <div class="modern-card mb-4" id="filterPanel" style="display: {{ request()->hasAny(['first_name', 'last_name', 'gender', 'age_min', 'age_max', 'status', 'has_alert', 'department_id', 'assigned_doctor_id']) ? 'block' : 'none' }};">
+    <div class="modern-card mb-4" id="filterPanel" style="display: none;">
         <div class="modern-card-header">
             <h5 class="modern-card-title">
                 <i class="fas fa-filter"></i>Advanced Filters
