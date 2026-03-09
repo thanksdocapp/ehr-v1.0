@@ -2121,6 +2121,10 @@
                             $route = route('staff.appointments.index');
                             $isActive = request()->routeIs('staff.appointments.*');
                             break;
+                        case 'clinic-booking-requests':
+                            $route = route('staff.clinic-booking-requests.index');
+                            $isActive = request()->routeIs('staff.clinic-booking-requests.*');
+                            break;
                         case 'medical-records':
                             $route = route('staff.medical-records.index');
                             $isActive = request()->routeIs('staff.medical-records.*');

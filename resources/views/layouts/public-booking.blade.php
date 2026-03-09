@@ -2,6 +2,7 @@
 @php $embed = $embed ?? request()->boolean('embed') || session('embed', false); @endphp
 <html lang="en">
 <head>
+    @include('partials.gtm-head')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" id="booking-viewport">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -535,6 +536,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body class="{{ $embed ? 'embed-mode' : '' }}">
+    @include('partials.gtm-body')
     @if($embed)
     <script>
     (function() {

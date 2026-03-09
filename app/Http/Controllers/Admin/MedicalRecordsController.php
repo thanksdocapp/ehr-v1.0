@@ -1173,8 +1173,22 @@ class MedicalRecordsController extends Controller
      */
     private function handleFileUploads(Request $request, MedicalRecord $medicalRecord, $user): void
     {
-        // Check if files are uploaded
-        if (!$request->hasFile('attachments')) {
+        // Check if files are uploaded - use both hasFile and file() for robustness across browsers
+        $files = $request->file('attachments');
+        if (empty($files) && !$request->hasFile('attachments')) {
+            return;
+        }
+        if (empty($files)) {
+            $files = [];
+        }
+        if (!is_array($files)) {
+            $files = $files ? [$files] : [];
+        }
+        // Count valid files - we need at least one to proceed
+        $validCount = count(array_filter($files, function ($file) {
+            return $file && $file->isValid();
+        }));
+        if ($validCount === 0) {
             return;
         }
 
@@ -1200,25 +1214,19 @@ class MedicalRecordsController extends Controller
             throw new \Exception('Patient not found for this medical record. Cannot upload files.');
         }
 
-        $files = $request->file('attachments');
         $categories = $request->input('attachments_category', []);
         $descriptions = $request->input('attachments_description', []);
 
         // Check total number of files (including existing)
         $existingCount = $medicalRecord->attachments()->count();
-        $newCount = is_array($files) ? count($files) : 1;
+        $newCount = $validCount;
         
         if ($existingCount + $newCount > 10) {
             throw new \Exception('Maximum 10 files allowed per medical record. Current: ' . $existingCount . ', Attempting to add: ' . $newCount);
         }
 
-        // Ensure files is an array
-        if (!is_array($files)) {
-            $files = [$files];
-        }
-
         foreach ($files as $index => $file) {
-            if (!$file->isValid()) {
+            if (!$file || !$file->isValid()) {
                 continue;
             }
 

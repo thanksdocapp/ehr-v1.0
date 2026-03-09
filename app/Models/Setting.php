@@ -29,14 +29,14 @@ class Setting extends Model
     public static function get($key, $default = null)
     {
         $cacheKey = 'setting_' . $key;
-        
+
         return Cache::remember($cacheKey, 60 * 60, function () use ($key, $default) {
             $setting = self::where('key', $key)->first();
-            
+
             if (!$setting) {
                 return $default;
             }
-            
+
             return self::castValue($setting->value, $setting->type);
         });
     }
@@ -57,10 +57,9 @@ class Setting extends Model
             ]
         );
 
-        // Clear cache
         Cache::forget('setting_' . $key);
         Cache::forget('settings_group_' . $group);
-        
+
         return $setting;
     }
 
@@ -70,10 +69,10 @@ class Setting extends Model
     public static function getGroup($group)
     {
         $cacheKey = 'settings_group_' . $group;
-        
+
         return Cache::remember($cacheKey, 60 * 60, function () use ($group) {
             $settings = self::where('group', $group)->get();
-            
+
             return $settings->mapWithKeys(function ($setting) {
                 return [$setting->key => self::castValue($setting->value, $setting->type)];
             });
@@ -109,12 +108,11 @@ class Setting extends Model
     public static function clearCache()
     {
         $groups = ['general', 'email', 'sms', 'security', 'maintenance', 'backup', 'appearance', 'alerts', 'integrations'];
-        
+
         foreach ($groups as $group) {
             Cache::forget('settings_group_' . $group);
         }
-        
-        // Clear individual setting caches
+
         $settings = self::all();
         foreach ($settings as $setting) {
             Cache::forget('setting_' . $setting->key);

@@ -246,6 +246,10 @@ class SeoController extends Controller
             'og_image' => 'nullable|url',
             'twitter_card' => 'nullable|string',
             'twitter_site' => 'nullable|string',
+            'google_analytics_id' => 'nullable|string|max:50',
+            'gtm_container_id' => 'nullable|string|max:20|regex:/^GTM-[A-Z0-9]+$/',
+            'google_search_console_id' => 'nullable|string',
+            'facebook_pixel_id' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {

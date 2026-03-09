@@ -124,7 +124,7 @@ class FrontendTemplate extends Model
     public static function getCurrent()
     {
         $currentTemplateSlug = SiteSetting::get('current_frontend_template');
-        
+
         if ($currentTemplateSlug) {
             $template = static::where('slug', $currentTemplateSlug)->where('is_active', true)->first();
             if ($template) {
@@ -142,13 +142,10 @@ class FrontendTemplate extends Model
 
     public function setAsDefault()
     {
-        // Remove default from all other templates
         static::where('is_default', true)->update(['is_default' => false]);
-        
-        // Set this template as default
+
         $this->update(['is_default' => true]);
-        
-        // Update site setting
+
         SiteSetting::set('current_frontend_template', $this->slug);
     }
 

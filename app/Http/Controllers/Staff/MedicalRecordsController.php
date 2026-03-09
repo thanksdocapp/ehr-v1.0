@@ -1276,24 +1276,23 @@ class MedicalRecordsController extends Controller
         ]);
 
         // Filter out empty file inputs (when no file is selected)
+        // Preserve original indices for category/description lookup
         $originalCount = is_array($files) ? count($files) : ($files ? 1 : 0);
         $invalidFiles = [];
+        $validFilesWithIndices = [];
         if (is_array($files)) {
-            $validFiles = [];
-            foreach ($files as $file) {
+            foreach ($files as $origIndex => $file) {
                 if ($file && $file->isValid()) {
-                    $validFiles[] = $file;
+                    $validFilesWithIndices[] = ['file' => $file, 'origIndex' => $origIndex];
                 } else {
                     $invalidFiles[] = $file;
                 }
             }
-            $files = $validFiles;
         } else {
             if ($files && $files->isValid()) {
-                $files = [$files];
+                $validFilesWithIndices[] = ['file' => $files, 'origIndex' => 0];
             } else {
                 $invalidFiles = $files ? [$files] : [];
-                $files = [];
             }
         }
 
@@ -1306,7 +1305,7 @@ class MedicalRecordsController extends Controller
         }
 
         // If no valid files, throw exception instead of returning silently
-        if (empty($files)) {
+        if (empty($validFilesWithIndices)) {
             \Log::warning('No valid files after filtering', [
                 'medical_record_id' => $medicalRecord->id,
                 'original_files_count' => $originalCount,
@@ -1324,23 +1323,20 @@ class MedicalRecordsController extends Controller
         
         \Log::info('Processing file uploads', [
             'medical_record_id' => $medicalRecord->id,
-            'valid_files_count' => count($files)
+            'valid_files_count' => count($validFilesWithIndices)
         ]);
 
         // Check total number of files (including existing)
         $existingCount = $medicalRecord->attachments()->count();
-        $newCount = count($files);
+        $newCount = count($validFilesWithIndices);
         
         if ($existingCount + $newCount > 10) {
             throw new \Exception('Maximum 10 files allowed per medical record. Current: ' . $existingCount . ', Attempting to add: ' . $newCount);
         }
 
-        // Ensure files is an array (should already be at this point)
-        if (!is_array($files)) {
-            $files = [$files];
-        }
-
-        foreach ($files as $index => $file) {
+        foreach ($validFilesWithIndices as $item) {
+            $file = $item['file'];
+            $index = $item['origIndex'];
             if (!$file || !$file->isValid()) {
                 if ($rejectionReasons !== null) {
                     $filename = $file ? $file->getClientOriginalName() : 'unknown';

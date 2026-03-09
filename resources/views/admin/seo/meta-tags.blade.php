@@ -199,6 +199,19 @@
                         <small class="opacity-75">Tracking codes for analytics and marketing</small>
                     </div>
                     <div class="form-section-body">
+                        <div class="form-group">
+                            <label for="gtm_container_id" class="form-label">
+                                <i class="fas fa-tag me-1"></i>Google Tag Manager Container ID
+                            </label>
+                            <input type="text" class="form-control @error('gtm_container_id') is-invalid @enderror" 
+                                   id="gtm_container_id" name="gtm_container_id" 
+                                   value="{{ old('gtm_container_id', $settings->gtm_container_id ?? '') }}" 
+                                   placeholder="GTM-XXXXXXX">
+                            <div class="form-help">Enables conversion tracking for booking success. Used for Google Ads, multi-agency attribution (UTM params), and booking_booked event.</div>
+                            @error('gtm_container_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
@@ -209,7 +222,7 @@
                                            id="google_analytics_id" name="google_analytics_id" 
                                            value="{{ old('google_analytics_id', $settings->google_analytics_id ?? '') }}" 
                                            placeholder="G-XXXXXXXXXX">
-                                    <div class="form-help">Your Google Analytics tracking ID</div>
+                                    <div class="form-help">Your Google Analytics tracking ID (can be configured in GTM)</div>
                                     @error('google_analytics_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

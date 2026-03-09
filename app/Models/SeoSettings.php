@@ -24,6 +24,7 @@ class SeoSettings extends Model
         'twitter_card',
         'twitter_site',
         'google_analytics_id',
+        'gtm_container_id',
         'google_search_console_id',
         'facebook_pixel_id',
         'robots_content',

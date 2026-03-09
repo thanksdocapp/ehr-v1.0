@@ -52,10 +52,18 @@ class AppServiceProvider extends ServiceProvider
                 } else {
                     $view->with('theme_settings', []);
                 }
+                // SEO/tracking settings (GTM, GA, etc.)
+                if (\Schema::hasTable('seo_settings')) {
+                    $seo = \App\Models\SeoSettings::getInstance();
+                    $view->with('seo_settings', $seo);
+                } else {
+                    $view->with('seo_settings', null);
+                }
             } catch (\Exception $e) {
                 // If database connection fails or tables don't exist, provide empty arrays
                 $view->with('site_settings', []);
                 $view->with('theme_settings', []);
+                $view->with('seo_settings', null);
             }
         });
 

@@ -9,17 +9,25 @@ use App\Models\BookingService;
 use App\Models\Setting;
 use App\Services\SlotAvailabilityService;
 use App\Services\PublicBookingService;
+use App\Services\ClinicBookingService;
 use Illuminate\Support\Facades\Validator;
 
 class PublicBookingController extends Controller
 {
     protected $slotAvailabilityService;
     protected $bookingService;
+    protected $clinicBookingService;
 
-    public function __construct(SlotAvailabilityService $slotAvailabilityService, PublicBookingService $bookingService)
+    public function __construct(SlotAvailabilityService $slotAvailabilityService, PublicBookingService $bookingService, ClinicBookingService $clinicBookingService)
     {
         $this->slotAvailabilityService = $slotAvailabilityService;
         $this->bookingService = $bookingService;
+        $this->clinicBookingService = $clinicBookingService;
+    }
+
+    private function isClinicMode(): bool
+    {
+        return Setting::get('public_booking_mode', 'clinic') === 'clinic';
     }
 
     /**
@@ -52,22 +60,231 @@ class PublicBookingController extends Controller
 
     /**
      * Step 1: Access via clinic link - /book/clinic/{clinicSlug}
+     * In clinic mode: patient books into clinic, doctors accept. No doctor selection.
      */
     public function showClinicBooking($slug)
     {
         $this->checkBookingEnabled();
 
         $department = Department::where('slug', $slug)->active()->firstOrFail();
-        
-        // Get active doctors for this department
-        $doctors = Doctor::byDepartment($department->id)
-            ->active()
-            ->get();
 
+        if ($this->isClinicMode()) {
+            $services = $this->getClinicServices($department->id);
+            return view('public-booking.clinic-booking', [
+                'department' => $department,
+                'services' => $services,
+                'step' => 1
+            ]);
+        }
+
+        $doctors = Doctor::byDepartment($department->id)->active()->get();
         return view('public-booking.service-selection', [
             'department' => $department,
             'doctors' => $doctors,
             'step' => 1
+        ]);
+    }
+
+    /**
+     * Get services offered by clinic (union of services from all doctors in department).
+     */
+    private function getClinicServices(int $departmentId): array
+    {
+        $doctors = Doctor::byDepartment($departmentId)->active()->get();
+        $servicesMap = [];
+
+        foreach ($doctors as $doctor) {
+            $doctorServices = BookingService::where('created_by', $doctor->user_id)
+                ->where('is_active', true)
+                ->get();
+            foreach ($doctorServices as $svc) {
+                $price = $svc->getPriceForDoctor($doctor->id) ?? $svc->default_price ?? 0;
+                $duration = $svc->getDurationForDoctor($doctor->id) ?? $svc->default_duration_minutes ?? 60;
+                if (!isset($servicesMap[$svc->id])) {
+                    $servicesMap[$svc->id] = ['id' => $svc->id, 'name' => $svc->name, 'price' => $price, 'duration' => $duration];
+                } else {
+                    $servicesMap[$svc->id]['price'] = min($servicesMap[$svc->id]['price'], $price);
+                }
+            }
+        }
+
+        return array_values($servicesMap);
+    }
+
+    /**
+     * Clinic flow: patient details (no doctor).
+     */
+    public function clinicPatientDetails(Request $request)
+    {
+        $this->checkBookingEnabled();
+
+        $validator = Validator::make($request->all(), [
+            'department_id' => 'required|exists:departments,id',
+            'service_id' => 'required|exists:booking_services,id',
+            'appointment_date' => 'required|date|after_or_equal:today',
+            'appointment_time' => 'required|date_format:H:i',
+        ]);
+
+        if ($validator->fails()) {
+            $dept = Department::find($request->department_id);
+            if ($dept) {
+                return redirect()->route('public.booking.clinic', ['slug' => $dept->slug])
+                    ->withErrors($validator)->withInput();
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $department = Department::findOrFail($request->department_id);
+        $service = BookingService::findOrFail($request->service_id);
+
+        $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
+            $department->id,
+            $request->appointment_date,
+            $service->id
+        );
+
+        $selectedSlot = collect($slots)->firstWhere('start', $request->appointment_time);
+        if (!$selectedSlot) {
+            return redirect()->back()->with('error', 'Selected time slot is no longer available.');
+        }
+
+        return view('public-booking.clinic-patient-details', [
+            'department' => $department,
+            'service' => $service,
+            'appointment_date' => $request->appointment_date,
+            'appointment_time' => $request->appointment_time,
+            'consultation_type' => $request->consultation_type ?? 'in_person',
+            'step' => 2
+        ]);
+    }
+
+    /**
+     * Clinic flow: review (no doctor).
+     */
+    public function clinicReview(Request $request)
+    {
+        $this->checkBookingEnabled();
+
+        $validator = Validator::make($request->all(), [
+            'department_id' => 'required|exists:departments,id',
+            'service_id' => 'required|exists:booking_services,id',
+            'appointment_date' => 'required|date|after_or_equal:today',
+            'appointment_time' => 'required|date_format:H:i',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'date_of_birth' => 'required|date|before:today',
+            'gender' => 'required|in:male,female,other',
+            'consultation_type' => 'nullable|in:in_person,online,telephone',
+            'consent' => 'required|accepted',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $department = Department::findOrFail($request->department_id);
+        $service = BookingService::findOrFail($request->service_id);
+
+        $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
+            $department->id,
+            $request->appointment_date,
+            $service->id
+        );
+        $selectedSlot = collect($slots)->firstWhere('start', $request->appointment_time);
+        if (!$selectedSlot) {
+            return redirect()->back()->with('error', 'Selected time slot is no longer available.')->withInput();
+        }
+
+        $doctors = Doctor::byDepartment($department->id)->active()->get();
+        $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
+        $price = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
+
+        $patientData = $request->only([
+            'first_name', 'last_name', 'email', 'phone', 'notes', 'consultation_type',
+            'gender', 'consent_share_with_gp', 'gp_name', 'gp_email', 'gp_phone', 'gp_address'
+        ]);
+        if ($request->has('date_of_birth') && $request->date_of_birth) {
+            $patientData['date_of_birth'] = parseDateInput($request->date_of_birth);
+        }
+        $patientData['department_id'] = $department->id;
+
+        return view('public-booking.clinic-review', [
+            'department' => $department,
+            'service' => $service,
+            'appointment_date' => $request->appointment_date,
+            'appointment_time' => $request->appointment_time,
+            'patient_data' => $patientData,
+            'price' => $price,
+            'step' => 3
+        ]);
+    }
+
+    /**
+     * Clinic flow: confirm and create clinic booking request.
+     */
+    public function clinicConfirm(Request $request)
+    {
+        $this->checkBookingEnabled();
+
+        $validator = Validator::make($request->all(), [
+            'department_id' => 'required|exists:departments,id',
+            'service_id' => 'required|exists:booking_services,id',
+            'appointment_date' => 'required|date|after_or_equal:today',
+            'appointment_time' => 'required|date_format:H:i',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'date_of_birth' => 'required|date|before:today',
+            'gender' => 'required|in:male,female,other',
+            'consultation_type' => 'nullable|in:in_person,online,telephone',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $department = Department::findOrFail($request->department_id);
+        $service = BookingService::findOrFail($request->service_id);
+
+        $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
+            $department->id,
+            $request->appointment_date,
+            $service->id
+        );
+        $selectedSlot = collect($slots)->firstWhere('start', $request->appointment_time);
+        if (!$selectedSlot) {
+            return redirect()->back()->with('error', 'Selected time slot is no longer available.')->withInput();
+        }
+
+        $data = $request->all();
+        if (isset($data['date_of_birth']) && $data['date_of_birth']) {
+            $data['date_of_birth'] = parseDateInput($data['date_of_birth']);
+        }
+
+        try {
+            $clinicRequest = $this->clinicBookingService->createFromClinicBooking($data);
+            return redirect()->route('public.booking.clinic-success', ['requestNumber' => $clinicRequest->request_number])
+                ->with('request', $clinicRequest);
+        } catch (\Exception $e) {
+            \Log::error('Clinic booking failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->with('error', 'Failed to submit booking request. Please try again.')->withInput();
+        }
+    }
+
+    /**
+     * Clinic flow: success page (request received, awaiting doctor).
+     */
+    public function clinicSuccess($requestNumber)
+    {
+        $request = \App\Models\ClinicBookingRequest::where('request_number', $requestNumber)->with(['department', 'service'])->firstOrFail();
+        $patientEmail = $request->patient_data['email'] ?? '';
+
+        return view('public-booking.clinic-success', [
+            'request' => $request,
+            'patientEmail' => $patientEmail
         ]);
     }
 
@@ -573,6 +790,34 @@ class PublicBookingController extends Controller
 
         return response()->json([
             'services' => $servicesData
+        ]);
+    }
+
+    /**
+     * API: Get available slots for a clinic (union of all doctors in department).
+     */
+    public function getClinicSlots(Request $request, $departmentId)
+    {
+        $validator = Validator::make($request->all(), [
+            'service_id' => 'nullable|exists:booking_services,id',
+            'date' => 'required|date|after_or_equal:today',
+            'duration' => 'nullable|integer|min:15|max:480',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 400);
+        }
+
+        $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
+            $departmentId,
+            $request->date,
+            $request->service_id,
+            $request->duration
+        );
+
+        return response()->json([
+            'slots' => $slots,
+            'date' => $request->date
         ]);
     }
 

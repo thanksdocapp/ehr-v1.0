@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\Department;
 use App\Models\BookingService;
 use App\Models\DoctorAvailabilityException;
 use Carbon\Carbon;
@@ -83,6 +84,72 @@ class SlotAvailabilityService
                 $currentTime->addMinutes(15);
             }
         }
+
+        return $slots;
+    }
+
+    /**
+     * Get available time slots for a clinic/department on a specific date.
+     * Returns union of slots when ANY doctor in the department is free.
+     * Excludes slots already taken by appointments or pending clinic booking requests.
+     *
+     * @param int $departmentId
+     * @param string $date (YYYY-MM-DD)
+     * @param int|null $serviceId
+     * @param int|null $durationMinutes
+     * @return array
+     */
+    public function getAvailableSlotsForDepartment($departmentId, $date, $serviceId = null, $durationMinutes = null)
+    {
+        $department = Department::findOrFail($departmentId);
+        $doctors = Doctor::byDepartment($departmentId)->active()->get();
+
+        if ($doctors->isEmpty()) {
+            return [];
+        }
+
+        // Get duration from service if provided
+        $duration = 30;
+        if (is_numeric($durationMinutes) && (int) $durationMinutes > 0) {
+            $duration = (int) $durationMinutes;
+        } elseif ($serviceId) {
+            $service = BookingService::find($serviceId);
+            if ($service) {
+                // Use first doctor's duration as default for display
+                $firstDoctor = $doctors->first();
+                $duration = $service->getDurationForDoctor($firstDoctor->id) ?? $service->default_duration_minutes ?? 30;
+            }
+        }
+
+        // Collect all slots from all doctors (union)
+        $allSlots = [];
+        foreach ($doctors as $doctor) {
+            if (!$serviceId || \App\Models\BookingService::find($serviceId)?->isAvailableForDoctor($doctor->id)) {
+                $doctorSlots = $this->getAvailableSlots($doctor->id, $date, $serviceId, $duration);
+                foreach ($doctorSlots as $slot) {
+                    $key = $slot['start'];
+                    if (!isset($allSlots[$key])) {
+                        $allSlots[$key] = $slot;
+                    }
+                }
+            }
+        }
+
+        // Exclude slots taken by pending clinic booking requests (same department, same date/time)
+        $pendingRequests = \App\Models\ClinicBookingRequest::where('department_id', $departmentId)
+            ->where('status', 'pending_acceptance')
+            ->whereDate('appointment_date', $date)
+            ->get();
+
+        foreach ($pendingRequests as $req) {
+            $reqTime = $req->appointment_time instanceof \DateTimeInterface
+                ? $req->appointment_time->format('H:i')
+                : substr((string) $req->appointment_time, 0, 5);
+            unset($allSlots[$reqTime]);
+        }
+
+        $slots = array_values($allSlots);
+        usort($slots, fn($a, $b) => strcmp($a['start'], $b['start']));
 
         return $slots;
     }

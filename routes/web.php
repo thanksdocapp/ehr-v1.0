@@ -48,13 +48,13 @@ Route::get('/', function () {
     if (!File::exists(storage_path('installed'))) {
         return redirect()->route('install.index');
     }
-    
+
     // Check if frontend is enabled
     $frontendEnabled = \App\Models\Setting::get('enable_frontend', '1');
     if ($frontendEnabled != '1') {
         return redirect()->route('login');
     }
-    
+
     // Homepage is now the patient booking page
     return app(AppointmentController::class)->create();
 })->middleware('booking.embed')->name('homepage');
@@ -119,6 +119,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/clinic/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showClinicBooking'])->name('clinic');
         Route::get('/service/{serviceId}/{doctorId}', [\App\Http\Controllers\PublicBookingController::class, 'showServiceBooking'])->name('service');
         Route::get('/success/{appointmentNumber}', [\App\Http\Controllers\PublicBookingController::class, 'success'])->name('success');
+        Route::get('/clinic-success/{requestNumber}', [\App\Http\Controllers\PublicBookingController::class, 'clinicSuccess'])->name('clinic-success');
         // GET routes for POST-only pages (prevent 404 when accessed directly)
         Route::get('/review', [\App\Http\Controllers\PublicBookingController::class, 'showReview'])->name('review.show');
         Route::get('/confirm', [\App\Http\Controllers\PublicBookingController::class, 'showConfirm'])->name('confirm.show');
@@ -126,6 +127,9 @@ Route::group(['middleware' => 'installed'], function () {
         // POST routes (specific paths - must come before parameterized GET route)
         Route::post('/select-datetime', [\App\Http\Controllers\PublicBookingController::class, 'selectDateTime'])->name('select-datetime');
         Route::post('/patient-details', [\App\Http\Controllers\PublicBookingController::class, 'patientDetails'])->name('patient-details');
+        Route::post('/clinic-patient-details', [\App\Http\Controllers\PublicBookingController::class, 'clinicPatientDetails'])->name('clinic-patient-details');
+        Route::post('/clinic-review', [\App\Http\Controllers\PublicBookingController::class, 'clinicReview'])->name('clinic-review');
+        Route::post('/clinic-confirm', [\App\Http\Controllers\PublicBookingController::class, 'clinicConfirm'])->name('clinic-confirm');
         Route::post('/review', [\App\Http\Controllers\PublicBookingController::class, 'review'])->name('review');
         Route::post('/confirm', [\App\Http\Controllers\PublicBookingController::class, 'confirm'])->name('confirm');
         
@@ -137,6 +141,7 @@ Route::group(['middleware' => 'installed'], function () {
     Route::prefix('api/public')->name('public.api.')->group(function () {
         Route::get('/doctors/{id}/services', [\App\Http\Controllers\PublicBookingController::class, 'getDoctorServices'])->name('doctor-services');
         Route::get('/doctors/{id}/slots', [\App\Http\Controllers\PublicBookingController::class, 'getAvailableSlots'])->name('available-slots');
+        Route::get('/clinics/{departmentId}/slots', [\App\Http\Controllers\PublicBookingController::class, 'getClinicSlots'])->name('clinic-slots');
     });
     
     // Patient Management API Routes
@@ -319,6 +324,10 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/appointments/{id}/cancel', [\App\Http\Controllers\Staff\AppointmentsController::class, 'cancel'])->name('appointments.cancel');
         Route::post('/appointments/{id}/reschedule', [\App\Http\Controllers\Staff\AppointmentsController::class, 'reschedule'])->name('appointments.reschedule');
         Route::patch('/appointments/{id}/status', [\App\Http\Controllers\Staff\AppointmentsController::class, 'updateStatus'])->name('appointments.update-status');
+        
+        // Clinic Booking Requests (doctor accepts pending clinic bookings)
+        Route::get('/clinic-booking-requests', [\App\Http\Controllers\Staff\ClinicBookingRequestsController::class, 'index'])->name('clinic-booking-requests.index');
+        Route::post('/clinic-booking-requests/{clinicBookingRequest}/accept', [\App\Http\Controllers\Staff\ClinicBookingRequestsController::class, 'accept'])->name('clinic-booking-requests.accept');
         
         // AJAX Routes for Calendar
         Route::get('/api/appointments/calendar-data', [\App\Http\Controllers\Staff\AppointmentsController::class, 'getCalendarData'])->name('api.appointments.calendar-data');

@@ -56,6 +56,17 @@
         </div>
         @break
 
+    @case('clinic-booking-requests')
+        <div class="nav-item">
+            <a href="{{ route('staff.clinic-booking-requests.index') }}" 
+               class="nav-link {{ request()->routeIs('staff.clinic-booking-requests.*') ? 'active' : '' }} {{ $isForced2FASetup ? 'disabled' : '' }}"
+               @if($isForced2FASetup) onclick="event.preventDefault(); alert('Navigation is locked. Please complete 2FA setup first.'); return false;" style="opacity: 0.5; cursor: not-allowed; pointer-events: none;" @endif>
+                <i class="nav-icon fas fa-inbox"></i>
+                <span class="nav-text">{{ $label ?: 'Clinic Requests' }}</span>
+            </a>
+        </div>
+        @break
+
     @case('medical-records')
         <div class="nav-item">
             <a href="{{ route('staff.medical-records.index') }}" 

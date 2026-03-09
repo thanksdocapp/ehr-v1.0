@@ -154,11 +154,10 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-8">
-            <form id="createMedicalRecordForm" method="POST" action="{{ route('admin.medical-records.store') }}" enctype="multipart/form-data">
-                @csrf
-                
+    <form id="createMedicalRecordForm" method="POST" action="{{ route('admin.medical-records.store') }}" enctype="multipart/form-data">
+        @csrf
+        <div class="row">
+            <div class="col-lg-8">
                 <!-- Patient & Doctor Information Section -->
                 <div class="form-section">
                     <div class="form-section-header">
@@ -605,11 +604,10 @@
                         </a>
                     </div>
                 </div>
-            </form>
-        </div>
+            </div>
 
-        <!-- Helper Information -->
-        <div class="col-lg-4">
+            <!-- Helper Information -->
+            <div class="col-lg-4">
             <!-- Pre-consultation Verification Checklist -->
             <div class="info-card" style="border-left: 4px solid #ffc107;">
                 <h6><i class="fas fa-clipboard-check me-2"></i>Pre-consultation Verification Checklist</h6>
@@ -701,8 +699,9 @@
                     </a>
                 </div>
             </div>
+            </div>
         </div>
-    </div>
+    </form>
 </div>
 @endsection
 

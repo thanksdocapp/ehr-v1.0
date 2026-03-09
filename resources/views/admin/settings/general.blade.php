@@ -547,6 +547,17 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="public_booking_mode" class="form-label">
+                                <i class="fas fa-building me-1"></i>Booking Mode
+                            </label>
+                            <select class="form-select" id="public_booking_mode" name="public_booking_mode">
+                                <option value="clinic" {{ old('public_booking_mode', $settings['public_booking_mode'] ?? 'clinic') == 'clinic' ? 'selected' : '' }}>Clinic (patient books into clinic, doctors accept)</option>
+                                <option value="doctor" {{ old('public_booking_mode', $settings['public_booking_mode'] ?? 'clinic') == 'doctor' ? 'selected' : '' }}>Doctor (patient selects doctor)</option>
+                            </select>
+                            <div class="form-help">Clinic mode: patient books into clinic, doctors see and accept requests. Doctor mode: patient selects a specific doctor.</div>
+                        </div>
+
+                        <div class="form-group">
                             <label for="session_timeout" class="form-label">
                                 <i class="fas fa-clock me-1"></i>Session Timeout (minutes)
                             </label>

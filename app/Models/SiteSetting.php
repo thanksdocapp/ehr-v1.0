@@ -49,7 +49,7 @@ class SiteSetting extends BaseModel
     public static function set($key, $value, $label = null)
     {
         $label = $label ?: ucwords(str_replace(['_', '-'], ' ', $key));
-        
+
         return static::updateOrCreate(
             ['key' => $key],
             [

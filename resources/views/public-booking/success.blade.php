@@ -6,6 +6,31 @@
     'showBreadcrumbs' => false
 ])
 
+{{-- Conversion tracking for Google Ads / GTM - multi-agency attribution via UTM + doctor/department --}}
+<script>
+(function() {
+    window.dataLayer = window.dataLayer || [];
+    var utm = @json(session('booking_utm_params', []));
+    window.dataLayer.push({
+        event: 'booking_booked',
+        booking_value: {{ $appointment->fee ?? 0 }},
+        appointment_number: '{{ addslashes($appointment->appointment_number) }}',
+        doctor_id: {{ $appointment->doctor_id }},
+        doctor_slug: '{{ addslashes($appointment->doctor->slug ?? '') }}',
+        department_id: {{ $appointment->doctor->department_id ?? optional($appointment->doctor->primaryDepartment())->id ?? 'null' }},
+        service_name: '{{ addslashes($appointment->service->name ?? 'Consultation') }}',
+        utm_source: utm.utm_source || '',
+        utm_medium: utm.utm_medium || '',
+        utm_campaign: utm.utm_campaign || '',
+        utm_content: utm.utm_content || '',
+        utm_term: utm.utm_term || '',
+        gclid: utm.gclid || '',
+        fbclid: utm.fbclid || '',
+        msclkid: utm.msclkid || ''
+    });
+})();
+</script>
+
 <section class="py-5" style="background-color: #f8f9fa;">
     <div class="container">
         <div class="row justify-content-center">

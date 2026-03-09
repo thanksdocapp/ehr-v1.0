@@ -63,9 +63,8 @@ class ThemeSetting extends Model
 
     public static function getCurrent()
     {
-        // Get current theme from site settings or return default
         $currentThemeSlug = SiteSetting::get('current_theme');
-        
+
         if ($currentThemeSlug) {
             $theme = static::where('slug', $currentThemeSlug)->where('is_active', true)->first();
             if ($theme) {
@@ -83,13 +82,10 @@ class ThemeSetting extends Model
 
     public function setAsDefault()
     {
-        // Remove default from all other themes
         static::where('is_default', true)->update(['is_default' => false]);
-        
-        // Set this theme as default
+
         $this->update(['is_default' => true]);
-        
-        // Update site setting
+
         SiteSetting::set('current_theme', $this->slug);
     }
 

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    @include('partials.gtm-head')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $pageTitle ?? 'ThanksDoc EHR' }}</title>
@@ -176,6 +177,7 @@
     </style>
 </head>
 <body>
+    @include('partials.gtm-body')
     <!-- Topbar -->
     <div class="topbar bg-primary text-white py-2">
         <div class="container">

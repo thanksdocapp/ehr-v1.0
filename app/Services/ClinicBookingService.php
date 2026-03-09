@@ -1,0 +1,170 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\ClinicBookingRequest;
+use App\Models\Patient;
+use App\Models\Doctor;
+use App\Models\Appointment;
+use App\Models\BookingService;
+use App\Services\GuestPatientService;
+use App\Services\HospitalEmailNotificationService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class ClinicBookingService
+{
+    protected $guestPatientService;
+    protected $emailService;
+
+    public function __construct(GuestPatientService $guestPatientService, HospitalEmailNotificationService $emailService)
+    {
+        $this->guestPatientService = $guestPatientService;
+        $this->emailService = $emailService;
+    }
+
+    /**
+     * Create a clinic booking request (pending doctor acceptance).
+     */
+    public function createFromClinicBooking(array $data): ClinicBookingRequest
+    {
+        return DB::transaction(function () use ($data) {
+            $departmentId = $data['department_id'];
+            $service = BookingService::find($data['service_id'] ?? null);
+
+            // Use minimum price across doctors for display; actual fee set when doctor accepts
+            $fee = 0;
+            if ($service) {
+                $doctors = Doctor::byDepartment($departmentId)->active()->get();
+                $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
+                $fee = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
+            }
+
+            $patientData = [
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+                'date_of_birth' => $data['date_of_birth'] ?? null,
+                'gender' => $data['gender'] ?? null,
+                'address' => $data['address'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'consultation_type' => $data['consultation_type'] ?? 'in_person',
+                'consent_share_with_gp' => $data['consent_share_with_gp'] ?? false,
+                'gp_name' => $data['gp_name'] ?? null,
+                'gp_email' => $data['gp_email'] ?? null,
+                'gp_phone' => $data['gp_phone'] ?? null,
+                'gp_address' => $data['gp_address'] ?? null,
+            ];
+
+            $request = ClinicBookingRequest::create([
+                'request_number' => ClinicBookingRequest::generateRequestNumber(),
+                'department_id' => $departmentId,
+                'service_id' => $service?->id,
+                'appointment_date' => $data['appointment_date'],
+                'appointment_time' => $data['appointment_time'],
+                'consultation_type' => $data['consultation_type'] ?? 'in_person',
+                'fee' => $fee,
+                'notes' => $data['notes'] ?? null,
+                'patient_data' => $patientData,
+                'status' => 'pending_acceptance',
+                'created_from' => 'Public Clinic Booking',
+            ]);
+
+            $this->notifyDoctorsOfNewRequest($request);
+
+            return $request;
+        });
+    }
+
+    /**
+     * Doctor accepts a clinic booking request. Creates patient + appointment, marks request as accepted.
+     */
+    public function acceptRequest(ClinicBookingRequest $request, Doctor $doctor): Appointment
+    {
+        return DB::transaction(function () use ($request, $doctor) {
+            // Lock and verify still pending (use fresh lock)
+            $request = ClinicBookingRequest::where('id', $request->id)
+                ->where('status', 'pending_acceptance')
+                ->lockForUpdate()
+                ->firstOrFail();
+            if ($request->status !== 'pending_acceptance') {
+                throw new \RuntimeException('This booking has already been accepted by another doctor.');
+            }
+
+            $patientData = $request->patient_data;
+            $service = $request->service;
+
+            // Find or create patient
+            $patient = $this->guestPatientService->findOrCreateGuest([
+                'first_name' => $patientData['first_name'],
+                'last_name' => $patientData['last_name'],
+                'email' => $patientData['email'],
+                'phone' => $patientData['phone'],
+                'date_of_birth' => $patientData['date_of_birth'] ?? null,
+                'gender' => $patientData['gender'] ?? null,
+                'address' => $patientData['address'] ?? null,
+            ]);
+
+            $fee = $service ? $service->getPriceForDoctor($doctor->id) : 0;
+
+            $appointment = Appointment::create([
+                'appointment_number' => Appointment::generateAppointmentNumber(),
+                'patient_id' => $patient->id,
+                'doctor_id' => $doctor->id,
+                'department_id' => $request->department_id,
+                'service_id' => $request->service_id,
+                'appointment_date' => $request->appointment_date,
+                'appointment_time' => $request->appointment_time,
+                'type' => 'consultation',
+                'status' => 'pending',
+                'fee' => $fee,
+                'is_online' => ($request->consultation_type ?? 'in_person') === 'online',
+                'consultation_type' => $request->consultation_type ?? 'in_person',
+                'notes' => $request->notes,
+                'created_from' => 'Clinic Booking (Doctor Accepted)',
+            ]);
+
+            $request->update([
+                'status' => 'accepted',
+                'doctor_id' => $doctor->id,
+                'patient_id' => $patient->id,
+                'appointment_id' => $appointment->id,
+            ]);
+
+            $this->emailService->sendAppointmentConfirmation($appointment);
+
+            Log::info('Clinic booking accepted', [
+                'request_id' => $request->id,
+                'doctor_id' => $doctor->id,
+                'appointment_id' => $appointment->id,
+            ]);
+
+            return $appointment;
+        });
+    }
+
+    protected function notifyDoctorsOfNewRequest(ClinicBookingRequest $request): void
+    {
+        $request->load('department');
+        $deptName = $request->department?->name ?? 'the clinic';
+        $dateStr = $request->appointment_date->format('d/m/Y');
+        $timeStr = $request->appointment_time instanceof \DateTimeInterface
+            ? $request->appointment_time->format('H:i')
+            : substr((string) $request->appointment_time, 0, 5);
+
+        $doctors = Doctor::byDepartment($request->department_id)->active()->get();
+        foreach ($doctors as $doctor) {
+            if ($doctor->user_id) {
+                \App\Models\UserNotification::create([
+                    'user_id' => $doctor->user_id,
+                    'type' => 'clinic_booking_request',
+                    'title' => 'New clinic booking request',
+                    'message' => "A patient has requested an appointment at {$deptName} on {$dateStr} at {$timeStr}. Accept to add to your schedule.",
+                    'data' => ['clinic_booking_request_id' => $request->id],
+                    'read_at' => null,
+                ]);
+            }
+        }
+    }
+}

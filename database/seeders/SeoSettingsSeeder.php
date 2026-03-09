@@ -32,6 +32,7 @@ class SeoSettingsSeeder extends Seeder
             'twitter_card' => 'summary_large_image',
             'twitter_site' => '@NewWavesHospital',
             'google_analytics_id' => '',
+            'gtm_container_id' => '',
             'google_search_console_id' => '',
             'facebook_pixel_id' => '',
             'robots_content' => 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
