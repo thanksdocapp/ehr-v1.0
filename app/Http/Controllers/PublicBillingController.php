@@ -296,10 +296,13 @@ class PublicBillingController extends Controller
             $stripeGateway->initialize($credentials);
 
             // Build success and cancel URLs.
-            // Stripe requires ABSOLUTE URLs; build them off the CURRENT request host (not APP_URL).
+            // Stripe requires ABSOLUTE URLs. Use HTTPS when site is served over HTTPS (APP_URL or proxy).
             $clinic = $request->route('clinic');
             $service = $request->route('service');
-            $baseUrl = $request->getSchemeAndHttpHost();
+            $scheme = ($request->secure() || ($request->header('X-Forwarded-Proto') === 'https'))
+                ? 'https'
+                : (str_starts_with(config('app.url', ''), 'https://') ? 'https' : 'http');
+            $baseUrl = $scheme . '://' . $request->getHost();
             
             if ($clinic && $service) {
                 $successUrl = $baseUrl . route('public.service.success', [
