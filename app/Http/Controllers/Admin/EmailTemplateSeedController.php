@@ -58,7 +58,7 @@ class EmailTemplateSeedController extends Controller
             }
             
             $created = 0;
-            $updated = 0;
+            $skipped = 0;
             $errors = 0;
             $results = [];
             
@@ -67,9 +67,9 @@ class EmailTemplateSeedController extends Controller
                     $emailTemplate = EmailTemplate::where('name', $template['name'])->first();
                     
                     if ($emailTemplate) {
-                        $emailTemplate->update($template);
-                        $updated++;
-                        $results[] = "✓ Updated: {$template['name']}";
+                        // Skip existing templates - do not overwrite customizations
+                        $skipped++;
+                        $results[] = "○ Skipped (exists): {$template['name']}";
                     } else {
                         // Use raw SQL to avoid MySQL strict mode issues with soft deletes
                         $templateData = $template;
@@ -110,7 +110,7 @@ class EmailTemplateSeedController extends Controller
                 'message' => 'Email templates seeded successfully!',
                 'data' => [
                     'created' => $created,
-                    'updated' => $updated,
+                    'skipped' => $skipped,
                     'total_templates' => $totalCount,
                     'results' => $results
                 ]
