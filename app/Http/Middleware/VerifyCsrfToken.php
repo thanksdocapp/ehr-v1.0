@@ -13,5 +13,8 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'install/*',
+        'pay/*',           // Public payment success - gateways may POST on return
+        'payment/*',      // Payment callbacks/success
+        'patient/billing/*', // Patient payment success - gateways may POST on return
     ];
 }
