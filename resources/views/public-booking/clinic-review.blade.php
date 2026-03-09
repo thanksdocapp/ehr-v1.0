@@ -53,7 +53,7 @@
 
         <div class="text-center mt-4">
             <button type="button" onclick="window.history.back()" class="btn btn-outline-secondary btn-lg me-2"><i class="fas fa-arrow-left me-2"></i>Back</button>
-            <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-check me-2"></i>Submit Booking Request</button>
+            <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-credit-card me-2"></i>Proceed to Payment</button>
         </div>
     </form>
 
