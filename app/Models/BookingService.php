@@ -80,7 +80,11 @@ class BookingService extends Model
             ->where('is_active', true)
             ->first();
 
-        return $doctorPrice ? $doctorPrice->custom_duration_minutes : $this->default_duration_minutes;
+        // Use default_duration_minutes when doctor has no override or when custom_duration_minutes is null
+        if (!$doctorPrice) {
+            return $this->default_duration_minutes ?? 30;
+        }
+        return $doctorPrice->custom_duration_minutes ?? $this->default_duration_minutes ?? 30;
     }
 
     public function getConsultationTypeForDoctor($doctorId)

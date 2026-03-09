@@ -182,39 +182,34 @@ class DoctorServicesController extends Controller
         $request->validate([
             'default_price' => 'required|numeric|min:0',
             'description' => 'nullable|string|max:1000',
-            'custom_price' => 'nullable|numeric|min:0',
-            'custom_duration_minutes' => 'nullable|integer|min:1',
+            'custom_duration_minutes' => 'required|integer|min:5|max:480',
             'consultation_type' => 'required|in:in_person,online,telephone',
             'is_active' => 'boolean',
         ]);
 
         try {
             $newDefaultPrice = $request->default_price;
+            $duration = (int) $request->custom_duration_minutes;
 
-            // Update service (doctor owns this service - can edit default price)
+            // Update service (doctor owns this service - can edit default price and duration)
             $bookingService->update([
                 'default_price' => $newDefaultPrice,
+                'default_duration_minutes' => $duration,
                 'description' => $request->description,
             ]);
 
-            // Update or create doctor service override
-            $overrideData = [
-                'custom_duration_minutes' => $request->custom_duration_minutes,
-                'consultation_type' => $request->consultation_type ?? 'in_person',
-                'is_active' => $request->boolean('is_active', true),
-            ];
-
-            // Use custom_price if set, otherwise use the new default (so override stays in sync)
-            $overrideData['custom_price'] = $request->filled('custom_price')
-                ? $request->custom_price
-                : $newDefaultPrice;
-
+            // Update or create doctor service override (duration used by SlotAvailabilityService for scheduling)
             DoctorServicePrice::updateOrCreate(
                 [
                     'doctor_id' => $doctor->id,
                     'service_id' => $bookingService->id,
                 ],
-                $overrideData
+                [
+                    'custom_price' => $newDefaultPrice,
+                    'custom_duration_minutes' => $duration,
+                    'consultation_type' => $request->consultation_type ?? 'in_person',
+                    'is_active' => $request->boolean('is_active', true),
+                ]
             );
 
             return redirect()->route('staff.doctor-services.index')

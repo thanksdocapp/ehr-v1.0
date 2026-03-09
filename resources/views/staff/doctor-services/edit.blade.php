@@ -93,45 +93,23 @@
                             @enderror
                         </div>
 
-                        <h6 class="fw-semibold mb-3 mt-4">Your Custom Settings</h6>
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="custom_price" class="form-label">
-                                    Custom Price <span class="text-muted">(optional)</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text">£</span>
-                                    <input type="number"
-                                           class="form-control @error('custom_price') is-invalid @enderror"
-                                           id="custom_price"
-                                           name="custom_price"
-                                           value="{{ old('custom_price', $override->custom_price) }}"
-                                           step="0.01"
-                                           min="0"
-                                           placeholder="{{ number_format($bookingService->default_price ?? 0, 2) }}">
-                                </div>
-                                <small class="text-muted">Leave empty to use global default: £{{ number_format($bookingService->default_price ?? 0, 2) }}</small>
-                                @error('custom_price')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="col-md-6 mb-3">
                                 <label for="custom_duration_minutes" class="form-label">
-                                    Custom Duration <span class="text-muted">(optional)</span>
+                                    Duration <span class="text-danger">*</span>
                                 </label>
                                 <div class="input-group">
                                     <input type="number"
                                            class="form-control @error('custom_duration_minutes') is-invalid @enderror"
                                            id="custom_duration_minutes"
                                            name="custom_duration_minutes"
-                                           value="{{ old('custom_duration_minutes', $override->custom_duration_minutes) }}"
-                                           min="1"
-                                           placeholder="{{ $bookingService->default_duration_minutes ?? 60 }}">
+                                           value="{{ old('custom_duration_minutes', $override->custom_duration_minutes ?? $bookingService->default_duration_minutes) }}"
+                                           min="5"
+                                           max="480"
+                                           required>
                                     <span class="input-group-text">minutes</span>
                                 </div>
-                                <small class="text-muted">Leave empty to use global default: {{ $bookingService->default_duration_minutes ?? 60 }} minutes</small>
+                                <small class="text-muted">Used for scheduling slot length and availability</small>
                                 @error('custom_duration_minutes')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
