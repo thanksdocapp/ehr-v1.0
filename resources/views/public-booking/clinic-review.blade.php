@@ -6,7 +6,7 @@
 @section('content')
     <div class="booking-header">
         <h1>Review & Confirm</h1>
-        <p>Please review your booking request.</p>
+        <p>Please review your booking.</p>
     </div>
 
     @if($errors->any())
@@ -38,7 +38,16 @@
             <div class="review-card-header"><h3><i class="fas fa-calendar-check me-2"></i>Booking Summary</h3></div>
             <div class="review-row"><span class="review-label">Clinic</span><span class="review-value">{{ $department->name }}</span></div>
             <div class="review-row"><span class="review-label">Service</span><span class="review-value">{{ $service->name }}</span></div>
-            <div class="review-row"><span class="review-label">Service Type</span><span class="review-value">{{ ucfirst(str_replace('_', ' ', $patient_data['consultation_type'] ?? 'in_person')) }}</span></div>
+            <div class="review-row"><span class="review-label">Service Type</span><span class="review-value">
+                @php $ct = $patient_data['consultation_type'] ?? 'in_person'; $ct = in_array($ct, ['phone', 'telephone']) ? 'telephone' : $ct; @endphp
+                @if($ct === 'online')
+                    <i class="fas fa-video me-1"></i>Online (Video)
+                @elseif($ct === 'telephone')
+                    <i class="fas fa-phone me-1"></i>Telephone
+                @else
+                    <i class="fas fa-hospital me-1"></i>In Person
+                @endif
+            </span></div>
             <div class="review-row"><span class="review-label">Date</span><span class="review-value">{{ \Carbon\Carbon::parse($appointment_date)->format('l, j F Y') }}</span></div>
             <div class="review-row"><span class="review-label">Time</span><span class="review-value">{{ \Carbon\Carbon::parse($appointment_time)->format('g:i A') }}</span></div>
             <div class="review-row"><span class="review-label">Price</span><span class="review-price">£{{ number_format($price ?? 0, 2) }}</span></div>

@@ -94,7 +94,7 @@ class BookingService extends Model
             ->where('is_active', true)
             ->first();
 
-        return $doctorPrice ? $doctorPrice->consultation_type : 'in_person';
+        return $doctorPrice?->consultation_type ?? 'in_person';
     }
 
     public function isAvailableForDoctor($doctorId)

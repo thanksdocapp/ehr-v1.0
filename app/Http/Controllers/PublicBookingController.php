@@ -100,10 +100,14 @@ class PublicBookingController extends Controller
             foreach ($doctorServices as $svc) {
                 $price = $svc->getPriceForDoctor($doctor->id) ?? $svc->default_price ?? 0;
                 $duration = $svc->getDurationForDoctor($doctor->id) ?? $svc->default_duration_minutes ?? 60;
+                $consultationType = $svc->getConsultationTypeForDoctor($doctor->id) ?? 'in_person';
                 if (!isset($servicesMap[$svc->id])) {
-                    $servicesMap[$svc->id] = ['id' => $svc->id, 'name' => $svc->name, 'price' => $price, 'duration' => $duration];
+                    $servicesMap[$svc->id] = ['id' => $svc->id, 'name' => $svc->name, 'price' => $price, 'duration' => $duration, 'consultation_type' => $consultationType];
                 } else {
                     $servicesMap[$svc->id]['price'] = min($servicesMap[$svc->id]['price'], $price);
+                    if ($consultationType === 'online') {
+                        $servicesMap[$svc->id]['consultation_type'] = 'online';
+                    }
                 }
             }
         }
@@ -164,6 +168,10 @@ class PublicBookingController extends Controller
     public function clinicReview(Request $request)
     {
         $this->checkBookingEnabled();
+
+        if ($request->has('consultation_type') && $request->consultation_type === 'phone') {
+            $request->merge(['consultation_type' => 'telephone']);
+        }
 
         $validator = Validator::make($request->all(), [
             'department_id' => 'required|exists:departments,id',
@@ -227,6 +235,10 @@ class PublicBookingController extends Controller
     public function clinicConfirm(Request $request)
     {
         $this->checkBookingEnabled();
+
+        if ($request->has('consultation_type') && $request->consultation_type === 'phone') {
+            $request->merge(['consultation_type' => 'telephone']);
+        }
 
         $validator = Validator::make($request->all(), [
             'department_id' => 'required|exists:departments,id',

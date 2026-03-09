@@ -35,6 +35,7 @@
     <form id="clinic-booking-form" method="POST" action="{{ route('public.booking.clinic-patient-details') }}">
         @csrf
         <input type="hidden" name="department_id" value="{{ $department->id }}">
+        <input type="hidden" name="consultation_type" id="consultation-type-input" value="in_person">
 
         <div class="form-card">
             <label class="form-label">Select Service <span class="text-danger">*</span></label>
@@ -44,8 +45,9 @@
                 @php
                     $price = $svc['price'] ?? 0;
                     $duration = $svc['duration'] ?? 60;
+                    $ct = $svc['consultation_type'] ?? 'in_person';
                 @endphp
-                <option value="{{ $svc['id'] }}" data-duration="{{ $duration }}" data-price="{{ $price }}">
+                <option value="{{ $svc['id'] }}" data-duration="{{ $duration }}" data-price="{{ $price }}" data-consultation-type="{{ $ct }}">
                     {{ $svc['name'] }} - £{{ number_format($price, 2) }}
                 </option>
                 @endforeach
@@ -183,6 +185,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     serviceSelect.addEventListener('change', function() {
         if (this.value) {
+            var opt = this.options[this.selectedIndex];
+            var ct = opt && opt.dataset.consultationType ? opt.dataset.consultationType : 'in_person';
+            document.getElementById('consultation-type-input').value = ct;
             scheduleCard.style.display = 'block';
             buildDates();
             selectedDate = currentDates[0];
@@ -190,12 +195,16 @@ document.addEventListener('DOMContentLoaded', function() {
             renderDates();
             loadSlots();
         } else {
+            document.getElementById('consultation-type-input').value = 'in_person';
             scheduleCard.style.display = 'none';
             continueBtn.disabled = true;
         }
     });
 
     if (serviceSelect.value) {
+        var opt = serviceSelect.options[serviceSelect.selectedIndex];
+        var ct = opt && opt.dataset.consultationType ? opt.dataset.consultationType : 'in_person';
+        document.getElementById('consultation-type-input').value = ct;
         scheduleCard.style.display = 'block';
         buildDates();
         selectedDate = currentDates[0];
