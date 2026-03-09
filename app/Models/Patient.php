@@ -696,6 +696,23 @@ class Patient extends Authenticatable
                 return true;
             }
             
+            // OR patient has appointments with doctors in this clinic (e.g. clinic booking flow)
+            // Ensures doctors of the same clinic can view patients who booked via clinic
+            $hasAppointmentInClinic = $this->appointments()
+                ->whereHas('doctor', function ($q) use ($doctorDepartmentIds) {
+                    $q->where(function ($deptQuery) use ($doctorDepartmentIds) {
+                        $deptQuery->whereIn('department_id', $doctorDepartmentIds)
+                            ->orWhereHas('departments', function ($pivotQuery) use ($doctorDepartmentIds) {
+                                $pivotQuery->whereIn('departments.id', $doctorDepartmentIds);
+                            });
+                    });
+                })
+                ->exists();
+            
+            if ($hasAppointmentInClinic) {
+                return true;
+            }
+            
             return false;
         }
         

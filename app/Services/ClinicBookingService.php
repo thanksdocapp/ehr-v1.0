@@ -258,6 +258,20 @@ class ClinicBookingService
                 'address' => $patientData['address'] ?? null,
             ]);
 
+            // Assign patient to the clinic so all doctors in the clinic can view and access them
+            if (!$patient->departments()->where('departments.id', $request->department_id)->exists()) {
+                $isPrimary = $patient->departments()->count() === 0;
+                $patient->departments()->attach($request->department_id, ['is_primary' => $isPrimary]);
+            }
+            if (!$patient->department_id) {
+                $patient->department_id = $request->department_id;
+                $patient->save();
+            }
+            if (!$patient->created_by_doctor_id) {
+                $patient->created_by_doctor_id = $doctor->id;
+                $patient->save();
+            }
+
             $fee = $service ? $service->getPriceForDoctor($doctor->id) : 0;
 
             $isOnline = ($request->consultation_type ?? 'in_person') === 'online';
