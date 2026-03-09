@@ -2543,6 +2543,7 @@ class HospitalEmailNotificationService
             'transaction_id' => $payment->transaction_id ?? $payment->gateway_transaction_id ?? 'N/A',
             'payment_method' => ucfirst(str_replace('_', ' ', $payment->payment_method ?? 'Card')),
             'doctor_name' => $doctorName,
+            'department' => ($billing && $billing->department) ? $billing->department->name : (config('app.name', 'Hospital')),
             'department_name' => ($billing && $billing->department) ? $billing->department->name : (config('app.name', 'Hospital')),
             'hospital_name' => config('app.name', 'Hospital'),
         ];
@@ -2746,9 +2747,9 @@ class HospitalEmailNotificationService
                                                 <td style="padding: 8px 0; color: #4a5568; font-size: 14px;">Doctor:</td>
                                                 <td style="padding: 8px 0; color: #1a202c; font-size: 14px;">' . htmlspecialchars($variables['doctor_name']) . '</td>
                                             </tr>' : '') . '
-                                            ' . ($variables['department_name'] !== 'N/A' ? '<tr>
-                                                <td style="padding: 8px 0; color: #4a5568; font-size: 14px;">Department/Clinic:</td>
-                                                <td style="padding: 8px 0; color: #1a202c; font-size: 14px;">' . htmlspecialchars($variables['department_name']) . '</td>
+                                            ' . (($variables['department'] ?? $variables['department_name'] ?? '') !== 'N/A' ? '<tr>
+                                                <td style="padding: 8px 0; color: #4a5568; font-size: 14px;">Clinic:</td>
+                                                <td style="padding: 8px 0; color: #1a202c; font-size: 14px;">' . htmlspecialchars($variables['department'] ?? $variables['department_name'] ?? 'N/A') . '</td>
                                             </tr>' : '') . '
                                             <tr>
                                                 <td colspan="2" style="padding: 15px 0 0 0; border-top: 1px solid #e2e8f0;"></td>
