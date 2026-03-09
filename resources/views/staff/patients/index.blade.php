@@ -483,6 +483,7 @@
                                 <th>Contact Info</th>
                                 <th>Demographics</th>
                                 <th>Assigned Clinic(s)</th>
+                                <th>Added by</th>
                                 <th>Medical Summary</th>
                                 <th>Alerts</th>
                                 <th>Registration</th>
@@ -604,6 +605,15 @@
                                         <span class="text-muted" style="font-size: 0.875rem;">
                                             <i class="fas fa-minus-circle me-1"></i>Not Assigned
                                         </span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($patient->createdByDoctor)
+                                        <span class="badge bg-light text-dark border" title="Doctor who added this patient or accepted the clinic booking">
+                                            <i class="fas fa-user-md me-1"></i>{{ $patient->createdByDoctor->user ? $patient->createdByDoctor->user->name : $patient->createdByDoctor->name }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted small"><i class="fas fa-minus me-1"></i>—</span>
                                     @endif
                                 </td>
                                 <td>
@@ -858,6 +868,20 @@
                                             </div>
                                         </div>
 
+                                        <!-- Added by -->
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block mb-2 fw-semibold"><i class="fas fa-user-md me-1"></i>Added by</small>
+                                            <div class="ps-3">
+                                                @if($patient->createdByDoctor)
+                                                    <span class="badge bg-light text-dark border" style="font-size: 0.8rem;">
+                                                        {{ $patient->createdByDoctor->user ? $patient->createdByDoctor->user->name : $patient->createdByDoctor->name }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-muted small">—</span>
+                                                @endif
+                                            </div>
+                                        </div>
+
                                         <!-- Medical Summary -->
                                         <div class="mb-3">
                                             <small class="text-muted d-block mb-2 fw-semibold"><i class="fas fa-notes-medical me-1"></i>Medical Summary</small>
@@ -1087,9 +1111,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 "info": false,
                 "searching": false,
                 "ordering": true,
-                "order": [[ 7, "desc" ]],
+                "order": [[ 8, "desc" ]],
                 "columnDefs": [
-                    { "orderable": false, "targets": [8] }
+                    { "orderable": false, "targets": [9] }
                 ],
                 "responsive": false
             });
