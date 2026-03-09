@@ -82,12 +82,13 @@ class StaffMiddleware
             return $user->user_type === 'staff';
         }
 
-        // Option 6: Check if user is not admin (fallback)
+        // Option 6: Check if user is not admin (fallback for legacy setups)
         if (isset($user->is_admin)) {
             return !$user->is_admin;
         }
 
-        return true;
+        // Deny by default - only grant staff access when explicitly identified
+        return false;
     }
 
     /**

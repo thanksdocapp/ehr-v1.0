@@ -143,9 +143,13 @@ class BookingServicesController extends Controller
 
         // Optionally propagate new default to doctor overrides that matched the old default
         if ($request->boolean('propagate_price_to_doctors') && $oldDefaultPrice != $newDefaultPrice) {
-            $updated = DoctorServicePrice::where('service_id', $bookingService->id)
-                ->where('custom_price', $oldDefaultPrice)
-                ->update(['custom_price' => $newDefaultPrice]);
+            $query = DoctorServicePrice::where('service_id', $bookingService->id);
+            if ($oldDefaultPrice === null) {
+                $query->whereNull('custom_price');
+            } else {
+                $query->where('custom_price', $oldDefaultPrice);
+            }
+            $updated = $query->update(['custom_price' => $newDefaultPrice]);
             if ($updated > 0) {
                 return redirect()->route('admin.booking-services.index')
                     ->with('success', "Booking service updated. Default price and {$updated} doctor-specific price(s) updated.");
