@@ -472,7 +472,36 @@ class PublicBillingController extends Controller
         // Always ensure billing is updated when viewing success page (fallback)
         $this->updateInvoiceAndBilling($invoice);
 
-        // Check if this is a pending booking that needs to be finalized after payment
+        // Check if this is a pending clinic booking that needs to be finalized after payment
+        $pendingClinicToken = session('pending_clinic_booking_token');
+        if ($pendingClinicToken) {
+            try {
+                $clinicService = app(\App\Services\ClinicBookingService::class);
+                $pending = \App\Models\PendingClinicBooking::where('booking_token', $pendingClinicToken)
+                    ->where('invoice_id', $invoice->id)
+                    ->where('status', 'pending_payment')
+                    ->first();
+
+                if ($pending) {
+                    $hasPaid = $invoice->payments()->where('status', 'completed')->exists() || $invoice->status === 'paid';
+                    if ($hasPaid) {
+                        $clinicRequest = $clinicService->finalizeClinicBookingAfterPayment($pending);
+                        session()->forget('pending_clinic_booking_token');
+                        return redirect()->route('public.booking.clinic-success', [
+                            'requestNumber' => $clinicRequest->request_number
+                        ])->with('payment_success', true);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to finalize pending clinic booking after payment', [
+                    'invoice_id' => $invoice->id,
+                    'pending_clinic_token' => $pendingClinicToken,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Check if this is a pending booking (doctor-selected) that needs to be finalized after payment
         $pendingBookingToken = session('pending_booking_token');
         if ($pendingBookingToken) {
             try {

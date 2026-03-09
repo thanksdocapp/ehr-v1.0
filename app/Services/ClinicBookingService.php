@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Models\ClinicBookingRequest;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
+use App\Models\PendingClinicBooking;
 use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\Appointment;
@@ -21,6 +24,152 @@ class ClinicBookingService
     {
         $this->guestPatientService = $guestPatientService;
         $this->emailService = $emailService;
+    }
+
+    /**
+     * Create a pending clinic booking with invoice (for paid services).
+     * Patient pays first; after payment, ClinicBookingRequest is created.
+     *
+     * @return array{invoice: Invoice, pending_clinic_booking: PendingClinicBooking}
+     */
+    public function createPendingFromClinicBooking(array $data): array
+    {
+        return DB::transaction(function () use ($data) {
+            $departmentId = $data['department_id'];
+            $service = BookingService::find($data['service_id'] ?? null);
+
+            $fee = 0;
+            if ($service) {
+                $doctors = Doctor::byDepartment($departmentId)->active()->get();
+                $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
+                $fee = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
+            }
+
+            $patientData = [
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+                'date_of_birth' => $data['date_of_birth'] ?? null,
+                'gender' => $data['gender'] ?? null,
+                'address' => $data['address'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'consultation_type' => $data['consultation_type'] ?? 'in_person',
+                'consent_share_with_gp' => $data['consent_share_with_gp'] ?? false,
+                'gp_name' => $data['gp_name'] ?? null,
+                'gp_email' => $data['gp_email'] ?? null,
+                'gp_phone' => $data['gp_phone'] ?? null,
+                'gp_address' => $data['gp_address'] ?? null,
+            ];
+
+            $patient = $this->guestPatientService->findOrCreateGuest([
+                'first_name' => $patientData['first_name'],
+                'last_name' => $patientData['last_name'],
+                'email' => $patientData['email'],
+                'phone' => $patientData['phone'],
+                'date_of_birth' => $patientData['date_of_birth'] ?? null,
+                'gender' => $patientData['gender'] ?? null,
+                'address' => $patientData['address'] ?? null,
+            ]);
+
+            $pendingBooking = PendingClinicBooking::create([
+                'booking_token' => PendingClinicBooking::generateBookingToken(),
+                'department_id' => $departmentId,
+                'service_id' => $service?->id,
+                'appointment_date' => $data['appointment_date'],
+                'appointment_time' => $data['appointment_time'],
+                'notes' => $data['notes'] ?? null,
+                'patient_data' => $patientData,
+                'fee' => $fee,
+                'status' => 'pending_payment',
+                'expires_at' => now()->addHours(24),
+            ]);
+
+            $serviceName = $service ? $service->name : 'Clinic Consultation';
+            $invoice = Invoice::create([
+                'billing_id' => null,
+                'patient_id' => $patient->id,
+                'appointment_id' => null,
+                'invoice_number' => Invoice::generateInvoiceNumber(),
+                'invoice_date' => now(),
+                'due_date' => now()->addDays(7),
+                'subtotal' => $fee,
+                'tax_amount' => 0,
+                'discount_amount' => 0,
+                'total_amount' => $fee,
+                'status' => 'pending',
+                'description' => $serviceName,
+            ]);
+
+            InvoiceItem::create([
+                'invoice_id' => $invoice->id,
+                'item_type' => 'consultation',
+                'item_name' => $serviceName,
+                'description' => $serviceName,
+                'quantity' => 1,
+                'unit_price' => $fee,
+                'total_price' => $fee,
+            ]);
+
+            $pendingBooking->update(['invoice_id' => $invoice->id]);
+            $invoice->generatePaymentToken();
+            $invoice->refresh();
+
+            Log::info('Pending clinic booking created - awaiting payment', [
+                'pending_clinic_booking_id' => $pendingBooking->id,
+                'invoice_id' => $invoice->id,
+                'fee' => $fee,
+            ]);
+
+            return [
+                'invoice' => $invoice,
+                'pending_clinic_booking' => $pendingBooking,
+            ];
+        });
+    }
+
+    /**
+     * Finalize clinic booking after payment. Creates ClinicBookingRequest.
+     */
+    public function finalizeClinicBookingAfterPayment(PendingClinicBooking $pending): ClinicBookingRequest
+    {
+        if ($pending->status !== 'pending_payment') {
+            throw new \Exception('Clinic booking is not in pending payment status');
+        }
+
+        if ($pending->isExpired()) {
+            $pending->markExpired();
+            throw new \Exception('Clinic booking has expired');
+        }
+
+        $timeStr = $pending->appointment_time instanceof \DateTimeInterface
+            ? $pending->appointment_time->format('H:i')
+            : substr((string) $pending->appointment_time, 0, 5);
+
+        $data = [
+            'department_id' => $pending->department_id,
+            'service_id' => $pending->service_id,
+            'appointment_date' => $pending->appointment_date->format('Y-m-d'),
+            'appointment_time' => $timeStr,
+            'first_name' => $pending->patient_data['first_name'] ?? '',
+            'last_name' => $pending->patient_data['last_name'] ?? '',
+            'email' => $pending->patient_data['email'] ?? '',
+            'phone' => $pending->patient_data['phone'] ?? '',
+            'date_of_birth' => $pending->patient_data['date_of_birth'] ?? null,
+            'gender' => $pending->patient_data['gender'] ?? null,
+            'notes' => $pending->patient_data['notes'] ?? null,
+            'consultation_type' => $pending->patient_data['consultation_type'] ?? 'in_person',
+            'consent_share_with_gp' => $pending->patient_data['consent_share_with_gp'] ?? false,
+            'gp_name' => $pending->patient_data['gp_name'] ?? null,
+            'gp_email' => $pending->patient_data['gp_email'] ?? null,
+            'gp_phone' => $pending->patient_data['gp_phone'] ?? null,
+            'gp_address' => $pending->patient_data['gp_address'] ?? null,
+        ];
+
+        $clinicRequest = $this->createFromClinicBooking($data);
+        $pending->markCompleted();
+
+        return $clinicRequest;
     }
 
     /**

@@ -41,6 +41,23 @@
         </div>
     @endif
 
+    <!-- Pending clinic booking requests - awaiting doctor acceptance -->
+    @if(isset($pendingClinicRequestsCount) && $pendingClinicRequestsCount > 0)
+        <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-inbox fa-2x me-3"></i>
+                <div class="flex-grow-1">
+                    <strong>Clinic booking requests awaiting acceptance</strong>
+                    <p class="mb-0 mt-1">{{ $pendingClinicRequestsCount }} {{ \Illuminate\Support\Str::plural('patient', $pendingClinicRequestsCount) }} {{ $pendingClinicRequestsCount === 1 ? 'has' : 'have' }} requested an appointment at your clinic. Accept to add {{ $pendingClinicRequestsCount === 1 ? 'them' : 'them' }} to your schedule.</p>
+                </div>
+                <a href="{{ route('staff.clinic-booking-requests.index') }}" class="btn btn-info ms-3">
+                    <i class="fas fa-inbox me-1"></i> View & accept
+                </a>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    @endif
+
     <!-- Pending appointments that have passed - flag for action -->
     @if(isset($pendingPastCount) && $pendingPastCount > 0)
         <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">

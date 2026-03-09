@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Department;
+use App\Models\ClinicBookingRequest;
 use App\Models\IntegrationModule;
 use App\Models\Notice;
 use App\Services\Integrations\QuincyService;
@@ -173,6 +174,14 @@ class DashboardController extends Controller
             // Get Quincy prescription delivery status for this doctor
             $quincyDeliveryStatus = $this->getDoctorQuincyDeliveryStatus($doctor ? $doctor->id : null);
 
+            // Get pending clinic booking requests for this doctor's department(s)
+            $pendingClinicRequestsCount = 0;
+            if (!empty($userDepartmentIds)) {
+                $pendingClinicRequestsCount = ClinicBookingRequest::pendingAcceptance()
+                    ->whereIn('department_id', $userDepartmentIds)
+                    ->count();
+            }
+
             // Get upcoming video consultations (online appointments for today and future)
             $upcomingVideoConsultations = Appointment::with(['patient', 'doctor', 'service'])
                 ->where('is_online', true)
@@ -192,7 +201,7 @@ class DashboardController extends Controller
                 ->limit(5)
                 ->get();
 
-            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations', 'notices', 'pendingPastCount'));
+            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations', 'notices', 'pendingPastCount', 'pendingClinicRequestsCount'));
         }
         
         return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus', 'notices', 'pendingPastCount'));

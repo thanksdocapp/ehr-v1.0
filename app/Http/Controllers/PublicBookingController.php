@@ -264,7 +264,25 @@ class PublicBookingController extends Controller
             $data['date_of_birth'] = parseDateInput($data['date_of_birth']);
         }
 
+        $department = Department::findOrFail($request->department_id);
+        $service = BookingService::findOrFail($request->service_id);
+        $doctors = Doctor::byDepartment($department->id)->active()->get();
+        $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
+        $price = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
+
         try {
+            if ($price > 0) {
+                $result = $this->clinicBookingService->createPendingFromClinicBooking($data);
+                $invoice = $result['invoice'];
+                $pending = $result['pending_clinic_booking'];
+
+                if ($invoice->payment_token) {
+                    session(['pending_clinic_booking_token' => $pending->booking_token]);
+                    return redirect()->route('public.billing.pay', ['token' => $invoice->payment_token]);
+                }
+                return redirect()->back()->with('error', 'Payment setup failed. Please try again.')->withInput();
+            }
+
             $clinicRequest = $this->clinicBookingService->createFromClinicBooking($data);
             return redirect()->route('public.booking.clinic-success', ['requestNumber' => $clinicRequest->request_number])
                 ->with('request', $clinicRequest);
