@@ -81,7 +81,8 @@ class SlotAvailabilityService
                     ];
                 }
 
-                $currentTime->addMinutes(15);
+                // Advance by duration to avoid overlap (e.g. 20 min slots: 9:00, 9:20, 9:40)
+                $currentTime->addMinutes($duration);
             }
         }
 
