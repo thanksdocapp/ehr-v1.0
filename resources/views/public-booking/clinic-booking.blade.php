@@ -39,19 +39,41 @@
 
         <div class="form-card">
             <label class="form-label">Select Service <span class="text-danger">*</span></label>
-            <select name="service_id" id="service-select" class="form-control form-control-sm" required>
-                <option value="">Select a service...</option>
-                @foreach($services as $svc)
-                @php
-                    $price = $svc['price'] ?? 0;
-                    $duration = $svc['duration'] ?? 60;
-                    $ct = $svc['consultation_type'] ?? 'in_person';
-                @endphp
-                <option value="{{ $svc['id'] }}" data-duration="{{ $duration }}" data-price="{{ $price }}" data-consultation-type="{{ $ct }}">
-                    {{ $svc['name'] }} - £{{ number_format($price, 2) }}
-                </option>
-                @endforeach
-            </select>
+            <div class="clinic-service-row">
+                <div class="clinic-service-dropdown-col">
+                    <select name="service_id" id="service-select" class="form-control form-control-sm" required>
+                        <option value="">Select a service...</option>
+                        @foreach($services as $svc)
+                        @php
+                            $price = $svc['price'] ?? 0;
+                            $duration = $svc['duration'] ?? 60;
+                            $ct = $svc['consultation_type'] ?? 'in_person';
+                            $desc = $svc['description'] ?? '';
+                        @endphp
+                        <option value="{{ $svc['id'] }}" data-duration="{{ $duration }}" data-price="{{ $price }}" data-consultation-type="{{ $ct }}" data-description="{{ e($desc) }}">
+                            {{ $svc['name'] }} - £{{ number_format($price, 2) }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="clinic-service-details-col" id="clinic-service-details" style="display: none;">
+                    <div class="summary-card-compact">
+                        <div class="summary-description-compact" id="clinic-service-description"></div>
+                        <div class="summary-row-compact">
+                            <span class="summary-label-compact">Consultation Type:</span>
+                            <span class="summary-value-compact" id="clinic-service-consultation-type">-</span>
+                        </div>
+                        <div class="summary-row-compact">
+                            <span class="summary-label-compact">Duration:</span>
+                            <span class="summary-value-compact" id="clinic-service-duration">-</span>
+                        </div>
+                        <div class="summary-row-compact">
+                            <span class="summary-label-compact">Price:</span>
+                            <span class="summary-value-compact" id="clinic-service-price">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="form-card" id="schedule-card" style="display: none;">
@@ -87,6 +109,14 @@
 
 @section('styles')
 <style>
+    .clinic-service-row { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
+    .clinic-service-dropdown-col { flex: 1; min-width: 200px; }
+    .clinic-service-details-col { flex: 1; min-width: 200px; }
+    .summary-card-compact { background: #f8fafc; border-radius: 8px; padding: 1rem; border: 1px solid #e2e8f0; }
+    .summary-description-compact { font-size: 0.75rem; color: #6c757d; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; line-height: 1.4; }
+    .summary-row-compact { display: flex; justify-content: space-between; padding: 0.25rem 0; font-size: 0.8125rem; }
+    .summary-label-compact { color: #6c757d; }
+    .summary-value-compact { font-weight: 600; color: #1a202c; }
     .date-display { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
     .date-item { padding: 0.5rem 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; min-width: 90px; text-align: center; }
     .date-item:hover { border-color: var(--booking-primary, #007bff); }
@@ -95,6 +125,7 @@
     .time-slot-btn { padding: 0.5rem; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; }
     .time-slot-btn:hover { border-color: var(--booking-primary); }
     .time-slot-btn.selected { background: var(--booking-primary); color: #fff; border-color: var(--booking-primary); }
+    @media (max-width: 768px) { .clinic-service-row { flex-direction: column; } }
 </style>
 @endsection
 
@@ -183,11 +214,39 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function getConsultationTypeDisplay(ct) {
+        const t = (ct || 'in_person').toLowerCase();
+        if (t === 'online') return 'Online (Video)';
+        if (t === 'phone' || t === 'telephone') return 'Telephone';
+        return 'In Person';
+    }
+
+    function updateClinicServiceDetails() {
+        const opt = serviceSelect.options[serviceSelect.selectedIndex];
+        const detailsEl = document.getElementById('clinic-service-details');
+        if (!opt || !opt.value) {
+            detailsEl.style.display = 'none';
+            return;
+        }
+        const desc = opt.dataset.description || '';
+        const duration = opt.dataset.duration || 30;
+        const price = parseFloat(opt.dataset.price || 0).toFixed(2);
+        const ct = opt.dataset.consultationType || 'in_person';
+
+        document.getElementById('clinic-service-description').textContent = desc.trim() || '';
+        document.getElementById('clinic-service-description').style.display = desc.trim() ? 'block' : 'none';
+        document.getElementById('clinic-service-consultation-type').textContent = getConsultationTypeDisplay(ct);
+        document.getElementById('clinic-service-duration').textContent = duration + ' minutes';
+        document.getElementById('clinic-service-price').textContent = '£' + price;
+        detailsEl.style.display = 'block';
+    }
+
     serviceSelect.addEventListener('change', function() {
         if (this.value) {
             var opt = this.options[this.selectedIndex];
             var ct = opt && opt.dataset.consultationType ? opt.dataset.consultationType : 'in_person';
             document.getElementById('consultation-type-input').value = ct;
+            updateClinicServiceDetails();
             scheduleCard.style.display = 'block';
             buildDates();
             selectedDate = currentDates[0];
@@ -196,6 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadSlots();
         } else {
             document.getElementById('consultation-type-input').value = 'in_person';
+            document.getElementById('clinic-service-details').style.display = 'none';
             scheduleCard.style.display = 'none';
             continueBtn.disabled = true;
         }
@@ -205,6 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var opt = serviceSelect.options[serviceSelect.selectedIndex];
         var ct = opt && opt.dataset.consultationType ? opt.dataset.consultationType : 'in_person';
         document.getElementById('consultation-type-input').value = ct;
+        updateClinicServiceDetails();
         scheduleCard.style.display = 'block';
         buildDates();
         selectedDate = currentDates[0];

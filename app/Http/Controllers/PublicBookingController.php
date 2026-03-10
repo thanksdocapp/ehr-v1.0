@@ -102,7 +102,7 @@ class PublicBookingController extends Controller
                 $duration = $svc->getDurationForDoctor($doctor->id) ?? $svc->default_duration_minutes ?? 60;
                 $consultationType = $svc->getConsultationTypeForDoctor($doctor->id) ?? 'in_person';
                 if (!isset($servicesMap[$svc->id])) {
-                    $servicesMap[$svc->id] = ['id' => $svc->id, 'name' => $svc->name, 'price' => $price, 'duration' => $duration, 'consultation_type' => $consultationType];
+                    $servicesMap[$svc->id] = ['id' => $svc->id, 'name' => $svc->name, 'description' => $svc->description ?? '', 'price' => $price, 'duration' => $duration, 'consultation_type' => $consultationType];
                 } else {
                     $servicesMap[$svc->id]['price'] = min($servicesMap[$svc->id]['price'], $price);
                     if ($consultationType === 'online') {
