@@ -22,6 +22,10 @@ yarn-error.log
 *.md
 !README.md
 
+# Proposal and document files (client proposals, etc.)
+*.docx
+/docs/
+
 # Laravel specific
 /storage/app/*
 !/storage/app/.gitkeep

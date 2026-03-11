@@ -53,8 +53,18 @@ class SlotAvailabilityService
         }
 
         // Get existing appointments for this date (with service for duration fallback)
+        // Include ALL doctors in the same clinic/department for clinic-wide slot blocking
+        $departmentIds = $this->getDoctorDepartmentIds($doctor);
+        $doctorIdsInClinic = [$doctorId];
+        if (!empty($departmentIds)) {
+            $clinicDoctorIds = Doctor::byDepartments($departmentIds)->pluck('id')->toArray();
+            if (!empty($clinicDoctorIds)) {
+                $doctorIdsInClinic = $clinicDoctorIds;
+            }
+        }
+
         $existingAppointments = Appointment::with('service')
-            ->where('doctor_id', $doctorId)
+            ->whereIn('doctor_id', $doctorIdsInClinic)
             ->whereDate('appointment_date', $date)
             ->whereIn('status', ['pending', 'confirmed', 'rescheduled'])
             ->get();
@@ -148,6 +158,19 @@ class SlotAvailabilityService
                 ? $req->appointment_time->format('H:i')
                 : substr((string) $req->appointment_time, 0, 5);
             unset($allSlots[$reqTime]);
+        }
+
+        // Exclude slots where ANY doctor in the department has an appointment (clinic-wide sync)
+        $departmentAppointments = Appointment::with('service')
+            ->whereHas('doctor', fn($q) => $q->byDepartment($departmentId))
+            ->whereDate('appointment_date', $date)
+            ->whereIn('status', ['pending', 'confirmed', 'rescheduled'])
+            ->get();
+
+        foreach ($allSlots as $slotKey => $slot) {
+            if ($this->slotOverlapsAppointments($slot['start'], $duration, $date, $departmentAppointments)) {
+                unset($allSlots[$slotKey]);
+            }
         }
 
         $slots = array_values($allSlots);
@@ -381,6 +404,56 @@ class SlotAvailabilityService
         }
 
         return true;
+    }
+
+    /**
+     * Get department IDs for a doctor (primary department and pivot departments).
+     *
+     * @param Doctor $doctor
+     * @return array
+     */
+    private function getDoctorDepartmentIds(Doctor $doctor): array
+    {
+        $ids = [];
+        if ($doctor->department_id) {
+            $ids[] = $doctor->department_id;
+        }
+        foreach ($doctor->departments as $dept) {
+            $ids[] = $dept->id;
+        }
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Check if a slot overlaps with any appointment in a collection.
+     *
+     * @param string $slotStart Time string (H:i)
+     * @param int $slotDurationMinutes
+     * @param string $date Date string (Y-m-d)
+     * @param \Illuminate\Database\Eloquent\Collection $appointments
+     * @return bool
+     */
+    private function slotOverlapsAppointments(string $slotStart, int $slotDurationMinutes, string $date, $appointments): bool
+    {
+        $slotStartCarbon = Carbon::parse($date . ' ' . $slotStart);
+        $slotEndCarbon = $slotStartCarbon->copy()->addMinutes($slotDurationMinutes);
+
+        foreach ($appointments as $appointment) {
+            $apptStart = Carbon::parse($appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s'));
+            $apptDuration = (int) ($appointment->estimated_duration ?? null);
+            if ($apptDuration <= 0 && $appointment->service_id && $appointment->doctor_id) {
+                $apptDuration = (int) ($appointment->service->getDurationForDoctor($appointment->doctor_id) ?? 30);
+            }
+            if ($apptDuration <= 0) {
+                $apptDuration = 30;
+            }
+            $apptEnd = $apptStart->copy()->addMinutes($apptDuration);
+
+            if ($slotStartCarbon->lt($apptEnd) && $slotEndCarbon->gt($apptStart)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
