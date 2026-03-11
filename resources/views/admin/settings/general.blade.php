@@ -511,7 +511,7 @@
                                     Enable Homepage/Frontend Pages
                                 </label>
                             </div>
-                            <div class="form-help">When disabled, visitors will be redirected to the staff login page</div>
+                            <div class="form-help">When disabled, visitors will be redirected to notes.thanksdoc.co.uk</div>
                         </div>
 
                         <div class="form-group">
