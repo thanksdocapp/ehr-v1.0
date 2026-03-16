@@ -289,6 +289,8 @@ Route::group(['middleware' => 'installed'], function () {
         Route::put('/patients/{patient}', [\App\Http\Controllers\Staff\PatientsController::class, 'update'])->name('patients.update');
         Route::get('/patients/{patient}/gp-email', [\App\Http\Controllers\Staff\PatientsController::class, 'showGpEmailForm'])->name('patients.gp-email');
         Route::post('/patients/{patient}/gp-email', [\App\Http\Controllers\Staff\PatientsController::class, 'sendGpEmail'])->name('patients.gp-email.send');
+        Route::get('/patients/{patient}/convert-guest', [\App\Http\Controllers\Staff\PatientsController::class, 'showConvertGuest'])->name('patients.convert-guest');
+        Route::post('/patients/{patient}/convert-guest', [\App\Http\Controllers\Staff\PatientsController::class, 'convertGuest'])->name('patients.convert-guest.post');
         
         // Patient Email
         Route::get('/patient-email', [\App\Http\Controllers\Staff\PatientEmailController::class, 'index'])->name('patient-email.index');

@@ -29,6 +29,24 @@
     <!-- Patient Alert Bar -->
     @include('components.patient-alert-bar', ['patient' => $patient])
 
+    <!-- Guest Patient Banner -->
+    @if($patient->is_guest)
+    <div class="alert alert-warning border-0 mb-4 fade-in-up">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <h6 class="alert-heading mb-1">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Guest Patient Record
+                </h6>
+                <p class="mb-0">This is a guest patient record. Medical records and prescriptions cannot be created until converted.
+                <a href="{{ route('staff.patients.convert-guest', $patient) }}" class="alert-link">Convert to full patient</a> to enable all features.</p>
+            </div>
+            <a href="{{ route('staff.patients.convert-guest', $patient) }}" class="btn btn-warning">
+                <i class="fas fa-user-check me-2"></i>Convert to Full Patient
+            </a>
+        </div>
+    </div>
+    @endif
+
     <!-- Patient Information Incomplete Warning -->
     @php
         $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => [], 'missing_count' => 0];
