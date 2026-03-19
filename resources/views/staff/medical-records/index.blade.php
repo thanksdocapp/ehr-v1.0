@@ -646,9 +646,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Print medical record (single)
+// Print medical record (single) - uses same print layout as Print selected
 function printRecord(recordId) {
-    window.location.href = `/staff/medical-records/${recordId}?print=1`;
+    var url = '{{ route("staff.medical-records.print-multiple") }}?ids[]=' + recordId;
+    window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 // Print selected medical records

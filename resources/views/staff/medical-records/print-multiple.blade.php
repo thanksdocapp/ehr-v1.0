@@ -23,7 +23,7 @@
         .document-meta { text-align: right; }
         .document-type { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ehr-primary); margin: 0 0 4px 0; }
         .document-date { font-size: 0.8rem; color: var(--ehr-text-muted); margin: 0; }
-        .record-block { margin-bottom: 36px; page-break-inside: avoid; break-inside: avoid; }
+        .record-block { margin-bottom: 36px; }
         .record-block + .record-block { page-break-before: always; }
         .patient-header { background: linear-gradient(135deg, var(--ehr-primary) 0%, var(--ehr-secondary) 100%); color: #fff; padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .patient-header-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
@@ -68,6 +68,24 @@
             .print-document { padding: 16px; max-width: none; }
             .main-grid { grid-template-columns: 1fr; }
             .no-print { display: none !important; }
+            /* Repeating header on every printed page */
+            .clinic-header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: #fff;
+                z-index: 9999;
+                padding: 8px 16px 10px;
+                margin: 0;
+                border-bottom: 2px solid var(--ehr-primary);
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .clinic-header .clinic-name { font-size: 1.1rem; }
+            .clinic-header .document-type { font-size: 0.7rem; }
+            .clinic-header .document-date { font-size: 0.75rem; }
+            .print-document { padding-top: 60px; }
         }
     </style>
 </head>
