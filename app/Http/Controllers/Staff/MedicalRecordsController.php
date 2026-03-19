@@ -318,7 +318,7 @@ class MedicalRecordsController extends Controller
         }
 
         $user = Auth::user();
-        $query = MedicalRecord::with(['patient', 'doctor', 'appointment', 'prescriptions'])
+        $query = MedicalRecord::with(['patient', 'doctor.departments', 'doctor.department', 'appointment', 'prescriptions'])
             ->whereIn('id', $ids)
             ->orderBy('record_date', 'desc')
             ->orderBy('created_at', 'desc');

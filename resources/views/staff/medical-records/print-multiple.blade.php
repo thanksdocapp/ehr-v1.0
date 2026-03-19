@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consultation Records - {{ getClinicName() }}</title>
+    @php $headerDepartment = $medicalRecords->first(fn($r) => $r->doctor)?->doctor?->primaryDepartment()?->name ?? getClinicName(); @endphp
+    <title>Consultation Records - {{ $headerDepartment }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -204,19 +205,19 @@
                         </div>
                         <div class="clinical-grid">
                             <div class="clinical-block">
-                                <div class="clinical-label">PC (Presenting complaint)</div>
+                                <div class="clinical-label">Presenting Complaint</div>
                                 <div class="clinical-content">{!! nl2br(e($record->presenting_complaint ?? $record->chief_complaint ?? 'N/A')) !!}</div>
                             </div>
                             <div class="clinical-block">
-                                <div class="clinical-label">HPC (History)</div>
+                                <div class="clinical-label">History of Presenting Complaint</div>
                                 <div class="clinical-content">{!! nl2br(e($record->history_of_presenting_complaint ?? $record->present_illness ?? 'N/A')) !!}</div>
                             </div>
                             <div class="clinical-block">
-                                <div class="clinical-label">PMH</div>
+                                <div class="clinical-label">Past Medical History</div>
                                 <div class="clinical-content">{!! nl2br(e($record->past_medical_history ?? 'N/A')) !!}</div>
                             </div>
                             <div class="clinical-block">
-                                <div class="clinical-label">DH (Drug history)</div>
+                                <div class="clinical-label">Drug History</div>
                                 <div class="clinical-content">{!! nl2br(e($record->drug_history ?? 'N/A')) !!}</div>
                             </div>
                             <div class="clinical-block allergy">
@@ -224,7 +225,7 @@
                                 <div class="clinical-content">{!! nl2br(e($record->allergies ?? 'N/A')) !!}</div>
                             </div>
                             <div class="clinical-block">
-                                <div class="clinical-label">SH</div>
+                                <div class="clinical-label">Social History</div>
                                 <div class="clinical-content">{!! nl2br(e($record->social_history ?? 'N/A')) !!}</div>
                             </div>
                             <div class="clinical-block full-width">
@@ -258,7 +259,7 @@
                     <div class="signature-block">
                         <span class="signature-name">{{ formatDoctorName($doctor->name ?? $doctor->first_name . ' ' . $doctor->last_name) }}</span>
                         <span class="signature-role">{{ $doctor->specialization ?? 'GP' }}</span>
-                        <span class="signature-clinic">{{ getClinicName() }}</span>
+                        <span class="signature-clinic">{{ ($doctor->primaryDepartment()?->name) ?? getClinicName() }}</span>
                         <span class="signature-date">{{ $recordDate ? $recordDate->format('d M Y') : $record->created_at->format('d M Y') }}</span>
                     </div>
                     @endif
@@ -288,7 +289,7 @@
         @endforeach
 
         <footer class="print-footer">
-            Confidential medical record. For patient use when attending other healthcare providers. {{ getClinicName() }} © {{ date('Y') }}
+            Confidential medical record. For patient use when attending other healthcare providers. {{ $headerDepartment }} © {{ date('Y') }}
         </footer>
     </div>
 </body>
