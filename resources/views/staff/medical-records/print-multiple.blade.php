@@ -7,9 +7,9 @@
         $headerDepartment = $medicalRecords->first(fn($r) => $r->doctor)?->doctor?->primaryDepartment()?->name ?? getClinicName();
         $firstRecord = $medicalRecords->first();
         $patientNames = $medicalRecords->map(fn($r) => $r->patient ? trim($r->patient->first_name . ' ' . $r->patient->last_name) : null)->filter()->unique()->values();
-        $documentPatientLabel = $patientNames->isEmpty() ? '' : $patientNames->count() === 1
+        $documentPatientLabel = $patientNames->isEmpty() ? '' : ($patientNames->count() === 1
             ? $patientNames->first() . ' - '
-            : $patientNames->take(2)->implode(', ') . ($patientNames->count() > 2 ? ' (+' . ($patientNames->count() - 2) . ')' : '') . ' - ';
+            : $patientNames->take(2)->implode(', ') . ($patientNames->count() > 2 ? ' (+' . ($patientNames->count() - 2) . ')' : '') . ' - ');
     @endphp
     <title>Consultation Records - {{ $documentPatientLabel }}{{ $headerDepartment }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
