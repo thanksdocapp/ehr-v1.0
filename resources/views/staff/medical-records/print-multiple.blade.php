@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consultation Records - {{ getAppName() }}</title>
+    <title>Consultation Records - {{ getClinicName() }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -18,7 +18,7 @@
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.6; color: var(--ehr-text); margin: 0; padding: 0; }
         .print-document { max-width: 210mm; margin: 0 auto; padding: 24px; }
-        .clinic-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; margin-bottom: 24px; border-bottom: 3px solid var(--ehr-primary); }
+        .clinic-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--ehr-border); }
         .clinic-name { font-size: 1.5rem; font-weight: 700; color: var(--ehr-primary); margin: 0; }
         .document-meta { text-align: right; }
         .document-type { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ehr-primary); margin: 0 0 4px 0; }
@@ -78,7 +78,7 @@
                 z-index: 9999;
                 padding: 8px 16px 10px;
                 margin: 0;
-                border-bottom: 2px solid var(--ehr-primary);
+                border-bottom: 1px solid var(--ehr-border);
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -98,7 +98,7 @@
     </div>
     <div class="print-document">
         <header class="clinic-header">
-            <h1 class="clinic-name">{{ getAppName() }}</h1>
+            <h1 class="clinic-name">{{ getClinicName() }}</h1>
             <div class="document-meta">
                 <p class="document-type">Consultation Records ({{ $medicalRecords->count() }})</p>
                 <p class="document-date">Printed {{ now()->format('d M Y') }}</p>
@@ -258,7 +258,7 @@
                     <div class="signature-block">
                         <span class="signature-name">{{ formatDoctorName($doctor->name ?? $doctor->first_name . ' ' . $doctor->last_name) }}</span>
                         <span class="signature-role">{{ $doctor->specialization ?? 'GP' }}</span>
-                        <span class="signature-clinic">{{ getAppName() }}</span>
+                        <span class="signature-clinic">{{ getClinicName() }}</span>
                         <span class="signature-date">{{ $recordDate ? $recordDate->format('d M Y') : $record->created_at->format('d M Y') }}</span>
                     </div>
                     @endif
@@ -288,7 +288,7 @@
         @endforeach
 
         <footer class="print-footer">
-            Confidential medical record. For patient use when attending other healthcare providers. {{ getAppName() }} © {{ date('Y') }}
+            Confidential medical record. For patient use when attending other healthcare providers. {{ getClinicName() }} © {{ date('Y') }}
         </footer>
     </div>
 </body>

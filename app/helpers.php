@@ -364,6 +364,39 @@ if (!function_exists('formatDoctorName')) {
     }
 }
 
+if (!function_exists('getClinicName')) {
+    /**
+     * Get the clinic/practice name from settings (not the EHR/app name).
+     * Use for printed documents, letterheads, and patient-facing materials.
+     *
+     * @param string|null $default Default value if not set
+     * @return string
+     */
+    function getClinicName($default = null)
+    {
+        try {
+            $clinicName = \App\Models\Setting::get('clinic_name');
+            if ($clinicName) {
+                return $clinicName;
+            }
+
+            $clinicName = \App\Models\SiteSetting::get('clinic_name');
+            if ($clinicName) {
+                return $clinicName;
+            }
+
+            $hospitalName = \App\Models\SiteSetting::get('hospital_name');
+            if ($hospitalName) {
+                return $hospitalName;
+            }
+
+            return $default ?? getAppName();
+        } catch (\Exception $e) {
+            return $default ?? getAppName();
+        }
+    }
+}
+
 if (!function_exists('getAppName')) {
     /**
      * Get the application/brand name from settings
