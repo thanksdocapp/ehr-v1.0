@@ -477,7 +477,9 @@
                                 <th>Appointment #</th>
                                 <th>Patient</th>
                                 <th>Doctor</th>
+                                @if(auth()->user()->role !== 'doctor')
                                 <th>Appointment Details</th>
+                                @endif
                                 <th>Date & Time</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -537,12 +539,14 @@
                                         <span class="text-muted">Not assigned</span>
                                     @endif
                                 </td>
+                                @if(auth()->user()->role !== 'doctor')
                                 <td>
                                     <div class="fw-bold">{{ ucfirst(str_replace('_', ' ', $appointment->type)) }}</div>
                                     @if($appointment->reason)
                                         <small class="text-muted">{{ Str::limit($appointment->reason, 30) }}</small>
                                     @endif
                                 </td>
+                                @endif
                                 <td>
                                     <div class="fw-bold">{{ formatDate($appointment->appointment_date) }}</div>
                                     <small class="text-muted">{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</small>
@@ -612,7 +616,7 @@
                                                     data-appointment-id="{{ $appointment->id }}" 
                                                     data-status="confirmed"
                                                     title="Confirm Appointment">
-                                                <i class="fas fa-check"></i>
+                                                <i class="fas fa-check me-1"></i>Confirm
                                             </button>
                                         @endif
                                         
@@ -781,9 +785,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 "info": false,
                 "searching": false,
                 "ordering": true,
-                "order": [[ 4, "desc" ]],
+                @php
+                    $isDoctorAppointmentsTable = auth()->user()->role === 'doctor';
+                    $dateColIndex = $isDoctorAppointmentsTable ? 3 : 4;
+                    $actionsColIndex = $isDoctorAppointmentsTable ? 5 : 6;
+                @endphp
+                "order": [[ {{ $dateColIndex }}, "desc" ]],
                 "columnDefs": [
-                    { "orderable": false, "targets": [6] }
+                    { "orderable": false, "targets": [{{ $actionsColIndex }}] }
                 ]
             });
         }
