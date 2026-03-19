@@ -29,7 +29,7 @@ class MedicalRecordsController extends Controller
         }
         
         // For doctors, get primary department from doctors pivot table or department_id
-        if ($user->role === 'doctor') {
+        if (strtolower($user->role ?? '') === 'doctor') {
             $doctor = Doctor::where('user_id', $user->id)->with('departments')->first();
             if ($doctor) {
                 // Get primary department from pivot table or fallback to department_id
@@ -59,7 +59,7 @@ class MedicalRecordsController extends Controller
         $departmentIds = [];
         
         // For doctors, get all departments from doctors pivot table or department_id
-        if ($user->role === 'doctor') {
+        if (strtolower($user->role ?? '') === 'doctor') {
             $doctor = Doctor::where('user_id', $user->id)->with('departments')->first();
             if ($doctor) {
                 if ($doctor->departments->isNotEmpty()) {
@@ -482,14 +482,14 @@ class MedicalRecordsController extends Controller
         
         // Handle doctor_id - need to map to doctors table if constraint still exists
         $doctorId = null;
-        if ($user->role === 'doctor') {
+        if (strtolower($user->role ?? '') === 'doctor') {
             // For doctors, try to find their corresponding doctor record
             $doctorRecord = \App\Models\Doctor::where('user_id', $user->id)->first();
             $doctorId = $doctorRecord ? $doctorRecord->id : null;
         } elseif ($request->doctor_id) {
             // For non-doctors, get the doctor record ID from the selected user
             $selectedUser = \App\Models\User::find($request->doctor_id);
-            if ($selectedUser && $selectedUser->role === 'doctor') {
+            if ($selectedUser && strtolower($selectedUser->role ?? '') === 'doctor') {
                 $doctorRecord = \App\Models\Doctor::where('user_id', $selectedUser->id)->first();
                 $doctorId = $doctorRecord ? $doctorRecord->id : null;
             }
@@ -531,7 +531,7 @@ class MedicalRecordsController extends Controller
                     $updateData['assigned_doctor_id'] = $doctorId;
                 }
                 // Set created_by_doctor_id if not set and current user is a doctor
-                if (!$patient->created_by_doctor_id && $user->role === 'doctor') {
+                if (!$patient->created_by_doctor_id && strtolower($user->role ?? '') === 'doctor') {
                     $userDoctor = Doctor::where('user_id', $user->id)->first();
                     if ($userDoctor && $userDoctor->id == $doctorId) {
                         $updateData['created_by_doctor_id'] = $doctorId;

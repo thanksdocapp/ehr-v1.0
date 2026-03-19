@@ -1,8 +1,8 @@
-@extends(auth()->user()->role === 'doctor' ? 'layouts.doctor' : 'layouts.staff')
+@extends(strtolower(auth()->user()->role ?? '') === 'doctor' ? 'layouts.doctor' : 'layouts.staff')
 
 @section('title', 'Medical Records')
 @section('page-title', 'Medical Records')
-@section('page-subtitle', auth()->user()->role === 'doctor' ? 'Manage all medical records - Full access' : (auth()->user()->role === 'nurse' ? 'Create and view medical records' : 'View medical records you\'re involved with'))
+@section('page-subtitle', strtolower(auth()->user()->role ?? '') === 'doctor' ? 'Manage all medical records - Full access' : (strtolower(auth()->user()->role ?? '') === 'nurse' ? 'Create and view medical records' : 'View medical records you\'re involved with'))
 
 @section('content')
 <div class="fade-in-up">
@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        @if(auth()->user()->role === 'doctor')
+        @if(strtolower(auth()->user()->role ?? '') === 'doctor')
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="stat-card-enhanced">
                 <div class="stat-card-content">
@@ -373,7 +373,7 @@
                             <option value="no" {{ request('is_private') == 'no' ? 'selected' : '' }}>Public</option>
                         </select>
                     </div>
-                    @if(auth()->user()->role === 'doctor')
+                    @if(strtolower(auth()->user()->role ?? '') === 'doctor')
                     <div class="col-md-3">
                         <label class="form-label">My Records</label>
                         <select name="my_records" class="form-control">

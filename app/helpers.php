@@ -523,7 +523,7 @@ if (!function_exists('getSidebarMenuItems')) {
                 return [];
             }
             
-            $userRole = $user->role ?? 'admin';
+            $userRole = strtolower(trim($user->role ?? 'admin'));
             $isAdmin = $user->is_admin ?? false;
             
             // Admin users always see all menu items

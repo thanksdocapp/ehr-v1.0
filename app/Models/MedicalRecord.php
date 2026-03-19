@@ -279,12 +279,12 @@ class MedicalRecord extends Model
         }
         
         // Admins can see all medical records
-        if ($user->is_admin || $user->role === 'admin') {
+        if ($user->is_admin || strtolower($user->role ?? '') === 'admin') {
             return $query; // No filtering
         }
         
         // For doctors, filter by doctor relationship and department intersection
-        if ($user->role === 'doctor') {
+        if (strtolower($user->role ?? '') === 'doctor') {
             $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
             
             if (!$doctor) {
@@ -391,12 +391,12 @@ class MedicalRecord extends Model
         }
         
         // Admins can see all medical records
-        if ($user->is_admin || $user->role === 'admin') {
+        if ($user->is_admin || strtolower($user->role ?? '') === 'admin') {
             return true;
         }
         
         // For doctors, check doctor relationship and department intersection
-        if ($user->role === 'doctor') {
+        if (strtolower($user->role ?? '') === 'doctor') {
             $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
             
             if (!$doctor) {

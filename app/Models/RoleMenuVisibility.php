@@ -62,11 +62,13 @@ class RoleMenuVisibility extends Model
      */
     public static function getOrderedMenuItemsForRole(string $role, string $menuType): array
     {
+        $roleNormalized = strtolower(trim($role ?? ''));
+
         // Get all available menu items (default structure)
         $allMenuItems = self::getAllMenuItems($menuType);
         
-        // Get role-specific visibility and order settings
-        $roleSettings = static::where('role', $role)
+        // Get role-specific visibility and order settings (case-insensitive role match)
+        $roleSettings = static::whereRaw('LOWER(role) = ?', [$roleNormalized])
             ->where('menu_type', $menuType)
             ->get()
             ->keyBy('menu_key')
@@ -248,6 +250,8 @@ class RoleMenuVisibility extends Model
      */
     public static function getDefaultVisibilityByRole(string $role, string $menuType): array
     {
+        $role = strtolower(trim($role ?? ''));
+
         // Define default visibility rules per role
         $defaults = [
             'admin' => [
