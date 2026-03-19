@@ -726,6 +726,7 @@
                             <div>
                                 <div class="fw-bold">{{ formatDoctorName($medicalRecord->doctor->name ?? 'Unknown') }}</div>
                                 <small class="text-muted">{{ $medicalRecord->doctor->specialization ?? 'GP' }}</small>
+                                <div class="text-muted small mt-1 ehr-clinic-name">{{ getAppName() }}</div>
                             </div>
                         </div>
                     @else
@@ -896,45 +897,70 @@
     .breadcrumb, .alert, .btn, nav, .card-header, .no-print {
         display: none !important;
     }
-    
+
     /* Remove shadows and borders for cleaner print */
     .card {
         border: none !important;
         box-shadow: none !important;
         margin-bottom: 20px !important;
     }
-    
+
     .doctor-card-body {
         padding: 10px !important;
     }
-    
+
     /* Ensure proper page breaks */
     .card {
         page-break-inside: avoid;
     }
-    
-    /* Make text darker for better printing */
+
+    /* EHR colour theme for print - primary #1cc88a, secondary #36b9cc */
     body, .text-muted {
-        color: #000 !important;
+        color: #2d3748 !important;
     }
-    
+
+    .doctor-card-header, .record-section-header {
+        background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%) !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .doctor-card-header .doctor-card-title,
+    .record-section-header h4,
+    .record-section-header h5 {
+        color: #fff !important;
+    }
+
     /* Header styling for print */
     h1, h2, h3, h4, h5, h6 {
-        color: #000 !important;
+        color: #1a202c !important;
         margin-bottom: 10px !important;
     }
-    
-    /* Ensure badges print in grayscale */
-    .badge {
-        background: #ddd !important;
-        color: #000 !important;
-        border: 1px solid #999;
+
+    /* Badges with EHR theme */
+    .badge.bg-primary, .badge.bg-info {
+        background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%) !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
-    
-    /* Background colors for print */
+
+    .badge.bg-secondary, .badge.bg-light {
+        background: #e2e8f0 !important;
+        color: #2d3748 !important;
+        border: 1px solid #cbd5e0;
+    }
+
+    /* Background colors for print - light tint of EHR green */
     .bg-light {
-        background-color: #f8f9fa !important;
-        border: 1px solid #ddd !important;
+        background-color: rgba(28, 200, 138, 0.08) !important;
+        border: 1px solid rgba(28, 200, 138, 0.2) !important;
+    }
+
+    .ehr-clinic-name {
+        color: #1cc88a !important;
+        font-weight: 600;
     }
 }
 </style>

@@ -301,6 +301,39 @@ class MedicalRecordsController extends Controller
         return view('staff.medical-records.index', compact('medicalRecords', 'doctors', 'departments', 'recordTypes'));
     }
 
+    /**
+     * Print multiple medical records (selected from index).
+     */
+    public function printMultiple(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (!is_array($ids)) {
+            $ids = $ids ? [$ids] : [];
+        }
+        $ids = array_filter(array_map('intval', $ids));
+
+        if (empty($ids)) {
+            return redirect()->route('staff.medical-records.index')
+                ->with('error', 'Please select at least one medical record to print.');
+        }
+
+        $user = Auth::user();
+        $query = MedicalRecord::with(['patient', 'doctor', 'appointment', 'prescriptions'])
+            ->whereIn('id', $ids)
+            ->orderBy('record_date', 'desc')
+            ->orderBy('created_at', 'desc');
+
+        $query->visibleTo($user);
+        $medicalRecords = $query->get();
+
+        if ($medicalRecords->isEmpty()) {
+            return redirect()->route('staff.medical-records.index')
+                ->with('error', 'No accessible medical records found for the selected IDs.');
+        }
+
+        return view('staff.medical-records.print-multiple', compact('medicalRecords'));
+    }
+
     public function create(Request $request)
     {
         $user = Auth::user();

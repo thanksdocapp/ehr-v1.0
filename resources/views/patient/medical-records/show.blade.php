@@ -425,6 +425,7 @@
                     <div class="text-center">
                         <h6 class="mb-1">{{ formatDoctorName($record->doctor->full_name) }}</h6>
                         <p class="text-muted mb-2">{{ $record->doctor->specialization }}</p>
+                        <p class="text-muted small mb-0 ehr-clinic-name">{{ getAppName() }}</p>
                         @if($record->doctor->experience_years)
                             <small class="text-muted">
                                 <i class="fas fa-clock me-1"></i>
@@ -534,13 +535,30 @@
         }
         
         .card {
-            border: 1px solid #dee2e6 !important;
+            border: 1px solid rgba(28, 200, 138, 0.3) !important;
             box-shadow: none !important;
             margin-bottom: 1rem !important;
         }
 
+        .card-header {
+            background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%) !important;
+            color: #fff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .card-header .card-title {
+            color: #fff !important;
+        }
+
         .bg-light {
-            border: 1px solid #dee2e6 !important;
+            background-color: rgba(28, 200, 138, 0.08) !important;
+            border: 1px solid rgba(28, 200, 138, 0.2) !important;
+        }
+
+        .ehr-clinic-name {
+            color: #1cc88a !important;
+            font-weight: 600;
         }
     }
 </style>

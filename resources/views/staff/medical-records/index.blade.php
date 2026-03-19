@@ -401,11 +401,17 @@
 
     <!-- Medical Records Table -->
     <div class="doctor-card">
-        <div class="doctor-card-header">
+        <div class="doctor-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="doctor-card-title mb-0">
                 <i class="fas fa-list me-2"></i>Medical Records
                 <small class="text-muted">({{ $medicalRecords->total() }} total)</small>
             </h5>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small" id="selectedCount">0 selected</span>
+                <button type="button" class="btn btn-sm btn-outline-info" id="printSelectedBtn" disabled onclick="printSelectedRecords()">
+                    <i class="fas fa-print me-1"></i>Print selected
+                </button>
+            </div>
         </div>
         <div class="doctor-card-body">
             @if($medicalRecords->count() > 0)
@@ -413,6 +419,9 @@
                     <table class="table table-hover" id="medicalRecordsTable">
                         <thead class="table-light">
                             <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" id="selectAll" class="form-check-input" title="Select all on this page">
+                                </th>
                                 <th>Patient</th>
                                 <th>Doctor</th>
                                 <th>Presenting Complaint</th>
@@ -424,6 +433,9 @@
                         <tbody>
                             @foreach($medicalRecords as $record)
                             <tr>
+                                <td>
+                                    <input type="checkbox" class="form-check-input record-checkbox" value="{{ $record->id }}" data-record-id="{{ $record->id }}">
+                                </td>
                                 <td>
                                     @if($record->patient)
                                         <div class="d-flex align-items-center">
@@ -598,19 +610,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 "info": false,
                 "searching": false,
                 "ordering": true,
-                "order": [[ 3, "desc" ]],
+                "order": [[ 4, "desc" ]],
                 "columnDefs": [
-                    { "orderable": false, "targets": [5] }
+                    { "orderable": false, "targets": [0, 6] }
                 ]
             });
         }
     }
+
+    // Select all / Print selected
+    var selectAll = document.getElementById('selectAll');
+    var checkboxes = document.querySelectorAll('.record-checkbox');
+    var selectedCountEl = document.getElementById('selectedCount');
+    var printSelectedBtn = document.getElementById('printSelectedBtn');
+
+    function updateSelectedState() {
+        var checked = document.querySelectorAll('.record-checkbox:checked');
+        var count = checked.length;
+        selectedCountEl.textContent = count + ' selected';
+        printSelectedBtn.disabled = count === 0;
+        if (selectAll) {
+            selectAll.checked = count > 0 && count === checkboxes.length;
+            selectAll.indeterminate = count > 0 && count < checkboxes.length;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+            updateSelectedState();
+        });
+    }
+    checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateSelectedState);
+    });
 });
 
-// Print medical record
+// Print medical record (single)
 function printRecord(recordId) {
-    // Navigate to the medical record page with print parameter
     window.location.href = `/staff/medical-records/${recordId}?print=1`;
+}
+
+// Print selected medical records
+function printSelectedRecords() {
+    var checked = document.querySelectorAll('.record-checkbox:checked');
+    if (checked.length === 0) {
+        alert('Please select at least one medical record to print.');
+        return;
+    }
+    var ids = Array.from(checked).map(function(cb) { return cb.value; });
+    var url = '{{ route("staff.medical-records.print-multiple") }}?' + ids.map(function(id) { return 'ids[]=' + id; }).join('&');
+    window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 // Archive medical record

@@ -373,6 +373,7 @@
                             @if($medicalRecord->doctor)
                                 <strong>{{ formatDoctorName($medicalRecord->doctor->full_name) }}</strong>
                                 <small class="text-muted">({{ $medicalRecord->doctor->specialization }})</small>
+                                <div class="text-muted small mt-1 ehr-clinic-name">{{ getAppName() }}</div>
                             @else
                                 <span class="text-muted">Doctor record deleted</span>
                             @endif
@@ -1016,21 +1017,40 @@ function printRecord() {
     window.print();
 }
 
-// Add print styles
+// Add print styles - EHR colour theme
 const printStyles = `
 @media print {
-    .action-buttons, .quick-info-card, .record-section-header {
+    .action-buttons, .quick-info-card {
         display: none !important;
     }
     .record-section {
         box-shadow: none !important;
-        border: 1px solid #ddd !important;
+        border: 1px solid rgba(28, 200, 138, 0.3) !important;
         margin-bottom: 1rem !important;
     }
+    .record-section-header {
+        background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%) !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .record-section-header h4, .record-section-header h5 {
+        color: #fff !important;
+    }
     .page-title {
-        border-bottom: 2px solid #000;
+        border-bottom: 2px solid #1cc88a;
         padding-bottom: 1rem;
         margin-bottom: 2rem;
+    }
+    .ehr-clinic-name {
+        color: #1cc88a !important;
+        font-weight: 600;
+    }
+    .badge.bg-primary, .badge.badge-consultation {
+        background: linear-gradient(135deg, #1cc88a 0%, #36b9cc 100%) !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 }
 `;

@@ -342,6 +342,7 @@ Route::group(['middleware' => 'installed'], function () {
         
         // Medical Records - Role-based Access (doctors and nurses can create/edit, others view only)
         Route::get('/medical-records', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'index'])->name('medical-records.index');
+        Route::get('/medical-records/print', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'printMultiple'])->name('medical-records.print-multiple');
         Route::get('/medical-records/create', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'create'])->name('medical-records.create');
         Route::post('/medical-records', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'store'])->name('medical-records.store');
         Route::get('/medical-records/{medical_record}', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'show'])->name('medical-records.show');
