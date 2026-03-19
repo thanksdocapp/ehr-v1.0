@@ -612,10 +612,10 @@
                                         
                                         {{-- Confirm appointment --}}
                                         @if($appointment->status === 'pending' && in_array(auth()->user()->role, ['admin', 'doctor', 'nurse', 'receptionist']))
-                                            <button type="button" class="btn btn-sm btn-outline-success update-status-btn" 
+                                            <button type="button" class="btn btn-sm btn-warning text-dark update-status-btn" 
                                                     data-appointment-id="{{ $appointment->id }}" 
                                                     data-status="confirmed"
-                                                    title="Confirm Appointment">
+                                                    title="Confirm appointment">
                                                 <i class="fas fa-check me-1"></i>Confirm
                                             </button>
                                         @endif
@@ -697,7 +697,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Update Appointment Status</h5>
+                <h5 class="modal-title" id="statusModalTitle">Update Appointment Status</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="statusForm">
@@ -719,7 +719,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-doctor-primary">Update Status</button>
+                    <button type="submit" class="btn btn-doctor-primary" id="statusModalSubmitBtn">Update Status</button>
                 </div>
             </form>
         </div>
@@ -801,6 +801,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 let currentAppointmentId = null;
 
+function syncStatusModalLabelsForStatus(status) {
+    var $title = $('#statusModalTitle');
+    var $submit = $('#statusModalSubmitBtn');
+    if (status === 'confirmed') {
+        $title.text('Confirm appointment');
+        $submit.text('Confirm appointment');
+    } else {
+        $title.text('Update Appointment Status');
+        $submit.text('Update Status');
+    }
+}
+
 // Make updateStatus globally accessible (for any legacy calls)
 window.updateStatus = function(appointmentId, status = null) {
     currentAppointmentId = appointmentId;
@@ -808,6 +820,8 @@ window.updateStatus = function(appointmentId, status = null) {
     if (status) {
         $('#status_select').val(status);
     }
+
+    syncStatusModalLabelsForStatus(status || $('#status_select').val());
 
     // Use Bootstrap 5 native modal API
     var modalElement = document.getElementById('statusModal');
@@ -836,6 +850,8 @@ $(document).on('click', '.update-status-btn', function(e) {
         $('#status_select').val(status);
     }
 
+    syncStatusModalLabelsForStatus(status || $('#status_select').val());
+
     // Use Bootstrap 5 native modal API
     var modalElement = document.getElementById('statusModal');
     if (modalElement) {
@@ -858,7 +874,8 @@ $('#statusForm').on('submit', function(e) {
     // Disable submit button
     const submitBtn = $(this).find('button[type="submit"]');
     const originalText = submitBtn.html();
-    submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Updating...');
+    const loadingLabel = status === 'confirmed' ? 'Confirming...' : 'Updating...';
+    submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>' + loadingLabel);
     
     $.ajax({
         url: `/staff/appointments/${currentAppointmentId}/status`,
@@ -890,6 +907,10 @@ $('#statusForm').on('submit', function(e) {
             alert(errorMessage);
         }
     });
+});
+
+$(document).on('change', '#status_select', function() {
+    syncStatusModalLabelsForStatus($(this).val());
 });
 </script>
 @endpush
