@@ -72,14 +72,14 @@ class HospitalEmailNotificationService
             }
         }
 
-        // Build online consultation section if applicable
+        // Build online consultation section - patient gets PARTICIPANT link (meeting_link/roomUrl)
         $onlineConsultationSection = '';
         $notesWithVideoLink = $appointment->notes ?? 'Please arrive 15 minutes early.';
-        if ($appointment->is_online && $appointment->meeting_link) {
+        $participantLink = $appointment->meeting_link ?? null;
+        if ($appointment->is_online && $participantLink) {
             $platformName = $appointment->meeting_platform_name ?? 'Video Call';
-            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nParticipant link: {$appointment->meeting_link}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
-            // Also append to notes so link appears even if template lacks {{online_consultation_section}}
-            $notesWithVideoLink = trim($notesWithVideoLink) . "\n\n---\nONLINE VIDEO CONSULTATION\nJoin your video call here: " . $appointment->meeting_link . "\nPlease join 5 minutes before your scheduled time.";
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nParticipant link: {$participantLink}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
+            $notesWithVideoLink = trim($notesWithVideoLink) . "\n\n---\nONLINE VIDEO CONSULTATION\nJoin your video call here: " . $participantLink . "\nPlease join 5 minutes before your scheduled time.";
         }
 
         $variables = [
@@ -101,9 +101,10 @@ class HospitalEmailNotificationService
             'appointment_id' => $appointment->id,
             'notes' => $notesWithVideoLink,
             'is_online' => $appointment->is_online ?? false,
-            'meeting_link' => $appointment->meeting_link ?? null,
+            'meeting_link' => $participantLink,
+            'participant_link' => $participantLink,
+            'join_meeting_url' => $participantLink,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
-            'join_meeting_url' => $appointment->meeting_link ?? null,
             'online_consultation_section' => $onlineConsultationSection,
         ];
 
@@ -161,12 +162,13 @@ class HospitalEmailNotificationService
             }
         }
 
-        // Build online consultation section if applicable - use host link for Whereby when available
+        // Build online consultation section - doctor gets HOST link (whereby_host_url), patient gets participant
         $onlineConsultationSection = '';
-        if ($appointment->is_online && ($appointment->whereby_host_url || $appointment->meeting_link)) {
+        $hostLink = $appointment->whereby_host_url ?? $appointment->meeting_link ?? null;
+        $participantLink = $appointment->meeting_link ?? null;
+        if ($appointment->is_online && $hostLink) {
             $platformName = $appointment->meeting_platform_name ?? 'Video Call';
-            $doctorMeetingLink = $appointment->whereby_host_url ?? $appointment->meeting_link;
-            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nHost link: {$doctorMeetingLink}\n";
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nHost link (for you): {$hostLink}\n\n" . ($participantLink ? "Participant link (for patient): {$participantLink}\n" : '') . "\nPlease join as host 5 minutes before your scheduled time.\n";
         } elseif ($appointment->is_online) {
             $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation. Meeting link will be generated.\n";
         }
@@ -186,7 +188,9 @@ class HospitalEmailNotificationService
             'notes' => $appointment->notes ?? '',
             'reason' => $appointment->reason ?? 'Not specified',
             'is_online' => $appointment->is_online ?? false,
-            'meeting_link' => $appointment->whereby_host_url ?? $appointment->meeting_link ?? null,
+            'meeting_link' => $hostLink,
+            'host_meeting_link' => $hostLink,
+            'participant_link' => $participantLink,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
             'appointment_url' => url('/staff/appointments/' . $appointment->id),
             'online_consultation_section' => $onlineConsultationSection,
@@ -234,11 +238,12 @@ class HospitalEmailNotificationService
             }
         }
 
-        // Build online consultation section if applicable
+        // Build online consultation section - patient gets PARTICIPANT link
         $onlineConsultationSection = '';
-        if ($appointment->is_online && $appointment->meeting_link) {
+        $participantLink = $appointment->meeting_link ?? null;
+        if ($appointment->is_online && $participantLink) {
             $platformName = $appointment->meeting_platform_name ?? 'Video Call';
-            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nParticipant link: {$appointment->meeting_link}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation.\nPlatform: {$platformName}\nParticipant link: {$participantLink}\n\nPlease join the meeting 5 minutes before your scheduled time.\n";
         }
 
         $variables = [
@@ -259,9 +264,10 @@ class HospitalEmailNotificationService
             'reschedule_url' => url('/patient/appointments/' . $appointment->id . '/reschedule'),
             'cancel_url' => url('/patient/appointments/' . $appointment->id . '/cancel'),
             'is_online' => $appointment->is_online ?? false,
-            'meeting_link' => $appointment->meeting_link ?? null,
+            'meeting_link' => $participantLink,
+            'participant_link' => $participantLink,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
-            'join_meeting_url' => $appointment->meeting_link ?? null,
+            'join_meeting_url' => $participantLink,
             'online_consultation_section' => $onlineConsultationSection,
         ];
 
@@ -1045,13 +1051,13 @@ class HospitalEmailNotificationService
             }
         }
 
-        // Build online consultation section if applicable - use HOST link for doctor
+        // Build online consultation section - doctor gets HOST link
         $onlineConsultationSection = '';
-        if ($appointment->is_online && ($appointment->whereby_host_url || $appointment->meeting_link)) {
+        $hostLink = $appointment->whereby_host_url ?? $appointment->meeting_link ?? null;
+        $participantLink = $appointment->meeting_link ?? null;
+        if ($appointment->is_online && $hostLink) {
             $platformName = $appointment->meeting_platform_name ?? 'Video Call';
-            // Use host URL for doctor if available (Whereby), otherwise use regular meeting link
-            $doctorMeetingLink = $appointment->whereby_host_url ?? $appointment->meeting_link;
-            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nHost link: {$doctorMeetingLink}\n";
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nHost link (for you): {$hostLink}\n\n" . ($participantLink ? "Participant link (for patient): {$participantLink}\n" : '') . "\nPlease join as host 5 minutes before your scheduled time.\n";
         } elseif ($appointment->is_online) {
             $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nThis is an online video consultation. Meeting link will be generated.\n";
         }
@@ -1067,8 +1073,9 @@ class HospitalEmailNotificationService
             'hospital_name' => config('app.name', 'Hospital'),
             'appointment_url' => url('/staff/appointments/' . $appointment->id),
             'is_online' => $appointment->is_online ?? false,
-            'meeting_link' => $appointment->whereby_host_url ?? $appointment->meeting_link ?? null,
-            'host_meeting_link' => $appointment->whereby_host_url ?? $appointment->meeting_link ?? null,
+            'meeting_link' => $hostLink,
+            'host_meeting_link' => $hostLink,
+            'participant_link' => $participantLink,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
             'online_consultation_section' => $onlineConsultationSection,
         ];
