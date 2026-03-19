@@ -7,14 +7,6 @@
 
 @section('content')
 <div class="fade-in-up">
-    <!-- Alert Messages -->
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>

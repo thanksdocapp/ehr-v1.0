@@ -35,12 +35,6 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">
-            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        </div>
-    @endif
-
     <div class="modern-card">
         <div class="modern-card-header">
             <h5 class="modern-card-title mb-0"><i class="fas fa-sliders-h me-2"></i>Question Bank</h5>

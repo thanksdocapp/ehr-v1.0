@@ -18,15 +18,6 @@ use Illuminate\Support\Facades\Storage;
                 </div>
             </div>
 
-            <!-- Success Message -->
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle me-2"></i>
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-
             <div class="row">
                 <!-- Profile Information -->
                 <div class="col-lg-6">

@@ -2435,6 +2435,9 @@
             @if(session('error'))
                 <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 12px; border: none;">
                     <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+                    @if(session('convert_patient_id'))
+                        <a href="{{ route('staff.patients.convert-guest', session('convert_patient_id')) }}" class="alert-link d-block mt-2">Convert this patient to full patient &rarr;</a>
+                    @endif
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif

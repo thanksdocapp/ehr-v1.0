@@ -26,35 +26,6 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">
-            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-            @if(session('email_log_id'))
-                <div class="mt-2 small">
-                    <a href="{{ route('admin.email-management.show', session('email_log_id')) }}" class="text-decoration-none">
-                        <i class="fas fa-receipt me-1"></i> View Email Log #{{ session('email_log_id') }}
-                    </a>
-                </div>
-            @endif
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger">
-            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-            @if(session('email_log_id'))
-                <div class="mt-2 small">
-                    <a href="{{ route('admin.email-management.show', session('email_log_id')) }}" class="text-decoration-none">
-                        <i class="fas fa-receipt me-1"></i> View Email Log #{{ session('email_log_id') }}
-                    </a>
-                </div>
-            @endif
-            <div class="mt-2 small text-muted">
-                Check <strong>Admin → Communication → Email Services</strong> and <strong>Email Logs</strong>.
-            </div>
-        </div>
-    @endif
-
     <div class="modern-card">
         <div class="modern-card-header">
             <h5 class="modern-card-title mb-0"><i class="fas fa-vial me-2"></i>Test Setup</h5>

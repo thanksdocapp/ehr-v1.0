@@ -9,14 +9,6 @@
 
 @section('content')
 <div class="fade-in">
-    <!-- Alert Messages -->
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     <!-- Modern Page Header -->
     <div class="modern-page-header fade-in-up">
         <div class="modern-page-header-content">
