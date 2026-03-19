@@ -19,7 +19,7 @@
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.6; color: var(--ehr-text); margin: 0; padding: 0; }
         .print-document { max-width: 210mm; margin: 0 auto; padding: 24px; }
-        .clinic-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--ehr-border); }
+        .clinic-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; margin-bottom: 24px; }
         .clinic-name { font-size: 1.5rem; font-weight: 700; color: var(--ehr-primary); margin: 0; }
         .document-meta { text-align: right; }
         .document-type { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ehr-primary); margin: 0 0 4px 0; }
@@ -79,7 +79,6 @@
                 z-index: 9999;
                 padding: 8px 16px 10px;
                 margin: 0;
-                border-bottom: 1px solid var(--ehr-border);
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
