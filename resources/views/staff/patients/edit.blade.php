@@ -406,26 +406,21 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="mt-4 mb-2 text-start">
+                    <button type="submit" class="btn btn-doctor-primary">
+                        <i class="fas fa-save me-2"></i>Update Patient
+                    </button>
+                </div>
             </div>
-            <!-- Actions -->
             <div class="col-lg-4">
-                <div class="doctor-card mb-4">
-                    <div class="doctor-card-header">
-                        <h6 class="doctor-card-title mb-0 fw-semibold">Actions</h6>
-                    </div>
-                    <div class="doctor-card-body">
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-doctor-primary">
-                                <i class="fas fa-save me-2"></i>Update Patient
-                            </button>
-                            <a href="{{ route('staff.patients.show', $patient->id) }}" class="btn btn-info">
-                                <i class="fas fa-eye me-2"></i>View Patient
-                            </a>
-                            <a href="{{ route('staff.patients.index') }}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Back to List
-                            </a>
-                        </div>
-                    </div>
+                <div class="mb-4 d-grid gap-2">
+                    <a href="{{ route('staff.patients.show', $patient->id) }}" class="btn btn-info">
+                        <i class="fas fa-eye me-2"></i>View Patient
+                    </a>
+                    <a href="{{ route('staff.patients.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                    </a>
                 </div>
 
                 <!-- Current Information -->
