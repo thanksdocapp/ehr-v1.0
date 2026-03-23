@@ -265,6 +265,7 @@ class PublicBookingController extends Controller
             'gender' => 'required|in:male,female,other',
             'consultation_type' => 'nullable|in:in_person,online,telephone',
             'consent' => 'required|accepted',
+            'notes' => 'required|string|max:10000',
         ], $this->publicBookingAddressValidationRules()));
 
         if ($validator->fails()) {
@@ -337,6 +338,7 @@ class PublicBookingController extends Controller
             'date_of_birth' => 'required|date|before:today',
             'gender' => 'required|in:male,female,other',
             'consultation_type' => 'nullable|in:in_person,online,telephone',
+            'notes' => 'required|string|max:10000',
         ], $this->publicBookingAddressValidationRules()));
 
         if ($validator->fails()) {
@@ -658,6 +660,7 @@ class PublicBookingController extends Controller
             'gp_email' => 'required_if:consent_share_with_gp,1|nullable|email|max:255',
             'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
             'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
+            'notes' => 'required|string|max:10000',
         ], $this->publicBookingAddressValidationRules()));
 
         // Set default consultation type to in_person (doctors will decide later)
@@ -774,6 +777,7 @@ class PublicBookingController extends Controller
             'gp_email' => 'required_if:consent_share_with_gp,1|nullable|email|max:255',
             'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
             'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
+            'notes' => 'required|string|max:10000',
         ], $this->publicBookingAddressValidationRules());
         
         // Require date_of_birth and gender if they are provided (not empty strings)

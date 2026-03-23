@@ -125,8 +125,9 @@
                 </div>
             </div>
             <div class="mb-3">
-                <label for="notes" class="form-label">Reason for booking <span class="text-muted">(optional)</span></label>
-                <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="e.g. I think I have a chest infection">{{ old('notes') }}</textarea>
+                <label for="notes" class="form-label">Reason for booking <span class="text-danger">*</span></label>
+                <textarea class="form-control @error('notes') is-invalid @enderror" id="notes" name="notes" rows="3" required placeholder="e.g. I think I have a chest infection">{{ old('notes') }}</textarea>
+                @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 <small class="form-text text-muted">Shared with clinic staff from your booking (before your visit).</small>
             </div>
             <div class="form-check">

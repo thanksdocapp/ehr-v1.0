@@ -30,9 +30,7 @@
         <input type="hidden" name="date_of_birth" value="{{ $patient_data['date_of_birth'] ?? '' }}">
         <input type="hidden" name="gender" value="{{ $patient_data['gender'] ?? '' }}">
         <input type="hidden" name="consultation_type" value="{{ $patient_data['consultation_type'] ?? 'in_person' }}">
-        @if(isset($patient_data['notes']))
-        <input type="hidden" name="notes" value="{{ $patient_data['notes'] }}">
-        @endif
+        <input type="hidden" name="notes" value="{{ $patient_data['notes'] ?? '' }}">
         <input type="hidden" name="address" value="{{ $patient_data['address'] ?? '' }}">
         <input type="hidden" name="address_line_2" value="{{ $patient_data['address_line_2'] ?? '' }}">
         <input type="hidden" name="city" value="{{ $patient_data['city'] ?? '' }}">
@@ -84,9 +82,7 @@
             @if(!empty($patient_data['country']))
             <div class="review-row"><span class="review-label">Country</span><span class="review-value">{{ $patient_data['country'] }}</span></div>
             @endif
-            @if(!empty($patient_data['notes']))
-            <div class="review-row"><span class="review-label">Reason for booking</span><span class="review-value">{{ $patient_data['notes'] }}</span></div>
-            @endif
+            <div class="review-row"><span class="review-label">Reason for booking</span><span class="review-value">{{ $patient_data['notes'] ?? '—' }}</span></div>
         </div>
 
         <div class="text-center mt-4">

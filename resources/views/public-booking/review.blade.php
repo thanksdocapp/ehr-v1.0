@@ -62,9 +62,7 @@
         @if(isset($patient_data['department_id']))
         <input type="hidden" name="department_id" value="{{ $patient_data['department_id'] }}">
         @endif
-        @if(isset($patient_data['notes']))
-        <input type="hidden" name="notes" value="{{ $patient_data['notes'] }}">
-        @endif
+        <input type="hidden" name="notes" value="{{ $patient_data['notes'] ?? '' }}">
         <input type="hidden" name="address" value="{{ $patient_data['address'] ?? '' }}">
         <input type="hidden" name="address_line_2" value="{{ $patient_data['address_line_2'] ?? '' }}">
         <input type="hidden" name="city" value="{{ $patient_data['city'] ?? '' }}">
@@ -184,12 +182,10 @@
                 <span class="review-value">{{ $patient_data['country'] }}</span>
             </div>
             @endif
-            @if(isset($patient_data['notes']) && $patient_data['notes'])
             <div class="review-row">
                 <span class="review-label">Reason for booking</span>
-                <span class="review-value">{{ $patient_data['notes'] }}</span>
+                <span class="review-value">{{ $patient_data['notes'] ?? '—' }}</span>
             </div>
-            @endif
         </div>
 
         <div class="d-flex justify-content-between">
