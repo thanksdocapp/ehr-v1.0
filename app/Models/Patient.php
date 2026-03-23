@@ -288,7 +288,7 @@ class Patient extends Authenticatable
 
     /**
      * Check if patient has placeholder information that needs to be fixed
-     * (First Name = "Guest", Last Name = "Patient", or email contains "@payment-link.temp")
+     * (default booking first/last "Guest" / "Patient", or email contains "@payment-link.temp")
      */
     public function hasPlaceholderInformation(): bool
     {

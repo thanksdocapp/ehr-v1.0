@@ -425,7 +425,7 @@ class MedicalRecordsController extends Controller
         $patient = Patient::find($request->patient_id);
         if ($patient && $patient->is_guest) {
             return redirect()->back()
-                ->with('error', 'Cannot create medical records for guest patients. Please convert the patient to a full patient first.')
+                ->with('error', 'Cannot create medical records for new patients until the profile is complete. Please complete the patient profile first.')
                 ->with('convert_patient_id', $patient->id)
                 ->withInput();
         }
@@ -728,7 +728,7 @@ class MedicalRecordsController extends Controller
         // Check if patient is a guest
         if ($medicalRecord->patient && $medicalRecord->patient->is_guest) {
             return redirect()->back()
-                ->with('error', 'Cannot edit medical records for guest patients. Please convert the patient to a full patient first.')
+                ->with('error', 'Cannot edit medical records until the new patient profile is complete. Please complete the patient profile first.')
                 ->with('convert_patient_id', $medicalRecord->patient_id)
                 ->withInput();
         }

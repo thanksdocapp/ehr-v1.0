@@ -11,13 +11,13 @@
     <!-- Patient Alert Bar -->
     @include('components.patient-alert-bar', ['patient' => $patient])
     
-    <!-- Guest Patient Banner -->
+    <!-- New patient (is_guest) banner -->
     @if($patient->is_guest)
     <div class="alert alert-warning border-0 mb-4 fade-in-up">
         <h6 class="alert-heading mb-2">
-            <i class="fas fa-exclamation-triangle me-2"></i>Guest patient record
+            <i class="fas fa-exclamation-triangle me-2"></i>New patient record
         </h6>
-        <p class="mb-3">Some features stay limited until the profile is complete. Use <strong>Complete patient profile</strong> to enter required details; saving a complete record clears guest status automatically.</p>
+        <p class="mb-3">Some features stay limited until the profile is complete. Use <strong>Complete patient profile</strong> to enter required details; saving a complete record clears new-patient status automatically.</p>
         @include('staff.partials.guest-patient-actions', [
             'patient' => $patient,
             'patientEditUrl' => route('admin.patients.edit', $patient),
@@ -36,7 +36,7 @@
                 <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
                     @if($patient->is_guest)
                     <span class="badge-modern badge-modern-secondary me-2">
-                        Guest
+                        New Patient
                     </span>
                     @endif
                     <span class="badge-modern {{ $patient->is_active ? 'badge-modern-success' : 'badge-modern-danger' }}">

@@ -1572,7 +1572,7 @@ class PatientsController extends Controller
             ]);
 
             return redirect()->route('admin.patients.show', $patient)
-                ->with('success', 'Patient successfully converted from guest to full patient.');
+                ->with('success', 'Patient profile completed successfully.');
         } catch (\Exception $e) {
             \Log::error('Failed to convert guest patient', [
                 'patient_id' => $patient->id,

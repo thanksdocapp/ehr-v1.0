@@ -24,7 +24,7 @@ foreach ($tables as $table => $name) {
 $results[] = "\n=== Column Verification ===\n\n";
 
 $columns = [
-    'patients' => ['is_guest' => 'Is Guest'],
+    'patients' => ['is_guest' => 'Is new patient (provisional)'],
     'appointments' => ['service_id' => 'Service ID', 'created_from' => 'Created From'],
 ];
 

@@ -2351,7 +2351,7 @@
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
                     @if(session('convert_patient_id'))
-                        <a href="{{ route('staff.patients.show', session('convert_patient_id')) }}" class="alert-link d-block mt-2">Open patient record to convert guest &rarr;</a>
+                        <a href="{{ route('staff.patients.show', session('convert_patient_id')) }}" class="alert-link d-block mt-2">Open patient record to complete new patient profile &rarr;</a>
                     @endif
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
@@ -2370,9 +2370,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     
     <script>
-        // Auto-hide alerts after 30 seconds
+        // Auto-hide alerts after 30 seconds (skip persistent / clinical-gate notices)
         setTimeout(function() {
-            $('.alert').fadeOut('slow');
+            $('.alert:not(.alert-persistent)').fadeOut('slow');
         }, 30000);
         
         // Mobile sidebar toggle

@@ -14,7 +14,7 @@
     <!-- Patient Alert Bar -->
     @include('components.patient-alert-bar', ['patient' => $patient])
 
-    <!-- Guest patient: single alert (profile + optional missing-field list + actions) -->
+    <!-- New patient (is_guest): blocking notice stays visible (sticky + non-dismissable) until core profile is complete -->
     @if($patient->is_guest)
         @php
             $patientInfoCheck = [
@@ -30,22 +30,23 @@
             } catch (\Exception $e) {
                 // DecryptException etc.: skip field list
             }
+            $guestProfileBlocking = (bool) ($patientInfoCheck['is_incomplete'] ?? false);
         @endphp
-        <div class="alert {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'alert-danger' : 'alert-warning' }} border-0 mb-4 alert-dismissible fade show" role="alert">
-            <div class="d-flex align-items-start">
-                <i class="fas {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'fa-exclamation-circle' : 'fa-user-clock' }} fa-2x me-3 mt-1"></i>
-                <div class="flex-grow-1">
-                    <h5 class="alert-heading mb-2">
-                        @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                            <strong class="text-danger">Guest patient — placeholder details must be replaced</strong>
-                        @else
-                            Please complete profile before clinical documentation
-                        @endif
-                    </h5>
-                    <p class="mb-2">
-                        Medical records and prescriptions stay unavailable until required details are updated.
-                    </p>
-                    @if($patientInfoCheck['is_incomplete'] ?? false)
+        @if($guestProfileBlocking)
+            <div class="alert alert-persistent clinical-profile-gate-banner {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'alert-danger' : 'alert-warning' }} border-0 mb-4 fade show" role="alert">
+                <div class="d-flex align-items-start">
+                    <i class="fas {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'fa-exclamation-circle' : 'fa-user-clock' }} fa-2x me-3 mt-1"></i>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-2">
+                            @if($patientInfoCheck['has_placeholder_info'] ?? false)
+                                <strong class="text-danger">New patient — placeholder details must be replaced</strong>
+                            @else
+                                Please complete profile before clinical documentation
+                            @endif
+                        </h5>
+                        <p class="mb-2">
+                            Medical records and prescriptions stay unavailable until required details are updated.
+                        </p>
                         <p class="mb-2 fw-semibold">Complete these items:</p>
                         <ul class="mb-3">
                             @foreach($patientInfoCheck['missing_fields'] as $field)
@@ -58,23 +59,42 @@
                                 </li>
                             @endforeach
                         </ul>
-                    @endif
-                    @if(($patientInfoCheck['has_recommended_gaps'] ?? false) && count($patientInfoCheck['recommended_missing_fields'] ?? []))
-                        <p class="mb-2 fw-semibold small text-muted">Recommended next:</p>
+                        @if(($patientInfoCheck['has_recommended_gaps'] ?? false) && count($patientInfoCheck['recommended_missing_fields'] ?? []))
+                            <p class="mb-2 fw-semibold small text-muted">Recommended next:</p>
+                            <ul class="mb-3 small">
+                                @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
+                                    <li>{{ $field }}</li>
+                                @endforeach
+                            </ul>
+                        @endif
+                        @include('staff.partials.guest-patient-actions', [
+                            'patient' => $patient,
+                            'primaryEmphasis' => (bool) ($patientInfoCheck['has_placeholder_info'] ?? false),
+                        ])
+                    </div>
+                </div>
+            </div>
+        @elseif(($patientInfoCheck['has_recommended_gaps'] ?? false) && count($patientInfoCheck['recommended_missing_fields'] ?? []))
+            <div class="alert alert-info border-0 mb-4 alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-start">
+                    <i class="fas fa-info-circle fa-2x me-3 mt-1"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="alert-heading mb-2">Recommended patient details</h6>
+                        <p class="mb-2 small">Core profile is complete. Consider adding:</p>
                         <ul class="mb-3 small">
                             @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
                                 <li>{{ $field }}</li>
                             @endforeach
                         </ul>
-                    @endif
-                    @include('staff.partials.guest-patient-actions', [
-                        'patient' => $patient,
-                        'primaryEmphasis' => (bool) ($patientInfoCheck['has_placeholder_info'] ?? false),
-                    ])
+                        @include('staff.partials.guest-patient-actions', [
+                            'patient' => $patient,
+                            'primaryEmphasis' => false,
+                        ])
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        </div>
+        @endif
     @endif
 
     <div class="row">
@@ -854,12 +874,24 @@
 </div>
 @endsection
 
+@push('styles')
+<style>
+    /* Stays under sticky layout header; remains visible while scrolling until profile is complete */
+    .clinical-profile-gate-banner {
+        position: sticky;
+        top: var(--header-height, 70px);
+        z-index: 1100;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // Auto-dismiss alerts after 5 seconds
+    // Auto-dismiss alerts after 30s (not clinical profile gate / persistent)
     setTimeout(function() {
-        $('.alert').fadeOut();
+        $('.alert:not(.alert-persistent)').fadeOut();
     }, 30000);
 });
 </script>

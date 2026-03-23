@@ -39,7 +39,7 @@ class CheckGuestRestrictions
                 
                 if (in_array($routeName, $restrictedActions)) {
                     return redirect()->back()
-                        ->with('error', 'This is a guest patient record. Please convert to full patient to perform this action.');
+                        ->with('error', 'This is a new patient record with an incomplete profile. Complete the patient profile to use this feature.');
                 }
             }
         }

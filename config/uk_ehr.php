@@ -17,7 +17,7 @@ return [
     */
 
     'core_labels' => [
-        'placeholder_name' => 'Patient name — replace placeholder (Guest / Patient)',
+        'placeholder_name' => 'Patient name — replace booking placeholder (new patient default)',
         'placeholder_email' => 'Email — replace temporary booking address',
         'email_invalid' => 'Valid email address',
         'date_of_birth' => 'Date of birth',
