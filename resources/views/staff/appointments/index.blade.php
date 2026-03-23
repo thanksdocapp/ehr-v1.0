@@ -528,7 +528,7 @@
                                                     </span>
                                                 @endif
                                                 @if($appointment->patient->is_guest)
-                                                    <span class="badge bg-secondary" title="Profile incomplete — complete before clinical documentation. Complete the full profile or use quick convert until required fields are filled.">
+                                                    <span class="badge bg-secondary" title="Profile incomplete — complete before clinical documentation.">
                                                         <i class="fas fa-user-clock me-1"></i>Provisional
                                                     </span>
                                                 @endif
