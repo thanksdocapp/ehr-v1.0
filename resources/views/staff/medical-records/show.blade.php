@@ -633,6 +633,21 @@
         <!-- Sidebar -->
         <div class="col-lg-4">
 
+            @php
+                $currentDoctorForMrEdit = null;
+                if (strtolower(auth()->user()->role ?? '') === 'doctor') {
+                    $currentDoctorForMrEdit = \App\Models\Doctor::where('user_id', auth()->id())->first();
+                }
+                $canEditThisMedicalRecord = false;
+                if ($currentDoctorForMrEdit && $medicalRecord->patient && !$medicalRecord->patient->is_guest) {
+                    if (!$medicalRecord->doctor_id) {
+                        $canEditThisMedicalRecord = true;
+                    } else {
+                        $canEditThisMedicalRecord = (int) $medicalRecord->doctor_id === (int) $currentDoctorForMrEdit->id;
+                    }
+                }
+            @endphp
+
             <!-- Action Buttons -->
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
@@ -642,6 +657,13 @@
                 </div>
                 <div class="doctor-card-body">
                     <div class="d-grid gap-2">
+                        @if($canEditThisMedicalRecord)
+                            <a href="{{ route('staff.medical-records.edit', $medicalRecord) }}" class="btn btn-primary w-100 mb-2">
+                                <i class="fas fa-edit me-2"></i>Edit medical record
+                            </a>
+                            <div class="dropdown-divider my-2"></div>
+                        @endif
+
                         @if(auth()->user()->role === 'doctor')
                             <h6 class="text-uppercase fw-bold text-muted small mb-2">Workflow</h6>
                             

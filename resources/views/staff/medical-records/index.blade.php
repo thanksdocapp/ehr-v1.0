@@ -431,6 +431,11 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $currentDoctorForMrEditIndex = strtolower(auth()->user()->role ?? '') === 'doctor'
+                                    ? \App\Models\Doctor::where('user_id', auth()->id())->first()
+                                    : null;
+                            @endphp
                             @foreach($medicalRecords as $record)
                             <tr>
                                 <td>
@@ -483,6 +488,13 @@
                                            class="btn btn-sm btn-outline-primary" title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </a>
+
+                                        @if($currentDoctorForMrEditIndex && $record->patient && !$record->patient->is_guest && (!$record->doctor_id || (int) $record->doctor_id === (int) $currentDoctorForMrEditIndex->id))
+                                            <a href="{{ route('staff.medical-records.edit', $record) }}"
+                                               class="btn btn-sm btn-outline-secondary" title="Edit medical record">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        @endif
                                         
                                         {{-- Create prescription from medical record --}}
                                         @if(in_array(auth()->user()->role, ['doctor', 'pharmacist']))

@@ -60,7 +60,7 @@
                             <i class="fas fa-comment-medical me-1"></i>Reason for booking
                         </p>
                         <div class="fw-normal text-dark fs-6">{!! nl2br(e($appointment->notes)) !!}</div>
-                        <small class="text-muted d-block mt-2">Provided when the patient booked — visible to staff before the visit.</small>
+                        <small class="text-muted d-block mt-2">Provided when the patient booked</small>
                     </div>
                     @endif
 
