@@ -791,6 +791,12 @@
                     <div class="dropdown-divider my-2"></div>
                     @endcan
                     
+                    @php
+                        $userRoleForMenu = strtolower(trim(auth()->user()->role ?? 'staff'));
+                        $staffSidebarItems = \App\Models\RoleMenuVisibility::getOrderedMenuItemsForRole($userRoleForMenu, 'staff');
+                        $myDocumentsMenuVisible = collect($staffSidebarItems)->contains(fn ($item) => ($item['menu_key'] ?? '') === 'my-documents');
+                    @endphp
+                    @if($myDocumentsMenuVisible)
                     @can('viewAny', [\App\Models\PatientDocument::class, $patient])
                     <h6 class="text-uppercase fw-bold text-muted small mb-2">Letters & Forms</h6>
                     <div class="d-grid gap-2 mb-3">
@@ -805,6 +811,7 @@
                     </div>
                     <div class="dropdown-divider my-2"></div>
                     @endcan
+                    @endif
                     
                     <h6 class="text-uppercase fw-bold text-muted small mb-2">Management</h6>
                     <div class="d-grid gap-2">
