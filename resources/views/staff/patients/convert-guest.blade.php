@@ -1,8 +1,8 @@
 @extends(auth()->user()->role === 'doctor' ? 'layouts.doctor' : 'layouts.staff')
 
-@section('title', 'Complete New Patient')
-@section('page-title', 'Complete New Patient')
-@section('page-subtitle', 'Confirm name, date of birth and gender to complete this new patient record')
+@section('title', 'Complete provisional profile')
+@section('page-title', 'Complete provisional profile')
+@section('page-subtitle', 'Confirm name, date of birth and gender to finish this provisional record')
 
 @section('content')
 <div class="container-fluid">
@@ -10,7 +10,7 @@
         <div class="col-12">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3">
-                    <h4 class="mb-0 fw-bold">Complete New Patient (full profile)</h4>
+                    <h4 class="mb-0 fw-bold">Complete provisional profile</h4>
                 </div>
                 
                 <div class="card-body">
@@ -25,7 +25,7 @@
 
                     <div class="alert alert-light border mb-4" role="alert">
                         <p class="mb-0 small">
-                            <strong>Recommended:</strong> use <a href="{{ route('staff.patients.edit', $patient) }}">Complete patient profile</a> instead — save when all required fields are filled and new-patient restrictions clear automatically. This page is only for staff who still use the short form by URL.
+                            <strong>Recommended:</strong> use <a href="{{ route('staff.patients.edit', $patient) }}">Complete patient profile</a> instead — save when all required fields are filled and provisional restrictions clear automatically. This page is only for staff who still use the short form by URL.
                         </p>
                     </div>
 

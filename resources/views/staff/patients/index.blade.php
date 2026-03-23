@@ -530,8 +530,8 @@
                                                     </span>
                                                 @endif
                                                 @if($patient->is_guest)
-                                                    <span class="badge bg-secondary" title="New patient — complete the full profile or use quick convert until required fields are filled">
-                                                        <i class="fas fa-user-clock me-1"></i>New Patient
+                                                    <span class="badge bg-secondary" title="Profile incomplete — complete before clinical documentation. Complete the full profile or use quick convert until required fields are filled.">
+                                                        <i class="fas fa-user-clock me-1"></i>Provisional
                                                     </span>
                                                 @endif
                                             </div>

@@ -359,7 +359,7 @@
                 <div class="doctor-card-header">
                     <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Patient Information</h5>
                     @if($appointment->patient->is_guest)
-                        <span class="badge bg-secondary ms-2"><i class="fas fa-user-clock me-1"></i>New Patient</span>
+                        <span class="badge bg-secondary ms-2" title="Profile incomplete — complete before clinical documentation."><i class="fas fa-user-clock me-1"></i>Provisional</span>
                     @endif
                 </div>
                 <div class="doctor-card-body">

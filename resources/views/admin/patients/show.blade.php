@@ -11,13 +11,14 @@
     <!-- Patient Alert Bar -->
     @include('components.patient-alert-bar', ['patient' => $patient])
     
-    <!-- New patient (is_guest) banner -->
+    <!-- Provisional record (is_guest) banner -->
     @if($patient->is_guest)
     <div class="alert alert-warning border-0 mb-4 fade-in-up">
         <h6 class="alert-heading mb-2">
-            <i class="fas fa-exclamation-triangle me-2"></i>New patient record
+            <i class="fas fa-exclamation-triangle me-2"></i>Provisional record
         </h6>
-        <p class="mb-3">Some features stay limited until the profile is complete. Use <strong>Complete patient profile</strong> to enter required details; saving a complete record clears new-patient status automatically.</p>
+        <p class="mb-2 fw-semibold">Profile incomplete — complete before clinical documentation.</p>
+        <p class="mb-3">Some features stay limited until the profile is complete. Use <strong>Complete patient profile</strong> to enter required details; saving a complete record clears provisional status automatically.</p>
         @include('staff.partials.guest-patient-actions', [
             'patient' => $patient,
             'patientEditUrl' => route('admin.patients.edit', $patient),
@@ -35,8 +36,8 @@
                 </div>
                 <div class="mt-3 mt-md-0 d-flex gap-2 flex-wrap">
                     @if($patient->is_guest)
-                    <span class="badge-modern badge-modern-secondary me-2">
-                        New Patient
+                    <span class="badge-modern badge-modern-secondary me-2" title="Profile incomplete — complete before clinical documentation.">
+                        Provisional
                     </span>
                     @endif
                     <span class="badge-modern {{ $patient->is_active ? 'badge-modern-success' : 'badge-modern-danger' }}">

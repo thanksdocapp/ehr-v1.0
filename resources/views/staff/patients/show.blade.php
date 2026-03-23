@@ -14,7 +14,7 @@
     <!-- Patient Alert Bar -->
     @include('components.patient-alert-bar', ['patient' => $patient])
 
-    <!-- New patient (is_guest): blocking notice stays visible (sticky + non-dismissable) until core profile is complete -->
+    <!-- Provisional record (is_guest): blocking notice stays visible (sticky + non-dismissable) until core profile is complete -->
     @if($patient->is_guest)
         @php
             $patientInfoCheck = [
@@ -39,13 +39,13 @@
                     <div class="flex-grow-1">
                         <h5 class="alert-heading mb-2">
                             @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                                <strong class="text-danger">New patient — placeholder details must be replaced</strong>
+                                <strong class="text-danger">Provisional record — placeholder details must be replaced</strong>
                             @else
-                                Please complete profile before clinical documentation
+                                Profile incomplete — complete before clinical documentation.
                             @endif
                         </h5>
                         <p class="mb-2">
-                            Medical records and prescriptions stay unavailable until required details are updated.
+                            Medical records and prescriptions stay unavailable until required details are saved on the patient profile.
                         </p>
                         <p class="mb-2 fw-semibold">Complete these items:</p>
                         <ul class="mb-3">

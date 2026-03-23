@@ -158,7 +158,7 @@ class PrescriptionsController extends Controller
         $patient = Patient::find($request->patient_id);
         if ($patient && $patient->is_guest) {
             return redirect()->back()
-                ->with('error', 'Cannot create prescriptions for new patients until the profile is complete. Please complete the patient profile first.')
+                ->with('error', 'Profile incomplete — complete before clinical documentation. Finish the patient profile before creating prescriptions.')
                 ->withInput();
         }
 
@@ -287,7 +287,7 @@ class PrescriptionsController extends Controller
         // Check if patient is a guest
         if ($prescription->patient && $prescription->patient->is_guest) {
             return redirect()->back()
-                ->with('error', 'Cannot edit prescriptions until the new patient profile is complete. Please complete the patient profile first.')
+                ->with('error', 'Profile incomplete — complete before clinical documentation. Finish the patient profile before editing prescriptions.')
                 ->withInput();
         }
         $request->validate([

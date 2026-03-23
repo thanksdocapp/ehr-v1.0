@@ -1,4 +1,4 @@
-{{-- New patients (is_guest): primary action opens edit profile; after save, restrictions end once required fields are complete. --}}
+{{-- Provisional records (is_guest): primary action opens edit profile; after save, restrictions end once required fields are complete. --}}
 @php
     $primaryEmphasis = $primaryEmphasis ?? false;
     $patientEditUrl = $patientEditUrl ?? route('staff.patients.edit', $patient->id);

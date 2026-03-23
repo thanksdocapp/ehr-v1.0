@@ -142,7 +142,7 @@ class GuestPatientService
         $requiredFields = ['date_of_birth', 'gender'];
         foreach ($requiredFields as $field) {
             if (empty($patient->$field) && empty($additionalData[$field])) {
-                throw new \Exception("Field {$field} is required to complete the new patient profile.");
+                throw new \Exception("Field {$field} is required to complete the provisional profile.");
             }
         }
 

@@ -257,10 +257,10 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">New patient status</label>
+                        <label class="form-label">Provisional status</label>
                         <select name="is_guest" class="form-select">
                             <option value="">All Patients</option>
-                            <option value="1" {{ request('is_guest') === '1' ? 'selected' : '' }}>New patients only</option>
+                            <option value="1" {{ request('is_guest') === '1' ? 'selected' : '' }}>Provisional only</option>
                             <option value="0" {{ request('is_guest') === '0' ? 'selected' : '' }}>Full patients only</option>
                         </select>
                     </div>
@@ -498,7 +498,7 @@
                                             <div class="fw-bold d-flex align-items-center gap-2">
                                                 {{ $patient->full_name }}
                                                 @if($patient->is_guest)
-                                                <span class="badge bg-secondary" style="font-size: 0.7rem;">New Patient</span>
+                                                <span class="badge bg-secondary" style="font-size: 0.7rem;" title="Profile incomplete — complete before clinical documentation.">Provisional</span>
                                                 @endif
                                             </div>
                                             <small class="text-muted">ID: {{ $patient->patient_id }}</small>
@@ -647,7 +647,7 @@
                                         @if($patient->is_guest)
                                         <button class="btn btn-sm btn-outline-warning" 
                                                 onclick="convertGuest({{ $patient->id }})" 
-                                                title="Open patient to complete new patient profile">
+                                                title="Open patient to complete provisional profile">
                                             <i class="fas fa-user-check"></i>
                                         </button>
                                         @endif

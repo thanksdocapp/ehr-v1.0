@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Used by Patient::hasIncompleteInformation() to decide when a record is
-    | incomplete for clinical unlock (e.g. clearing is_guest after profile save).
+    | incomplete for clinical unlock (e.g. clearing provisional is_guest after profile save).
     |
     | Core = minimum identity & contact expected before treating the record as
     | demographically complete. Next-of-kin is recommended but not required —
@@ -17,7 +17,7 @@ return [
     */
 
     'core_labels' => [
-        'placeholder_name' => 'Patient name — replace booking placeholder (new patient default)',
+        'placeholder_name' => 'Patient name — replace booking placeholder (provisional default)',
         'placeholder_email' => 'Email — replace temporary booking address',
         'email_invalid' => 'Valid email address',
         'date_of_birth' => 'Date of birth',

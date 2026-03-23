@@ -176,7 +176,7 @@ class MedicalRecordsController extends Controller
         $patient = Patient::find($request->patient_id);
         if ($patient && $patient->is_guest) {
             return redirect()->back()
-                ->with('error', 'Cannot create medical records for new patients until the profile is complete. Please complete the patient profile first.')
+                ->with('error', 'Profile incomplete — complete before clinical documentation. Finish the patient profile before creating medical records.')
                 ->withInput();
         }
 
@@ -337,7 +337,7 @@ class MedicalRecordsController extends Controller
         $patient = Patient::find($request->patient_id);
         if ($patient && $patient->is_guest) {
             return redirect()->back()
-                ->with('error', 'Cannot edit medical records until the new patient profile is complete. Please complete the patient profile first.')
+                ->with('error', 'Profile incomplete — complete before clinical documentation. Finish the patient profile before editing medical records.')
                 ->withInput();
         }
 
