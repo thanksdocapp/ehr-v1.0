@@ -646,39 +646,9 @@
                 <div class="form-section">
                     <div class="form-section-header">
                         <h4 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Medical Information</h4>
-                        <small class="opacity-75">Medical history, allergies, and insurance details</small>
+                        <small class="opacity-75">Medical history and allergies</small>
                     </div>
                     <div class="form-section-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="insurance_provider" class="form-label">
-                                        <i class="fas fa-shield-alt me-1"></i>Insurance Provider
-                                    </label>
-                                    <input type="text" class="form-control @error('insurance_provider') is-invalid @enderror" 
-                                           id="insurance_provider" name="insurance_provider" value="{{ old('insurance_provider', $patient->insurance_provider) }}" 
-                                           placeholder="Enter insurance provider">
-                                    @error('insurance_provider')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="insurance_number" class="form-label">
-                                        <i class="fas fa-id-card me-1"></i>Insurance Number
-                                    </label>
-                                    <input type="text" class="form-control @error('insurance_number') is-invalid @enderror" 
-                                           id="insurance_number" name="insurance_number" value="{{ old('insurance_number', $patient->insurance_number) }}" 
-                                           placeholder="Enter insurance number">
-                                    @error('insurance_number')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="form-group">
                             <label for="allergies" class="form-label">
                                 <i class="fas fa-exclamation-triangle me-1"></i>Allergies

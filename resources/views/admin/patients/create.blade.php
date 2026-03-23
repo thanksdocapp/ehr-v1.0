@@ -893,27 +893,6 @@
                         <h5 class="doctor-card-title mb-0"><i class="fas fa-stethoscope me-2"></i>Medical Information</h5>
                     </div>
                     <div class="doctor-card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="insurance_provider" class="form-label fw-semibold">Insurance Provider</label>
-                                <input type="text" name="insurance_provider" id="insurance_provider"
-                                       class="form-control @error('insurance_provider') is-invalid @enderror"
-                                       value="{{ old('insurance_provider') }}" placeholder="Enter insurance provider">
-                                @error('insurance_provider')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="insurance_number" class="form-label fw-semibold">Insurance Number</label>
-                                <input type="text" name="insurance_number" id="insurance_number"
-                                       class="form-control @error('insurance_number') is-invalid @enderror"
-                                       value="{{ old('insurance_number') }}" placeholder="Enter insurance number">
-                                @error('insurance_number')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
                         <div class="mb-3">
                             <label for="allergies" class="form-label fw-semibold">Allergies</label>
                             <div id="allergies-container">
