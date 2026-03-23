@@ -876,12 +876,39 @@
 
 @push('styles')
 <style>
-    /* Stays under sticky layout header; remains visible while scrolling until profile is complete */
+    /* Sticky under layout header; solid fill so main content does not show through while scrolling */
     .clinical-profile-gate-banner {
         position: sticky;
         top: var(--header-height, 70px);
         z-index: 1100;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        background-image: none !important;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
+    .clinical-profile-gate-banner.alert-warning {
+        background-color: #fff3cd !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+        color: #664d03;
+    }
+
+    .clinical-profile-gate-banner.alert-danger {
+        background-color: #f8d7da !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+        color: #58151c;
+    }
+
+    body.dark-mode .clinical-profile-gate-banner.alert-warning {
+        background-color: #422006 !important;
+        border-bottom: 1px solid rgba(245, 158, 11, 0.35) !important;
+        color: #fde68a;
+    }
+
+    body.dark-mode .clinical-profile-gate-banner.alert-danger {
+        background-color: #450a0a !important;
+        border-bottom: 1px solid rgba(239, 68, 68, 0.35) !important;
+        color: #fecaca;
     }
 </style>
 @endpush
