@@ -299,7 +299,7 @@
                                 @endforeach
                             </ul>
                             @if(($patientInfoCheck['has_recommended_gaps'] ?? false) && count($patientInfoCheck['recommended_missing_fields'] ?? []))
-                                <p class="mb-2 fw-semibold small">Also recommended (UK records):</p>
+                                <p class="mb-2 fw-semibold small">Also recommended:</p>
                                 <ul class="mb-3 small text-muted">
                                     @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
                                         <li>{{ $field }}</li>
@@ -333,7 +333,7 @@
                     <div class="d-flex align-items-start">
                         <i class="fas fa-info-circle fa-2x me-3 mt-1"></i>
                         <div class="flex-grow-1">
-                            <h6 class="alert-heading mb-2">Recommended patient details (UK)</h6>
+                            <h6 class="alert-heading mb-2">Recommended patient details</h6>
                             <p class="mb-2 small mb-0">Core demographics are complete. Consider adding:</p>
                             <ul class="mb-3 small">
                                 @foreach($patientInfoCheck['recommended_missing_fields'] as $field)

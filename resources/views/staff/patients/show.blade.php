@@ -43,7 +43,7 @@
                         @endif
                     </h5>
                     <p class="mb-2">
-                        This record is still a <strong>guest</strong> (often from online booking). Medical records and prescriptions stay unavailable until required details are saved and the profile is no longer incomplete.
+                        Medical records and prescriptions stay unavailable until required details are updated.
                     </p>
                     @if($patientInfoCheck['is_incomplete'] ?? false)
                         <p class="mb-2 fw-semibold">Address these items:</p>
@@ -60,7 +60,7 @@
                         </ul>
                     @endif
                     @if(($patientInfoCheck['has_recommended_gaps'] ?? false) && count($patientInfoCheck['recommended_missing_fields'] ?? []))
-                        <p class="mb-2 fw-semibold small text-muted">Recommended next (UK records — not required to clear guest):</p>
+                        <p class="mb-2 fw-semibold small text-muted">Recommended next:</p>
                         <ul class="mb-3 small">
                             @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
                                 <li>{{ $field }}</li>
