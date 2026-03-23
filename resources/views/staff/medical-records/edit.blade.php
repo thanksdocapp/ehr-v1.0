@@ -448,20 +448,12 @@
                     </div>
                     <div class="doctor-card-body">
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-doctor-primary">
-                                <i class="fas fa-save me-2"></i>Update Medical Record
-                            </button>
                             <a href="{{ route('staff.medical-records.show', $medicalRecord) }}" class="btn btn-info">
                                 <i class="fas fa-eye me-2"></i>View Record
                             </a>
                             <a href="{{ route('staff.medical-records.index') }}" class="btn btn-secondary">
                                 <i class="fas fa-arrow-left me-2"></i>Back to List
                             </a>
-                            @if(auth()->user()->role === 'doctor')
-                                <button type="button" class="btn btn-danger" onclick="confirmDelete()">
-                                    <i class="fas fa-trash me-2"></i>Delete Record
-                                </button>
-                            @endif
                         </div>
                     </div>
                 </div>
@@ -502,46 +494,23 @@
                 </div>
             </div>
         </div>
+
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="doctor-card border-top border-2 pt-4 mt-2">
+                    <div class="doctor-card-body py-3 d-flex flex-wrap justify-content-end gap-2">
+                        <button type="submit" class="btn btn-doctor-primary btn-lg" id="medicalRecordUpdateSubmit">
+                            <i class="fas fa-save me-2"></i>Update Medical Record
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </form>
 </div>
 
-<!-- Delete Record Modal -->
-@if(auth()->user()->role === 'doctor')
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteModalLabel">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Delete Medical Record
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('staff.medical-records.destroy', $medicalRecord) }}" method="POST" id="deleteRecordForm">
-                @csrf
-                @method('DELETE')
-                <div class="modal-body">
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Warning:</strong> This action will permanently delete the medical record and cannot be undone.
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>Keep Record
-                    </button>
-                    <button type="submit" class="btn btn-danger" id="deleteSubmitBtn">
-                        <i class="fas fa-trash me-2"></i>Delete Record
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endif
-
 @php
     $existingFilesCount = ($medicalRecord->attachments ?? collect())->count();
-    $userIsDoctor = auth()->user()->role === 'doctor';
 @endphp
 
 @push('scripts')
@@ -617,7 +586,7 @@ $(document).ready(function() {
         }
         
         // Show loading state
-        $(this).find('button[type="submit"]').html('<i class="fas fa-spinner fa-spin me-1"></i>Updating...').prop('disabled', true);
+        $('#medicalRecordUpdateSubmit').html('<i class="fas fa-spinner fa-spin me-1"></i>Updating...').prop('disabled', true);
     });
 
     // Real-time validation
@@ -733,41 +702,6 @@ $(document).ready(function() {
     // Initialize file count
     updateFileCount();
 });
-
-@if($userIsDoctor)
-// Delete record function
-function confirmDelete() {
-    // Reset form when modal opens
-    $('#deleteRecordForm')[0].reset();
-    $('#deleteRecordForm .is-invalid').removeClass('is-invalid');
-    
-    // Show modal using Bootstrap 5 method
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'), {
-        backdrop: true,
-        keyboard: true,
-        focus: true
-    });
-    deleteModal.show();
-    
-    // Ensure modal is clickable after showing
-    setTimeout(function() {
-        $('#deleteModal').css({
-            'pointer-events': 'auto',
-            'z-index': '1055'
-        });
-        $('#deleteModal .modal-dialog, #deleteModal .modal-content, #deleteModal .btn, #deleteModal .form-control').css({
-            'pointer-events': 'auto',
-            'position': 'relative'
-        });
-    }, 100);
-}
-
-// Delete form submission - show loading state
-$('#deleteRecordForm').on('submit', function(e) {
-    // Show loading state
-    $('#deleteSubmitBtn').html('<i class="fas fa-spinner fa-spin me-2"></i>Deleting...').prop('disabled', true);
-});
-@endif
 </script>
 @endpush
 
@@ -808,63 +742,6 @@ $('#deleteRecordForm').on('submit', function(e) {
 .alert {
     border-radius: 8px;
     border: none;
-}
-
-/* Fix modal z-index and pointer-events issues */
-#deleteModal {
-    z-index: 1055 !important;
-}
-
-#deleteModal .modal-dialog {
-    z-index: 1056 !important;
-    pointer-events: auto !important;
-    position: relative !important;
-}
-
-#deleteModal .modal-content {
-    z-index: 1057 !important;
-    pointer-events: auto !important;
-    position: relative !important;
-}
-
-#deleteModal .modal-header,
-#deleteModal .modal-body,
-#deleteModal .modal-footer {
-    pointer-events: auto !important;
-    position: relative !important;
-}
-
-#deleteModal .btn,
-#deleteModal .form-control,
-#deleteModal .form-check-input,
-#deleteModal textarea {
-    pointer-events: auto !important;
-    position: relative !important;
-    z-index: 1058 !important;
-}
-
-.modal-backdrop {
-    z-index: 1054 !important;
-    pointer-events: none !important; /* Don't block clicks - allow clicks through backdrop */
-}
-
-/* Ensure modal is clickable when shown */
-#deleteModal.show {
-    display: block !important;
-    pointer-events: auto !important;
-}
-
-#deleteModal.show .modal-dialog {
-    pointer-events: auto !important;
-}
-
-/* Fix any overlay issues */
-body.modal-open {
-    overflow: hidden;
-}
-
-body.modal-open #deleteModal {
-    overflow: visible !important;
 }
 </style>
 @endpush
