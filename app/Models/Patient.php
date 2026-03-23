@@ -201,99 +201,85 @@ class Patient extends Authenticatable
     }
 
     /**
-     * Check if patient has incomplete information (for guest patients from payment links)
-     * Returns array of missing fields and a boolean indicating if info is incomplete
+     * UK-oriented core vs recommended demographics (see config/uk_ehr.php).
+     * Core gaps block treating the record as complete (e.g. clearing is_guest).
+     * Recommended gaps are shown in UI but do not block unlock.
      */
     public function hasIncompleteInformation(): array
     {
-        $missingFields = [];
-        $isIncomplete = false;
+        $coreLabels = config('uk_ehr.core_labels', []);
+        $recommendedLabels = config('uk_ehr.recommended_labels', []);
 
-        // Check for placeholder names and emails (highest priority - these must be fixed)
-        $hasPlaceholderName = (strtolower(trim($this->first_name)) === 'guest' && 
-                              strtolower(trim($this->last_name)) === 'patient');
-        $hasPlaceholderEmail = $this->email && strpos($this->email, '@payment-link.temp') !== false;
-        
+        $missingCore = [];
+        $missingRecommended = [];
+
+        $hasPlaceholderName = strtolower(trim((string) $this->first_name)) === 'guest'
+            && strtolower(trim((string) $this->last_name)) === 'patient';
+        $hasPlaceholderEmail = $this->email && strpos((string) $this->email, '@payment-link.temp') !== false;
+
         if ($hasPlaceholderName) {
-            $missingFields[] = 'Patient Name - Requires completion (currently using placeholder values)';
-            $isIncomplete = true;
+            $missingCore[] = $coreLabels['placeholder_name'] ?? 'Patient name — replace placeholder';
         }
-        
         if ($hasPlaceholderEmail) {
-            $missingFields[] = 'Contact Email - Requires valid email address (currently using temporary placeholder)';
-            $isIncomplete = true;
-        }
-
-        // Critical fields for consultations
-        if (!$this->date_of_birth) {
-            $missingFields[] = 'Date of Birth';
-            $isIncomplete = true;
-        }
-
-        if (!$this->gender) {
-            $missingFields[] = 'Gender';
-            $isIncomplete = true;
-        }
-
-        if (!$this->phone || $this->phone === 'Not specified') {
-            $missingFields[] = 'Phone Number';
-            $isIncomplete = true;
-        }
-
-        if (!$this->address) {
-            $missingFields[] = 'Address';
-            $isIncomplete = true;
-        }
-
-        // Safely check encrypted emergency contact fields using raw attributes to avoid cast exceptions
-        $attributes = $this->getAttributes();
-        $emergencyContactRaw = $attributes['emergency_contact'] ?? null;
-        $emergencyPhoneRaw = $attributes['emergency_phone'] ?? null;
-
-        // Try to decrypt, but if it fails, treat as missing
-        $emergencyContact = null;
-        $emergencyPhone = null;
-
-        if ($emergencyContactRaw) {
-            try {
-                $emergencyContact = \Illuminate\Support\Facades\Crypt::decryptString($emergencyContactRaw);
-            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                // If decryption fails, it might be plaintext - check if it's a valid string
-                $emergencyContact = is_string($emergencyContactRaw) && trim($emergencyContactRaw) !== '' ? $emergencyContactRaw : null;
-            } catch (\Throwable $e) {
-                // Any other error - treat as missing
-                $emergencyContact = null;
+            $missingCore[] = $coreLabels['placeholder_email'] ?? 'Email — replace temporary booking address';
+        } else {
+            $email = $this->email ? trim((string) $this->email) : '';
+            if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $missingCore[] = $coreLabels['email_invalid'] ?? 'Valid email address';
             }
         }
 
-        if ($emergencyPhoneRaw) {
-            try {
-                $emergencyPhone = \Illuminate\Support\Facades\Crypt::decryptString($emergencyPhoneRaw);
-            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                // If decryption fails, it might be plaintext - check if it's a valid string
-                $emergencyPhone = is_string($emergencyPhoneRaw) && trim($emergencyPhoneRaw) !== '' ? $emergencyPhoneRaw : null;
-            } catch (\Throwable $e) {
-                // Any other error - treat as missing
-                $emergencyPhone = null;
-            }
+        if (! $this->date_of_birth) {
+            $missingCore[] = $coreLabels['date_of_birth'] ?? 'Date of birth';
+        }
+        if (! $this->gender) {
+            $missingCore[] = $coreLabels['gender'] ?? 'Gender';
+        }
+        if (! $this->phone || trim((string) $this->phone) === '' || $this->phone === 'Not specified') {
+            $missingCore[] = $coreLabels['phone'] ?? 'Phone number';
+        }
+        if (! $this->address || trim((string) $this->address) === '') {
+            $missingCore[] = $coreLabels['address'] ?? 'Address';
         }
 
-        if (!$emergencyContact || $emergencyContact === '') {
-            $missingFields[] = 'Emergency Contact Name';
-            $isIncomplete = true;
+        $emergencyContact = $this->decryptedRawField('emergency_contact');
+        $emergencyPhone = $this->decryptedRawField('emergency_phone');
+        if ($emergencyContact === null || $emergencyContact === '') {
+            $missingRecommended[] = $recommendedLabels['emergency_contact'] ?? 'Emergency contact name';
+        }
+        if ($emergencyPhone === null || $emergencyPhone === '') {
+            $missingRecommended[] = $recommendedLabels['emergency_phone'] ?? 'Emergency contact phone';
         }
 
-        if (!$emergencyPhone || $emergencyPhone === '') {
-            $missingFields[] = 'Emergency Contact Phone';
-            $isIncomplete = true;
-        }
+        $isIncomplete = count($missingCore) > 0;
 
         return [
             'is_incomplete' => $isIncomplete,
-            'missing_fields' => $missingFields,
-            'missing_count' => count($missingFields),
-            'has_placeholder_info' => $hasPlaceholderName || $hasPlaceholderEmail
+            'missing_fields' => $missingCore,
+            'missing_count' => count($missingCore),
+            'recommended_missing_fields' => $missingRecommended,
+            'recommended_missing_count' => count($missingRecommended),
+            'has_recommended_gaps' => count($missingRecommended) > 0,
+            'has_placeholder_info' => $hasPlaceholderName || $hasPlaceholderEmail,
         ];
+    }
+
+    /**
+     * Read encrypted or plaintext column value safely (used for completeness checks).
+     */
+    private function decryptedRawField(string $attributeKey): ?string
+    {
+        $raw = $this->getAttributes()[$attributeKey] ?? null;
+        if (! $raw) {
+            return null;
+        }
+        try {
+            return \Illuminate\Support\Facades\Crypt::decryptString($raw);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            return is_string($raw) && trim($raw) !== '' ? $raw : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**

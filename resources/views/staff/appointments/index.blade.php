@@ -505,7 +505,13 @@
                                             <div class="d-flex align-items-center gap-2">
                                                 <div class="fw-bold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
                                                 @php
-                                                    $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => [], 'has_placeholder_info' => false];
+                                                    $patientInfoCheck = [
+                                                        'is_incomplete' => false,
+                                                        'missing_fields' => [],
+                                                        'recommended_missing_fields' => [],
+                                                        'has_recommended_gaps' => false,
+                                                        'has_placeholder_info' => false,
+                                                    ];
                                                     try {
                                                         $patientInfoCheck = $appointment->patient->hasIncompleteInformation();
                                                     } catch (\Exception $e) {
@@ -655,32 +661,12 @@
                                             </a>
                                         @endif
 
-                                        {{-- Guest patient: overflow menu (instant remove + future row actions) --}}
                                         @if($appointment->patient->is_guest)
-                                            <div class="dropdown d-inline-block">
-                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                                        id="guestRowActions{{ $appointment->id }}"
-                                                        data-bs-toggle="dropdown"
-                                                        data-bs-boundary="viewport"
-                                                        data-bs-auto-close="true"
-                                                        aria-expanded="false"
-                                                        title="More patient actions">
-                                                    <i class="fas fa-ellipsis-v"></i>
-                                                </button>
-                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="guestRowActions{{ $appointment->id }}">
-                                                    <li>
-                                                        <form action="{{ route('staff.patients.convert-guest-instant.post', $appointment->patient) }}"
-                                                              method="post"
-                                                              class="m-0"
-                                                              onsubmit="return confirm('Convert this guest patient now? Guest restrictions will be removed; existing details on the record will not change. You can complete the profile later if needed.');">
-                                                            @csrf
-                                                            <button type="submit" class="dropdown-item">
-                                                                <i class="fas fa-user-check me-2 text-success"></i>Convert guest patient
-                                                            </button>
-                                                        </form>
-                                                    </li>
-                                                </ul>
-                                            </div>
+                                            <a href="{{ route('staff.patients.edit', $appointment->patient) }}"
+                                               class="btn btn-sm btn-success"
+                                               title="Complete patient profile — saving a full record clears guest restrictions">
+                                                <i class="fas fa-user-edit"></i>
+                                            </a>
                                         @endif
                                     </div>
                                 </td>

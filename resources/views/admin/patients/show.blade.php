@@ -17,11 +17,10 @@
         <h6 class="alert-heading mb-2">
             <i class="fas fa-exclamation-triangle me-2"></i>Guest patient record
         </h6>
-        <p class="mb-3">Some features stay limited for guest records. Use <strong>Convert guest patient</strong> for a one-step change, or <strong>Complete patient profile</strong> to fix demographics in full.</p>
+        <p class="mb-3">Some features stay limited until the profile is complete. Use <strong>Complete patient profile</strong> to enter required details; saving a complete record clears guest status automatically.</p>
         @include('staff.partials.guest-patient-actions', [
             'patient' => $patient,
             'patientEditUrl' => route('admin.patients.edit', $patient),
-            'patientInstantConvertUrl' => route('admin.patients.convert-guest-instant.post', $patient),
         ])
     </div>
     @endif

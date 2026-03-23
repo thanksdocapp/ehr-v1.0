@@ -46,11 +46,49 @@ class GuestPatientMedicalRecordFlowTest extends TestCase
         ]);
 
         $patient->refresh();
+        $info = $patient->hasIncompleteInformation();
+        $this->assertFalse($info['is_incomplete']);
+        $this->assertFalse($info['has_recommended_gaps']);
+
         $this->assertTrue($patient->clearGuestFlagIfInformationComplete());
         $patient->refresh();
 
         $this->assertFalse($patient->is_guest);
         $this->assertFalse($patient->hasIncompleteInformation()['is_incomplete']);
+    }
+
+    /** @test */
+    public function uk_core_complete_without_emergency_clears_guest_but_flags_recommended(): void
+    {
+        $patient = Patient::create([
+            'patient_id' => 'P-GUEST-CORE-' . uniqid(),
+            'first_name' => 'Guest',
+            'last_name' => 'Patient',
+            'email' => 'pay-core-' . uniqid() . '@payment-link.temp',
+            'phone' => 'Not specified',
+            'password' => bcrypt('password'),
+            'is_guest' => true,
+            'is_active' => true,
+        ]);
+
+        $patient->update([
+            'first_name' => 'Alex',
+            'last_name' => 'Core',
+            'email' => 'alex.core.' . uniqid() . '@example.com',
+            'phone' => '07123456789',
+            'date_of_birth' => '1990-03-01',
+            'gender' => 'male',
+            'address' => '10 Test Street, London',
+        ]);
+        $patient->refresh();
+
+        $info = $patient->hasIncompleteInformation();
+        $this->assertFalse($info['is_incomplete'], 'UK core demographics should be complete');
+        $this->assertTrue($info['has_recommended_gaps'], 'Emergency and NHS should still be recommended');
+
+        $this->assertTrue($patient->clearGuestFlagIfInformationComplete());
+        $patient->refresh();
+        $this->assertFalse($patient->is_guest);
     }
 
     /** @test */
@@ -78,40 +116,7 @@ class GuestPatientMedicalRecordFlowTest extends TestCase
     }
 
     /** @test */
-    public function admin_can_remove_guest_status_instantly_without_convert_form(): void
-    {
-        $admin = User::create([
-            'name' => 'Admin Tester',
-            'email' => 'admin-instant-' . uniqid() . '@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'admin',
-            'is_admin' => true,
-            'is_active' => true,
-        ]);
-
-        $patient = Patient::create([
-            'patient_id' => 'P-INST-' . uniqid(),
-            'first_name' => 'Guest',
-            'last_name' => 'Instant',
-            'email' => 'guest-inst-' . uniqid() . '@payment-link.temp',
-            'phone' => 'Not specified',
-            'password' => bcrypt('password'),
-            'is_guest' => true,
-            'is_active' => true,
-        ]);
-
-        $this->withoutMiddleware([RequireTwoFactor::class]);
-        $this->actingAs($admin, 'admin');
-
-        $response = $this->post(route('admin.patients.convert-guest-instant.post', $patient));
-
-        $response->assertRedirect(route('admin.patients.show', $patient));
-        $patient->refresh();
-        $this->assertFalse($patient->is_guest);
-    }
-
-    /** @test */
-    public function staff_appointments_index_shows_remove_guest_in_overflow_for_guest_patients(): void
+    public function staff_appointments_index_links_guest_patients_to_complete_profile_edit(): void
     {
         $department = Department::create([
             'name' => 'Test Dept Guest Row',
@@ -169,7 +174,6 @@ class GuestPatientMedicalRecordFlowTest extends TestCase
 
         $response = $this->get(route('staff.appointments.index'));
         $response->assertOk();
-        $response->assertSee('Remove guest status', false);
-        $response->assertSee('/staff/patients/' . $patient->id . '/convert-guest-instant', false);
+        $response->assertSee('/staff/patients/' . $patient->id . '/edit', false);
     }
 }

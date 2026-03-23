@@ -1584,40 +1584,6 @@ class PatientsController extends Controller
     }
 
     /**
-     * Remove guest flag immediately without the convert-guest form (admin override).
-     */
-    public function convertGuestInstant(Request $request, Patient $patient)
-    {
-        if (!$patient->is_guest) {
-            return redirect()->route('admin.patients.show', $patient)
-                ->with('info', 'This patient is already a full patient.');
-        }
-
-        try {
-            if (!$patient->convertToFullPatient([])) {
-                return redirect()->back()
-                    ->with('error', 'Could not remove guest status for this patient.');
-            }
-
-            \Log::info('Guest patient: instant convert (guest flag cleared, no form)', [
-                'patient_id' => $patient->id,
-                'admin_user_id' => Auth::guard('admin')->id(),
-            ]);
-
-            return redirect()->route('admin.patients.show', $patient)
-                ->with('success', 'Guest patient converted in one step. Existing details were not changed — use Complete patient profile if anything is still missing.');
-        } catch (\Exception $e) {
-            \Log::error('Failed instant guest convert', [
-                'patient_id' => $patient->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return redirect()->back()
-                ->with('error', 'Failed to remove guest status: ' . $e->getMessage());
-        }
-    }
-
-    /**
      * Search patients (AJAX endpoint for Select2).
      * Returns Select2-compatible format with pagination support.
      */

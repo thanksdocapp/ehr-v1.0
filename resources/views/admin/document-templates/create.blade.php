@@ -1457,7 +1457,6 @@ $(document).ready(function() {
                             <option value="email" ${block.props.field === 'email' ? 'selected' : ''}>Email</option>
                             <option value="phone" ${block.props.field === 'phone' ? 'selected' : ''}>Phone</option>
                             <option value="address" ${block.props.field === 'address' ? 'selected' : ''}>Address</option>
-                            <option value="nhs_number" ${block.props.field === 'nhs_number' ? 'selected' : ''}>NHS Number</option>
                         </select>
                     </div>
                     <div class="mb-3">

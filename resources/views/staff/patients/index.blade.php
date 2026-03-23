@@ -507,7 +507,13 @@
                                             <div class="fw-bold d-flex align-items-center gap-2 flex-wrap">
                                                 {{ $patient->first_name }} {{ $patient->last_name }}
                                                 @php
-                                                    $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => [], 'has_placeholder_info' => false];
+                                                    $patientInfoCheck = [
+                                                        'is_incomplete' => false,
+                                                        'missing_fields' => [],
+                                                        'recommended_missing_fields' => [],
+                                                        'has_recommended_gaps' => false,
+                                                        'has_placeholder_info' => false,
+                                                    ];
                                                     try {
                                                         $patientInfoCheck = $patient->hasIncompleteInformation();
                                                     } catch (\Exception $e) {

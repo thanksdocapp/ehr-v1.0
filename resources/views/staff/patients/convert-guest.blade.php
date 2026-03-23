@@ -25,8 +25,7 @@
 
                     <div class="alert alert-light border mb-4" role="alert">
                         <p class="mb-0 small">
-                            <strong>Faster option:</strong> from the <a href="{{ route('staff.patients.show', $patient) }}">patient record</a>, use <strong>Convert guest patient</strong> to clear guest restrictions in one step without this form.
-                            For every required field in one place, use <a href="{{ route('staff.patients.edit', $patient) }}">Complete patient profile</a> instead.
+                            <strong>Recommended:</strong> use <a href="{{ route('staff.patients.edit', $patient) }}">Complete patient profile</a> instead — save when all required fields are filled and guest restrictions clear automatically. This page is only for staff who still use the short form by URL.
                         </p>
                     </div>
 

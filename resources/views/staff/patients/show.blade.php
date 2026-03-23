@@ -17,7 +17,14 @@
     <!-- Guest patient: single alert (profile + optional missing-field list + actions) -->
     @if($patient->is_guest)
         @php
-            $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => [], 'missing_count' => 0, 'has_placeholder_info' => false];
+            $patientInfoCheck = [
+                'is_incomplete' => false,
+                'missing_fields' => [],
+                'missing_count' => 0,
+                'recommended_missing_fields' => [],
+                'has_recommended_gaps' => false,
+                'has_placeholder_info' => false,
+            ];
             try {
                 $patientInfoCheck = $patient->hasIncompleteInformation();
             } catch (\Exception $e) {
@@ -49,6 +56,14 @@
                                         {{ $field }}
                                     @endif
                                 </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                    @if(($patientInfoCheck['has_recommended_gaps'] ?? false) && count($patientInfoCheck['recommended_missing_fields'] ?? []))
+                        <p class="mb-2 fw-semibold small text-muted">Recommended next (UK records — not required to clear guest):</p>
+                        <ul class="mb-3 small">
+                            @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
+                                <li>{{ $field }}</li>
                             @endforeach
                         </ul>
                     @endif

@@ -252,7 +252,14 @@
 
             <!-- Patient Information Incomplete Warning -->
             @php
-                $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => [], 'missing_count' => 0];
+                $patientInfoCheck = [
+                    'is_incomplete' => false,
+                    'missing_fields' => [],
+                    'missing_count' => 0,
+                    'recommended_missing_fields' => [],
+                    'has_recommended_gaps' => false,
+                    'has_placeholder_info' => false,
+                ];
                 try {
                     $patientInfoCheck = $appointment->patient->hasIncompleteInformation();
                 } catch (\Exception $e) {
@@ -291,6 +298,14 @@
                                     </li>
                                 @endforeach
                             </ul>
+                            @if(($patientInfoCheck['has_recommended_gaps'] ?? false) && count($patientInfoCheck['recommended_missing_fields'] ?? []))
+                                <p class="mb-2 fw-semibold small">Also recommended (UK records):</p>
+                                <ul class="mb-3 small text-muted">
+                                    @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
+                                        <li>{{ $field }}</li>
+                                    @endforeach
+                                </ul>
+                            @endif
                             @if($appointment->patient->is_guest)
                                 @include('staff.partials.guest-patient-actions', [
                                     'patient' => $appointment->patient,
@@ -304,6 +319,30 @@
                                     </a>
                                 </div>
                             @endif
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+            @endif
+
+            @if(!($patientInfoCheck['is_incomplete'] ?? false)
+                && ($patientInfoCheck['has_recommended_gaps'] ?? false)
+                && count($patientInfoCheck['recommended_missing_fields'] ?? [])
+                && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
+                <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-info-circle fa-2x me-3 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <h6 class="alert-heading mb-2">Recommended patient details (UK)</h6>
+                            <p class="mb-2 small mb-0">Core demographics are complete. Consider adding:</p>
+                            <ul class="mb-3 small">
+                                @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
+                                    <li>{{ $field }}</li>
+                                @endforeach
+                            </ul>
+                            <a href="{{ route('staff.patients.edit', $appointment->patient->id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-user-edit me-1"></i>Complete patient profile
+                            </a>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>

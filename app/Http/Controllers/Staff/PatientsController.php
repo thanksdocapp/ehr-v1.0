@@ -876,8 +876,8 @@ class PatientsController extends Controller
             'date_of_birth' => 'required|date',
             'gender' => 'required|in:male,female,other',
             'address' => 'required|string',
-            'emergency_contact_name' => 'required|string|max:255',
-            'emergency_contact_phone' => 'required|string|max:20',
+            'emergency_contact_name' => 'nullable|string|max:255',
+            'emergency_contact_phone' => 'nullable|string|max:20',
             'department_id' => 'nullable|exists:departments,id', // Backward compatibility
             'department_ids' => 'nullable|array',
             'department_ids.*' => 'nullable|exists:departments,id',
@@ -1228,44 +1228,6 @@ class PatientsController extends Controller
             ]);
 
             return back()->with('error', 'Failed to convert patient: ' . $e->getMessage())->withInput();
-        }
-    }
-
-    /**
-     * Remove guest flag immediately without the convert-guest form (staff override).
-     */
-    public function convertGuestInstant(Request $request, Patient $patient)
-    {
-        if (!$patient->is_guest) {
-            return redirect()->route('staff.patients.show', $patient)
-                ->with('info', 'This patient is already a full patient.');
-        }
-
-        if (!$patient->isVisibleTo(Auth::user())) {
-            abort(403, 'You do not have access to this patient.');
-        }
-
-        try {
-            if (!$patient->convertToFullPatient([])) {
-                return redirect()->back()
-                    ->with('error', 'Could not remove guest status for this patient.');
-            }
-
-            \Log::info('Guest patient: instant convert (guest flag cleared, no form)', [
-                'patient_id' => $patient->id,
-                'user_id' => Auth::id(),
-            ]);
-
-            return redirect()->route('staff.patients.show', $patient)
-                ->with('success', 'Guest patient converted in one step. Existing details were not changed — use Complete patient profile if anything is still missing.');
-        } catch (Exception $e) {
-            \Log::error('Failed instant guest convert', [
-                'patient_id' => $patient->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return redirect()->back()
-                ->with('error', 'Failed to remove guest status: ' . $e->getMessage());
         }
     }
 }
