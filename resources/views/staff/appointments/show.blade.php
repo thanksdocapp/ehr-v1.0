@@ -36,6 +36,106 @@
     <div class="row">
         <!-- Main Content -->
         <div class="col-lg-8">
+            <!-- Patient information completeness (above appointment details when relevant) -->
+            <!-- Patient Information Incomplete Warning -->
+            @php
+                $patientInfoCheck = [
+                    'is_incomplete' => false,
+                    'missing_fields' => [],
+                    'missing_count' => 0,
+                    'recommended_missing_fields' => [],
+                    'has_recommended_gaps' => false,
+                    'has_placeholder_info' => false,
+                ];
+                try {
+                    $patientInfoCheck = $appointment->patient->hasIncompleteInformation();
+                } catch (\Exception $e) {
+                    // If there's any error checking incomplete info, just skip the warning
+                    // This prevents DecryptException from crashing the page
+                }
+            @endphp
+            @if($patientInfoCheck['is_incomplete'] && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
+                <div class="alert {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'alert-danger' : 'alert-warning' }} alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-start">
+                        <i class="fas {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'fa-exclamation-circle' : 'fa-exclamation-triangle' }} fa-2x me-3 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading mb-2">
+                                <i class="fas fa-user-slash me-2"></i>
+                                @if($patientInfoCheck['has_placeholder_info'] ?? false)
+                                    <strong class="text-danger">URGENT: Patient Identification Incomplete</strong>
+                                @else
+                                    Incomplete Patient Information
+                                @endif
+                            </h5>
+                            <p class="mb-2">
+                                @if($patientInfoCheck['has_placeholder_info'] ?? false)
+                                    <strong class="text-danger">This patient record contains temporary placeholder information that must be updated with accurate patient details before consultation:</strong>
+                                @else
+                                    <strong>This patient has missing information that should be completed before consultation:</strong>
+                                @endif
+                            </p>
+                            <ul class="mb-3">
+                                @foreach($patientInfoCheck['missing_fields'] as $field)
+                                    <li>
+                                        @if(strpos($field, 'Requires completion') !== false || strpos($field, 'Requires valid email') !== false || strpos($field, 'placeholder') !== false || strpos($field, '@payment-link.temp') !== false)
+                                            <strong class="text-danger">{{ $field }}</strong>
+                                        @else
+                                            {{ $field }}
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                            @if(($patientInfoCheck['has_recommended_gaps'] ?? false) && count($patientInfoCheck['recommended_missing_fields'] ?? []))
+                                <p class="mb-2 fw-semibold small">Also recommended:</p>
+                                <ul class="mb-3 small text-muted">
+                                    @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
+                                        <li>{{ $field }}</li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                            @if($appointment->patient->is_guest)
+                                @include('staff.partials.guest-patient-actions', [
+                                    'patient' => $appointment->patient,
+                                    'primaryEmphasis' => (bool) ($patientInfoCheck['has_placeholder_info'] ?? false),
+                                ])
+                            @else
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="{{ route('staff.patients.edit', $appointment->patient->id) }}" class="btn {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'btn-danger' : 'btn-warning' }} btn-sm">
+                                        <i class="fas fa-user-edit me-1"></i>
+                                        Complete patient profile
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+            @endif
+
+            @if(!($patientInfoCheck['is_incomplete'] ?? false)
+                && ($patientInfoCheck['has_recommended_gaps'] ?? false)
+                && count($patientInfoCheck['recommended_missing_fields'] ?? [])
+                && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
+                <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-info-circle fa-2x me-3 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <h6 class="alert-heading mb-2">Recommended patient details</h6>
+                            <p class="mb-2 small mb-0">Core demographics are complete. Consider adding:</p>
+                            <ul class="mb-3 small">
+                                @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
+                                    <li>{{ $field }}</li>
+                                @endforeach
+                            </ul>
+                            <a href="{{ route('staff.patients.edit', $appointment->patient->id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-user-edit me-1"></i>Complete patient profile
+                            </a>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+            @endif
+
             <!-- Appointment Details (grouped by relationship, matches create flow) -->
             @php
                 $visitTypeLabel = $appointment->type === 'followup' ? 'Follow up' : 'Consultation';
@@ -253,105 +353,6 @@
                     @endif
                 </div>
             </div>
-
-            <!-- Patient Information Incomplete Warning -->
-            @php
-                $patientInfoCheck = [
-                    'is_incomplete' => false,
-                    'missing_fields' => [],
-                    'missing_count' => 0,
-                    'recommended_missing_fields' => [],
-                    'has_recommended_gaps' => false,
-                    'has_placeholder_info' => false,
-                ];
-                try {
-                    $patientInfoCheck = $appointment->patient->hasIncompleteInformation();
-                } catch (\Exception $e) {
-                    // If there's any error checking incomplete info, just skip the warning
-                    // This prevents DecryptException from crashing the page
-                }
-            @endphp
-            @if($patientInfoCheck['is_incomplete'] && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
-                <div class="alert {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'alert-danger' : 'alert-warning' }} alert-dismissible fade show mb-4" role="alert">
-                    <div class="d-flex align-items-start">
-                        <i class="fas {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'fa-exclamation-circle' : 'fa-exclamation-triangle' }} fa-2x me-3 mt-1"></i>
-                        <div class="flex-grow-1">
-                            <h5 class="alert-heading mb-2">
-                                <i class="fas fa-user-slash me-2"></i>
-                                @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                                    <strong class="text-danger">URGENT: Patient Identification Incomplete</strong>
-                                @else
-                                    Incomplete Patient Information
-                                @endif
-                            </h5>
-                            <p class="mb-2">
-                                @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                                    <strong class="text-danger">This patient record contains temporary placeholder information that must be updated with accurate patient details before consultation:</strong>
-                                @else
-                                    <strong>This patient has missing information that should be completed before consultation:</strong>
-                                @endif
-                            </p>
-                            <ul class="mb-3">
-                                @foreach($patientInfoCheck['missing_fields'] as $field)
-                                    <li>
-                                        @if(strpos($field, 'Requires completion') !== false || strpos($field, 'Requires valid email') !== false || strpos($field, 'placeholder') !== false || strpos($field, '@payment-link.temp') !== false)
-                                            <strong class="text-danger">{{ $field }}</strong>
-                                        @else
-                                            {{ $field }}
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                            @if(($patientInfoCheck['has_recommended_gaps'] ?? false) && count($patientInfoCheck['recommended_missing_fields'] ?? []))
-                                <p class="mb-2 fw-semibold small">Also recommended:</p>
-                                <ul class="mb-3 small text-muted">
-                                    @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
-                                        <li>{{ $field }}</li>
-                                    @endforeach
-                                </ul>
-                            @endif
-                            @if($appointment->patient->is_guest)
-                                @include('staff.partials.guest-patient-actions', [
-                                    'patient' => $appointment->patient,
-                                    'primaryEmphasis' => (bool) ($patientInfoCheck['has_placeholder_info'] ?? false),
-                                ])
-                            @else
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <a href="{{ route('staff.patients.edit', $appointment->patient->id) }}" class="btn {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'btn-danger' : 'btn-warning' }} btn-sm">
-                                        <i class="fas fa-user-edit me-1"></i>
-                                        Complete patient profile
-                                    </a>
-                                </div>
-                            @endif
-                        </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                </div>
-            @endif
-
-            @if(!($patientInfoCheck['is_incomplete'] ?? false)
-                && ($patientInfoCheck['has_recommended_gaps'] ?? false)
-                && count($patientInfoCheck['recommended_missing_fields'] ?? [])
-                && ($appointment->patient->is_guest || $appointment->status !== 'completed'))
-                <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
-                    <div class="d-flex align-items-start">
-                        <i class="fas fa-info-circle fa-2x me-3 mt-1"></i>
-                        <div class="flex-grow-1">
-                            <h6 class="alert-heading mb-2">Recommended patient details</h6>
-                            <p class="mb-2 small mb-0">Core demographics are complete. Consider adding:</p>
-                            <ul class="mb-3 small">
-                                @foreach($patientInfoCheck['recommended_missing_fields'] as $field)
-                                    <li>{{ $field }}</li>
-                                @endforeach
-                            </ul>
-                            <a href="{{ route('staff.patients.edit', $appointment->patient->id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-user-edit me-1"></i>Complete patient profile
-                            </a>
-                        </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                </div>
-            @endif
 
             <!-- Patient Information (grouped by relationship) -->
             <div class="doctor-card mb-4">
