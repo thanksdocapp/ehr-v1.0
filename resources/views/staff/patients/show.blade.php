@@ -39,14 +39,14 @@
                         @if($patientInfoCheck['has_placeholder_info'] ?? false)
                             <strong class="text-danger">Guest patient — placeholder details must be replaced</strong>
                         @else
-                            Guest patient — complete profile before clinical documentation
+                            Please complete profile before clinical documentation
                         @endif
                     </h5>
                     <p class="mb-2">
                         Medical records and prescriptions stay unavailable until required details are updated.
                     </p>
                     @if($patientInfoCheck['is_incomplete'] ?? false)
-                        <p class="mb-2 fw-semibold">Address these items:</p>
+                        <p class="mb-2 fw-semibold">Complete these items:</p>
                         <ul class="mb-3">
                             @foreach($patientInfoCheck['missing_fields'] as $field)
                                 <li>
