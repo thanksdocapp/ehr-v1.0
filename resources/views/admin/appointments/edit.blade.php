@@ -631,10 +631,10 @@ textarea.form-control {
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="notes" class="form-label">
-                                        <i class="fas fa-sticky-note me-1"></i>Notes
+                                        <i class="fas fa-comment-medical me-1"></i>Reason for coming in &amp; notes
                                     </label>
                                     <textarea class="form-control @error('notes') is-invalid @enderror" 
-                                              id="notes" name="notes" rows="3">{{ old('notes', $appointment->notes) }}</textarea>
+                                              id="notes" name="notes" rows="3" placeholder="Patient booking reason; staff may add notes">{{ old('notes', $appointment->notes) }}</textarea>
                                     @error('notes')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

@@ -54,6 +54,16 @@
                     </div>
                 </div>
                 <div class="doctor-card-body">
+                    @if($appointment->notes)
+                    <div class="alert alert-primary border-0 mb-4 shadow-sm" role="status">
+                        <p class="text-uppercase small fw-semibold mb-2 mb-md-3 text-primary">
+                            <i class="fas fa-comment-medical me-1"></i>Reason for coming in
+                        </p>
+                        <div class="fw-normal text-dark fs-6">{!! nl2br(e($appointment->notes)) !!}</div>
+                        <small class="text-muted d-block mt-2">Provided by the patient when booking — visible before arrival.</small>
+                    </div>
+                    @endif
+
                     {{-- 1. Patient & visit type --}}
                     <div class="mb-4">
                         <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user me-1"></i>Patient & visit type</p>
@@ -233,18 +243,12 @@
                     @endif
                     </div>
 
-                    {{-- 5. Reason for visit & notes --}}
-                    @if($appointment->reason || $appointment->notes)
+                    {{-- 5. Clinical reason (separate from patient booking text in notes, shown above) --}}
+                    @if($appointment->reason)
                     <div class="pt-3 border-top">
                         <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-stethoscope me-1"></i>Reason for visit</p>
-                        @if($appointment->reason)
-                            <label class="form-label text-muted small mb-0">Reason / presenting complaint</label>
-                            <div class="fw-bold mb-2">{{ $appointment->reason }}</div>
-                        @endif
-                        @if($appointment->notes)
-                            <label class="form-label text-muted small mb-0">Staff notes</label>
-                            <div class="text-muted small">{{ $appointment->notes }}</div>
-                        @endif
+                        <label class="form-label text-muted small mb-0">Reason / presenting complaint</label>
+                        <div class="fw-bold">{{ $appointment->reason }}</div>
                     </div>
                     @endif
                 </div>

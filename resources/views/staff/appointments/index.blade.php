@@ -534,6 +534,11 @@
                                                 @endif
                                             </div>
                                             <small class="text-muted">{{ $appointment->patient->phone ?? 'No phone' }}</small>
+                                            @if($appointment->notes)
+                                                <small class="d-block text-dark mt-1 fw-medium" title="{{ e($appointment->notes) }}">
+                                                    <i class="fas fa-comment-medical text-primary me-1"></i>{{ \Illuminate\Support\Str::limit($appointment->notes, 48) }}
+                                                </small>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -549,7 +554,7 @@
                                 <td>
                                     <div class="fw-bold">{{ ucfirst(str_replace('_', ' ', $appointment->type)) }}</div>
                                     @if($appointment->reason)
-                                        <small class="text-muted">{{ Str::limit($appointment->reason, 30) }}</small>
+                                        <small class="text-muted d-block">{{ Str::limit($appointment->reason, 30) }}</small>
                                     @endif
                                 </td>
                                 @endif

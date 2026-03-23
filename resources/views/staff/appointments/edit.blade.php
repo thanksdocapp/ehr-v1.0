@@ -484,10 +484,11 @@
                 <div class="row">
                     <div class="col-12">
                         <div class="form-group mb-3">
-                            <label for="notes" class="form-label">Staff Notes</label>
+                            <label for="notes" class="form-label">Reason for coming in &amp; appointment notes</label>
                             <textarea class="form-control @error('notes') is-invalid @enderror" 
-                                      id="notes" name="notes" rows="3" 
-                                      placeholder="Any additional notes for this appointment...">{{ old('notes', $appointment->notes) }}</textarea>
+                                      id="notes" name="notes" rows="4" 
+                                      placeholder="Patient booking reason appears here. You may edit or add internal notes.">{{ old('notes', $appointment->notes) }}</textarea>
+                            <small class="text-muted">Includes the patient&rsquo;s reason when they booked online. Status updates may append to this field.</small>
                             @error('notes')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

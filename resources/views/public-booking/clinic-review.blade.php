@@ -58,6 +58,9 @@
             <div class="review-row"><span class="review-label">Name</span><span class="review-value">{{ ($patient_data['first_name'] ?? '') . ' ' . ($patient_data['last_name'] ?? '') }}</span></div>
             <div class="review-row"><span class="review-label">Email</span><span class="review-value">{{ $patient_data['email'] ?? '' }}</span></div>
             <div class="review-row"><span class="review-label">Phone</span><span class="review-value">{{ $patient_data['phone'] ?? '' }}</span></div>
+            @if(!empty($patient_data['notes']))
+            <div class="review-row"><span class="review-label">Reason for coming in</span><span class="review-value">{{ $patient_data['notes'] }}</span></div>
+            @endif
         </div>
 
         <div class="text-center mt-4">

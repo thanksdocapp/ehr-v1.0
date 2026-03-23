@@ -25,6 +25,7 @@
                         <tr>
                             <th>Request #</th>
                             <th>Patient</th>
+                            <th>Reason for coming in</th>
                             <th>Service</th>
                             <th>Date & Time</th>
                             <th>Contact</th>
@@ -37,6 +38,16 @@
                             <td><strong>{{ $req->request_number }}</strong></td>
                             <td>
                                 {{ ($req->patient_data['first_name'] ?? '') . ' ' . ($req->patient_data['last_name'] ?? '') }}
+                            </td>
+                            <td>
+                                @php
+                                    $bookingReason = $req->patient_data['notes'] ?? $req->notes ?? '';
+                                @endphp
+                                @if($bookingReason !== '' && $bookingReason !== null)
+                                    <span class="text-dark small" title="{{ e($bookingReason) }}">{{ \Illuminate\Support\Str::limit($bookingReason, 55) }}</span>
+                                @else
+                                    <span class="text-muted small">—</span>
+                                @endif
                             </td>
                             <td>{{ $req->service?->name ?? 'Consultation' }}</td>
                             <td>
