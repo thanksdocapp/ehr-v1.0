@@ -98,16 +98,18 @@ class DoctorServicesController extends Controller
             'description' => 'nullable|string',
             'default_duration_minutes' => 'required|integer|min:5|max:480',
             'default_price' => 'nullable|numeric|min:0',
-            'minimum_age' => 'nullable|integer|min:0|max:130',
-            'maximum_age' => 'nullable|integer|min:0|max:130',
             'consultation_type' => 'required|in:in_person,online,telephone',
             'tags_input' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
-        if ($request->filled('minimum_age') && $request->filled('maximum_age')
-            && (int) $request->maximum_age < (int) $request->minimum_age) {
-            return back()->withErrors(['maximum_age' => 'Maximum age must be greater than or equal to minimum age.'])->withInput();
+        if ($request->boolean('under_18_only') && $request->boolean('adults_only')) {
+            return back()->withErrors(['age_restriction' => 'Choose only one age option, or leave both unchecked for any age.'])->withInput();
         }
+
+        [$minimumAge, $maximumAge] = BookingService::ageBoundsFromRestrictionCheckboxes(
+            $request->boolean('under_18_only'),
+            $request->boolean('adults_only')
+        );
 
         try {
             // Parse tags from comma-separated string
@@ -123,6 +125,8 @@ class DoctorServicesController extends Controller
                 'description' => $request->description,
                 'default_duration_minutes' => $request->default_duration_minutes,
                 'default_price' => $request->default_price,
+                'minimum_age' => $minimumAge,
+                'maximum_age' => $maximumAge,
                 'tags' => $tags,
                 'created_by' => $user->id,
                 'sort_order' => $nextSortOrder,
@@ -190,15 +194,17 @@ class DoctorServicesController extends Controller
             'default_price' => 'required|numeric|min:0',
             'description' => 'nullable|string|max:1000',
             'custom_duration_minutes' => 'required|integer|min:5|max:480',
-            'minimum_age' => 'nullable|integer|min:0|max:130',
-            'maximum_age' => 'nullable|integer|min:0|max:130',
             'consultation_type' => 'required|in:in_person,online,telephone',
             'is_active' => 'boolean',
         ]);
-        if ($request->filled('minimum_age') && $request->filled('maximum_age')
-            && (int) $request->maximum_age < (int) $request->minimum_age) {
-            return back()->withErrors(['maximum_age' => 'Maximum age must be greater than or equal to minimum age.'])->withInput();
+        if ($request->boolean('under_18_only') && $request->boolean('adults_only')) {
+            return back()->withErrors(['age_restriction' => 'Choose only one age option, or leave both unchecked for any age.'])->withInput();
         }
+
+        [$minimumAge, $maximumAge] = BookingService::ageBoundsFromRestrictionCheckboxes(
+            $request->boolean('under_18_only'),
+            $request->boolean('adults_only')
+        );
 
         try {
             $newDefaultPrice = $request->default_price;
@@ -210,8 +216,8 @@ class DoctorServicesController extends Controller
                 'default_price' => $newDefaultPrice,
                 'default_duration_minutes' => $duration,
                 'description' => $request->description,
-                'minimum_age' => $request->filled('minimum_age') ? (int) $request->minimum_age : null,
-                'maximum_age' => $request->filled('maximum_age') ? (int) $request->maximum_age : null,
+                'minimum_age' => $minimumAge,
+                'maximum_age' => $maximumAge,
             ]);
 
             // Update or create doctor service override (duration used by SlotAvailabilityService for scheduling)

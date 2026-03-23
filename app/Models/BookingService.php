@@ -101,6 +101,56 @@ class BookingService extends Model
         return $doctorPrice?->consultation_type ?? 'in_person';
     }
 
+    public function isUnder18OnlyService(): bool
+    {
+        return $this->maximum_age === 17 && $this->minimum_age === null;
+    }
+
+    public function isAdultsOnlyService(): bool
+    {
+        return $this->minimum_age === 18 && $this->maximum_age === null;
+    }
+
+    /** Human-readable age rule for admin/doctor UI. */
+    public function ageRestrictionLabel(): string
+    {
+        if ($this->isUnder18OnlyService()) {
+            return 'Under 18 only';
+        }
+        if ($this->isAdultsOnlyService()) {
+            return 'Adults only (18+)';
+        }
+        if ($this->minimum_age === null && $this->maximum_age === null) {
+            return 'Any age';
+        }
+        $parts = [];
+        if ($this->minimum_age !== null) {
+            $parts[] = 'min ' . $this->minimum_age;
+        }
+        if ($this->maximum_age !== null) {
+            $parts[] = 'max ' . $this->maximum_age;
+        }
+
+        return 'Custom: ' . implode(', ', $parts);
+    }
+
+    /**
+     * Map UI checkboxes to stored columns (under-18: max 17; adults: min 18).
+     *
+     * @return array{0: ?int, 1: ?int} [minimum_age, maximum_age]
+     */
+    public static function ageBoundsFromRestrictionCheckboxes(bool $under18Only, bool $adultsOnly): array
+    {
+        if ($under18Only) {
+            return [null, 17];
+        }
+        if ($adultsOnly) {
+            return [18, null];
+        }
+
+        return [null, null];
+    }
+
     /**
      * Whether a patient age (in full years, as of today) is allowed for this service.
      * Null minimum_age / maximum_age means no bound on that side.

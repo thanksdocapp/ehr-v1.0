@@ -43,21 +43,7 @@
                             </div>
                             <div class="col-md-6 mb-2">
                                 <small class="text-muted d-block">Age rules (booking)</small>
-                                <strong>
-                                    @if($bookingService->minimum_age === null && $bookingService->maximum_age === null)
-                                        Any age
-                                    @else
-                                        @if($bookingService->minimum_age !== null)
-                                            Min {{ $bookingService->minimum_age }}
-                                        @endif
-                                        @if($bookingService->minimum_age !== null && $bookingService->maximum_age !== null)
-                                            —
-                                        @endif
-                                        @if($bookingService->maximum_age !== null)
-                                            Max {{ $bookingService->maximum_age }}
-                                        @endif
-                                    @endif
-                                </strong>
+                                <strong>{{ $bookingService->ageRestrictionLabel() }}</strong>
                             </div>
                         </div>
                     </div>
@@ -122,24 +108,7 @@
                             @enderror
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="minimum_age" class="form-label">Minimum age (optional)</label>
-                                <input type="number" class="form-control @error('minimum_age') is-invalid @enderror" id="minimum_age" name="minimum_age" value="{{ old('minimum_age', $bookingService->minimum_age) }}" min="0" max="130" placeholder="e.g. 18">
-                                @error('minimum_age')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                                <small class="text-muted">Leave empty for no minimum.</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="maximum_age" class="form-label">Maximum age (optional)</label>
-                                <input type="number" class="form-control @error('maximum_age') is-invalid @enderror" id="maximum_age" name="maximum_age" value="{{ old('maximum_age', $bookingService->maximum_age) }}" min="0" max="130" placeholder="e.g. 17">
-                                @error('maximum_age')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                                <small class="text-muted">Leave empty for no maximum.</small>
-                            </div>
-                        </div>
+                        @include('partials.booking-service-age-restrictions', ['bookingService' => $bookingService])
 
                         <div class="row">
                             <div class="col-md-6 mb-3">

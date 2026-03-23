@@ -99,28 +99,7 @@
                                     </div>
                                 </div>
 
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="minimum_age" class="form-label fw-semibold">Minimum age (optional)</label>
-                                            <input type="number" class="form-control @error('minimum_age') is-invalid @enderror" id="minimum_age" name="minimum_age" value="{{ old('minimum_age') }}" min="0" max="130" placeholder="e.g. 18">
-                                            @error('minimum_age')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                            <small class="text-muted">Leave empty for no minimum.</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="maximum_age" class="form-label fw-semibold">Maximum age (optional)</label>
-                                            <input type="number" class="form-control @error('maximum_age') is-invalid @enderror" id="maximum_age" name="maximum_age" value="{{ old('maximum_age') }}" min="0" max="130" placeholder="e.g. 17">
-                                            @error('maximum_age')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                            <small class="text-muted">Leave empty for no maximum.</small>
-                                        </div>
-                                    </div>
-                                </div>
+                                @include('partials.booking-service-age-restrictions', ['bookingService' => null])
 
                                 <div class="mb-3">
                                     <label for="consultation_type" class="form-label fw-semibold">Consultation Type <span class="text-danger">*</span></label>
