@@ -495,15 +495,11 @@
             </div>
         </div>
 
-        <div class="row mt-2">
+        <div class="row mt-4 pt-4 border-top">
             <div class="col-12">
-                <div class="doctor-card border-top border-2 pt-4 mt-2">
-                    <div class="doctor-card-body py-3 d-flex flex-wrap justify-content-end gap-2">
-                        <button type="submit" class="btn btn-doctor-primary btn-lg" id="medicalRecordUpdateSubmit">
-                            <i class="fas fa-save me-2"></i>Update Medical Record
-                        </button>
-                    </div>
-                </div>
+                <button type="submit" class="btn btn-doctor-primary btn-lg" id="medicalRecordUpdateSubmit">
+                    <i class="fas fa-save me-2"></i>Update Medical Record
+                </button>
             </div>
         </div>
     </form>
