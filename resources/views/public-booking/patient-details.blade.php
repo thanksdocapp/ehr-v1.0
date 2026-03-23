@@ -37,6 +37,12 @@
                 {{ \Carbon\Carbon::parse($appointment_date)->format('l, j F Y') }} at {{ \Carbon\Carbon::parse($appointment_time)->format('g:i A') }}
             </span>
         </div>
+        @if(!empty($bookingDobYmd ?? null) && !$errors->has('date_of_birth'))
+        <div class="summary-row">
+            <span class="summary-label">Date of birth</span>
+            <span class="summary-value">{{ \Carbon\Carbon::parse($bookingDobYmd)->format('l, j F Y') }}</span>
+        </div>
+        @endif
     </div>
 
     <form id="patient-details-form" method="POST" action="{{ route('public.booking.review') }}">
@@ -87,24 +93,37 @@
             @include('public-booking.partials.booking-address-fields')
 
             @php
+                $bookingDobSessionYmd = !empty($bookingDobYmd ?? null) ? \Carbon\Carbon::parse($bookingDobYmd)->format('Y-m-d') : null;
+                $showDobPicker = !$bookingDobSessionYmd || $errors->has('date_of_birth');
+                $dobHiddenYmd = $bookingDobSessionYmd;
+                if (old('date_of_birth')) {
+                    $parsedDob = parseDateInput(old('date_of_birth'));
+                    if ($parsedDob) {
+                        $dobHiddenYmd = $parsedDob;
+                    }
+                }
                 $dobFieldVal = old('date_of_birth');
                 if ($dobFieldVal && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dobFieldVal)) {
                     $dobFieldVal = \Carbon\Carbon::parse($dobFieldVal)->format('d/m/Y');
                 }
-                if (!$dobFieldVal && !empty($bookingDobYmd ?? null)) {
-                    $dobFieldVal = \Carbon\Carbon::parse($bookingDobYmd)->format('d/m/Y');
+                if (!$dobFieldVal && $bookingDobSessionYmd) {
+                    $dobFieldVal = \Carbon\Carbon::parse($bookingDobSessionYmd)->format('d/m/Y');
                 }
             @endphp
+            @if($bookingDobSessionYmd && !$showDobPicker)
+                <input type="hidden" name="date_of_birth" value="{{ $dobHiddenYmd }}">
+            @endif
             <div class="row">
+                @if($showDobPicker)
                 <div class="col-md-6 mb-3">
                     <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                    <input type="text" 
-                           class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror" 
-                           id="date_of_birth" 
-                           name="date_of_birth" 
+                    <input type="text"
+                           class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror"
+                           id="date_of_birth"
+                           name="date_of_birth"
                            data-uk-date="true"
-                           required 
-                           value="{{ $dobFieldVal }}" 
+                           required
+                           value="{{ $dobFieldVal }}"
                            placeholder="dd/mm/yyyy"
                            autocomplete="off">
                     <small class="form-text text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
@@ -112,6 +131,7 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
+                @endif
 
                 <div class="col-md-6 mb-3">
                     <label for="gender" class="form-label">Gender <span class="text-danger">*</span></label>
@@ -166,7 +186,7 @@
 (function() {
     function initDobPicker() {
         var el = document.getElementById('date_of_birth');
-        if (!el || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
+        if (!el || el.type === 'hidden' || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
         try {
             flatpickr(el, {
                 dateFormat: 'd/m/Y',
