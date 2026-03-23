@@ -3,10 +3,25 @@
 @section('title', 'Book Appointment')
 
 @section('content')
+@if(empty($bookingDob))
+    @include('public-booking.partials.booking-dob-step', [
+        'dobIntro' => 'Enter the patient\'s date of birth first. You will then see services available for this age.',
+    ])
+@else
+    @if(session('warning'))
+    <div class="alert alert-warning border-0 mb-3">{{ session('warning') }}</div>
+    @endif
+    @if(session('error'))
+    <div class="alert alert-danger border-0 mb-3">{{ session('error') }}</div>
+    @endif
     <!-- Header -->
     <div class="booking-header">
         <h1>Book Your Appointment</h1>
         <p>Select a doctor and service to continue</p>
+        <form method="POST" action="{{ route('public.booking.clear-dob') }}" class="mt-2 mb-0">
+            @csrf
+            <button type="submit" class="btn btn-link btn-sm text-muted p-0">Change date of birth</button>
+        </form>
     </div>
 
     <!-- Progress Steps -->
@@ -354,6 +369,32 @@
 @endsection
 
 @section('scripts')
+@if(empty($bookingDob))
+<script>
+(function() {
+    function initPublicBookingDobPicker() {
+        var el = document.getElementById('public_booking_date_of_birth');
+        if (!el || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
+        try {
+            flatpickr(el, {
+                dateFormat: 'd/m/Y',
+                allowInput: true,
+                clickOpens: true,
+                maxDate: 'today',
+                minDate: new Date(new Date().setFullYear(new Date().getFullYear() - 150)),
+                locale: { firstDayOfWeek: 1 },
+            });
+            el.setAttribute('data-flatpickr-initialized', 'true');
+        } catch (e) { console.error('Public booking DOB Flatpickr init error:', e); }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { setTimeout(initPublicBookingDobPicker, 150); });
+    } else {
+        setTimeout(initPublicBookingDobPicker, 150);
+    }
+})();
+</script>
+@else
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const doctorSelect = document.getElementById('doctor-select');
@@ -422,22 +463,27 @@
             }
         });
 
-        // Date navigation
-        document.getElementById('prev-dates').addEventListener('click', function() {
-            if (currentDateIndex > 0) {
-                currentDateIndex--;
-                renderDates();
-                loadTimeSlotsForDate(currentDates[currentDateIndex]);
-            }
-        });
-
-        document.getElementById('next-dates').addEventListener('click', function() {
-            if (currentDateIndex < currentDates.length - 5) {
-                currentDateIndex++;
-                renderDates();
-                loadTimeSlotsForDate(currentDates[currentDateIndex]);
-            }
-        });
+        // Date navigation (optional controls — guard if absent from DOM)
+        var prevDatesEl = document.getElementById('prev-dates');
+        if (prevDatesEl) {
+            prevDatesEl.addEventListener('click', function() {
+                if (currentDateIndex > 0) {
+                    currentDateIndex--;
+                    renderDates();
+                    loadTimeSlotsForDate(currentDates[currentDateIndex]);
+                }
+            });
+        }
+        var nextDatesEl = document.getElementById('next-dates');
+        if (nextDatesEl) {
+            nextDatesEl.addEventListener('click', function() {
+                if (currentDateIndex < currentDates.length - 5) {
+                    currentDateIndex++;
+                    renderDates();
+                    loadTimeSlotsForDate(currentDates[currentDateIndex]);
+                }
+            });
+        }
 
         // Load doctor services
         function loadDoctorServices(doctorId) {
@@ -629,8 +675,12 @@
             });
 
             // Hide navigation buttons since we only show 5 days
-            document.getElementById('prev-dates').style.display = 'none';
-            document.getElementById('next-dates').style.display = 'none';
+            if (document.getElementById('prev-dates')) {
+                document.getElementById('prev-dates').style.display = 'none';
+            }
+            if (document.getElementById('next-dates')) {
+                document.getElementById('next-dates').style.display = 'none';
+            }
         }
 
         // Load time slots for all visible dates (5 days)
@@ -786,4 +836,5 @@
         });
     });
 </script>
+@endif
 @endsection

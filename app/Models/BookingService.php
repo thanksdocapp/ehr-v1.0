@@ -17,6 +17,8 @@ class BookingService extends Model
         'description',
         'default_duration_minutes',
         'default_price',
+        'minimum_age',
+        'maximum_age',
         'tags',
         'created_by',
         'is_active',
@@ -28,6 +30,8 @@ class BookingService extends Model
         'is_active' => 'boolean',
         'default_price' => 'decimal:2',
         'default_duration_minutes' => 'integer',
+        'minimum_age' => 'integer',
+        'maximum_age' => 'integer',
         'sort_order' => 'integer',
     ];
 
@@ -95,6 +99,22 @@ class BookingService extends Model
             ->first();
 
         return $doctorPrice?->consultation_type ?? 'in_person';
+    }
+
+    /**
+     * Whether a patient age (in full years, as of today) is allowed for this service.
+     * Null minimum_age / maximum_age means no bound on that side.
+     */
+    public function isEligibleForAgeYears(int $ageYears): bool
+    {
+        if ($this->minimum_age !== null && $ageYears < $this->minimum_age) {
+            return false;
+        }
+        if ($this->maximum_age !== null && $ageYears > $this->maximum_age) {
+            return false;
+        }
+
+        return true;
     }
 
     public function isAvailableForDoctor($doctorId)

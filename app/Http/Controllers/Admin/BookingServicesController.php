@@ -62,10 +62,20 @@ class BookingServicesController extends Controller
             'description' => 'nullable|string',
             'default_duration_minutes' => 'required|integer|min:5|max:480',
             'default_price' => 'nullable|numeric|min:0',
+            'minimum_age' => 'nullable|integer|min:0|max:130',
+            'maximum_age' => 'nullable|integer|min:0|max:130',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'is_active' => 'boolean',
         ]);
+        $validator->after(function ($v) use ($request) {
+            if (!$request->filled('minimum_age') || !$request->filled('maximum_age')) {
+                return;
+            }
+            if ((int) $request->maximum_age < (int) $request->minimum_age) {
+                $v->errors()->add('maximum_age', 'Maximum age must be greater than or equal to minimum age.');
+            }
+        });
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
@@ -76,6 +86,8 @@ class BookingServicesController extends Controller
             'description' => $request->description,
             'default_duration_minutes' => $request->default_duration_minutes,
             'default_price' => $request->default_price,
+            'minimum_age' => $request->filled('minimum_age') ? (int) $request->minimum_age : null,
+            'maximum_age' => $request->filled('maximum_age') ? (int) $request->maximum_age : null,
             'tags' => $request->tags ?? [],
             'created_by' => Auth::id(),
             'is_active' => $request->has('is_active') ? true : false,
@@ -120,10 +132,20 @@ class BookingServicesController extends Controller
             'description' => 'nullable|string',
             'default_duration_minutes' => 'required|integer|min:5|max:480',
             'default_price' => 'nullable|numeric|min:0',
+            'minimum_age' => 'nullable|integer|min:0|max:130',
+            'maximum_age' => 'nullable|integer|min:0|max:130',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'is_active' => 'boolean',
         ]);
+        $validator->after(function ($v) use ($request) {
+            if (!$request->filled('minimum_age') || !$request->filled('maximum_age')) {
+                return;
+            }
+            if ((int) $request->maximum_age < (int) $request->minimum_age) {
+                $v->errors()->add('maximum_age', 'Maximum age must be greater than or equal to minimum age.');
+            }
+        });
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
@@ -137,6 +159,8 @@ class BookingServicesController extends Controller
             'description' => $request->description,
             'default_duration_minutes' => $request->default_duration_minutes,
             'default_price' => $newDefaultPrice,
+            'minimum_age' => $request->filled('minimum_age') ? (int) $request->minimum_age : null,
+            'maximum_age' => $request->filled('maximum_age') ? (int) $request->maximum_age : null,
             'tags' => $request->tags ?? [],
             'is_active' => $request->has('is_active') ? true : false,
         ]);

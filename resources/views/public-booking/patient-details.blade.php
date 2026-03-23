@@ -84,6 +84,15 @@
                 @enderror
             </div>
 
+            @php
+                $dobFieldVal = old('date_of_birth');
+                if ($dobFieldVal && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dobFieldVal)) {
+                    $dobFieldVal = \Carbon\Carbon::parse($dobFieldVal)->format('d/m/Y');
+                }
+                if (!$dobFieldVal && !empty($bookingDobYmd ?? null)) {
+                    $dobFieldVal = \Carbon\Carbon::parse($bookingDobYmd)->format('d/m/Y');
+                }
+            @endphp
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
@@ -93,7 +102,7 @@
                            name="date_of_birth" 
                            data-uk-date="true"
                            required 
-                           value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : '' }}" 
+                           value="{{ $dobFieldVal }}" 
                            placeholder="dd/mm/yyyy"
                            autocomplete="off">
                     <small class="form-text text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>

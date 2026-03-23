@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Doctor;
 use App\Models\Department;
@@ -30,6 +31,53 @@ class PublicBookingController extends Controller
         return Setting::get('public_booking_mode', 'clinic') === 'clinic';
     }
 
+    private function publicBookingDobSessionKey(): string
+    {
+        return 'public_booking_dob';
+    }
+
+    /**
+     * @param  string|null  $dobYmd  Parsed Y-m-d; when null, uses session value.
+     */
+    private function redirectIfServiceIneligibleForPublicBooking(BookingService $service, ?string $dobYmd = null): ?\Illuminate\Http\RedirectResponse
+    {
+        $dobYmd = $dobYmd ?? session($this->publicBookingDobSessionKey());
+        if (!$dobYmd) {
+            return redirect()->back()->with('error', 'Please enter your date of birth first.')->withInput();
+        }
+        if (!$service->isEligibleForAgeYears(Carbon::parse($dobYmd)->age)) {
+            return redirect()->back()->with('error', 'This service is not available for this age.')->withInput();
+        }
+
+        return null;
+    }
+
+    public function storePublicBookingDob(Request $request)
+    {
+        $this->checkBookingEnabled();
+
+        $validator = Validator::make($request->all(), [
+            'date_of_birth' => 'required|date|before:today',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $ymd = parseDateInput($request->date_of_birth);
+        session([$this->publicBookingDobSessionKey() => $ymd]);
+
+        return back();
+    }
+
+    public function clearPublicBookingDob()
+    {
+        $this->checkBookingEnabled();
+        session()->forget($this->publicBookingDobSessionKey());
+
+        return back();
+    }
+
     /**
      * Check if public booking is enabled.
      */
@@ -54,7 +102,8 @@ class PublicBookingController extends Controller
         return view('public-booking.service-selection', [
             'doctor' => $doctor,
             'doctors' => collect([$doctor]), // Single doctor in collection
-            'step' => 1
+            'step' => 1,
+            'bookingDob' => session($this->publicBookingDobSessionKey()),
         ]);
     }
 
@@ -68,12 +117,16 @@ class PublicBookingController extends Controller
 
         $department = Department::where('slug', $slug)->active()->firstOrFail();
 
+        $bookingDob = session($this->publicBookingDobSessionKey());
+        $ageYears = $bookingDob ? Carbon::parse($bookingDob)->age : null;
+
         if ($this->isClinicMode()) {
-            $services = $this->getClinicServices($department->id);
+            $services = $this->getClinicServices($department->id, $ageYears);
             return view('public-booking.clinic-booking', [
                 'department' => $department,
                 'services' => $services,
-                'step' => 1
+                'step' => 1,
+                'bookingDob' => $bookingDob,
             ]);
         }
 
@@ -81,14 +134,15 @@ class PublicBookingController extends Controller
         return view('public-booking.service-selection', [
             'department' => $department,
             'doctors' => $doctors,
-            'step' => 1
+            'step' => 1,
+            'bookingDob' => $bookingDob,
         ]);
     }
 
     /**
      * Get services offered by clinic (union of services from all doctors in department).
      */
-    private function getClinicServices(int $departmentId): array
+    private function getClinicServices(int $departmentId, ?int $patientAgeYears = null): array
     {
         $doctors = Doctor::byDepartment($departmentId)->active()->get();
         $servicesMap = [];
@@ -98,6 +152,9 @@ class PublicBookingController extends Controller
                 ->where('is_active', true)
                 ->get();
             foreach ($doctorServices as $svc) {
+                if ($patientAgeYears !== null && !$svc->isEligibleForAgeYears($patientAgeYears)) {
+                    continue;
+                }
                 $price = $svc->getPriceForDoctor($doctor->id) ?? $svc->default_price ?? 0;
                 $duration = $svc->getDurationForDoctor($doctor->id) ?? $svc->default_duration_minutes ?? 60;
                 $consultationType = $svc->getConsultationTypeForDoctor($doctor->id) ?? 'in_person';
@@ -141,6 +198,10 @@ class PublicBookingController extends Controller
         $department = Department::findOrFail($request->department_id);
         $service = BookingService::findOrFail($request->service_id);
 
+        if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service)) {
+            return $redirect;
+        }
+
         $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
             $department->id,
             $request->appointment_date,
@@ -158,7 +219,8 @@ class PublicBookingController extends Controller
             'appointment_date' => $request->appointment_date,
             'appointment_time' => $request->appointment_time,
             'consultation_type' => $request->consultation_type ?? 'in_person',
-            'step' => 2
+            'step' => 2,
+            'bookingDobYmd' => session($this->publicBookingDobSessionKey()),
         ]);
     }
 
@@ -194,6 +256,12 @@ class PublicBookingController extends Controller
 
         $department = Department::findOrFail($request->department_id);
         $service = BookingService::findOrFail($request->service_id);
+
+        $dobYmd = parseDateInput($request->date_of_birth);
+        if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service, $dobYmd)) {
+            return $redirect;
+        }
+        session([$this->publicBookingDobSessionKey() => $dobYmd]);
 
         $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
             $department->id,
@@ -278,6 +346,12 @@ class PublicBookingController extends Controller
 
         $department = Department::findOrFail($request->department_id);
         $service = BookingService::findOrFail($request->service_id);
+
+        if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service, $data['date_of_birth'] ?? null)) {
+            return $redirect;
+        }
+        session([$this->publicBookingDobSessionKey() => $data['date_of_birth']]);
+
         $doctors = Doctor::byDepartment($department->id)->active()->get();
         $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
         $price = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
@@ -309,6 +383,8 @@ class PublicBookingController extends Controller
      */
     public function clinicSuccess($requestNumber)
     {
+        session()->forget($this->publicBookingDobSessionKey());
+
         $request = \App\Models\ClinicBookingRequest::where('request_number', $requestNumber)->with(['department', 'service'])->firstOrFail();
         $patientEmail = $request->patient_data['email'] ?? '';
 
@@ -333,6 +409,12 @@ class PublicBookingController extends Controller
             abort(404, 'This service is not available for the selected doctor.');
         }
 
+        $bookingDob = session($this->publicBookingDobSessionKey());
+        if ($bookingDob && !$service->isEligibleForAgeYears(Carbon::parse($bookingDob)->age)) {
+            return redirect()->route('public.booking.doctor', ['slug' => $doctor->slug])
+                ->with('warning', 'This service is not available for the age you entered. Choose another service or update your date of birth.');
+        }
+
         // Get the doctor's department
         $department = $doctor->primaryDepartment();
 
@@ -341,7 +423,8 @@ class PublicBookingController extends Controller
             'doctor' => $doctor,
             'doctors' => collect([$doctor]), // Single doctor pre-selected
             'department' => $department,
-            'step' => 1
+            'step' => 1,
+            'bookingDob' => $bookingDob,
         ]);
     }
 
@@ -363,6 +446,10 @@ class PublicBookingController extends Controller
         }
 
         $service = BookingService::findOrFail($request->service_id);
+
+        if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service)) {
+            return $redirect;
+        }
 
         // If department_id is provided but no doctor_id, show doctor selection
         if ($request->department_id && !$request->doctor_id) {
@@ -436,7 +523,11 @@ class PublicBookingController extends Controller
 
         // Get department_id from request (if booking through clinic link) or from doctor
         $departmentId = $request->department_id ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
-        
+
+        if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service)) {
+            return $redirect;
+        }
+
         return view('public-booking.patient-details', [
             'doctor' => $doctor,
             'service' => $service,
@@ -444,7 +535,8 @@ class PublicBookingController extends Controller
             'appointment_time' => $request->appointment_time,
             'consultation_type' => $request->consultation_type ?? 'in_person',
             'department_id' => $departmentId,
-            'step' => 3
+            'step' => 3,
+            'bookingDobYmd' => session($this->publicBookingDobSessionKey()),
         ]);
     }
 
@@ -562,6 +654,12 @@ class PublicBookingController extends Controller
 
         $doctor = Doctor::findOrFail($request->doctor_id);
         $service = BookingService::findOrFail($request->service_id);
+
+        $dobYmd = parseDateInput($request->date_of_birth);
+        if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service, $dobYmd)) {
+            return $redirect;
+        }
+        session([$this->publicBookingDobSessionKey() => $dobYmd]);
 
         // Verify slot is still available
         $slots = $this->slotAvailabilityService->getAvailableSlots(
@@ -703,6 +801,17 @@ class PublicBookingController extends Controller
                 ->with('error', 'Please check the form and try again.');
         }
 
+        $service = BookingService::findOrFail($request->service_id);
+        if ($request->filled('date_of_birth')) {
+            $dobYmd = $request->date_of_birth;
+            if (!$service->isEligibleForAgeYears(Carbon::parse($dobYmd)->age)) {
+                return redirect()->back()
+                    ->with('error', 'This service is not available for this age.')
+                    ->withInput();
+            }
+            session([$this->publicBookingDobSessionKey() => $dobYmd]);
+        }
+
         try {
             \Log::info('Starting public booking', [
                 'doctor_id' => $request->doctor_id,
@@ -788,6 +897,8 @@ class PublicBookingController extends Controller
      */
     public function success($appointmentNumber)
     {
+        session()->forget($this->publicBookingDobSessionKey());
+
         $appointment = \App\Models\Appointment::where('appointment_number', $appointmentNumber)
             ->with(['patient', 'doctor', 'service'])
             ->firstOrFail();
@@ -805,7 +916,13 @@ class PublicBookingController extends Controller
     {
         $doctor = Doctor::findOrFail($doctorId);
         $services = $this->getServicesForDoctor($doctor->id);
-        
+
+        $dobYmd = session($this->publicBookingDobSessionKey());
+        if ($dobYmd) {
+            $age = Carbon::parse($dobYmd)->age;
+            $services = $services->filter(fn (BookingService $s) => $s->isEligibleForAgeYears($age))->values();
+        }
+
         $servicesData = $services->map(function($service) use ($doctor) {
             // Use getPriceForDoctor and getDurationForDoctor to get custom prices if set
             return [
@@ -815,6 +932,8 @@ class PublicBookingController extends Controller
                 'duration' => $service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 60,
                 'price' => $service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0,
                 'consultation_type' => $service->getConsultationTypeForDoctor($doctor->id),
+                'minimum_age' => $service->minimum_age,
+                'maximum_age' => $service->maximum_age,
             ];
         });
 

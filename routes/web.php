@@ -125,6 +125,8 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/confirm', [\App\Http\Controllers\PublicBookingController::class, 'showConfirm'])->name('confirm.show');
         
         // POST routes (specific paths - must come before parameterized GET route)
+        Route::post('/dob', [\App\Http\Controllers\PublicBookingController::class, 'storePublicBookingDob'])->name('store-dob');
+        Route::post('/dob/clear', [\App\Http\Controllers\PublicBookingController::class, 'clearPublicBookingDob'])->name('clear-dob');
         Route::post('/select-datetime', [\App\Http\Controllers\PublicBookingController::class, 'selectDateTime'])->name('select-datetime');
         Route::post('/patient-details', [\App\Http\Controllers\PublicBookingController::class, 'patientDetails'])->name('patient-details');
         Route::post('/clinic-patient-details', [\App\Http\Controllers\PublicBookingController::class, 'clinicPatientDetails'])->name('clinic-patient-details');

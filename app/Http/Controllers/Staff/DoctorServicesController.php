@@ -98,10 +98,16 @@ class DoctorServicesController extends Controller
             'description' => 'nullable|string',
             'default_duration_minutes' => 'required|integer|min:5|max:480',
             'default_price' => 'nullable|numeric|min:0',
+            'minimum_age' => 'nullable|integer|min:0|max:130',
+            'maximum_age' => 'nullable|integer|min:0|max:130',
             'consultation_type' => 'required|in:in_person,online,telephone',
             'tags_input' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
+        if ($request->filled('minimum_age') && $request->filled('maximum_age')
+            && (int) $request->maximum_age < (int) $request->minimum_age) {
+            return back()->withErrors(['maximum_age' => 'Maximum age must be greater than or equal to minimum age.'])->withInput();
+        }
 
         try {
             // Parse tags from comma-separated string
@@ -184,9 +190,15 @@ class DoctorServicesController extends Controller
             'default_price' => 'required|numeric|min:0',
             'description' => 'nullable|string|max:1000',
             'custom_duration_minutes' => 'required|integer|min:5|max:480',
+            'minimum_age' => 'nullable|integer|min:0|max:130',
+            'maximum_age' => 'nullable|integer|min:0|max:130',
             'consultation_type' => 'required|in:in_person,online,telephone',
             'is_active' => 'boolean',
         ]);
+        if ($request->filled('minimum_age') && $request->filled('maximum_age')
+            && (int) $request->maximum_age < (int) $request->minimum_age) {
+            return back()->withErrors(['maximum_age' => 'Maximum age must be greater than or equal to minimum age.'])->withInput();
+        }
 
         try {
             $newDefaultPrice = $request->default_price;
@@ -198,6 +210,8 @@ class DoctorServicesController extends Controller
                 'default_price' => $newDefaultPrice,
                 'default_duration_minutes' => $duration,
                 'description' => $request->description,
+                'minimum_age' => $request->filled('minimum_age') ? (int) $request->minimum_age : null,
+                'maximum_age' => $request->filled('maximum_age') ? (int) $request->maximum_age : null,
             ]);
 
             // Update or create doctor service override (duration used by SlotAvailabilityService for scheduling)

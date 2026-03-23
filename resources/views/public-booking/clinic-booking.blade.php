@@ -3,9 +3,28 @@
 @section('title', 'Book Appointment')
 
 @section('content')
+@if(empty($bookingDob))
+    @include('public-booking.partials.booking-dob-step', [
+        'dobIntro' => 'Enter the patient\'s date of birth first. You will then see services at this clinic that are available for this age.',
+    ])
+@elseif(empty($services))
+    <div class="booking-header">
+        <h1>Book Your Appointment</h1>
+        <p>No services are available for the age you entered.</p>
+    </div>
+    <div class="alert alert-info border-0">Try a different date of birth if it was entered incorrectly, or contact the clinic.</div>
+    <form method="POST" action="{{ route('public.booking.clear-dob') }}" class="text-center">
+        @csrf
+        <button type="submit" class="btn btn-outline-primary">Change date of birth</button>
+    </form>
+@else
     <div class="booking-header">
         <h1>Book Your Appointment</h1>
         <p>Select a service and available time. A doctor from the clinic will confirm your booking.</p>
+        <form method="POST" action="{{ route('public.booking.clear-dob') }}" class="mt-2 mb-0">
+            @csrf
+            <button type="submit" class="btn btn-link btn-sm text-muted p-0">Change date of birth</button>
+        </form>
     </div>
 
     <div class="progress-steps">
@@ -130,6 +149,32 @@
 @endsection
 
 @section('scripts')
+@if(empty($bookingDob))
+<script>
+(function() {
+    function initPublicBookingDobPicker() {
+        var el = document.getElementById('public_booking_date_of_birth');
+        if (!el || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
+        try {
+            flatpickr(el, {
+                dateFormat: 'd/m/Y',
+                allowInput: true,
+                clickOpens: true,
+                maxDate: 'today',
+                minDate: new Date(new Date().setFullYear(new Date().getFullYear() - 150)),
+                locale: { firstDayOfWeek: 1 },
+            });
+            el.setAttribute('data-flatpickr-initialized', 'true');
+        } catch (e) { console.error('Public booking DOB Flatpickr init error:', e); }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { setTimeout(initPublicBookingDobPicker, 150); });
+    } else {
+        setTimeout(initPublicBookingDobPicker, 150);
+    }
+})();
+</script>
+@elseif(!empty($services))
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('clinic-booking-form');
@@ -275,4 +320,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+@endif
 @endsection

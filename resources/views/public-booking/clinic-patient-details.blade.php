@@ -74,10 +74,19 @@
                 <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" required value="{{ old('phone') }}">
                 @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
+            @php
+                $dobFieldVal = old('date_of_birth');
+                if ($dobFieldVal && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dobFieldVal)) {
+                    $dobFieldVal = \Carbon\Carbon::parse($dobFieldVal)->format('d/m/Y');
+                }
+                if (!$dobFieldVal && !empty($bookingDobYmd ?? null)) {
+                    $dobFieldVal = \Carbon\Carbon::parse($bookingDobYmd)->format('d/m/Y');
+                }
+            @endphp
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror" id="date_of_birth" name="date_of_birth" data-uk-date="true" required value="{{ old('date_of_birth') }}" placeholder="dd/mm/yyyy" autocomplete="off">
+                    <input type="text" class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror" id="date_of_birth" name="date_of_birth" data-uk-date="true" required value="{{ $dobFieldVal }}" placeholder="dd/mm/yyyy" autocomplete="off">
                     <small class="form-text text-muted">Format: dd/mm/yyyy</small>
                     @error('date_of_birth')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
