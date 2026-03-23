@@ -1008,6 +1008,9 @@ class PatientsController extends Controller
             $patient->unsetRelation('departments');
         }
 
+        $patient->refresh();
+        $patient->clearGuestFlagIfInformationComplete();
+
         return redirect()->route('staff.patients.index')
             ->with('success', 'Patient updated successfully.');
     }
@@ -1223,6 +1226,44 @@ class PatientsController extends Controller
             ]);
 
             return back()->with('error', 'Failed to convert patient: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Remove guest flag immediately without collecting DOB/gender/address (staff override).
+     */
+    public function convertGuestInstant(Request $request, Patient $patient)
+    {
+        if (!$patient->is_guest) {
+            return redirect()->route('staff.patients.show', $patient)
+                ->with('info', 'This patient is already a full patient.');
+        }
+
+        if (!$patient->isVisibleTo(Auth::user())) {
+            abort(403, 'You do not have access to this patient.');
+        }
+
+        try {
+            if (!$patient->convertToFullPatient([])) {
+                return redirect()->back()
+                    ->with('error', 'Could not remove guest status for this patient.');
+            }
+
+            \Log::info('Guest patient: instant convert (guest flag cleared, no form)', [
+                'patient_id' => $patient->id,
+                'user_id' => Auth::id(),
+            ]);
+
+            return redirect()->route('staff.patients.show', $patient)
+                ->with('success', 'Guest status removed. Patient fields were not changed — open the profile to finish any missing details if needed.');
+        } catch (Exception $e) {
+            \Log::error('Failed instant guest convert', [
+                'patient_id' => $patient->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to remove guest status: ' . $e->getMessage());
         }
     }
 }

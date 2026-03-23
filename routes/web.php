@@ -291,6 +291,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/patients/{patient}/gp-email', [\App\Http\Controllers\Staff\PatientsController::class, 'sendGpEmail'])->name('patients.gp-email.send');
         Route::get('/patients/{patient}/convert-guest', [\App\Http\Controllers\Staff\PatientsController::class, 'showConvertGuest'])->name('patients.convert-guest');
         Route::post('/patients/{patient}/convert-guest', [\App\Http\Controllers\Staff\PatientsController::class, 'convertGuest'])->name('patients.convert-guest.post');
+        Route::post('/patients/{patient}/convert-guest-instant', [\App\Http\Controllers\Staff\PatientsController::class, 'convertGuestInstant'])->name('patients.convert-guest-instant.post');
         
         // Patient Email
         Route::get('/patient-email', [\App\Http\Controllers\Staff\PatientEmailController::class, 'index'])->name('patient-email.index');
@@ -703,6 +704,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/patients/{patient}/gp-email', [\App\Http\Controllers\Admin\PatientsController::class, 'sendGpEmail'])->name('patients.gp-email.send');
         Route::get('/patients/{patient}/convert-guest', [\App\Http\Controllers\Admin\PatientsController::class, 'showConvertGuest'])->name('patients.convert-guest');
         Route::post('/patients/{patient}/convert-guest', [\App\Http\Controllers\Admin\PatientsController::class, 'convertGuest'])->name('patients.convert-guest.post');
+        Route::post('/patients/{patient}/convert-guest-instant', [\App\Http\Controllers\Admin\PatientsController::class, 'convertGuestInstant'])->name('patients.convert-guest-instant.post');
         
         // Patient Alerts - All Alerts List
         Route::get('/alerts', [\App\Http\Controllers\Admin\AlertsController::class, 'index'])->name('alerts.index');

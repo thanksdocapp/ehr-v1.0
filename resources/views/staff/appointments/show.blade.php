@@ -291,21 +291,19 @@
                                     </li>
                                 @endforeach
                             </ul>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <a href="{{ route('staff.patients.edit', $appointment->patient->id) }}" class="btn {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'btn-danger' : 'btn-warning' }} btn-sm">
-                                    <i class="fas fa-edit me-1"></i>
-                                    @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                                        Update Patient Information
-                                    @else
-                                        Complete Patient Information
-                                    @endif
-                                </a>
-                                @if($appointment->patient->is_guest)
-                                    <span class="badge bg-info align-self-center">
-                                        <i class="fas fa-info-circle me-1"></i>Guest Patient (Created via Payment Link)
-                                    </span>
-                                @endif
-                            </div>
+                            @if($appointment->patient->is_guest)
+                                @include('staff.partials.guest-patient-actions', [
+                                    'patient' => $appointment->patient,
+                                    'primaryEmphasis' => (bool) ($patientInfoCheck['has_placeholder_info'] ?? false),
+                                ])
+                            @else
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="{{ route('staff.patients.edit', $appointment->patient->id) }}" class="btn {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'btn-danger' : 'btn-warning' }} btn-sm">
+                                        <i class="fas fa-user-edit me-1"></i>
+                                        Complete patient profile
+                                    </a>
+                                </div>
+                            @endif
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>

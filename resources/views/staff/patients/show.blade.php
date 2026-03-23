@@ -14,78 +14,48 @@
     <!-- Patient Alert Bar -->
     @include('components.patient-alert-bar', ['patient' => $patient])
 
-    <!-- Guest Patient Banner -->
+    <!-- Guest patient: single alert (profile + optional missing-field list + actions) -->
     @if($patient->is_guest)
-    <div class="alert alert-warning border-0 mb-4 fade-in-up">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <div>
-                <h6 class="alert-heading mb-1">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Guest Patient Record
-                </h6>
-                <p class="mb-0">This is a guest patient record. Medical records and prescriptions cannot be created until converted.
-                <a href="{{ route('staff.patients.convert-guest', $patient) }}" class="alert-link">Convert to full patient</a> to enable all features.</p>
-            </div>
-            <a href="{{ route('staff.patients.convert-guest', $patient) }}" class="btn btn-warning">
-                <i class="fas fa-user-check me-2"></i>Convert to Full Patient
-            </a>
-        </div>
-    </div>
-    @endif
-
-    <!-- Patient Information Incomplete Warning -->
-    @php
-        $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => [], 'missing_count' => 0];
-        try {
-            $patientInfoCheck = $patient->hasIncompleteInformation();
-        } catch (\Exception $e) {
-            // If there's any error checking incomplete info, just skip the warning
-            // This prevents DecryptException from crashing the page
-        }
-    @endphp
-    @if($patientInfoCheck['is_incomplete'] && $patient->is_guest)
-        <div class="alert {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'alert-danger' : 'alert-warning' }} alert-dismissible fade show mb-4" role="alert">
+        @php
+            $patientInfoCheck = ['is_incomplete' => false, 'missing_fields' => [], 'missing_count' => 0, 'has_placeholder_info' => false];
+            try {
+                $patientInfoCheck = $patient->hasIncompleteInformation();
+            } catch (\Exception $e) {
+                // DecryptException etc.: skip field list
+            }
+        @endphp
+        <div class="alert {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'alert-danger' : 'alert-warning' }} border-0 mb-4 alert-dismissible fade show" role="alert">
             <div class="d-flex align-items-start">
-                <i class="fas {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'fa-exclamation-circle' : 'fa-exclamation-triangle' }} fa-2x me-3 mt-1"></i>
+                <i class="fas {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'fa-exclamation-circle' : 'fa-user-clock' }} fa-2x me-3 mt-1"></i>
                 <div class="flex-grow-1">
                     <h5 class="alert-heading mb-2">
-                        <i class="fas fa-user-slash me-2"></i>
                         @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                            <strong class="text-danger">URGENT: Patient Identification Incomplete</strong>
+                            <strong class="text-danger">Guest patient — placeholder details must be replaced</strong>
                         @else
-                            Incomplete Patient Information
+                            Guest patient — complete profile before clinical documentation
                         @endif
                     </h5>
                     <p class="mb-2">
-                        @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                            <strong class="text-danger">This patient record contains temporary placeholder information that must be updated with accurate patient details before proceeding with care:</strong>
-                        @else
-                            <strong>This guest patient has missing information that should be completed:</strong>
-                        @endif
+                        This record is still a <strong>guest</strong> (often from online booking). Medical records and prescriptions stay unavailable until required details are saved and the profile is no longer incomplete.
                     </p>
-                    <ul class="mb-3">
-                        @foreach($patientInfoCheck['missing_fields'] as $field)
-                            <li>
-                                @if(strpos($field, 'Requires completion') !== false || strpos($field, 'Requires valid email') !== false || strpos($field, 'placeholder') !== false || strpos($field, '@payment-link.temp') !== false)
-                                    <strong class="text-danger">{{ $field }}</strong>
-                                @else
-                                    {{ $field }}
-                                @endif
-                            </li>
-                        @endforeach
-                    </ul>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <a href="{{ route('staff.patients.edit', $patient->id) }}" class="btn {{ ($patientInfoCheck['has_placeholder_info'] ?? false) ? 'btn-danger' : 'btn-warning' }} btn-sm">
-                            <i class="fas fa-edit me-1"></i>
-                                    @if($patientInfoCheck['has_placeholder_info'] ?? false)
-                                        Update Patient Information
+                    @if($patientInfoCheck['is_incomplete'] ?? false)
+                        <p class="mb-2 fw-semibold">Address these items:</p>
+                        <ul class="mb-3">
+                            @foreach($patientInfoCheck['missing_fields'] as $field)
+                                <li>
+                                    @if(strpos($field, 'Requires completion') !== false || strpos($field, 'Requires valid email') !== false || strpos($field, 'placeholder') !== false || strpos($field, '@payment-link.temp') !== false)
+                                        <strong class="text-danger">{{ $field }}</strong>
                                     @else
-                                        Complete Patient Information
+                                        {{ $field }}
                                     @endif
-                        </a>
-                        <span class="badge bg-info align-self-center">
-                            <i class="fas fa-info-circle me-1"></i>Guest Patient (Created via Payment Link)
-                        </span>
-                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                    @include('staff.partials.guest-patient-actions', [
+                        'patient' => $patient,
+                        'primaryEmphasis' => (bool) ($patientInfoCheck['has_placeholder_info'] ?? false),
+                    ])
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>

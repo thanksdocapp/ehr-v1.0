@@ -1131,8 +1131,8 @@ $(document).ready(function() {
         }
     });
     
-    // Pre-fill from selected appointment if available
-    @if(isset($selectedAppointment) && $selectedAppointment)
+    // Pre-fill from selected appointment if available (do not clobber flash input after validation / guest error)
+    @if(isset($selectedAppointment) && $selectedAppointment && !session()->has('_old_input'))
         $(document).ready(function() {
             // Pre-fill record date
             $('#record_date').val('{{ $selectedAppointment->appointment_date->format('Y-m-d') }}');

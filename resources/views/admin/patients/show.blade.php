@@ -14,18 +14,16 @@
     <!-- Guest Patient Banner -->
     @if($patient->is_guest)
     <div class="alert alert-warning border-0 mb-4 fade-in-up">
-        <div class="d-flex align-items-center justify-content-between">
-            <div>
-                <h6 class="alert-heading mb-1">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Guest Patient Record
-                </h6>
-                <p class="mb-0">This is a guest patient record. Some features are restricted. 
-                <a href="{{ route('admin.patients.convert-guest', $patient) }}" class="alert-link">Convert to full patient</a> to enable all features.</p>
-            </div>
-            <a href="{{ route('admin.patients.convert-guest', $patient) }}" class="btn btn-warning">
-                <i class="fas fa-user-check me-2"></i>Convert to Full Patient
-            </a>
-        </div>
+        <h6 class="alert-heading mb-2">
+            <i class="fas fa-exclamation-triangle me-2"></i>Guest patient record
+        </h6>
+        <p class="mb-3">Some features stay limited for guest records. Use <strong>Remove guest status</strong> for a one-click override, <strong>Complete patient profile</strong> to fix data properly, or <strong>Quick convert</strong> for a short form.</p>
+        @include('staff.partials.guest-patient-actions', [
+            'patient' => $patient,
+            'patientEditUrl' => route('admin.patients.edit', $patient),
+            'patientConvertUrl' => route('admin.patients.convert-guest', $patient),
+            'patientInstantConvertUrl' => route('admin.patients.convert-guest-instant.post', $patient),
+        ])
     </div>
     @endif
     

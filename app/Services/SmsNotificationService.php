@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\SiteSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class SmsNotificationService
 {
@@ -26,13 +27,27 @@ class SmsNotificationService
      */
     protected function loadSettings(): void
     {
-        $settings = SiteSetting::getSettings();
+        $this->provider = null;
+        $this->apiKey = null;
+        $this->apiSecret = null;
+        $this->senderId = config('app.name');
+        $this->enabled = false;
 
-        $this->provider = $settings['sms_provider'] ?? null;
-        $this->apiKey = $settings['sms_api_key'] ?? null;
-        $this->apiSecret = $settings['sms_api_secret'] ?? null;
-        $this->senderId = $settings['sms_sender_id'] ?? config('app.name');
-        $this->enabled = (bool) ($settings['sms_enabled'] ?? false);
+        try {
+            if (!Schema::hasTable('site_settings')) {
+                return;
+            }
+            $settings = SiteSetting::getSettings();
+            $this->provider = $settings['sms_provider'] ?? null;
+            $this->apiKey = $settings['sms_api_key'] ?? null;
+            $this->apiSecret = $settings['sms_api_secret'] ?? null;
+            $this->senderId = $settings['sms_sender_id'] ?? config('app.name');
+            $this->enabled = (bool) ($settings['sms_enabled'] ?? false);
+        } catch (\Throwable $e) {
+            Log::debug('SmsNotificationService: could not load settings', [
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

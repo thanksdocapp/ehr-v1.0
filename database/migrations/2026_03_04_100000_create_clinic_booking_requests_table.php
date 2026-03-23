@@ -35,8 +35,9 @@ return new class extends Migration
             $table->string('created_from', 50)->nullable();
             $table->timestamps();
 
-            $table->index(['department_id', 'status', 'appointment_date']);
-            $table->index(['status', 'appointment_date']);
+            // MySQL max identifier length is 64; auto-generated name exceeds that
+            $table->index(['department_id', 'status', 'appointment_date'], 'cbr_dept_stat_appt_idx');
+            $table->index(['status', 'appointment_date'], 'cbr_stat_appt_idx');
         });
     }
 

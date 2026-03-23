@@ -522,7 +522,7 @@
                                                     </span>
                                                 @endif
                                                 @if($appointment->patient->is_guest)
-                                                    <span class="badge bg-secondary" title="Guest patient created via payment link">
+                                                    <span class="badge bg-secondary" title="Guest record — complete the full profile or use quick convert until required fields are filled">
                                                         <i class="fas fa-user-clock me-1"></i>Guest
                                                     </span>
                                                 @endif
@@ -653,6 +653,34 @@
                                                class="btn btn-sm btn-outline-info" title="Create Medical Record">
                                                 <i class="fas fa-file-medical"></i>
                                             </a>
+                                        @endif
+
+                                        {{-- Guest patient: overflow menu (instant remove + future row actions) --}}
+                                        @if($appointment->patient->is_guest)
+                                            <div class="dropdown d-inline-block">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                                        id="guestRowActions{{ $appointment->id }}"
+                                                        data-bs-toggle="dropdown"
+                                                        data-bs-boundary="viewport"
+                                                        data-bs-auto-close="true"
+                                                        aria-expanded="false"
+                                                        title="More patient actions">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="guestRowActions{{ $appointment->id }}">
+                                                    <li>
+                                                        <form action="{{ route('staff.patients.convert-guest-instant.post', $appointment->patient) }}"
+                                                              method="post"
+                                                              class="m-0"
+                                                              onsubmit="return confirm('Remove guest status for this patient? Their saved details will not change. You can complete the profile later if anything is still missing.');">
+                                                            @csrf
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-user-check me-2 text-success"></i>Remove guest status
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
                                         @endif
                                     </div>
                                 </td>

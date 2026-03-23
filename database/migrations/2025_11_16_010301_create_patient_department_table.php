@@ -30,13 +30,23 @@ return new class extends Migration
         // Backfill existing data from patients.department_id to pivot table
         // This ensures existing patients with department_id are migrated to the new many-to-many relationship
         if (Schema::hasColumn('patients', 'department_id')) {
-            DB::statement("
-                INSERT INTO department_patient (patient_id, department_id, is_primary, created_at, updated_at)
-                SELECT id, department_id, true, created_at, updated_at
-                FROM patients
-                WHERE department_id IS NOT NULL
-                ON DUPLICATE KEY UPDATE updated_at = NOW()
-            ");
+            $driver = Schema::getConnection()->getDriverName();
+            if ($driver === 'sqlite') {
+                DB::statement("
+                    INSERT OR IGNORE INTO department_patient (patient_id, department_id, is_primary, created_at, updated_at)
+                    SELECT id, department_id, 1, created_at, updated_at
+                    FROM patients
+                    WHERE department_id IS NOT NULL
+                ");
+            } else {
+                DB::statement("
+                    INSERT INTO department_patient (patient_id, department_id, is_primary, created_at, updated_at)
+                    SELECT id, department_id, true, created_at, updated_at
+                    FROM patients
+                    WHERE department_id IS NOT NULL
+                    ON DUPLICATE KEY UPDATE updated_at = NOW()
+                ");
+            }
         }
     }
 

@@ -524,7 +524,7 @@
                                                     </span>
                                                 @endif
                                                 @if($patient->is_guest)
-                                                    <span class="badge bg-secondary" title="Guest patient created via payment link">
+                                                    <span class="badge bg-secondary" title="Guest record — complete the full profile or use quick convert until required fields are filled">
                                                         <i class="fas fa-user-clock me-1"></i>Guest
                                                     </span>
                                                 @endif

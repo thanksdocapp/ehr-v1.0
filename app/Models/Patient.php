@@ -930,6 +930,25 @@ class Patient extends Authenticatable
     }
 
     /**
+     * Clear guest flag when demographics are complete (e.g. after staff edit "Complete patient information").
+     * Guest status is separate from incomplete-info checks; this aligns them after a successful save.
+     */
+    public function clearGuestFlagIfInformationComplete(): bool
+    {
+        if (!$this->is_guest) {
+            return false;
+        }
+
+        if ($this->hasIncompleteInformation()['is_incomplete']) {
+            return false;
+        }
+
+        $this->is_guest = false;
+
+        return $this->save();
+    }
+
+    /**
      * Check if patient can perform certain actions (not a guest).
      */
     public function canPerformActions()

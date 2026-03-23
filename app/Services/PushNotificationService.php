@@ -9,6 +9,7 @@ use App\Models\PatientNotification;
 use App\Models\SiteSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class PushNotificationService
 {
@@ -27,12 +28,25 @@ class PushNotificationService
      */
     protected function loadSettings(): void
     {
-        $settings = SiteSetting::getSettings();
+        $this->provider = 'onesignal';
+        $this->apiKey = null;
+        $this->appId = null;
+        $this->enabled = false;
 
-        $this->provider = $settings['push_provider'] ?? 'onesignal';
-        $this->apiKey = $settings['push_api_key'] ?? null;
-        $this->appId = $settings['push_app_id'] ?? null;
-        $this->enabled = (bool) ($settings['push_enabled'] ?? false);
+        try {
+            if (!Schema::hasTable('site_settings')) {
+                return;
+            }
+            $settings = SiteSetting::getSettings();
+            $this->provider = $settings['push_provider'] ?? 'onesignal';
+            $this->apiKey = $settings['push_api_key'] ?? null;
+            $this->appId = $settings['push_app_id'] ?? null;
+            $this->enabled = (bool) ($settings['push_enabled'] ?? false);
+        } catch (\Throwable $e) {
+            Log::debug('PushNotificationService: could not load settings', [
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

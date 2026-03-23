@@ -62,6 +62,9 @@ class ClinicCalendarSyncTest extends TestCase
             'patient_id' => 'P-SYNC-' . uniqid(),
             'first_name' => 'Test',
             'last_name' => 'Patient',
+            'email' => 'sync-test-' . uniqid() . '@example.com',
+            'phone' => '07123456789',
+            'password' => bcrypt('password'),
             'date_of_birth' => '1990-01-01',
             'gender' => 'male',
         ]);
@@ -133,6 +136,9 @@ class ClinicCalendarSyncTest extends TestCase
             'patient_id' => 'P-SYNC2-' . uniqid(),
             'first_name' => 'Test',
             'last_name' => 'Patient',
+            'email' => 'sync-test2-' . uniqid() . '@example.com',
+            'phone' => '07123456788',
+            'password' => bcrypt('password'),
             'date_of_birth' => '1990-01-01',
             'gender' => 'male',
         ]);

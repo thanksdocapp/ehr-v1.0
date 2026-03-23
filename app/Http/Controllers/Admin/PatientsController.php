@@ -793,6 +793,9 @@ class PatientsController extends Controller
             $patient->unsetRelation('departments');
         }
 
+        $patient->refresh();
+        $patient->clearGuestFlagIfInformationComplete();
+
         return redirect()->route('admin.patients.index')
                          ->with('success', 'Patient updated successfully.');
     }
@@ -1575,6 +1578,40 @@ class PatientsController extends Controller
             ]);
 
             return back()->with('error', 'Failed to convert patient: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Remove guest flag immediately without collecting DOB/gender/address (admin override).
+     */
+    public function convertGuestInstant(Request $request, Patient $patient)
+    {
+        if (!$patient->is_guest) {
+            return redirect()->route('admin.patients.show', $patient)
+                ->with('info', 'This patient is already a full patient.');
+        }
+
+        try {
+            if (!$patient->convertToFullPatient([])) {
+                return redirect()->back()
+                    ->with('error', 'Could not remove guest status for this patient.');
+            }
+
+            \Log::info('Guest patient: instant convert (guest flag cleared, no form)', [
+                'patient_id' => $patient->id,
+                'admin_user_id' => Auth::guard('admin')->id(),
+            ]);
+
+            return redirect()->route('admin.patients.show', $patient)
+                ->with('success', 'Guest status removed. Patient fields were not changed — open the profile to finish any missing details if needed.');
+        } catch (\Exception $e) {
+            \Log::error('Failed instant guest convert', [
+                'patient_id' => $patient->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to remove guest status: ' . $e->getMessage());
         }
     }
 

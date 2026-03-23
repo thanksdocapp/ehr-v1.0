@@ -22,6 +22,13 @@
                         </p>
                     </div>
 
+                    <div class="alert alert-light border mb-4" role="alert">
+                        <p class="mb-0 small">
+                            <strong>Need more than DOB, gender, and address?</strong>
+                            <a href="{{ route('admin.patients.edit', $patient) }}">Open the full patient profile</a> to fill every required field in one place. When nothing essential is missing, guest restrictions clear automatically — you do not have to use this quick form.
+                        </p>
+                    </div>
+
                     <form action="{{ route('admin.patients.convert-guest.post', $patient) }}" method="POST">
                         @csrf
 

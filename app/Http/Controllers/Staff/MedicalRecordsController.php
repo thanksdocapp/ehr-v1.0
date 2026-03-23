@@ -729,6 +729,7 @@ class MedicalRecordsController extends Controller
         if ($medicalRecord->patient && $medicalRecord->patient->is_guest) {
             return redirect()->back()
                 ->with('error', 'Cannot edit medical records for guest patients. Please convert the patient to a full patient first.')
+                ->with('convert_patient_id', $medicalRecord->patient_id)
                 ->withInput();
         }
 

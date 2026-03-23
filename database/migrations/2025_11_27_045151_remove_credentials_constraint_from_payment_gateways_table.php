@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
@@ -12,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Use raw SQL to handle MySQL constraints properly
         DB::statement('ALTER TABLE `payment_gateways` MODIFY COLUMN `credentials` TEXT NOT NULL');
         
@@ -40,6 +43,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Revert back to json (note: this may fail if data is encrypted)
         DB::statement('ALTER TABLE `payment_gateways` MODIFY COLUMN `credentials` JSON NOT NULL');
     }
