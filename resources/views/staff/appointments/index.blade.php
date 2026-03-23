@@ -536,7 +536,7 @@
                                             <small class="text-muted">{{ $appointment->patient->phone ?? 'No phone' }}</small>
                                             @if($appointment->notes)
                                                 <small class="d-block text-dark mt-1 fw-medium" title="{{ e($appointment->notes) }}">
-                                                    <i class="fas fa-comment-medical text-primary me-1"></i>{{ \Illuminate\Support\Str::limit($appointment->notes, 48) }}
+                                                    <i class="fas fa-comment-medical text-primary me-1"></i><span class="visually-hidden">Reason for booking: </span>{{ \Illuminate\Support\Str::limit($appointment->notes, 48) }}
                                                 </small>
                                             @endif
                                         </div>

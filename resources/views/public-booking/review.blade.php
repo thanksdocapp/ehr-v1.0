@@ -145,7 +145,7 @@
             @endif
             @if(isset($patient_data['notes']) && $patient_data['notes'])
             <div class="review-row">
-                <span class="review-label">Reason for coming in</span>
+                <span class="review-label">Reason for booking</span>
                 <span class="review-value">{{ $patient_data['notes'] }}</span>
             </div>
             @endif

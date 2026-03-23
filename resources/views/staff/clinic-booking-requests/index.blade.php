@@ -25,7 +25,7 @@
                         <tr>
                             <th>Request #</th>
                             <th>Patient</th>
-                            <th>Reason for coming in</th>
+                            <th>Reason for booking</th>
                             <th>Service</th>
                             <th>Date & Time</th>
                             <th>Contact</th>

@@ -57,10 +57,10 @@
                     @if($appointment->notes)
                     <div class="alert alert-primary border-0 mb-4 shadow-sm" role="status">
                         <p class="text-uppercase small fw-semibold mb-2 mb-md-3 text-primary">
-                            <i class="fas fa-comment-medical me-1"></i>Reason for coming in
+                            <i class="fas fa-comment-medical me-1"></i>Reason for booking
                         </p>
                         <div class="fw-normal text-dark fs-6">{!! nl2br(e($appointment->notes)) !!}</div>
-                        <small class="text-muted d-block mt-2">Provided by the patient when booking — visible before arrival.</small>
+                        <small class="text-muted d-block mt-2">Provided when the patient booked — visible to staff before the visit.</small>
                     </div>
                     @endif
 
@@ -243,7 +243,7 @@
                     @endif
                     </div>
 
-                    {{-- 5. Clinical reason (separate from patient booking text in notes, shown above) --}}
+                    {{-- 5. Clinical reason (separate from reason-for-booking field in notes, shown above) --}}
                     @if($appointment->reason)
                     <div class="pt-3 border-top">
                         <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-stethoscope me-1"></i>Reason for visit</p>

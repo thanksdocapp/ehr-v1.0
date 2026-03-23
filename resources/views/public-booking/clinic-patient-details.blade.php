@@ -102,9 +102,9 @@
                 </div>
             </div>
             <div class="mb-3">
-                <label for="notes" class="form-label">Reason for coming in <span class="text-muted">(optional)</span></label>
+                <label for="notes" class="form-label">Reason for booking <span class="text-muted">(optional)</span></label>
                 <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="e.g. I think I have a chest infection">{{ old('notes') }}</textarea>
-                <small class="form-text text-muted">This is shared with clinic staff before your appointment.</small>
+                <small class="form-text text-muted">Shared with clinic staff from your booking (before your visit).</small>
             </div>
             <div class="form-check">
                 <input class="form-check-input @error('consent') is-invalid @enderror" type="checkbox" id="consent" name="consent" value="1" required>

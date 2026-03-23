@@ -95,8 +95,8 @@
                             <input type="tel" id="patient-phone" placeholder="Enter your phone number" class="form-control form-control-lg" required>
                         </div>
                         <div class="form-group mt-3">
-                            <label for="patient-reason">Reason for Appointment (Optional):</label>
-                            <textarea id="patient-reason" placeholder="Brief description of your concern" class="form-control" rows="3"></textarea>
+                            <label for="patient-reason">Reason for booking <span class="text-muted">(optional)</span></label>
+                            <textarea id="patient-reason" placeholder="e.g. I think I have a chest infection" class="form-control" rows="3"></textarea>
                         </div>
                         <div class="text-center mt-4">
                             <button id="back-to-step-3" class="btn btn-secondary btn-lg mr-2"><i class="fas fa-arrow-left"></i> Back</button>

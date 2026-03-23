@@ -205,9 +205,9 @@
                     @if($appointment->notes)
                         <div class="row mb-3">
                             <div class="col-12">
-                                <label class="form-label text-muted">Reason for coming in</label>
+                                <label class="form-label text-muted">Reason for booking</label>
                                 <div class="fw-bold">{{ $appointment->notes }}</div>
-                                <small class="text-muted">From patient online booking where applicable; may include appended staff/system notes.</small>
+                                <small class="text-muted">From the patient when they book online where applicable; may include appended staff/system notes.</small>
                             </div>
                         </div>
                     @endif
