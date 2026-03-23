@@ -107,44 +107,81 @@
                                 @enderror
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <label for="address" class="form-label fw-semibold">Address</label>
-                                <textarea name="address" id="address" rows="3" 
-                                          class="form-control @error('address') is-invalid @enderror" 
-                                          placeholder="Enter complete address">{{ old('address', $patient->address) }}</textarea>
-                                @error('address')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                        @php
+                            if (session()->hasOldInput()) {
+                                $editAddressLine1 = old('address', '');
+                                $editAddressLine2 = old('address_line_2', '');
+                            } else {
+                                $pa = $patient->address ?? '';
+                                $pa = is_string($pa) ? $pa : '';
+                                $parts = preg_split("/\r\n|\n|\r/", $pa, 2);
+                                $editAddressLine1 = $parts[0] ?? '';
+                                $editAddressLine2 = isset($parts[1]) ? $parts[1] : '';
+                            }
+                        @endphp
+                        <div class="mb-4 pt-3 border-top">
+                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-map-marker-alt me-1"></i>Address</p>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="ideal_postcodes_finder" class="form-label fw-semibold">Find address</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text"
+                                               id="ideal_postcodes_finder"
+                                               class="form-control"
+                                               autocomplete="off"
+                                               placeholder="Start typing postcode or address…">
+                                    </div>
+                                    <small class="text-muted" id="ideal_postcodes_notice" style="display:none;"></small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="address" class="form-label fw-semibold">Address line 1 <span class="text-danger">*</span></label>
+                                    <input type="text" name="address" id="address"
+                                           class="form-control @error('address') is-invalid @enderror"
+                                           value="{{ $editAddressLine1 }}" placeholder="House number and street name" required>
+                                    @error('address')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="address_line_2" class="form-label fw-semibold">Address line 2 <small class="text-muted">(optional)</small></label>
+                                    <input type="text" name="address_line_2" id="address_line_2"
+                                           class="form-control @error('address_line_2') is-invalid @enderror"
+                                           value="{{ $editAddressLine2 }}" placeholder="Apartment, suite, unit, etc.">
+                                    @error('address_line_2')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="city" class="form-label fw-semibold">City</label>
-                                <input type="text" name="city" id="city" 
-                                       class="form-control @error('city') is-invalid @enderror" 
-                                       value="{{ old('city', $patient->city) }}" placeholder="Enter city">
-                                @error('city')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="state" class="form-label fw-semibold">County</label>
-                                <input type="text" name="state" id="state" 
-                                       class="form-control @error('state') is-invalid @enderror" 
-                                       value="{{ old('state', $patient->state) }}" placeholder="Enter county">
-                                @error('state')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="postal_code" class="form-label fw-semibold">Postal Code</label>
-                                <input type="text" name="postal_code" id="postal_code" 
-                                       class="form-control @error('postal_code') is-invalid @enderror" 
-                                       value="{{ old('postal_code', $patient->postal_code) }}" placeholder="Enter postal code">
-                                @error('postal_code')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="city" class="form-label fw-semibold">Town / city</label>
+                                    <input type="text" name="city" id="city"
+                                           class="form-control @error('city') is-invalid @enderror"
+                                           value="{{ old('city', $patient->city) }}" placeholder="Enter town or city">
+                                    @error('city')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="state" class="form-label fw-semibold">County</label>
+                                    <input type="text" name="state" id="state"
+                                           class="form-control @error('state') is-invalid @enderror"
+                                           value="{{ old('state', $patient->state) }}" placeholder="Enter county">
+                                    @error('state')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="postal_code" class="form-label fw-semibold">Postcode</label>
+                                    <input type="text" name="postal_code" id="postal_code"
+                                           class="form-control @error('postal_code') is-invalid @enderror"
+                                           value="{{ old('postal_code', $patient->postal_code) }}" placeholder="e.g. SW1A 1AA"
+                                           style="text-transform: uppercase;">
+                                    @error('postal_code')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -527,6 +564,82 @@ $(document).ready(function() {
         }
         $(this).val(value);
     });
+
+    // Ideal Postcodes Address Finder (same behaviour as staff patient create)
+    (function initIdealPostcodes() {
+        const apiKey = @json(\App\Models\Setting::get('ideal_postcodes_api_key') ?: config('services.ideal_postcodes.api_key'));
+        const input = document.getElementById('ideal_postcodes_finder');
+        const notice = document.getElementById('ideal_postcodes_notice');
+        if (!input || !notice) return;
+
+        function hideNotice() {
+            notice.style.display = 'none';
+            notice.textContent = '';
+        }
+
+        function showNotice(msg) {
+            notice.style.display = 'block';
+            notice.innerHTML = '<i class="fas fa-info-circle me-1"></i>' + msg;
+        }
+
+        function getAF() {
+            if (typeof AddressFinder !== 'undefined' && AddressFinder) return AddressFinder;
+            if (window.IdealPostcodes && window.IdealPostcodes.AddressFinder) return window.IdealPostcodes.AddressFinder;
+            return null;
+        }
+
+        function ensureAFScript() {
+            if (getAF()) return;
+            if (document.querySelector('script[data-ideal-postcodes-af="1"]')) return;
+
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/@ideal-postcodes/address-finder-bundled@5/dist/address-finder.js';
+            s.async = true;
+            s.setAttribute('data-ideal-postcodes-af', '1');
+            document.head.appendChild(s);
+        }
+
+        function waitForAF(timeoutMs) {
+            return new Promise(function(resolve, reject) {
+                const start = Date.now();
+                ensureAFScript();
+
+                (function tick() {
+                    const AF = getAF();
+                    if (AF && typeof AF.setup === 'function') return resolve(AF);
+                    if (Date.now() - start > timeoutMs) return reject(new Error('Ideal Postcodes AddressFinder load timeout'));
+                    setTimeout(tick, 50);
+                })();
+            });
+        }
+
+        if (!apiKey) {
+            showNotice('Address lookup is unavailable (missing API key). Please enter address manually.');
+            return;
+        }
+        hideNotice();
+        waitForAF(8000)
+            .then(function(AF) {
+                AF.setup({
+                    apiKey: apiKey,
+                    inputField: input,
+                    outputFields: {
+                        line_1: '#address',
+                        line_2: '#address_line_2',
+                        post_town: '#city',
+                        county: '#state',
+                        postcode: '#postal_code',
+                    },
+                    onCheckFailed: function() {
+                        showNotice('Address lookup is unavailable right now. Please enter address manually.');
+                    },
+                });
+            })
+            .catch(function(e) {
+                console.error('Ideal Postcodes load/init failed:', e);
+                showNotice('Address lookup failed to load. Please enter address manually.');
+            });
+    })();
 
     function staffEditParseDob(val) {
         if (!val || !String(val).trim()) return null;

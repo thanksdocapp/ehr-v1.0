@@ -879,7 +879,11 @@ class PatientsController extends Controller
             'phone' => 'required|string|max:20',
             'date_of_birth' => 'required|date',
             'gender' => 'required|in:male,female,other',
-            'address' => 'required|string',
+            'address' => 'required|string|max:500',
+            'address_line_2' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
             'emergency_contact_name' => 'nullable|string|max:255',
             'emergency_contact_phone' => 'nullable|string|max:20',
             'department_id' => 'nullable|exists:departments,id', // Backward compatibility
@@ -940,6 +944,10 @@ class PatientsController extends Controller
             $gpAddress = $request->gp_address;
         }
 
+        $addressLine1 = trim((string) $request->address);
+        $addressLine2 = trim((string) $request->input('address_line_2', ''));
+        $mergedAddress = $addressLine2 !== '' ? $addressLine1 . "\n" . $addressLine2 : $addressLine1;
+
         // Prepare data with mapped emergency contact fields
         $data = [
             'first_name' => $request->first_name,
@@ -950,7 +958,7 @@ class PatientsController extends Controller
             'gender' => $request->gender,
             'patient_id' => $request->patient_id ?: $patient->patient_id,
             'blood_group' => $request->blood_group,
-            'address' => $request->address,
+            'address' => $mergedAddress,
             'city' => $request->city,
             'state' => $request->state,
             'postal_code' => $request->postal_code,
