@@ -38,6 +38,8 @@ class ClinicBookingService
     public function createPendingFromClinicBooking(array $data): array
     {
         return DB::transaction(function () use ($data) {
+            $data = array_merge($data, normalize_public_booking_address_fields($data));
+
             $departmentId = $data['department_id'];
             $service = BookingService::find($data['service_id'] ?? null);
 
@@ -56,6 +58,10 @@ class ClinicBookingService
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'gender' => $data['gender'] ?? null,
                 'address' => $data['address'] ?? null,
+                'city' => $data['city'] ?? null,
+                'state' => $data['state'] ?? null,
+                'postal_code' => $data['postal_code'] ?? null,
+                'country' => $data['country'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'consultation_type' => $data['consultation_type'] ?? 'in_person',
                 'consent_share_with_gp' => $data['consent_share_with_gp'] ?? false,
@@ -73,6 +79,10 @@ class ClinicBookingService
                 'date_of_birth' => $patientData['date_of_birth'] ?? null,
                 'gender' => $patientData['gender'] ?? null,
                 'address' => $patientData['address'] ?? null,
+                'city' => $patientData['city'] ?? null,
+                'state' => $patientData['state'] ?? null,
+                'postal_code' => $patientData['postal_code'] ?? null,
+                'country' => $patientData['country'] ?? null,
             ]);
 
             $pendingBooking = PendingClinicBooking::create([
@@ -149,24 +159,31 @@ class ClinicBookingService
             ? $pending->appointment_time->format('H:i')
             : substr((string) $pending->appointment_time, 0, 5);
 
+        $pd = $pending->patient_data ?? [];
         $data = [
             'department_id' => $pending->department_id,
             'service_id' => $pending->service_id,
             'appointment_date' => $pending->appointment_date->format('Y-m-d'),
             'appointment_time' => $timeStr,
-            'first_name' => $pending->patient_data['first_name'] ?? '',
-            'last_name' => $pending->patient_data['last_name'] ?? '',
-            'email' => $pending->patient_data['email'] ?? '',
-            'phone' => $pending->patient_data['phone'] ?? '',
-            'date_of_birth' => $pending->patient_data['date_of_birth'] ?? null,
-            'gender' => $pending->patient_data['gender'] ?? null,
-            'notes' => $pending->patient_data['notes'] ?? null,
-            'consultation_type' => $pending->patient_data['consultation_type'] ?? 'in_person',
-            'consent_share_with_gp' => $pending->patient_data['consent_share_with_gp'] ?? false,
-            'gp_name' => $pending->patient_data['gp_name'] ?? null,
-            'gp_email' => $pending->patient_data['gp_email'] ?? null,
-            'gp_phone' => $pending->patient_data['gp_phone'] ?? null,
-            'gp_address' => $pending->patient_data['gp_address'] ?? null,
+            'first_name' => $pd['first_name'] ?? '',
+            'last_name' => $pd['last_name'] ?? '',
+            'email' => $pd['email'] ?? '',
+            'phone' => $pd['phone'] ?? '',
+            'date_of_birth' => $pd['date_of_birth'] ?? null,
+            'gender' => $pd['gender'] ?? null,
+            'address' => $pd['address'] ?? null,
+            'address_line_2' => $pd['address_line_2'] ?? null,
+            'city' => $pd['city'] ?? null,
+            'state' => $pd['state'] ?? null,
+            'postal_code' => $pd['postal_code'] ?? null,
+            'country' => $pd['country'] ?? null,
+            'notes' => $pd['notes'] ?? null,
+            'consultation_type' => $pd['consultation_type'] ?? 'in_person',
+            'consent_share_with_gp' => $pd['consent_share_with_gp'] ?? false,
+            'gp_name' => $pd['gp_name'] ?? null,
+            'gp_email' => $pd['gp_email'] ?? null,
+            'gp_phone' => $pd['gp_phone'] ?? null,
+            'gp_address' => $pd['gp_address'] ?? null,
         ];
 
         $clinicRequest = $this->createFromClinicBooking($data);
@@ -200,6 +217,10 @@ class ClinicBookingService
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'gender' => $data['gender'] ?? null,
                 'address' => $data['address'] ?? null,
+                'city' => $data['city'] ?? null,
+                'state' => $data['state'] ?? null,
+                'postal_code' => $data['postal_code'] ?? null,
+                'country' => $data['country'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'consultation_type' => $data['consultation_type'] ?? 'in_person',
                 'consent_share_with_gp' => $data['consent_share_with_gp'] ?? false,
@@ -244,7 +265,10 @@ class ClinicBookingService
                 throw new \RuntimeException('This booking has already been accepted by another doctor.');
             }
 
-            $patientData = $request->patient_data;
+            $patientData = array_merge(
+                $request->patient_data ?? [],
+                normalize_public_booking_address_fields($request->patient_data ?? [])
+            );
             $service = $request->service;
 
             // Find or create patient
@@ -256,6 +280,10 @@ class ClinicBookingService
                 'date_of_birth' => $patientData['date_of_birth'] ?? null,
                 'gender' => $patientData['gender'] ?? null,
                 'address' => $patientData['address'] ?? null,
+                'city' => $patientData['city'] ?? null,
+                'state' => $patientData['state'] ?? null,
+                'postal_code' => $patientData['postal_code'] ?? null,
+                'country' => $patientData['country'] ?? null,
             ]);
 
             // Assign patient to the clinic so all doctors in the clinic can view and access them

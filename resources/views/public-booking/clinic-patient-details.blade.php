@@ -74,6 +74,9 @@
                 <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" required value="{{ old('phone') }}">
                 @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
+
+            @include('public-booking.partials.booking-address-fields')
+
             @php
                 $dobFieldVal = old('date_of_birth');
                 if ($dobFieldVal && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dobFieldVal)) {
@@ -138,4 +141,5 @@
     document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', function() { setTimeout(initDobPicker, 150); }) : setTimeout(initDobPicker, 150);
 })();
 </script>
+@include('public-booking.partials.ideal-postcodes-public-booking-script')
 @endsection

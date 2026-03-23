@@ -37,6 +37,23 @@ class PublicBookingController extends Controller
     }
 
     /**
+     * Patient home address captured during public / clinic booking (Ideal Postcodes + manual fields).
+     *
+     * @return array<string, string>
+     */
+    private function publicBookingAddressValidationRules(): array
+    {
+        return [
+            'address' => 'required|string|max:500',
+            'address_line_2' => 'nullable|string|max:255',
+            'city' => 'required|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'postal_code' => 'required|string|max:20',
+            'country' => 'nullable|string|max:100',
+        ];
+    }
+
+    /**
      * @param  string|null  $dobYmd  Parsed Y-m-d; when null, uses session value.
      */
     private function redirectIfServiceIneligibleForPublicBooking(BookingService $service, ?string $dobYmd = null): ?\Illuminate\Http\RedirectResponse
@@ -235,7 +252,7 @@ class PublicBookingController extends Controller
             $request->merge(['consultation_type' => 'telephone']);
         }
 
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), array_merge([
             'department_id' => 'required|exists:departments,id',
             'service_id' => 'required|exists:booking_services,id',
             'appointment_date' => 'required|date|after_or_equal:today',
@@ -248,7 +265,7 @@ class PublicBookingController extends Controller
             'gender' => 'required|in:male,female,other',
             'consultation_type' => 'nullable|in:in_person,online,telephone',
             'consent' => 'required|accepted',
-        ]);
+        ], $this->publicBookingAddressValidationRules()));
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
@@ -308,7 +325,7 @@ class PublicBookingController extends Controller
             $request->merge(['consultation_type' => 'telephone']);
         }
 
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), array_merge([
             'department_id' => 'required|exists:departments,id',
             'service_id' => 'required|exists:booking_services,id',
             'appointment_date' => 'required|date|after_or_equal:today',
@@ -320,7 +337,7 @@ class PublicBookingController extends Controller
             'date_of_birth' => 'required|date|before:today',
             'gender' => 'required|in:male,female,other',
             'consultation_type' => 'nullable|in:in_person,online,telephone',
-        ]);
+        ], $this->publicBookingAddressValidationRules()));
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
@@ -623,7 +640,7 @@ class PublicBookingController extends Controller
     {
         $this->checkBookingEnabled();
 
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), array_merge([
             'doctor_id' => 'required|exists:doctors,id',
             'service_id' => 'required|exists:booking_services,id',
             'appointment_date' => 'required|date|after_or_equal:today',
@@ -641,7 +658,7 @@ class PublicBookingController extends Controller
             'gp_email' => 'required_if:consent_share_with_gp,1|nullable|email|max:255',
             'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
             'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
-        ]);
+        ], $this->publicBookingAddressValidationRules()));
 
         // Set default consultation type to in_person (doctors will decide later)
         if (!$request->has('consultation_type') || !$request->consultation_type) {
@@ -682,7 +699,8 @@ class PublicBookingController extends Controller
         $patientData = $request->only([
             'first_name', 'last_name', 'email', 'phone', 'notes', 'consultation_type',
             'gender', 'consent_share_with_gp',
-            'gp_name', 'gp_email', 'gp_phone', 'gp_address'
+            'gp_name', 'gp_email', 'gp_phone', 'gp_address',
+            'address', 'address_line_2', 'city', 'state', 'postal_code', 'country',
         ]);
         
         // Convert date_of_birth from dd/mm/yyyy to Y-m-d format
@@ -741,7 +759,7 @@ class PublicBookingController extends Controller
         ]);
 
         // Prepare validation rules
-        $rules = [
+        $rules = array_merge([
             'doctor_id' => 'required|exists:doctors,id',
             'service_id' => 'required|exists:booking_services,id',
             'appointment_date' => 'required|date|after_or_equal:today',
@@ -756,7 +774,7 @@ class PublicBookingController extends Controller
             'gp_email' => 'required_if:consent_share_with_gp,1|nullable|email|max:255',
             'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
             'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
-        ];
+        ], $this->publicBookingAddressValidationRules());
         
         // Require date_of_birth and gender if they are provided (not empty strings)
         // They should always be provided from the patient-details form, but handle edge cases

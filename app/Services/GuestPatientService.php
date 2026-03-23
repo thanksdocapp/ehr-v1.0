@@ -30,6 +30,27 @@ class GuestPatientService
             if ($patient->last_name !== $data['last_name']) {
                 $patient->last_name = $data['last_name'];
             }
+            if (!empty($data['date_of_birth'])) {
+                $patient->date_of_birth = $data['date_of_birth'];
+            }
+            if (!empty($data['gender'])) {
+                $patient->gender = $data['gender'];
+            }
+            if (!empty($data['address'])) {
+                $patient->address = $data['address'];
+            }
+            if (!empty($data['city'])) {
+                $patient->city = $data['city'];
+            }
+            if (array_key_exists('state', $data) && $data['state'] !== null && (string) $data['state'] !== '') {
+                $patient->state = $data['state'];
+            }
+            if (!empty($data['postal_code'])) {
+                $patient->postal_code = $data['postal_code'];
+            }
+            if (!empty($data['country'])) {
+                $patient->country = $data['country'];
+            }
             $patient->save();
 
             return $patient;
@@ -71,8 +92,20 @@ class GuestPatientService
         }
         
         // Optional fields if provided
-        if (isset($data['address'])) {
+        if (isset($data['address']) && $data['address'] !== null && (string) $data['address'] !== '') {
             $patientData['address'] = $data['address'];
+        }
+        if (!empty($data['city'])) {
+            $patientData['city'] = $data['city'];
+        }
+        if (array_key_exists('state', $data) && $data['state'] !== null && (string) $data['state'] !== '') {
+            $patientData['state'] = $data['state'];
+        }
+        if (!empty($data['postal_code'])) {
+            $patientData['postal_code'] = $data['postal_code'];
+        }
+        if (!empty($data['country'])) {
+            $patientData['country'] = $data['country'];
         }
 
         $patient = Patient::create($patientData);

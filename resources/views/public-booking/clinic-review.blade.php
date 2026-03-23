@@ -33,6 +33,12 @@
         @if(isset($patient_data['notes']))
         <input type="hidden" name="notes" value="{{ $patient_data['notes'] }}">
         @endif
+        <input type="hidden" name="address" value="{{ $patient_data['address'] ?? '' }}">
+        <input type="hidden" name="address_line_2" value="{{ $patient_data['address_line_2'] ?? '' }}">
+        <input type="hidden" name="city" value="{{ $patient_data['city'] ?? '' }}">
+        <input type="hidden" name="state" value="{{ $patient_data['state'] ?? '' }}">
+        <input type="hidden" name="postal_code" value="{{ $patient_data['postal_code'] ?? '' }}">
+        <input type="hidden" name="country" value="{{ $patient_data['country'] ?? 'United Kingdom' }}">
 
         <div class="review-card">
             <div class="review-card-header"><h3><i class="fas fa-calendar-check me-2"></i>Booking Summary</h3></div>
@@ -58,6 +64,26 @@
             <div class="review-row"><span class="review-label">Name</span><span class="review-value">{{ ($patient_data['first_name'] ?? '') . ' ' . ($patient_data['last_name'] ?? '') }}</span></div>
             <div class="review-row"><span class="review-label">Email</span><span class="review-value">{{ $patient_data['email'] ?? '' }}</span></div>
             <div class="review-row"><span class="review-label">Phone</span><span class="review-value">{{ $patient_data['phone'] ?? '' }}</span></div>
+            @php
+                $clAddr1 = $patient_data['address'] ?? '';
+                $clAddr2 = $patient_data['address_line_2'] ?? '';
+                $clAddrBlock = trim($clAddr1 . ($clAddr2 !== '' ? "\n".$clAddr2 : ''));
+            @endphp
+            @if($clAddrBlock !== '')
+            <div class="review-row"><span class="review-label">Address</span><span class="review-value">{!! nl2br(e($clAddrBlock)) !!}</span></div>
+            @endif
+            @if(!empty($patient_data['city']))
+            <div class="review-row"><span class="review-label">Town / city</span><span class="review-value">{{ $patient_data['city'] }}</span></div>
+            @endif
+            @if(!empty($patient_data['state']))
+            <div class="review-row"><span class="review-label">County</span><span class="review-value">{{ $patient_data['state'] }}</span></div>
+            @endif
+            @if(!empty($patient_data['postal_code']))
+            <div class="review-row"><span class="review-label">Postcode</span><span class="review-value">{{ $patient_data['postal_code'] }}</span></div>
+            @endif
+            @if(!empty($patient_data['country']))
+            <div class="review-row"><span class="review-label">Country</span><span class="review-value">{{ $patient_data['country'] }}</span></div>
+            @endif
             @if(!empty($patient_data['notes']))
             <div class="review-row"><span class="review-label">Reason for booking</span><span class="review-value">{{ $patient_data['notes'] }}</span></div>
             @endif

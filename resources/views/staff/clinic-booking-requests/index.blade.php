@@ -28,7 +28,7 @@
                             <th>Reason for booking</th>
                             <th>Service</th>
                             <th>Date & Time</th>
-                            <th>Contact</th>
+                            <th>Contact &amp; address</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -55,8 +55,25 @@
                                 <small>{{ $req->appointment_time instanceof \DateTimeInterface ? $req->appointment_time->format('g:i A') : $req->appointment_time }}</small>
                             </td>
                             <td>
-                                <small>{{ $req->patient_data['email'] ?? '-' }}</small><br>
-                                <small>{{ $req->patient_data['phone'] ?? '-' }}</small>
+                                @php
+                                    $pd = $req->patient_data ?? [];
+                                    $cbPostcode = strtoupper(trim((string) ($pd['postal_code'] ?? '')));
+                                    $cbCity = trim((string) ($pd['city'] ?? ''));
+                                    $cbCounty = trim((string) ($pd['state'] ?? ''));
+                                    $cbAddr = trim((string) ($pd['address'] ?? ''));
+                                @endphp
+                                <small>{{ $pd['email'] ?? '-' }}</small><br>
+                                <small>
+                                    {{ $pd['phone'] ?? '-' }}
+                                    @if($cbPostcode !== '')
+                                        <span class="text-muted"> · {{ $cbPostcode }}</span>
+                                    @endif
+                                </small>
+                                @if($cbCity !== '' || $cbCounty !== '')
+                                    <br><small class="text-muted">{{ $cbCity }}{{ $cbCity !== '' && $cbCounty !== '' ? ', ' : '' }}{{ $cbCounty }}</small>
+                                @elseif($cbAddr !== '' && $cbPostcode === '')
+                                    <br><small class="text-muted" title="{{ e($cbAddr) }}">{{ \Illuminate\Support\Str::limit(str_replace(["\r\n", "\n", "\r"], ', ', $cbAddr), 48) }}</small>
+                                @endif
                             </td>
                             <td>
                                 <form action="{{ route('staff.clinic-booking-requests.accept', $req) }}" method="POST" class="d-inline">

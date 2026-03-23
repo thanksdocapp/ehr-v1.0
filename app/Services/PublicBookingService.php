@@ -44,6 +44,8 @@ class PublicBookingService
     public function createFromPublicBooking(array $data)
     {
         return DB::transaction(function () use ($data) {
+            $data = array_merge($data, normalize_public_booking_address_fields($data));
+
             // Get doctor and service first to determine department
             $doctor = Doctor::findOrFail($data['doctor_id']);
             $service = BookingServiceModel::find($data['service_id'] ?? null);
@@ -83,6 +85,10 @@ class PublicBookingService
             'date_of_birth' => $data['date_of_birth'] ?? null,
             'gender' => $data['gender'] ?? null,
             'address' => $data['address'] ?? null,
+            'city' => $data['city'] ?? null,
+            'state' => $data['state'] ?? null,
+            'postal_code' => $data['postal_code'] ?? null,
+            'country' => $data['country'] ?? null,
         ]);
 
         // Update patient with additional data
@@ -190,6 +196,10 @@ class PublicBookingService
             'date_of_birth' => $data['date_of_birth'] ?? null,
             'gender' => $data['gender'] ?? null,
             'address' => $data['address'] ?? null,
+            'city' => $data['city'] ?? null,
+            'state' => $data['state'] ?? null,
+            'postal_code' => $data['postal_code'] ?? null,
+            'country' => $data['country'] ?? null,
             'notes' => $data['notes'] ?? null,
             'consultation_type' => $data['consultation_type'] ?? 'in_person',
             'consent_share_with_gp' => $data['consent_share_with_gp'] ?? false,
@@ -215,6 +225,10 @@ class PublicBookingService
             'date_of_birth' => $patientData['date_of_birth'] ?? null,
             'gender' => $patientData['gender'] ?? null,
             'address' => $patientData['address'] ?? null,
+            'city' => $patientData['city'] ?? null,
+            'state' => $patientData['state'] ?? null,
+            'postal_code' => $patientData['postal_code'] ?? null,
+            'country' => $patientData['country'] ?? null,
         ]);
 
         // Update patient with any additional data we captured in the booking flow
@@ -304,7 +318,10 @@ class PublicBookingService
         }
 
         return DB::transaction(function () use ($pendingBooking) {
-            $patientData = $pendingBooking->patient_data;
+            $patientData = array_merge(
+                $pendingBooking->patient_data ?? [],
+                normalize_public_booking_address_fields($pendingBooking->patient_data ?? [])
+            );
             $doctor = $pendingBooking->doctor;
             $service = $pendingBooking->service;
             $invoice = $pendingBooking->invoice;
@@ -323,6 +340,10 @@ class PublicBookingService
                     'date_of_birth' => $patientData['date_of_birth'] ?? null,
                     'gender' => $patientData['gender'] ?? null,
                     'address' => $patientData['address'] ?? null,
+                    'city' => $patientData['city'] ?? null,
+                    'state' => $patientData['state'] ?? null,
+                    'postal_code' => $patientData['postal_code'] ?? null,
+                    'country' => $patientData['country'] ?? null,
                 ]);
             }
 
@@ -471,6 +492,22 @@ class PublicBookingService
         // Assign to department
         if ($departmentId && !$patient->department_id) {
             $patientUpdateData['department_id'] = $departmentId;
+        }
+
+        if (!empty($data['address'])) {
+            $patientUpdateData['address'] = $data['address'];
+        }
+        if (!empty($data['city'])) {
+            $patientUpdateData['city'] = $data['city'];
+        }
+        if (!empty($data['state'])) {
+            $patientUpdateData['state'] = $data['state'];
+        }
+        if (!empty($data['postal_code'])) {
+            $patientUpdateData['postal_code'] = $data['postal_code'];
+        }
+        if (!empty($data['country'])) {
+            $patientUpdateData['country'] = $data['country'];
         }
 
         if (!empty($patientUpdateData)) {

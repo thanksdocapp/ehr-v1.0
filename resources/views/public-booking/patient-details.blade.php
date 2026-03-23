@@ -84,6 +84,8 @@
                 @enderror
             </div>
 
+            @include('public-booking.partials.booking-address-fields')
+
             @php
                 $dobFieldVal = old('date_of_birth');
                 if ($dobFieldVal && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dobFieldVal)) {
@@ -191,4 +193,5 @@
     }
 })();
 </script>
+@include('public-booking.partials.ideal-postcodes-public-booking-script')
 @endsection

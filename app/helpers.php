@@ -571,3 +571,41 @@ if (!function_exists('getSidebarMenuItems')) {
         }
     }
 }
+
+if (!function_exists('normalize_public_booking_address_fields')) {
+    /**
+     * Merge address line 1 + line 2 into a single patients.address value and normalise
+     * town, county, postcode, and country for public / clinic booking flows.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array{address: string|null, city: string|null, state: string|null, postal_code: string|null, country: string|null}
+     */
+    function normalize_public_booking_address_fields(array $input): array
+    {
+        $line1 = trim((string) ($input['address'] ?? ''));
+        $line2 = trim((string) ($input['address_line_2'] ?? ''));
+        $merged = $line1;
+        if ($line2 !== '') {
+            $merged = $merged === '' ? $line2 : $merged."\n".$line2;
+        }
+
+        $city = trim((string) ($input['city'] ?? ''));
+        $state = trim((string) ($input['state'] ?? ''));
+        $postal = trim((string) ($input['postal_code'] ?? ''));
+        if ($postal !== '') {
+            $postal = strtoupper($postal);
+        }
+        $country = trim((string) ($input['country'] ?? ''));
+        if ($country === '') {
+            $country = 'United Kingdom';
+        }
+
+        return [
+            'address' => $merged !== '' ? $merged : null,
+            'city' => $city !== '' ? $city : null,
+            'state' => $state !== '' ? $state : null,
+            'postal_code' => $postal !== '' ? $postal : null,
+            'country' => $country !== '' ? $country : null,
+        ];
+    }
+}
