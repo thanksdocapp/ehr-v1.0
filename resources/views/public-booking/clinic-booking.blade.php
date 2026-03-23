@@ -124,6 +124,7 @@
     <div class="text-center mt-5 mb-3">
         <small class="text-muted">Powered by ThanksDoc</small>
     </div>
+@endif
 @endsection
 
 @section('styles')
