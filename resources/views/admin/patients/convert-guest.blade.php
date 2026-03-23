@@ -17,20 +17,51 @@
                         <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Patient Information</h6>
                         <p class="mb-0">
                             <strong>Name:</strong> {{ $patient->full_name }}<br>
-                            <strong>Email:</strong> {{ $patient->email }}<br>
+                            <strong>Email:</strong> {{ $patient->email ?? '—' }}<br>
                             <strong>Phone:</strong> {{ $patient->phone }}
                         </p>
                     </div>
 
                     <div class="alert alert-light border mb-4" role="alert">
                         <p class="mb-0 small">
-                            <strong>Need more than DOB, gender, and address?</strong>
-                            <a href="{{ route('admin.patients.edit', $patient) }}">Open the full patient profile</a> to fill every required field in one place. When nothing essential is missing, guest restrictions clear automatically — you do not have to use this quick form.
+                            <strong>Faster option:</strong> from the <a href="{{ route('admin.patients.show', $patient) }}">patient record</a>, use <strong>Convert guest patient</strong> to clear guest restrictions in one step without this form.
+                            For every required field in one place, use <a href="{{ route('admin.patients.edit', $patient) }}">Complete patient profile</a> instead.
                         </p>
                     </div>
 
                     <form action="{{ route('admin.patients.convert-guest.post', $patient) }}" method="POST">
                         @csrf
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label fw-semibold">First name <span class="text-danger">*</span></label>
+                                <input type="text"
+                                       class="form-control @error('first_name') is-invalid @enderror"
+                                       id="first_name"
+                                       name="first_name"
+                                       value="{{ old('first_name', $patient->first_name) }}"
+                                       required
+                                       maxlength="255"
+                                       autocomplete="given-name">
+                                @error('first_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label fw-semibold">Last name <span class="text-danger">*</span></label>
+                                <input type="text"
+                                       class="form-control @error('last_name') is-invalid @enderror"
+                                       id="last_name"
+                                       name="last_name"
+                                       value="{{ old('last_name', $patient->last_name) }}"
+                                       required
+                                       maxlength="255"
+                                       autocomplete="family-name">
+                                @error('last_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
 
                         <div class="mb-3">
                             <label for="date_of_birth" class="form-label fw-semibold">Date of Birth <span class="text-danger">*</span></label>
@@ -58,17 +89,6 @@
                                 <option value="other" {{ old('gender', $patient->gender) == 'other' ? 'selected' : '' }}>Other</option>
                             </select>
                             @error('gender')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="address" class="form-label fw-semibold">Address</label>
-                            <textarea class="form-control @error('address') is-invalid @enderror" 
-                                      id="address" 
-                                      name="address" 
-                                      rows="3">{{ old('address', $patient->address) }}</textarea>
-                            @error('address')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

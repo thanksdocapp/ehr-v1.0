@@ -647,7 +647,7 @@
                                         @if($patient->is_guest)
                                         <button class="btn btn-sm btn-outline-warning" 
                                                 onclick="convertGuest({{ $patient->id }})" 
-                                                title="Convert to Full Patient">
+                                                title="Open patient to convert guest">
                                             <i class="fas fa-user-check"></i>
                                         </button>
                                         @endif
@@ -922,7 +922,7 @@ $(document).ready(function() {
     }
 
     function convertGuest(patientId) {
-        window.location.href = `{{ route('admin.patients.index') }}/${patientId}/convert-guest`;
+        window.location.href = '{{ url('/admin/patients') }}/' + patientId;
     }
 
     function exportPatients() {

@@ -1552,9 +1552,10 @@ class PatientsController extends Controller
         }
 
         $validator = \Validator::make($request->all(), [
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'date_of_birth' => 'required|date|before:today',
             'gender' => 'required|in:male,female,other',
-            'address' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -1563,9 +1564,10 @@ class PatientsController extends Controller
 
         try {
             $patient->update([
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
                 'date_of_birth' => $request->date_of_birth,
                 'gender' => $request->gender,
-                'address' => $request->address,
                 'is_guest' => false,
             ]);
 
@@ -1582,7 +1584,7 @@ class PatientsController extends Controller
     }
 
     /**
-     * Remove guest flag immediately without collecting DOB/gender/address (admin override).
+     * Remove guest flag immediately without the convert-guest form (admin override).
      */
     public function convertGuestInstant(Request $request, Patient $patient)
     {
@@ -1603,7 +1605,7 @@ class PatientsController extends Controller
             ]);
 
             return redirect()->route('admin.patients.show', $patient)
-                ->with('success', 'Guest status removed. Patient fields were not changed — open the profile to finish any missing details if needed.');
+                ->with('success', 'Guest patient converted in one step. Existing details were not changed — use Complete patient profile if anything is still missing.');
         } catch (\Exception $e) {
             \Log::error('Failed instant guest convert', [
                 'patient_id' => $patient->id,

@@ -672,10 +672,10 @@
                                                         <form action="{{ route('staff.patients.convert-guest-instant.post', $appointment->patient) }}"
                                                               method="post"
                                                               class="m-0"
-                                                              onsubmit="return confirm('Remove guest status for this patient? Their saved details will not change. You can complete the profile later if anything is still missing.');">
+                                                              onsubmit="return confirm('Convert this guest patient now? Guest restrictions will be removed; existing details on the record will not change. You can complete the profile later if needed.');">
                                                             @csrf
                                                             <button type="submit" class="dropdown-item">
-                                                                <i class="fas fa-user-check me-2 text-success"></i>Remove guest status
+                                                                <i class="fas fa-user-check me-2 text-success"></i>Convert guest patient
                                                             </button>
                                                         </form>
                                                     </li>
