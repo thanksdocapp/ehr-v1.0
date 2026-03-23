@@ -51,6 +51,12 @@ class GuestPatientService
             if (!empty($data['country'])) {
                 $patient->country = $data['country'];
             }
+            if (!empty($data['guardian_name'])) {
+                $patient->guardian_name = $data['guardian_name'];
+            }
+            if (!empty($data['guardian_phone'])) {
+                $patient->guardian_phone = $data['guardian_phone'];
+            }
             $patient->save();
 
             return $patient;
@@ -106,6 +112,12 @@ class GuestPatientService
         }
         if (!empty($data['country'])) {
             $patientData['country'] = $data['country'];
+        }
+        if (!empty($data['guardian_name'])) {
+            $patientData['guardian_name'] = $data['guardian_name'];
+        }
+        if (!empty($data['guardian_phone'])) {
+            $patientData['guardian_phone'] = $data['guardian_phone'];
         }
 
         $patient = Patient::create($patientData);

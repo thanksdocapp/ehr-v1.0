@@ -164,6 +164,33 @@
                         </div>
                     </div>
 
+                    @php
+                        $showGuardianContactStaff = ($patient->age !== null && (int) $patient->age < 18)
+                            || filled($patient->guardian_name)
+                            || filled($patient->guardian_phone);
+                    @endphp
+                    @if($showGuardianContactStaff)
+                    <div class="mb-4 pt-3 border-top">
+                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-user-shield me-1"></i>Parent / guardian</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Guardian / parent name</label>
+                                <div class="fw-bold">{{ $patient->guardian_name ?: '—' }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small mb-0">Guardian / parent phone</label>
+                                <div class="fw-bold">
+                                    @if($patient->guardian_phone)
+                                        <a href="tel:{{ $patient->guardian_phone }}" class="text-decoration-none">{{ $patient->guardian_phone }}</a>
+                                    @else
+                                        —
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     @if($patient->address || $patient->city || $patient->state || $patient->country || $patient->postal_code)
                     {{-- 4. Address --}}
                     <div class="mb-4 pt-3 border-top">

@@ -414,6 +414,35 @@
                                 </div>
                             </div>
 
+                            <div class="row d-none" id="guardian_contact_row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="guardian_name" class="form-label fw-semibold">
+                                        <i class="fas fa-user me-1"></i>Guardian / parent name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" name="guardian_name" id="guardian_name"
+                                           class="form-control @error('guardian_name') is-invalid @enderror"
+                                           value="{{ old('guardian_name') }}"
+                                           placeholder="Full name of parent or guardian"
+                                           autocomplete="name">
+                                    @error('guardian_name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="guardian_phone" class="form-label fw-semibold">
+                                        <i class="fas fa-phone me-1"></i>Guardian / parent phone <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="tel" name="guardian_phone" id="guardian_phone"
+                                           class="form-control @error('guardian_phone') is-invalid @enderror"
+                                           value="{{ old('guardian_phone') }}"
+                                           placeholder="Contact number"
+                                           autocomplete="tel">
+                                    @error('guardian_phone')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
                             <div class="row">
                                 <div class="col-md-12 mb-0">
                                     <label for="guardian_id_document" class="form-label fw-semibold">
@@ -446,20 +475,38 @@
                                 var guardianStar = document.getElementById('guardian_required_star');
                                 var guardianOptText = document.getElementById('guardian_optional_text');
                                 var guardianInput = document.getElementById('guardian_id_document');
+                                var gContactRow = document.getElementById('guardian_contact_row');
+                                var gName = document.getElementById('guardian_name');
+                                var gPhone = document.getElementById('guardian_phone');
+
+                                function setContactVisible(show) {
+                                    if (gContactRow) {
+                                        if (show) gContactRow.classList.remove('d-none');
+                                        else gContactRow.classList.add('d-none');
+                                    }
+                                    if (gName) gName.required = !!show;
+                                    if (gPhone) gPhone.required = !!show;
+                                }
 
                                 if (!dob || !guardianAlert) return;
 
                                 var val = dob.value;
                                 if (!val || val.trim() === '') {
-                                    // No DOB - hide alert, not required
                                     guardianAlert.style.cssText = 'display: none !important;';
                                     if (guardianStar) guardianStar.style.display = 'none';
                                     if (guardianOptText) guardianOptText.style.display = 'inline';
                                     if (guardianInput) { guardianInput.required = false; guardianInput.style.borderColor = ''; }
+                                    setContactVisible(false);
                                     return;
                                 }
 
-                                var birthDate = new Date(val);
+                                var birthDate = null;
+                                var dm = val.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                                if (dm) {
+                                    birthDate = new Date(parseInt(dm[3], 10), parseInt(dm[2], 10) - 1, parseInt(dm[1], 10));
+                                } else {
+                                    birthDate = new Date(val);
+                                }
                                 if (isNaN(birthDate.getTime())) return;
 
                                 var today = new Date();
@@ -469,22 +516,21 @@
                                     years--;
                                 }
 
-                                if (years < 0) return; // Future date
+                                if (years < 0) return;
 
                                 if (years < 18) {
-                                    // Under 18 - show alert, required
                                     guardianAlert.style.cssText = 'display: flex !important;';
                                     if (guardianStar) guardianStar.style.display = 'inline';
                                     if (guardianOptText) guardianOptText.style.display = 'none';
                                     if (guardianInput) { guardianInput.required = true; guardianInput.style.borderColor = '#ffc107'; }
+                                    setContactVisible(true);
 
-                                    // Show toast only once per age change
                                     if (lastShownAge !== years && typeof Swal !== 'undefined') {
                                         lastShownAge = years;
                                         Swal.fire({
                                             icon: 'info',
-                                            title: 'Guardian ID Required',
-                                            text: 'Patient is ' + years + ' years old (under 18). Guardian ID document is required.',
+                                            title: 'Guardian details required',
+                                            text: 'Patient is under 18. Guardian/parent name, phone, and ID document are required.',
                                             timer: 3500,
                                             showConfirmButton: false,
                                             toast: true,
@@ -492,11 +538,11 @@
                                         });
                                     }
                                 } else {
-                                    // 18 or over - hide alert, not required
                                     guardianAlert.style.cssText = 'display: none !important;';
                                     if (guardianStar) guardianStar.style.display = 'none';
                                     if (guardianOptText) guardianOptText.style.display = 'inline';
                                     if (guardianInput) { guardianInput.required = false; guardianInput.style.borderColor = ''; }
+                                    setContactVisible(false);
                                     lastShownAge = null;
                                 }
                             }
@@ -1164,6 +1210,18 @@ $(document).ready(function() {
         const guardianStar = $('#guardian_required_star');
         const guardianOptionalText = $('#guardian_optional_text');
         const dobField = $('#date_of_birth');
+        const guardianContactRow = $('#guardian_contact_row');
+        const guardianName = $('#guardian_name');
+        const guardianPhone = $('#guardian_phone');
+
+        function parseUkDobAdminCreate(v) {
+            if (!v || !String(v).trim()) return null;
+            var s = String(v).trim();
+            var m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (m) return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+            var d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;
+        }
 
         if (!birthDateValue || birthDateValue.trim() === '') {
             ageDisplay.val('Enter date of birth first').removeClass('text-danger text-success');
@@ -1171,14 +1229,21 @@ $(document).ready(function() {
             guardianStar.hide();
             guardianOptionalText.show();
             guardianInput.prop('required', false).removeClass('border-warning');
+            guardianContactRow.addClass('d-none');
+            guardianName.prop('required', false);
+            guardianPhone.prop('required', false);
             return;
         }
 
-        const birthDate = new Date(birthDateValue);
+        const birthDate = parseUkDobAdminCreate(birthDateValue);
         const today = new Date();
 
-        if (isNaN(birthDate.getTime())) {
+        if (!birthDate || isNaN(birthDate.getTime())) {
             ageDisplay.val('Invalid date format').removeClass('text-success').addClass('text-danger');
+            guardianContactRow.addClass('d-none');
+            guardianName.prop('required', false);
+            guardianPhone.prop('required', false);
+            guardianInput.prop('required', false).removeClass('border-warning');
             return;
         }
 
@@ -1216,6 +1281,9 @@ $(document).ready(function() {
             guardianStar.hide();
             guardianOptionalText.show();
             guardianInput.prop('required', false).removeClass('border-warning');
+            guardianContactRow.addClass('d-none');
+            guardianName.prop('required', false);
+            guardianPhone.prop('required', false);
             return;
         } else if (years > 150) {
             ageDisplay.val('Invalid (age > 150)').removeClass('text-success').addClass('text-danger');
@@ -1232,12 +1300,15 @@ $(document).ready(function() {
             guardianStar.show();
             guardianOptionalText.hide();
             guardianInput.prop('required', true).addClass('border-warning');
+            guardianContactRow.removeClass('d-none');
+            guardianName.prop('required', true);
+            guardianPhone.prop('required', true);
 
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'info',
-                    title: 'Guardian ID Required',
-                    text: `Patient is ${years} years, ${months} months, ${days} days old (under 18). Guardian ID document is required.`,
+                    title: 'Guardian details required',
+                    text: `Patient is ${years} years, ${months} months, ${days} days old (under 18). Guardian/parent name, phone, and ID document are required.`,
                     timer: 3500,
                     showConfirmButton: false,
                     toast: true,
@@ -1249,6 +1320,9 @@ $(document).ready(function() {
             guardianStar.hide();
             guardianOptionalText.show();
             guardianInput.prop('required', false).removeClass('border-warning');
+            guardianContactRow.addClass('d-none');
+            guardianName.prop('required', false);
+            guardianPhone.prop('required', false);
         }
     }
 
@@ -1273,11 +1347,14 @@ $(document).ready(function() {
         setTimeout(calculateAgeAndToggleGuardian, 100);
     });
 
-    @if($errors->has('guardian_id_document'))
+    @if($errors->has('guardian_id_document') || $errors->has('guardian_name') || $errors->has('guardian_phone'))
         $('#guardian_required_alert').show();
         $('#guardian_required_star').show();
         $('#guardian_optional_text').hide();
         $('#guardian_id_document').prop('required', true).addClass('border-warning');
+        $('#guardian_contact_row').removeClass('d-none');
+        $('#guardian_name').prop('required', true);
+        $('#guardian_phone').prop('required', true);
     @endif
 
     // GP Consent checkbox toggle

@@ -180,6 +180,61 @@
                     </div>
                 </div>
 
+                @php
+                    $dobSe = $patient->date_of_birth ? \Carbon\Carbon::parse($patient->date_of_birth) : null;
+                    $isUnder18Se = $dobSe !== null && $dobSe->age < 18;
+                @endphp
+                <div class="doctor-card mb-4" id="guardian_id_document_group" style="display: {{ $isUnder18Se ? 'block' : 'none' }};">
+                    <div class="doctor-card-header">
+                        <h5 class="doctor-card-title mb-0"><i class="fas fa-user-shield me-2 text-primary"></i>Parent / guardian</h5>
+                    </div>
+                    <div class="doctor-card-body">
+                        <p class="small text-muted mb-3">For patients under 18, guardian or parent name and phone are required. You can upload or replace the guardian ID document here at any time (optional).</p>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="guardian_name" class="form-label fw-semibold">Guardian / parent name @if($isUnder18Se)<span class="text-danger">*</span>@endif</label>
+                                <input type="text" name="guardian_name" id="guardian_name"
+                                       class="form-control @error('guardian_name') is-invalid @enderror"
+                                       value="{{ old('guardian_name', $patient->guardian_name) }}"
+                                       placeholder="Full name"
+                                       autocomplete="name"
+                                       @if($isUnder18Se) required @endif>
+                                @error('guardian_name')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="guardian_phone" class="form-label fw-semibold">Guardian / parent phone @if($isUnder18Se)<span class="text-danger">*</span>@endif</label>
+                                <input type="tel" name="guardian_phone" id="guardian_phone"
+                                       class="form-control @error('guardian_phone') is-invalid @enderror"
+                                       value="{{ old('guardian_phone', $patient->guardian_phone) }}"
+                                       placeholder="Contact number"
+                                       autocomplete="tel"
+                                       @if($isUnder18Se) required @endif>
+                                @error('guardian_phone')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        @if($patient->guardian_id_document_path)
+                        <div class="alert alert-success mb-3">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Guardian ID document</strong> is on file. Upload a new file below to replace it.
+                        </div>
+                        @endif
+                        <div class="mb-0">
+                            <label for="guardian_id_document" class="form-label fw-semibold">Guardian ID document <small class="text-muted fw-normal">(optional)</small></label>
+                            <input type="file" name="guardian_id_document" id="guardian_id_document"
+                                   class="form-control @error('guardian_id_document') is-invalid @enderror"
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                            <small class="text-muted d-block mt-1">PDF, JPG, or PNG, max 5MB.</small>
+                            @error('guardian_id_document')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Clinic Assignment (for doctors and staff) -->
                 @php
                     $user = auth()->user();
@@ -473,33 +528,57 @@ $(document).ready(function() {
         $(this).val(value);
     });
 
-    // Age calculation and guardian ID requirement
+    function staffEditParseDob(val) {
+        if (!val || !String(val).trim()) return null;
+        var s = String(val).trim();
+        var m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m) return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+        var d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    // Age calculation: under 18 shows guardian contact (name/phone required); ID file always optional on edit
     function calculateAgeAndToggleGuardian() {
-        const birthDate = new Date($('#date_of_birth').val());
-        const today = new Date();
-        const age = Math.floor((today - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
         const guardianGroup = $('#guardian_id_document_group');
         const guardianInput = $('#guardian_id_document');
-        
+        const guardianName = $('#guardian_name');
+        const guardianPhone = $('#guardian_phone');
+        const birthDate = staffEditParseDob($('#date_of_birth').val());
+        const today = new Date();
+
+        if (!birthDate || isNaN(birthDate.getTime())) {
+            guardianGroup.slideUp();
+            guardianInput.prop('required', false);
+            guardianName.prop('required', false);
+            guardianPhone.prop('required', false);
+            return;
+        }
+
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const mo = today.getMonth() - birthDate.getMonth();
+        if (mo < 0 || (mo === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
         if (age < 0) {
             alert('Birth date cannot be in the future.');
             $('#date_of_birth').val('');
             guardianGroup.slideUp();
             guardianInput.prop('required', false);
+            guardianName.prop('required', false);
+            guardianPhone.prop('required', false);
         } else if (age > 150) {
             alert('Please check the birth date. Age seems too high.');
+        } else if (age < 18) {
+            guardianGroup.slideDown();
+            guardianName.prop('required', true);
+            guardianPhone.prop('required', true);
+            guardianInput.prop('required', false);
         } else {
-            // Show/hide guardian ID document field based on age
-            if (age < 18) {
-                guardianGroup.slideDown();
-                if (!guardianGroup.find('.alert').length) {
-                    // Only require if no existing document
-                    guardianInput.prop('required', true);
-                }
-            } else {
-                guardianGroup.slideUp();
-                guardianInput.prop('required', false);
-            }
+            guardianGroup.slideUp();
+            guardianInput.prop('required', false);
+            guardianName.prop('required', false);
+            guardianPhone.prop('required', false);
         }
     }
     

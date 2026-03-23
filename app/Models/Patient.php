@@ -42,6 +42,8 @@ class Patient extends Authenticatable
         'photo',
         'patient_id_document_path',
         'guardian_id_document_path',
+        'guardian_name',
+        'guardian_phone',
         'consent_share_with_gp',
         'gp_name',
         'gp_email',
@@ -77,6 +79,8 @@ class Patient extends Authenticatable
         'insurance_number' => SafeEncrypted::class,
         'emergency_contact' => SafeEncrypted::class,
         'emergency_phone' => SafeEncrypted::class,
+        'guardian_name' => SafeEncrypted::class,
+        'guardian_phone' => SafeEncrypted::class,
         'notes' => SafeEncrypted::class, // May contain sensitive medical information
     ];
 

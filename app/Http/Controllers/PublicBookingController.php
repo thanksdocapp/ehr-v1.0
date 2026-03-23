@@ -54,6 +54,46 @@ class PublicBookingController extends Controller
     }
 
     /**
+     * True when booking request date of birth indicates the patient is under 18.
+     */
+    private function patientIsMinorForBookingRequest(Request $request): bool
+    {
+        $raw = $request->input('date_of_birth');
+        if ($raw === null || $raw === '') {
+            return false;
+        }
+        $ymd = parseDateInput($raw);
+        if (!$ymd) {
+            return false;
+        }
+        try {
+            return Carbon::parse($ymd)->age < 18;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Guardian/parent contact for minors (public booking — no ID document at booking).
+     *
+     * @return array<string, string>
+     */
+    private function publicBookingGuardianFieldRules(Request $request): array
+    {
+        if (!$this->patientIsMinorForBookingRequest($request)) {
+            return [
+                'guardian_name' => 'nullable|string|max:255',
+                'guardian_phone' => 'nullable|string|max:20',
+            ];
+        }
+
+        return [
+            'guardian_name' => 'required|string|max:255',
+            'guardian_phone' => 'required|string|max:20',
+        ];
+    }
+
+    /**
      * @param  string|null  $dobYmd  Parsed Y-m-d; when null, uses session value.
      */
     private function redirectIfServiceIneligibleForPublicBooking(BookingService $service, ?string $dobYmd = null): ?\Illuminate\Http\RedirectResponse
@@ -266,7 +306,7 @@ class PublicBookingController extends Controller
             'consultation_type' => 'nullable|in:in_person,online,telephone',
             'consent' => 'required|accepted',
             'notes' => 'required|string|max:10000',
-        ], $this->publicBookingAddressValidationRules()));
+        ], $this->publicBookingAddressValidationRules(), $this->publicBookingGuardianFieldRules($request)));
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
@@ -297,7 +337,9 @@ class PublicBookingController extends Controller
 
         $patientData = $request->only([
             'first_name', 'last_name', 'email', 'phone', 'notes', 'consultation_type',
-            'gender', 'consent_share_with_gp', 'gp_name', 'gp_email', 'gp_phone', 'gp_address'
+            'gender', 'consent_share_with_gp', 'gp_name', 'gp_email', 'gp_phone', 'gp_address',
+            'address', 'address_line_2', 'city', 'state', 'postal_code', 'country',
+            'guardian_name', 'guardian_phone',
         ]);
         if ($request->has('date_of_birth') && $request->date_of_birth) {
             $patientData['date_of_birth'] = parseDateInput($request->date_of_birth);
@@ -339,7 +381,7 @@ class PublicBookingController extends Controller
             'gender' => 'required|in:male,female,other',
             'consultation_type' => 'nullable|in:in_person,online,telephone',
             'notes' => 'required|string|max:10000',
-        ], $this->publicBookingAddressValidationRules()));
+        ], $this->publicBookingAddressValidationRules(), $this->publicBookingGuardianFieldRules($request)));
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
@@ -661,7 +703,7 @@ class PublicBookingController extends Controller
             'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
             'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
             'notes' => 'required|string|max:10000',
-        ], $this->publicBookingAddressValidationRules()));
+        ], $this->publicBookingAddressValidationRules(), $this->publicBookingGuardianFieldRules($request)));
 
         // Set default consultation type to in_person (doctors will decide later)
         if (!$request->has('consultation_type') || !$request->consultation_type) {
@@ -704,6 +746,7 @@ class PublicBookingController extends Controller
             'gender', 'consent_share_with_gp',
             'gp_name', 'gp_email', 'gp_phone', 'gp_address',
             'address', 'address_line_2', 'city', 'state', 'postal_code', 'country',
+            'guardian_name', 'guardian_phone',
         ]);
         
         // Convert date_of_birth from dd/mm/yyyy to Y-m-d format
@@ -807,6 +850,8 @@ class PublicBookingController extends Controller
             $requestData['date_of_birth'] = parseDateInput($requestData['date_of_birth']);
             $request->merge(['date_of_birth' => $requestData['date_of_birth']]);
         }
+
+        $rules = array_merge($rules, $this->publicBookingGuardianFieldRules($request));
 
         $validator = Validator::make($requestData, $rules);
 

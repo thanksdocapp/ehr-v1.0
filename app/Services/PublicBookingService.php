@@ -89,6 +89,8 @@ class PublicBookingService
             'state' => $data['state'] ?? null,
             'postal_code' => $data['postal_code'] ?? null,
             'country' => $data['country'] ?? null,
+            'guardian_name' => $data['guardian_name'] ?? null,
+            'guardian_phone' => $data['guardian_phone'] ?? null,
         ]);
 
         // Update patient with additional data
@@ -229,6 +231,8 @@ class PublicBookingService
             'state' => $patientData['state'] ?? null,
             'postal_code' => $patientData['postal_code'] ?? null,
             'country' => $patientData['country'] ?? null,
+            'guardian_name' => $patientData['guardian_name'] ?? null,
+            'guardian_phone' => $patientData['guardian_phone'] ?? null,
         ]);
 
         // Update patient with any additional data we captured in the booking flow
@@ -508,6 +512,12 @@ class PublicBookingService
         }
         if (!empty($data['country'])) {
             $patientUpdateData['country'] = $data['country'];
+        }
+        if (!empty($data['guardian_name'])) {
+            $patientUpdateData['guardian_name'] = $data['guardian_name'];
+        }
+        if (!empty($data['guardian_phone'])) {
+            $patientUpdateData['guardian_phone'] = $data['guardian_phone'];
         }
 
         if (!empty($patientUpdateData)) {

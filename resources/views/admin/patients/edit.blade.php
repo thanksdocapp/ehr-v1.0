@@ -416,26 +416,55 @@
                         </div>
 
                         <div class="form-group" id="guardian_id_document_group" style="display: {{ $isUnder18 ? 'block' : 'none' }};">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="guardian_name" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Guardian / parent name
+                                        @if($isUnder18)<span class="text-danger">*</span>@endif
+                                    </label>
+                                    <input type="text" class="form-control @error('guardian_name') is-invalid @enderror"
+                                           id="guardian_name" name="guardian_name"
+                                           value="{{ old('guardian_name', $patient->guardian_name) }}"
+                                           placeholder="Full name of parent or guardian"
+                                           autocomplete="name"
+                                           @if($isUnder18) required @endif>
+                                    @error('guardian_name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="guardian_phone" class="form-label">
+                                        <i class="fas fa-phone me-1"></i>Guardian / parent phone
+                                        @if($isUnder18)<span class="text-danger">*</span>@endif
+                                    </label>
+                                    <input type="tel" class="form-control @error('guardian_phone') is-invalid @enderror"
+                                           id="guardian_phone" name="guardian_phone"
+                                           value="{{ old('guardian_phone', $patient->guardian_phone) }}"
+                                           placeholder="Contact number"
+                                           autocomplete="tel"
+                                           @if($isUnder18) required @endif>
+                                    @error('guardian_phone')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
                             @if($patient->guardian_id_document_path)
                                 <div class="alert alert-success mb-3">
                                     <i class="fas fa-check-circle me-2"></i>
                                     <strong>Guardian ID Document:</strong> Already uploaded
                                 </div>
                             @endif
-                            
+
                             <label for="guardian_id_document" class="form-label">
-                                <i class="fas fa-file-pdf me-1"></i>Parent/Guardian ID Document 
-                                @if($isUnder18)
-                                    <span class="text-danger">*</span>
-                                @endif
-                                <small class="text-muted">(Required if patient is under 18)</small>
+                                <i class="fas fa-file-pdf me-1"></i>Parent / guardian ID document
+                                <small class="text-muted">(optional — upload or replace anytime)</small>
                             </label>
-                            <input type="file" class="form-control @error('guardian_id_document') is-invalid @enderror" 
-                                   id="guardian_id_document" name="guardian_id_document" 
-                                   accept=".pdf,.jpg,.jpeg,.png"
-                                   @if($isUnder18 && !$patient->guardian_id_document_path) required @endif>
+                            <input type="file" class="form-control @error('guardian_id_document') is-invalid @enderror"
+                                   id="guardian_id_document" name="guardian_id_document"
+                                   accept=".pdf,.jpg,.jpeg,.png">
                             <small class="form-text text-muted">
-                                Accepted formats: PDF, JPG, JPEG, PNG (Max 5MB). Required for patients under 18 years of age.
+                                Accepted formats: PDF, JPG, JPEG, PNG (Max 5MB). Required when registering a new under-18 patient; on this form you can add or update the file later.
                             </small>
                             @error('guardian_id_document')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -777,35 +806,57 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // Age calculator and guardian ID requirement
+    // Age calculator and guardian section (under 18: name + phone required; ID file optional on edit)
+    function parseUkDobAdminEdit(val) {
+        if (!val || !String(val).trim()) return null;
+        var s = String(val).trim();
+        var m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m) return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+        var d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
     function calculateAgeAndToggleGuardian() {
         const dateStr = $('#date_of_birth').val();
         const guardianGroup = $('#guardian_id_document_group');
         const guardianInput = $('#guardian_id_document');
-        
-        if (dateStr) {
-            // Handle yyyy-mm-dd format (from date input)
-            const dob = new Date(dateStr);
-            
-            if (dob && !isNaN(dob.getTime())) {
-                const today = new Date();
-                const age = Math.floor((today - dob) / (365.25 * 24 * 60 * 60 * 1000));
-                
-                // Show/hide guardian ID document field based on age
-                if (age < 18) {
-                    guardianGroup.slideDown();
-                    if (!guardianGroup.find('.alert').length) {
-                        // Only require if no existing document
-                        guardianInput.prop('required', !guardianInput.closest('.form-group').find('.alert').length);
-                    }
-                } else {
-                    guardianGroup.slideUp();
-                    guardianInput.prop('required', false);
-                }
-            }
+        const guardianName = $('#guardian_name');
+        const guardianPhone = $('#guardian_phone');
+
+        if (!dateStr || !String(dateStr).trim()) {
+            guardianGroup.slideUp();
+            guardianInput.prop('required', false);
+            guardianName.prop('required', false);
+            guardianPhone.prop('required', false);
+            return;
+        }
+
+        const dob = parseUkDobAdminEdit(dateStr);
+        if (!dob) {
+            guardianGroup.slideUp();
+            guardianInput.prop('required', false);
+            guardianName.prop('required', false);
+            guardianPhone.prop('required', false);
+            return;
+        }
+
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+
+        if (age < 18) {
+            guardianGroup.slideDown();
+            guardianName.prop('required', true);
+            guardianPhone.prop('required', true);
+            guardianInput.prop('required', false);
         } else {
             guardianGroup.slideUp();
             guardianInput.prop('required', false);
+            guardianName.prop('required', false);
+            guardianPhone.prop('required', false);
         }
     }
     

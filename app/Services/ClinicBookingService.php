@@ -69,6 +69,8 @@ class ClinicBookingService
                 'gp_email' => $data['gp_email'] ?? null,
                 'gp_phone' => $data['gp_phone'] ?? null,
                 'gp_address' => $data['gp_address'] ?? null,
+                'guardian_name' => $data['guardian_name'] ?? null,
+                'guardian_phone' => $data['guardian_phone'] ?? null,
             ];
 
             $patient = $this->guestPatientService->findOrCreateGuest([
@@ -83,6 +85,8 @@ class ClinicBookingService
                 'state' => $patientData['state'] ?? null,
                 'postal_code' => $patientData['postal_code'] ?? null,
                 'country' => $patientData['country'] ?? null,
+                'guardian_name' => $patientData['guardian_name'] ?? null,
+                'guardian_phone' => $patientData['guardian_phone'] ?? null,
             ]);
 
             $pendingBooking = PendingClinicBooking::create([
@@ -184,6 +188,8 @@ class ClinicBookingService
             'gp_email' => $pd['gp_email'] ?? null,
             'gp_phone' => $pd['gp_phone'] ?? null,
             'gp_address' => $pd['gp_address'] ?? null,
+            'guardian_name' => $pd['guardian_name'] ?? null,
+            'guardian_phone' => $pd['guardian_phone'] ?? null,
         ];
 
         $clinicRequest = $this->createFromClinicBooking($data);
@@ -228,6 +234,8 @@ class ClinicBookingService
                 'gp_email' => $data['gp_email'] ?? null,
                 'gp_phone' => $data['gp_phone'] ?? null,
                 'gp_address' => $data['gp_address'] ?? null,
+                'guardian_name' => $data['guardian_name'] ?? null,
+                'guardian_phone' => $data['guardian_phone'] ?? null,
             ];
 
             $request = ClinicBookingRequest::create([
@@ -284,6 +292,8 @@ class ClinicBookingService
                 'state' => $patientData['state'] ?? null,
                 'postal_code' => $patientData['postal_code'] ?? null,
                 'country' => $patientData['country'] ?? null,
+                'guardian_name' => $patientData['guardian_name'] ?? null,
+                'guardian_phone' => $patientData['guardian_phone'] ?? null,
             ]);
 
             // Assign patient to the clinic so all doctors in the clinic can view and access them

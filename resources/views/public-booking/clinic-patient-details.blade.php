@@ -49,7 +49,10 @@
         @endif
     </div>
 
-    <form id="patient-details-form" method="POST" action="{{ route('public.booking.clinic-review') }}">
+    @php
+        $pbSessionDobYmd = !empty($bookingDobYmd ?? null) ? \Carbon\Carbon::parse($bookingDobYmd)->format('Y-m-d') : '';
+    @endphp
+    <form id="patient-details-form" method="POST" action="{{ route('public.booking.clinic-review') }}" data-session-dob-ymd="{{ $pbSessionDobYmd }}">
         @csrf
         <input type="hidden" name="department_id" value="{{ $department->id }}">
         <input type="hidden" name="service_id" value="{{ $service->id }}">
@@ -124,6 +127,9 @@
                     @error('gender')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
             </div>
+
+            @include('public-booking.partials.booking-guardian-fields')
+
             <div class="mb-3">
                 <label for="notes" class="form-label">Reason for booking <span class="text-danger">*</span></label>
                 <textarea class="form-control @error('notes') is-invalid @enderror" id="notes" name="notes" rows="3" required placeholder="e.g. I think I have a chest infection">{{ old('notes') }}</textarea>
@@ -155,12 +161,23 @@
         var el = document.getElementById('date_of_birth');
         if (!el || el.type === 'hidden' || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
         try {
-            flatpickr(el, { dateFormat: 'd/m/Y', allowInput: true, maxDate: 'today' });
+            flatpickr(el, {
+                dateFormat: 'd/m/Y',
+                allowInput: true,
+                maxDate: 'today',
+                onChange: function() {
+                    if (el) el.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof window.publicBookingToggleGuardian === 'function') {
+                        window.publicBookingToggleGuardian();
+                    }
+                }
+            });
             el.setAttribute('data-flatpickr-initialized', 'true');
         } catch (e) {}
     }
     document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', function() { setTimeout(initDobPicker, 150); }) : setTimeout(initDobPicker, 150);
 })();
 </script>
+@include('public-booking.partials.booking-guardian-toggle-script')
 @include('public-booking.partials.ideal-postcodes-public-booking-script')
 @endsection

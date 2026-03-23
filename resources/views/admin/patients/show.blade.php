@@ -107,6 +107,27 @@
                                             <td class="fw-bold">Gender:</td>
                                             <td>{{ $patient->gender ? ucfirst($patient->gender) : 'Not specified' }}</td>
                                         </tr>
+                                        @php
+                                            $showGuardianAdmin = ($patient->date_of_birth && \Carbon\Carbon::parse($patient->date_of_birth)->age < 18)
+                                                || filled($patient->guardian_name)
+                                                || filled($patient->guardian_phone);
+                                        @endphp
+                                        @if($showGuardianAdmin)
+                                        <tr>
+                                            <td class="fw-bold">Guardian / parent name:</td>
+                                            <td>{{ $patient->guardian_name ?: 'Not provided' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">Guardian / parent phone:</td>
+                                            <td>
+                                                @if($patient->guardian_phone)
+                                                    <a href="tel:{{ $patient->guardian_phone }}">{{ $patient->guardian_phone }}</a>
+                                                @else
+                                                    <span class="text-muted">Not provided</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        @endif
                                         <tr>
                                             <td class="fw-bold">Blood Group:</td>
                                             <td>{{ $patient->blood_group ?: 'Not provided' }}</td>

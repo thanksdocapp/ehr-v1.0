@@ -37,6 +37,8 @@
         <input type="hidden" name="state" value="{{ $patient_data['state'] ?? '' }}">
         <input type="hidden" name="postal_code" value="{{ $patient_data['postal_code'] ?? '' }}">
         <input type="hidden" name="country" value="{{ $patient_data['country'] ?? 'United Kingdom' }}">
+        <input type="hidden" name="guardian_name" value="{{ $patient_data['guardian_name'] ?? '' }}">
+        <input type="hidden" name="guardian_phone" value="{{ $patient_data['guardian_phone'] ?? '' }}">
 
         <div class="review-card">
             <div class="review-card-header"><h3><i class="fas fa-calendar-check me-2"></i>Booking Summary</h3></div>
@@ -81,6 +83,20 @@
             @endif
             @if(!empty($patient_data['country']))
             <div class="review-row"><span class="review-label">Country</span><span class="review-value">{{ $patient_data['country'] }}</span></div>
+            @endif
+            @php
+                $clReviewMinor = false;
+                if (!empty($patient_data['date_of_birth'] ?? null)) {
+                    try {
+                        $clReviewMinor = \Carbon\Carbon::parse($patient_data['date_of_birth'])->age < 18;
+                    } catch (\Exception $e) {
+                        $clReviewMinor = false;
+                    }
+                }
+            @endphp
+            @if($clReviewMinor)
+            <div class="review-row"><span class="review-label">Guardian / parent name</span><span class="review-value">{{ $patient_data['guardian_name'] ?? '—' }}</span></div>
+            <div class="review-row"><span class="review-label">Guardian / parent phone</span><span class="review-value">{{ $patient_data['guardian_phone'] ?? '—' }}</span></div>
             @endif
             <div class="review-row"><span class="review-label">Reason for booking</span><span class="review-value">{{ $patient_data['notes'] ?? '—' }}</span></div>
         </div>

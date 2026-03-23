@@ -45,7 +45,10 @@
         @endif
     </div>
 
-    <form id="patient-details-form" method="POST" action="{{ route('public.booking.review') }}">
+    @php
+        $pbSessionDobYmd = !empty($bookingDobYmd ?? null) ? \Carbon\Carbon::parse($bookingDobYmd)->format('Y-m-d') : '';
+    @endphp
+    <form id="patient-details-form" method="POST" action="{{ route('public.booking.review') }}" data-session-dob-ymd="{{ $pbSessionDobYmd }}">
         @csrf
         <input type="hidden" name="doctor_id" value="{{ $doctor->id }}">
         <input type="hidden" name="service_id" value="{{ $service->id }}">
@@ -147,6 +150,8 @@
                 </div>
             </div>
 
+            @include('public-booking.partials.booking-guardian-fields')
+
             <input type="hidden" name="consultation_type" value="{{ old('consultation_type', $consultation_type ?? 'in_person') }}">
 
             <div class="mb-3">
@@ -216,5 +221,6 @@
     }
 })();
 </script>
+@include('public-booking.partials.booking-guardian-toggle-script')
 @include('public-booking.partials.ideal-postcodes-public-booking-script')
 @endsection

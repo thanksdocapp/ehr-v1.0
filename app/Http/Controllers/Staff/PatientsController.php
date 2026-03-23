@@ -564,9 +564,11 @@ class PatientsController extends Controller
                 'department_id' => 'nullable|exists:departments,id', // Backward compatibility
                 'department_ids' => 'nullable|array',
                 'department_ids.*' => 'nullable|exists:departments,id',
-                // ID Documents - guardian ID only required if patient is VALIDLY under 18
+                // ID Documents - guardian ID + parent/guardian contact required for under 18 on create
                 'patient_id_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // 5MB max
                 'guardian_id_document' => $isUnder18 ? 'required|file|mimes:pdf,jpg,jpeg,png|max:5120' : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'guardian_name' => $isUnder18 ? 'required|string|max:255' : 'nullable|string|max:255',
+                'guardian_phone' => $isUnder18 ? 'required|string|max:20' : 'nullable|string|max:20',
                 // GP Consent and Details
                 'consent_share_with_gp' => 'nullable|boolean',
                 'gp_name' => 'nullable|required_if:consent_share_with_gp,1|string|max:255',
@@ -654,6 +656,8 @@ class PatientsController extends Controller
             // ID Documents
             'patient_id_document_path' => $patientIdDocumentPath,
             'guardian_id_document_path' => $guardianIdDocumentPath,
+            'guardian_name' => $isUnder18 ? $request->guardian_name : null,
+            'guardian_phone' => $isUnder18 ? $request->guardian_phone : null,
             // GP Consent and Details
             'consent_share_with_gp' => $consentShareWithGp,
             'gp_name' => $gpName,
@@ -883,7 +887,9 @@ class PatientsController extends Controller
             'department_ids.*' => 'nullable|exists:departments,id',
             // ID Documents (only validate if new file is provided)
             'patient_id_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // 5MB max
-            'guardian_id_document' => $isUnder18 && !$patient->guardian_id_document_path ? 'required|file|mimes:pdf,jpg,jpeg,png|max:5120' : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'guardian_id_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'guardian_name' => $isUnder18 ? 'required|string|max:255' : 'nullable|string|max:255',
+            'guardian_phone' => $isUnder18 ? 'required|string|max:20' : 'nullable|string|max:20',
             // GP Consent and Details
             'consent_share_with_gp' => 'nullable|boolean',
             'gp_name' => 'nullable|required_if:consent_share_with_gp,1|string|max:255',
@@ -958,6 +964,8 @@ class PatientsController extends Controller
             // ID Documents
             'patient_id_document_path' => $patientIdDocumentPath,
             'guardian_id_document_path' => $guardianIdDocumentPath,
+            'guardian_name' => $isUnder18 ? $request->guardian_name : null,
+            'guardian_phone' => $isUnder18 ? $request->guardian_phone : null,
             // GP Consent and Details
             'consent_share_with_gp' => $consentShareWithGp,
             'gp_name' => $gpName,
