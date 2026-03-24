@@ -256,84 +256,77 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-lg-3 col-md-6 d-flex">
-                            <a href="{{ route('staff.patients.create') }}" class="btn btn-primary w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
-                                <div class="d-flex flex-column align-items-center text-center">
-                                    <i class="fas fa-user-plus fs-5 mb-1"></i>
-                                    <span class="fw-semibold small">Add New Patient</span>
-                                    <small class="opacity-75" style="font-size: 0.7rem;">Register a new patient</small>
+                        <div class="col-lg-3 col-md-6">
+                            <a href="{{ route('staff.patients.create') }}" class="card staff-dashboard-action h-100 text-decoration-none text-body border-0 shadow-sm">
+                                <div class="card-body text-center py-3 px-3 d-flex flex-column align-items-center">
+                                    <span class="staff-dashboard-action-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-user-plus"></i></span>
+                                    <span class="fw-semibold small mt-2">Add new patient</span>
+                                    <small class="text-muted mt-1" style="font-size: 0.7rem; line-height: 1.35;">Register a new patient</small>
                                 </div>
                             </a>
                         </div>
-                        
-                        <div class="col-lg-3 col-md-6 d-flex">
-                            <a href="{{ route('staff.appointments.create') }}" class="btn btn-success w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
-                                <div class="d-flex flex-column align-items-center text-center">
-                                    <i class="fas fa-calendar-plus fs-5 mb-1"></i>
-                                    <span class="fw-semibold small">Book Appointment</span>
-                                    <small class="opacity-75" style="font-size: 0.7rem;">Schedule new appointment</small>
+                        <div class="col-lg-3 col-md-6">
+                            <a href="{{ route('staff.appointments.create') }}" class="card staff-dashboard-action h-100 text-decoration-none text-body border-0 shadow-sm">
+                                <div class="card-body text-center py-3 px-3 d-flex flex-column align-items-center">
+                                    <span class="staff-dashboard-action-icon bg-success bg-opacity-10 text-success"><i class="fas fa-calendar-plus"></i></span>
+                                    <span class="fw-semibold small mt-2">Book appointment</span>
+                                    <small class="text-muted mt-1" style="font-size: 0.7rem; line-height: 1.35;">Schedule a new appointment</small>
                                 </div>
                             </a>
                         </div>
-                        
-                        <div class="col-lg-3 col-md-6 d-flex">
-                            <a href="{{ route('staff.patients.index') }}" class="btn btn-info w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
-                                <div class="d-flex flex-column align-items-center text-center">
-                                    <i class="fas fa-users fs-5 mb-1"></i>
-                                    <span class="fw-semibold small">View Patients</span>
-                                    <small class="opacity-75" style="font-size: 0.7rem;">Manage patient records</small>
+                        <div class="col-lg-3 col-md-6">
+                            <a href="{{ route('staff.patients.index') }}" class="card staff-dashboard-action h-100 text-decoration-none text-body border-0 shadow-sm">
+                                <div class="card-body text-center py-3 px-3 d-flex flex-column align-items-center">
+                                    <span class="staff-dashboard-action-icon bg-info bg-opacity-10 text-info"><i class="fas fa-users"></i></span>
+                                    <span class="fw-semibold small mt-2">View patients</span>
+                                    <small class="text-muted mt-1" style="font-size: 0.7rem; line-height: 1.35;">Manage patient records</small>
                                 </div>
                             </a>
                         </div>
-                        
-                        <div class="col-lg-3 col-md-6 d-flex">
-                            <a href="{{ route('staff.appointments.index') }}" class="btn btn-warning w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
-                                <div class="d-flex flex-column align-items-center text-center">
-                                    <i class="fas fa-calendar-alt fs-5 mb-1"></i>
-                                    <span class="fw-semibold small">View Schedule</span>
-                                    <small class="opacity-75" style="font-size: 0.7rem;">Check appointments</small>
+                        <div class="col-lg-3 col-md-6">
+                            <a href="{{ route('staff.appointments.index') }}" class="card staff-dashboard-action h-100 text-decoration-none text-body border-0 shadow-sm">
+                                <div class="card-body text-center py-3 px-3 d-flex flex-column align-items-center">
+                                    <span class="staff-dashboard-action-icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-calendar-alt"></i></span>
+                                    <span class="fw-semibold small mt-2">View schedule</span>
+                                    <small class="text-muted mt-1" style="font-size: 0.7rem; line-height: 1.35;">Check appointments</small>
                                 </div>
                             </a>
                         </div>
                     </div>
-                    
-                    <div class="row g-3 mt-2">
-                        <div class="col-lg-3 col-md-6 d-flex">
-                            <a href="{{ route('staff.billing.create') }}" class="btn btn-secondary w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
-                                <div class="d-flex flex-column align-items-center text-center">
-                                    <i class="fas fa-receipt fs-5 mb-1"></i>
-                                    <span class="fw-semibold small">Create Bill</span>
-                                    <small class="opacity-75" style="font-size: 0.7rem;">Generate new bill</small>
+                    <div class="row g-3 mt-1">
+                        <div class="col-lg-3 col-md-6">
+                            <a href="{{ route('staff.billing.create') }}" class="card staff-dashboard-action h-100 text-decoration-none text-body border-0 shadow-sm">
+                                <div class="card-body text-center py-3 px-3 d-flex flex-column align-items-center">
+                                    <span class="staff-dashboard-action-icon bg-secondary bg-opacity-10 text-secondary"><i class="fas fa-receipt"></i></span>
+                                    <span class="fw-semibold small mt-2">Create bill</span>
+                                    <small class="text-muted mt-1" style="font-size: 0.7rem; line-height: 1.35;">Generate a new bill</small>
                                 </div>
                             </a>
                         </div>
-                        
-                        <div class="col-lg-3 col-md-6 d-flex">
-                            <a href="{{ route('staff.billing.index') }}" class="btn btn-outline-primary w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
-                                <div class="d-flex flex-column align-items-center text-center">
-                                    <i class="fas fa-file-invoice-dollar fs-5 mb-1"></i>
-                                    <span class="fw-semibold small">View Bills</span>
-                                    <small class="opacity-75" style="font-size: 0.7rem;">Manage billing records</small>
+                        <div class="col-lg-3 col-md-6">
+                            <a href="{{ route('staff.billing.index') }}" class="card staff-dashboard-action h-100 text-decoration-none text-body border-0 shadow-sm">
+                                <div class="card-body text-center py-3 px-3 d-flex flex-column align-items-center">
+                                    <span class="staff-dashboard-action-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-file-invoice-dollar"></i></span>
+                                    <span class="fw-semibold small mt-2">View bills</span>
+                                    <small class="text-muted mt-1" style="font-size: 0.7rem; line-height: 1.35;">Manage billing records</small>
                                 </div>
                             </a>
                         </div>
-                        
-                        <div class="col-lg-3 col-md-6 d-flex">
-                            <a href="{{ route('staff.medical-records.create') }}" class="btn btn-outline-success w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
-                                <div class="d-flex flex-column align-items-center text-center">
-                                    <i class="fas fa-file-medical fs-5 mb-1"></i>
-                                    <span class="fw-semibold small">Medical Record</span>
-                                    <small class="opacity-75" style="font-size: 0.7rem;">Add medical record</small>
+                        <div class="col-lg-3 col-md-6">
+                            <a href="{{ route('staff.medical-records.create') }}" class="card staff-dashboard-action h-100 text-decoration-none text-body border-0 shadow-sm">
+                                <div class="card-body text-center py-3 px-3 d-flex flex-column align-items-center">
+                                    <span class="staff-dashboard-action-icon bg-success bg-opacity-10 text-success"><i class="fas fa-file-medical"></i></span>
+                                    <span class="fw-semibold small mt-2">Medical record</span>
+                                    <small class="text-muted mt-1" style="font-size: 0.7rem; line-height: 1.35;">Add a medical record</small>
                                 </div>
                             </a>
                         </div>
-                        
-                        <div class="col-lg-3 col-md-6 d-flex">
-                            <a href="{{ route('staff.prescriptions.create') }}" class="btn btn-outline-info w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
-                                <div class="d-flex flex-column align-items-center text-center">
-                                    <i class="fas fa-prescription-bottle-alt fs-5 mb-1"></i>
-                                    <span class="fw-semibold small">Prescription</span>
-                                    <small class="opacity-75" style="font-size: 0.7rem;">Create prescription</small>
+                        <div class="col-lg-3 col-md-6">
+                            <a href="{{ route('staff.prescriptions.create') }}" class="card staff-dashboard-action h-100 text-decoration-none text-body border-0 shadow-sm">
+                                <div class="card-body text-center py-3 px-3 d-flex flex-column align-items-center">
+                                    <span class="staff-dashboard-action-icon bg-info bg-opacity-10 text-info"><i class="fas fa-prescription-bottle-alt"></i></span>
+                                    <span class="fw-semibold small mt-2">Prescription</span>
+                                    <small class="text-muted mt-1" style="font-size: 0.7rem; line-height: 1.35;">Create a prescription</small>
                                 </div>
                             </a>
                         </div>
@@ -599,6 +592,26 @@
         max-height: 500px; /* Adjust as needed */
         opacity: 1;
         transform: translateY(0);
+    }
+
+    .staff-dashboard-action {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    }
+
+    .staff-dashboard-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .staff-dashboard-action-icon {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.65rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
     }
 </style>
 @endpush
