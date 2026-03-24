@@ -1,7 +1,6 @@
 @extends('layouts.public-booking')
 
 @section('title', 'Booking Successful')
-@section('container-width', '700px')
 
 @section('content')
 <div class="booking-header mb-4">

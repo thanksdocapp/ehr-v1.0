@@ -1,7 +1,6 @@
 @extends('layouts.public-booking')
 
 @section('title', 'Review & Confirm')
-@section('container-width', '700px')
 
 @section('content')
     <div class="booking-header">
