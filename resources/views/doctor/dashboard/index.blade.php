@@ -151,22 +151,30 @@
                             }
                         }
                     @endphp
-                    <div class="d-flex flex-wrap gap-2 align-items-center justify-content-md-end">
+                    <div class="row g-2 ms-md-auto justify-content-md-end" style="width: 100%; max-width: 28rem;">
                     @if($bookingLink)
-                    <button type="button" onclick="copyBookingLink('{{ $bookingLink }}')" class="btn btn-success btn-sm" style="border-radius: 8px; font-weight: 500;" title="Copy your public booking link" id="copy-booking-link-btn">
+                    <div class="col-12 col-sm-4 d-grid">
+                    <button type="button" onclick="copyBookingLink('{{ $bookingLink }}')" class="btn btn-success btn-sm w-100" style="border-radius: 8px; font-weight: 500;" title="Copy your public booking link" id="copy-booking-link-btn">
                         <i class="fas fa-link me-1"></i>Copy Booking Link
                     </button>
+                    </div>
                     @else
-                    <button type="button" class="btn btn-secondary btn-sm" style="border-radius: 8px; font-weight: 500;" disabled title="Doctor profile incomplete - no department assigned">
+                    <div class="col-12 col-sm-4 d-grid">
+                    <button type="button" class="btn btn-secondary btn-sm w-100" style="border-radius: 8px; font-weight: 500;" disabled title="Doctor profile incomplete - no department assigned">
                         <i class="fas fa-link me-1"></i>Booking Link Unavailable
                     </button>
+                    </div>
                     @endif
-                    <a href="{{ route('staff.appointments.create') }}" class="btn btn-doctor-primary btn-sm" style="border-radius: 8px; font-weight: 500;">
+                    <div class="col-12 col-sm-4 d-grid">
+                    <a href="{{ route('staff.appointments.create') }}" class="btn btn-doctor-primary btn-sm w-100" style="border-radius: 8px; font-weight: 500;">
                         <i class="fas fa-plus me-1"></i>New Appointment
                     </a>
-                    <a href="{{ route('staff.patients.create') }}" class="btn btn-outline-primary btn-sm" style="border-radius: 8px; font-weight: 500;">
+                    </div>
+                    <div class="col-12 col-sm-4 d-grid">
+                    <a href="{{ route('staff.patients.create') }}" class="btn btn-outline-primary btn-sm w-100" style="border-radius: 8px; font-weight: 500;">
                         <i class="fas fa-user-plus me-1"></i>New Patient
                     </a>
+                    </div>
                     </div>
                     @if($bookingLink)
                     <small class="d-block text-muted text-md-end text-break" id="booking-link-display" style="font-size: 0.7rem; max-width: 22rem;">{{ $bookingLink }}</small>

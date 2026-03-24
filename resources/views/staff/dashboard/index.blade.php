@@ -256,8 +256,8 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.patients.create') }}" class="btn btn-primary w-100 py-2 px-2">
+                        <div class="col-lg-3 col-md-6 d-flex">
+                            <a href="{{ route('staff.patients.create') }}" class="btn btn-primary w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
                                 <div class="d-flex flex-column align-items-center text-center">
                                     <i class="fas fa-user-plus fs-5 mb-1"></i>
                                     <span class="fw-semibold small">Add New Patient</span>
@@ -266,8 +266,8 @@
                             </a>
                         </div>
                         
-                        <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.appointments.create') }}" class="btn btn-success w-100 py-2 px-2">
+                        <div class="col-lg-3 col-md-6 d-flex">
+                            <a href="{{ route('staff.appointments.create') }}" class="btn btn-success w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
                                 <div class="d-flex flex-column align-items-center text-center">
                                     <i class="fas fa-calendar-plus fs-5 mb-1"></i>
                                     <span class="fw-semibold small">Book Appointment</span>
@@ -276,8 +276,8 @@
                             </a>
                         </div>
                         
-                        <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.patients.index') }}" class="btn btn-info w-100 py-2 px-2">
+                        <div class="col-lg-3 col-md-6 d-flex">
+                            <a href="{{ route('staff.patients.index') }}" class="btn btn-info w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
                                 <div class="d-flex flex-column align-items-center text-center">
                                     <i class="fas fa-users fs-5 mb-1"></i>
                                     <span class="fw-semibold small">View Patients</span>
@@ -286,8 +286,8 @@
                             </a>
                         </div>
                         
-                        <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.appointments.index') }}" class="btn btn-warning w-100 py-2 px-2">
+                        <div class="col-lg-3 col-md-6 d-flex">
+                            <a href="{{ route('staff.appointments.index') }}" class="btn btn-warning w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
                                 <div class="d-flex flex-column align-items-center text-center">
                                     <i class="fas fa-calendar-alt fs-5 mb-1"></i>
                                     <span class="fw-semibold small">View Schedule</span>
@@ -298,8 +298,8 @@
                     </div>
                     
                     <div class="row g-3 mt-2">
-                        <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.billing.create') }}" class="btn btn-secondary w-100 py-2 px-2">
+                        <div class="col-lg-3 col-md-6 d-flex">
+                            <a href="{{ route('staff.billing.create') }}" class="btn btn-secondary w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
                                 <div class="d-flex flex-column align-items-center text-center">
                                     <i class="fas fa-receipt fs-5 mb-1"></i>
                                     <span class="fw-semibold small">Create Bill</span>
@@ -308,8 +308,8 @@
                             </a>
                         </div>
                         
-                        <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.billing.index') }}" class="btn btn-outline-primary w-100 py-2 px-2">
+                        <div class="col-lg-3 col-md-6 d-flex">
+                            <a href="{{ route('staff.billing.index') }}" class="btn btn-outline-primary w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
                                 <div class="d-flex flex-column align-items-center text-center">
                                     <i class="fas fa-file-invoice-dollar fs-5 mb-1"></i>
                                     <span class="fw-semibold small">View Bills</span>
@@ -318,8 +318,8 @@
                             </a>
                         </div>
                         
-                        <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.medical-records.create') }}" class="btn btn-outline-success w-100 py-2 px-2">
+                        <div class="col-lg-3 col-md-6 d-flex">
+                            <a href="{{ route('staff.medical-records.create') }}" class="btn btn-outline-success w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
                                 <div class="d-flex flex-column align-items-center text-center">
                                     <i class="fas fa-file-medical fs-5 mb-1"></i>
                                     <span class="fw-semibold small">Medical Record</span>
@@ -328,8 +328,8 @@
                             </a>
                         </div>
                         
-                        <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.prescriptions.create') }}" class="btn btn-outline-info w-100 py-2 px-2">
+                        <div class="col-lg-3 col-md-6 d-flex">
+                            <a href="{{ route('staff.prescriptions.create') }}" class="btn btn-outline-info w-100 h-100 py-2 px-2 d-flex align-items-center justify-content-center">
                                 <div class="d-flex flex-column align-items-center text-center">
                                     <i class="fas fa-prescription-bottle-alt fs-5 mb-1"></i>
                                     <span class="fw-semibold small">Prescription</span>
