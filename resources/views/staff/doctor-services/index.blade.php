@@ -68,12 +68,13 @@
                             <thead class="table-light">
                                 <tr>
                                     <th style="width: 36px;" class="text-center" title="Drag to reorder"><i class="fas fa-grip-vertical text-muted"></i></th>
-                                    <th style="width: 25%;">Service Name</th>
-                                    <th style="width: 15%;">Duration</th>
-                                    <th style="width: 15%;">Price</th>
-                                    <th style="width: 15%;">Status</th>
-                                    <th style="width: 15%;">Override</th>
-                                    <th style="width: 20%;" class="text-end">Actions</th>
+                                    <th>Service name</th>
+                                    <th class="text-nowrap">Duration</th>
+                                    <th class="text-nowrap">Price</th>
+                                    <th class="text-nowrap">Consultation type</th>
+                                    <th class="text-nowrap">Age</th>
+                                    <th class="text-nowrap">Status</th>
+                                    <th class="text-end">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="doctor-services-sortable">
@@ -91,37 +92,42 @@
                                             </div>
                                         </td>
                                         <td>
-                                            @if($service['has_override'] && $service['custom_duration_minutes'])
-                                                <span class="badge bg-info text-dark">{{ $service['custom_duration_minutes'] }} min</span>
-                                                <small class="text-muted d-block">(Custom)</small>
-                                            @else
-                                                <span class="badge bg-light text-dark">{{ $service['default_duration_minutes'] ?? 60 }} min</span>
-                                                <small class="text-muted d-block">(Default)</small>
-                                            @endif
+                                            @php
+                                                $durationMins = ($service['has_override'] && $service['custom_duration_minutes'])
+                                                    ? $service['custom_duration_minutes']
+                                                    : ($service['default_duration_minutes'] ?? 60);
+                                            @endphp
+                                            <span class="badge bg-light text-dark">{{ $durationMins }} min</span>
                                         </td>
                                         <td>
                                             @if($service['has_override'] && $service['custom_price'] !== null)
                                                 <strong>£{{ number_format($service['custom_price'], 2) }}</strong>
-                                                <small class="text-muted d-block">(Custom)</small>
                                             @elseif($service['default_price'])
                                                 <strong>£{{ number_format($service['default_price'], 2) }}</strong>
-                                                <small class="text-muted d-block">(Default)</small>
                                             @else
                                                 <span class="text-muted">On request</span>
                                             @endif
+                                        </td>
+                                        <td>
+                                            @switch($service['consultation_type'] ?? 'in_person')
+                                                @case('online')
+                                                    <span class="badge bg-light text-dark"><i class="fas fa-video me-1"></i>Online</span>
+                                                    @break
+                                                @case('telephone')
+                                                    <span class="badge bg-light text-dark"><i class="fas fa-phone me-1"></i>Telephone</span>
+                                                    @break
+                                                @default
+                                                    <span class="badge bg-light text-dark"><i class="fas fa-user me-1"></i>In person</span>
+                                            @endswitch
+                                        </td>
+                                        <td>
+                                            <small class="text-body">{{ $service['age_label'] }}</small>
                                         </td>
                                         <td>
                                             @if($service['is_active_for_doctor'])
                                             <span class="badge bg-success">Active</span>
                                             @else
                                             <span class="badge bg-secondary">Inactive</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($service['has_override'])
-                                            <span class="badge bg-primary">Yes</span>
-                                            @else
-                                            <span class="badge bg-light text-dark">No</span>
                                             @endif
                                         </td>
                                         <td class="text-end">
@@ -180,7 +186,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-5">
+                                        <td colspan="8" class="text-center py-5">
                                             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                                             <p class="text-muted">No services available.</p>
                                         </td>

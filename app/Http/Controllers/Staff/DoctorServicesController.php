@@ -55,7 +55,7 @@ class DoctorServicesController extends Controller
             ->keyBy('service_id');
 
         // Combine data for display
-        $services = $globalServices->map(function ($service) use ($doctorServicePrices, $doctor) {
+        $services = $globalServices->map(function ($service) use ($doctorServicePrices) {
             $override = $doctorServicePrices->get($service->id);
             return [
                 'id' => $service->id,
@@ -68,6 +68,8 @@ class DoctorServicesController extends Controller
                 'custom_price' => $override ? $override->custom_price : null,
                 'custom_duration_minutes' => $override ? $override->custom_duration_minutes : null,
                 'is_active_for_doctor' => $override ? $override->is_active : $service->is_active,
+                'consultation_type' => $override?->consultation_type ?? 'in_person',
+                'age_label' => $service->ageRestrictionLabel(),
             ];
         });
 
