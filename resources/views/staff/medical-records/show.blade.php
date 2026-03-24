@@ -785,8 +785,14 @@
             </div>
             @endif
 
-            <!-- Patient Documents -->
+            <!-- Patient Documents (same visibility as sidebar My Documents) -->
             @if($medicalRecord->patient)
+            @php
+                $userRoleForMenu = strtolower(trim(auth()->user()->role ?? 'staff'));
+                $staffSidebarItems = \App\Models\RoleMenuVisibility::getOrderedMenuItemsForRole($userRoleForMenu, 'staff');
+                $myDocumentsMenuVisible = collect($staffSidebarItems)->contains(fn ($item) => ($item['menu_key'] ?? '') === 'my-documents');
+            @endphp
+            @if($myDocumentsMenuVisible)
             @can('viewAny', [\App\Models\PatientDocument::class, $medicalRecord->patient])
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
@@ -870,6 +876,7 @@
                 </div>
             </div>
             @endcan
+            @endif
             @endif
 
             <!-- Record Metadata -->
