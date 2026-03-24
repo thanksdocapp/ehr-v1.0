@@ -159,7 +159,7 @@
                 @error('notes')
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
-                <small class="form-text text-muted">Shared with your clinician from your booking (before your visit).</small>
+                <small class="form-text text-muted">Shared with your clinician from your booking (before your visit). On this device, a draft is kept for 60 seconds if you refresh the page.</small>
             </div>
 
             <div class="form-check">
@@ -222,4 +222,5 @@
 </script>
 @include('public-booking.partials.booking-guardian-toggle-script')
 @include('public-booking.partials.ideal-postcodes-public-booking-script')
+@include('public-booking.partials.booking-reason-60s-draft')
 @endsection
