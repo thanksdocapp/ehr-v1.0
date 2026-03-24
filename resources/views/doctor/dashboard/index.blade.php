@@ -121,7 +121,7 @@
                         <span class="ms-3"><i class="fas fa-clock me-2"></i><span id="hero-current-time">{{ \Carbon\Carbon::now()->format('h:i A') }}</span></span>
                     </p>
                 </div>
-                <div class="mt-3 mt-md-0">
+                <div class="mt-3 mt-md-0 d-flex flex-column align-items-stretch align-items-md-end gap-2">
                     @php
                         $bookingLink = null;
                         if (isset($doctor) && $doctor) {
@@ -151,23 +151,28 @@
                             }
                         }
                     @endphp
+                    <div class="d-flex flex-wrap gap-2 align-items-center justify-content-md-end">
                     @if($bookingLink)
-                    <button type="button" onclick="copyBookingLink('{{ $bookingLink }}')" class="btn btn-success btn-lg me-2" style="border-radius: 12px; font-weight: 600;" title="Copy your public booking link" id="copy-booking-link-btn">
-                        <i class="fas fa-link me-2"></i>Copy Booking Link
+                    <button type="button" onclick="copyBookingLink('{{ $bookingLink }}')" class="btn btn-success btn-sm" style="border-radius: 8px; font-weight: 500;" title="Copy your public booking link" id="copy-booking-link-btn">
+                        <i class="fas fa-link me-1"></i>Copy Booking Link
                     </button>
-                    <small class="d-block text-muted mt-1" id="booking-link-display" style="font-size: 0.75rem;">{{ $bookingLink }}</small>
                     @else
-                    <button type="button" class="btn btn-secondary btn-lg me-2" style="border-radius: 12px; font-weight: 600;" disabled title="Doctor profile incomplete - no department assigned">
-                        <i class="fas fa-link me-2"></i>Booking Link Unavailable
+                    <button type="button" class="btn btn-secondary btn-sm" style="border-radius: 8px; font-weight: 500;" disabled title="Doctor profile incomplete - no department assigned">
+                        <i class="fas fa-link me-1"></i>Booking Link Unavailable
                     </button>
-                    <small class="d-block text-muted mt-1">No department assigned to doctor</small>
                     @endif
-                    <a href="{{ route('staff.appointments.create') }}" class="btn btn-doctor-primary btn-lg me-2" style="border-radius: 12px; font-weight: 600;">
-                        <i class="fas fa-plus me-2"></i>New Appointment
+                    <a href="{{ route('staff.appointments.create') }}" class="btn btn-doctor-primary btn-sm" style="border-radius: 8px; font-weight: 500;">
+                        <i class="fas fa-plus me-1"></i>New Appointment
                     </a>
-                    <a href="{{ route('staff.patients.create') }}" class="btn btn-outline-primary btn-lg" style="border-radius: 12px; font-weight: 600;">
-                        <i class="fas fa-user-plus me-2"></i>New Patient
+                    <a href="{{ route('staff.patients.create') }}" class="btn btn-outline-primary btn-sm" style="border-radius: 8px; font-weight: 500;">
+                        <i class="fas fa-user-plus me-1"></i>New Patient
                     </a>
+                    </div>
+                    @if($bookingLink)
+                    <small class="d-block text-muted text-md-end text-break" id="booking-link-display" style="font-size: 0.7rem; max-width: 22rem;">{{ $bookingLink }}</small>
+                    @else
+                    <small class="d-block text-muted text-md-end" style="font-size: 0.7rem;">No department assigned to doctor</small>
+                    @endif
                 </div>
             </div>
         </div>

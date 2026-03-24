@@ -257,41 +257,41 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.patients.create') }}" class="btn btn-primary w-100 py-3">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="fas fa-user-plus fs-4 mb-2"></i>
-                                    <span class="fw-semibold">Add New Patient</span>
-                                    <small class="opacity-75">Register a new patient</small>
+                            <a href="{{ route('staff.patients.create') }}" class="btn btn-primary w-100 py-2 px-2">
+                                <div class="d-flex flex-column align-items-center text-center">
+                                    <i class="fas fa-user-plus fs-5 mb-1"></i>
+                                    <span class="fw-semibold small">Add New Patient</span>
+                                    <small class="opacity-75" style="font-size: 0.7rem;">Register a new patient</small>
                                 </div>
                             </a>
                         </div>
                         
                         <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.appointments.create') }}" class="btn btn-success w-100 py-3">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="fas fa-calendar-plus fs-4 mb-2"></i>
-                                    <span class="fw-semibold">Book Appointment</span>
-                                    <small class="opacity-75">Schedule new appointment</small>
+                            <a href="{{ route('staff.appointments.create') }}" class="btn btn-success w-100 py-2 px-2">
+                                <div class="d-flex flex-column align-items-center text-center">
+                                    <i class="fas fa-calendar-plus fs-5 mb-1"></i>
+                                    <span class="fw-semibold small">Book Appointment</span>
+                                    <small class="opacity-75" style="font-size: 0.7rem;">Schedule new appointment</small>
                                 </div>
                             </a>
                         </div>
                         
                         <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.patients.index') }}" class="btn btn-info w-100 py-3">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="fas fa-users fs-4 mb-2"></i>
-                                    <span class="fw-semibold">View Patients</span>
-                                    <small class="opacity-75">Manage patient records</small>
+                            <a href="{{ route('staff.patients.index') }}" class="btn btn-info w-100 py-2 px-2">
+                                <div class="d-flex flex-column align-items-center text-center">
+                                    <i class="fas fa-users fs-5 mb-1"></i>
+                                    <span class="fw-semibold small">View Patients</span>
+                                    <small class="opacity-75" style="font-size: 0.7rem;">Manage patient records</small>
                                 </div>
                             </a>
                         </div>
                         
                         <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.appointments.index') }}" class="btn btn-warning w-100 py-3">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="fas fa-calendar-alt fs-4 mb-2"></i>
-                                    <span class="fw-semibold">View Schedule</span>
-                                    <small class="opacity-75">Check appointments</small>
+                            <a href="{{ route('staff.appointments.index') }}" class="btn btn-warning w-100 py-2 px-2">
+                                <div class="d-flex flex-column align-items-center text-center">
+                                    <i class="fas fa-calendar-alt fs-5 mb-1"></i>
+                                    <span class="fw-semibold small">View Schedule</span>
+                                    <small class="opacity-75" style="font-size: 0.7rem;">Check appointments</small>
                                 </div>
                             </a>
                         </div>
@@ -299,41 +299,41 @@
                     
                     <div class="row g-3 mt-2">
                         <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.billing.create') }}" class="btn btn-secondary w-100 py-3">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="fas fa-receipt fs-4 mb-2"></i>
-                                    <span class="fw-semibold">Create Bill</span>
-                                    <small class="opacity-75">Generate new bill</small>
+                            <a href="{{ route('staff.billing.create') }}" class="btn btn-secondary w-100 py-2 px-2">
+                                <div class="d-flex flex-column align-items-center text-center">
+                                    <i class="fas fa-receipt fs-5 mb-1"></i>
+                                    <span class="fw-semibold small">Create Bill</span>
+                                    <small class="opacity-75" style="font-size: 0.7rem;">Generate new bill</small>
                                 </div>
                             </a>
                         </div>
                         
                         <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.billing.index') }}" class="btn btn-outline-primary w-100 py-3">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="fas fa-file-invoice-dollar fs-4 mb-2"></i>
-                                    <span class="fw-semibold">View Bills</span>
-                                    <small class="opacity-75">Manage billing records</small>
+                            <a href="{{ route('staff.billing.index') }}" class="btn btn-outline-primary w-100 py-2 px-2">
+                                <div class="d-flex flex-column align-items-center text-center">
+                                    <i class="fas fa-file-invoice-dollar fs-5 mb-1"></i>
+                                    <span class="fw-semibold small">View Bills</span>
+                                    <small class="opacity-75" style="font-size: 0.7rem;">Manage billing records</small>
                                 </div>
                             </a>
                         </div>
                         
                         <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.medical-records.create') }}" class="btn btn-outline-success w-100 py-3">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="fas fa-file-medical fs-4 mb-2"></i>
-                                    <span class="fw-semibold">Medical Record</span>
-                                    <small class="opacity-75">Add medical record</small>
+                            <a href="{{ route('staff.medical-records.create') }}" class="btn btn-outline-success w-100 py-2 px-2">
+                                <div class="d-flex flex-column align-items-center text-center">
+                                    <i class="fas fa-file-medical fs-5 mb-1"></i>
+                                    <span class="fw-semibold small">Medical Record</span>
+                                    <small class="opacity-75" style="font-size: 0.7rem;">Add medical record</small>
                                 </div>
                             </a>
                         </div>
                         
                         <div class="col-lg-3 col-md-6">
-                            <a href="{{ route('staff.prescriptions.create') }}" class="btn btn-outline-info w-100 py-3">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="fas fa-prescription-bottle-alt fs-4 mb-2"></i>
-                                    <span class="fw-semibold">Prescription</span>
-                                    <small class="opacity-75">Create prescription</small>
+                            <a href="{{ route('staff.prescriptions.create') }}" class="btn btn-outline-info w-100 py-2 px-2">
+                                <div class="d-flex flex-column align-items-center text-center">
+                                    <i class="fas fa-prescription-bottle-alt fs-5 mb-1"></i>
+                                    <span class="fw-semibold small">Prescription</span>
+                                    <small class="opacity-75" style="font-size: 0.7rem;">Create prescription</small>
                                 </div>
                             </a>
                         </div>
