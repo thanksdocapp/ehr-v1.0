@@ -645,12 +645,19 @@ class AppointmentsController extends Controller
             'appointment_time' => $request->appointment_time,
             'type' => $appointmentType,
             'reason' => $request->reason,
-            'notes' => $request->notes,
             'consultation_type' => $consultationType,
             'is_online' => $isOnline,
             'meeting_link' => $isOnline ? $request->meeting_link : null,
             'meeting_platform' => $isOnline ? $request->meeting_platform : null,
         ];
+
+        // Do not wipe patient "reason for booking" (stored in notes) when the notes field is left empty.
+        if ($request->has('notes')) {
+            $incomingNotes = $request->input('notes');
+            $updateData['notes'] = (is_string($incomingNotes) && trim($incomingNotes) !== '')
+                ? $incomingNotes
+                : ($appointment->notes ?? '');
+        }
 
         // Only allow status changes for certain roles/conditions
         if ($request->filled('status')) {

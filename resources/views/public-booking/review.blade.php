@@ -61,7 +61,8 @@
         @if(isset($patient_data['department_id']))
         <input type="hidden" name="department_id" value="{{ $patient_data['department_id'] }}">
         @endif
-        <input type="hidden" name="notes" value="{{ $patient_data['notes'] ?? '' }}">
+        {{-- Multiline patient reason must not use value="..." (breaks newlines / long text). --}}
+        <textarea name="notes" class="d-none" tabindex="-1" aria-hidden="true" autocomplete="off">{{ $patient_data['notes'] ?? '' }}</textarea>
         <input type="hidden" name="address" value="{{ $patient_data['address'] ?? '' }}">
         <input type="hidden" name="address_line_2" value="{{ $patient_data['address_line_2'] ?? '' }}">
         <input type="hidden" name="city" value="{{ $patient_data['city'] ?? '' }}">

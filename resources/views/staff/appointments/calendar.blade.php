@@ -460,6 +460,20 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('cancelledCount').textContent = stats.cancelled;
     }
 
+    function escapeBookingModalHtml(str) {
+        if (str == null || str === '') return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function formatBookingModalMultiline(str) {
+        return escapeBookingModalHtml(str).replace(/\n/g, '<br>');
+    }
+
     function loadAppointmentDetails(appointmentId) {
         fetch(`{{ route('staff.appointments.show', '') }}/${appointmentId}`, {
             headers: {
@@ -509,10 +523,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         <strong><i class="fas fa-building me-2"></i>Department:</strong>
                         <div class="mt-1">${data.department?.name || 'N/A'}</div>
                     </div>
-                    ${data.reason ? `
+                    ${(data.notes || data.reason) ? `
                     <div class="col-12 mb-3">
-                        <strong><i class="fas fa-comment me-2"></i>Reason:</strong>
-                        <div class="mt-1">${data.reason}</div>
+                        <strong><i class="fas fa-comment-medical me-2"></i>Reason for booking / notes:</strong>
+                        <div class="mt-1">${data.notes ? formatBookingModalMultiline(data.notes) : formatBookingModalMultiline(data.reason)}</div>
+                    </div>
+                    ` : ''}
+                    ${(data.notes && data.reason && String(data.notes).trim() !== String(data.reason).trim()) ? `
+                    <div class="col-12 mb-3">
+                        <strong><i class="fas fa-stethoscope me-2"></i>Clinical reason:</strong>
+                        <div class="mt-1">${formatBookingModalMultiline(data.reason)}</div>
                     </div>
                     ` : ''}
                     ${data.appointment_number ? `
