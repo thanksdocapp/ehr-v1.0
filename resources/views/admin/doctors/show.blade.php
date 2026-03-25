@@ -234,6 +234,7 @@ use Illuminate\Support\Facades\Storage;
                                                     <th>Duration</th>
                                                     <th>Price</th>
                                                     <th>Status</th>
+                                                    <th class="text-end">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -267,6 +268,11 @@ use Illuminate\Support\Facades\Storage;
                                                             @else
                                                                 <span class="badge bg-secondary">Inactive</span>
                                                             @endif
+                                                        </td>
+                                                        <td class="text-end text-nowrap">
+                                                            <a href="{{ route('admin.booking-services.edit', $service['id']) }}" class="btn btn-sm btn-outline-primary">
+                                                                <i class="fas fa-edit"></i> Edit
+                                                            </a>
                                                         </td>
                                                     </tr>
                                                 @endforeach

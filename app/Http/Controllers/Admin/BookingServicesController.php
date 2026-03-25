@@ -60,10 +60,35 @@ class BookingServicesController extends Controller
     }
 
     /**
+     * Booking service forms send `tags` as a JSON string via JS; normalize to an array before validation.
+     */
+    private function mergeNormalizedTagsIntoRequest(Request $request): void
+    {
+        $tags = [];
+        if ($request->has('tags')) {
+            $raw = $request->input('tags');
+            if (is_array($raw)) {
+                $tags = array_values(array_filter(array_map('strval', $raw)));
+            } elseif (is_string($raw) && $raw !== '') {
+                $decoded = json_decode($raw, true);
+                $tags = is_array($decoded)
+                    ? array_values(array_filter(array_map('strval', $decoded)))
+                    : [];
+            }
+        }
+        if ($tags === [] && $request->filled('tags_input')) {
+            $tags = array_values(array_filter(array_map('trim', explode(',', (string) $request->tags_input))));
+        }
+        $request->merge(['tags' => $tags]);
+    }
+
+    /**
      * Store a newly created booking service.
      */
     public function store(Request $request)
     {
+        $this->mergeNormalizedTagsIntoRequest($request);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -168,6 +193,8 @@ class BookingServicesController extends Controller
      */
     public function update(Request $request, BookingService $bookingService)
     {
+        $this->mergeNormalizedTagsIntoRequest($request);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',

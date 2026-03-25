@@ -64,7 +64,7 @@
                     @error('discount_code')
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
-                    <small class="text-muted d-block mt-1">If your clinic gave you a code, enter it here. The payment amount will be reduced.</small>
+                    <small class="text-muted d-block mt-1">Enter voucher code if you have any.</small>
                 </span>
             </div>
             @endif
