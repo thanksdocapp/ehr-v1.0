@@ -69,7 +69,34 @@ class ClinicBookingDiscountCode extends Model
             return true;
         }
 
-        return $serviceId !== null && (int) $this->booking_service_id === (int) $serviceId;
+        if ($serviceId === null) {
+            return false;
+        }
+
+        if ((int) $this->booking_service_id === (int) $serviceId) {
+            return true;
+        }
+
+        // Clinic booking lists one booking_services row per doctor; codes may reference another
+        // doctor's row with the same service name. Match by name within this department.
+        $canonical = BookingService::find($this->booking_service_id);
+        $booked = BookingService::find($serviceId);
+        if (!$canonical || !$booked) {
+            return false;
+        }
+
+        if (strcasecmp(trim((string) $canonical->name), trim((string) $booked->name)) !== 0) {
+            return false;
+        }
+
+        $departmentId = (int) $this->department_id;
+        foreach (Doctor::byDepartment($departmentId)->active()->get() as $doctor) {
+            if ($booked->isAvailableForDoctor($doctor->id)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function isUsableForBooking(?int $serviceId, $on = null): bool

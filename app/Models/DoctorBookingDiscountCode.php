@@ -73,7 +73,26 @@ class DoctorBookingDiscountCode extends Model
             return true;
         }
 
-        return $serviceId !== null && (int) $this->booking_service_id === (int) $serviceId;
+        if ($serviceId === null) {
+            return false;
+        }
+
+        if ((int) $this->booking_service_id === (int) $serviceId) {
+            return true;
+        }
+
+        // Same display name as the code's service (duplicate rows / legacy IDs).
+        $canonical = BookingService::find($this->booking_service_id);
+        $booked = BookingService::find($serviceId);
+        if (!$canonical || !$booked) {
+            return false;
+        }
+
+        if (strcasecmp(trim((string) $canonical->name), trim((string) $booked->name)) !== 0) {
+            return false;
+        }
+
+        return $booked->isAvailableForDoctor((int) $this->doctor_id);
     }
 
     public function isUsableForBooking(?int $serviceId, $on = null): bool

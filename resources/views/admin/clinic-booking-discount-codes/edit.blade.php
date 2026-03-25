@@ -39,11 +39,22 @@
                     <div class="col-md-6">
                         <label class="form-label">Limit to one booking service</label>
                         <select name="booking_service_id" class="form-select">
-                            <option value="">— All active services —</option>
+                            <option value="">— All services this clinic offers (public booking) —</option>
                             @foreach($services as $svc)
                             <option value="{{ $svc->id }}" @selected(old('booking_service_id', $clinicBookingDiscountCode->booking_service_id) == $svc->id)>{{ $svc->name }}</option>
                             @endforeach
                         </select>
+                        @php
+                            $curSid = $clinicBookingDiscountCode->booking_service_id;
+                            $curInList = $curSid && $services->contains('id', (int) $curSid);
+                        @endphp
+                        @if($curSid && !$curInList)
+                        <div class="form-text text-warning">Current service is not in this clinic’s public list. Clear to “all services” or pick a listed service.</div>
+                        @elseif($services->isEmpty())
+                        <div class="form-text text-warning">No doctor-linked services for this clinic. Save may require clearing service scope.</div>
+                        @else
+                        <div class="form-text">Matches the same service name across doctors at this clinic.</div>
+                        @endif
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Maximum uses</label>

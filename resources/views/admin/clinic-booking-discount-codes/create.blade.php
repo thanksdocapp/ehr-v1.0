@@ -38,11 +38,16 @@
                     <div class="col-md-6">
                         <label class="form-label">Limit to one booking service</label>
                         <select name="booking_service_id" class="form-select">
-                            <option value="">— All active services —</option>
+                            <option value="">— All services this clinic offers (public booking) —</option>
                             @foreach($services as $svc)
                             <option value="{{ $svc->id }}" @selected(old('booking_service_id') == $svc->id)>{{ $svc->name }}</option>
                             @endforeach
                         </select>
+                        @if($services->isEmpty())
+                        <div class="form-text text-warning">No doctor-linked services for this clinic yet. Leave blank for “all services” once configured, or add services first.</div>
+                        @else
+                        <div class="form-text">Restricts the code to one service name; patients may book any doctor’s row for that service at this clinic.</div>
+                        @endif
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Maximum uses</label>

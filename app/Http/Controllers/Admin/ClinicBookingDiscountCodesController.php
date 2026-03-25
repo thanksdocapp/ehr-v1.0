@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\BookingService;
 use App\Models\ClinicBookingDiscountCode;
 use App\Models\Department;
+use App\Models\Doctor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
@@ -20,6 +22,35 @@ class ClinicBookingDiscountCodesController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Services that appear on public clinic booking for this department (per-doctor booking_services rows).
+     *
+     * @return Collection<int, BookingService>
+     */
+    private function bookingServicesForDepartment(Department $department): Collection
+    {
+        $ids = collect();
+        foreach (Doctor::byDepartment($department->id)->active()->get() as $doctor) {
+            if (!$doctor->user_id) {
+                continue;
+            }
+            BookingService::query()
+                ->where('created_by', $doctor->user_id)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->each(fn ($id) => $ids->push((int) $id));
+        }
+
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        return BookingService::query()
+            ->whereIn('id', $ids->unique()->values()->all())
+            ->orderBy('name')
+            ->get();
     }
 
     public function index(Department $department)
@@ -44,7 +75,7 @@ class ClinicBookingDiscountCodesController extends Controller
             return $redirect;
         }
 
-        $services = BookingService::where('is_active', true)->orderBy('name')->get();
+        $services = $this->bookingServicesForDepartment($department);
 
         return view('admin.clinic-booking-discount-codes.create', compact('department', 'services'));
     }
@@ -62,6 +93,8 @@ class ClinicBookingDiscountCodesController extends Controller
             'max_uses' => $request->filled('max_uses') ? $request->input('max_uses') : null,
         ]);
 
+        $allowedServiceIds = $this->bookingServicesForDepartment($department)->pluck('id')->map(fn ($id) => (int) $id)->all();
+
         $validated = $request->validate([
             'code' => [
                 'required',
@@ -71,7 +104,23 @@ class ClinicBookingDiscountCodesController extends Controller
             ],
             'discount_type' => 'required|in:percent,fixed',
             'discount_value' => 'required|numeric|min:0',
-            'booking_service_id' => 'nullable|exists:booking_services,id',
+            'booking_service_id' => [
+                'nullable',
+                'exists:booking_services,id',
+                function (string $attribute, mixed $value, \Closure $fail) use ($allowedServiceIds): void {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+                    if ($allowedServiceIds === []) {
+                        $fail('No bookable services are configured for this clinic yet. Leave service blank or add doctor services first.');
+
+                        return;
+                    }
+                    if (!in_array((int) $value, $allowedServiceIds, true)) {
+                        $fail('Choose a service this clinic offers on public booking.');
+                    }
+                },
+            ],
             'max_uses' => 'nullable|integer|min:1',
             'valid_from' => 'nullable|date',
             'valid_until' => 'nullable|date|after_or_equal:valid_from',
@@ -105,7 +154,7 @@ class ClinicBookingDiscountCodesController extends Controller
         }
 
         $this->authorizeCode($clinicBookingDiscountCode, $department);
-        $services = BookingService::where('is_active', true)->orderBy('name')->get();
+        $services = $this->bookingServicesForDepartment($department);
 
         return view('admin.clinic-booking-discount-codes.edit', compact('department', 'clinicBookingDiscountCode', 'services'));
     }
@@ -125,6 +174,8 @@ class ClinicBookingDiscountCodesController extends Controller
             'max_uses' => $request->filled('max_uses') ? $request->input('max_uses') : null,
         ]);
 
+        $allowedServiceIds = $this->bookingServicesForDepartment($department)->pluck('id')->map(fn ($id) => (int) $id)->all();
+
         $validated = $request->validate([
             'code' => [
                 'required',
@@ -136,7 +187,23 @@ class ClinicBookingDiscountCodesController extends Controller
             ],
             'discount_type' => 'required|in:percent,fixed',
             'discount_value' => 'required|numeric|min:0',
-            'booking_service_id' => 'nullable|exists:booking_services,id',
+            'booking_service_id' => [
+                'nullable',
+                'exists:booking_services,id',
+                function (string $attribute, mixed $value, \Closure $fail) use ($allowedServiceIds): void {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+                    if ($allowedServiceIds === []) {
+                        $fail('No bookable services are configured for this clinic yet. Leave service blank or add doctor services first.');
+
+                        return;
+                    }
+                    if (!in_array((int) $value, $allowedServiceIds, true)) {
+                        $fail('Choose a service this clinic offers on public booking.');
+                    }
+                },
+            ],
             'max_uses' => 'nullable|integer|min:1',
             'valid_from' => 'nullable|date',
             'valid_until' => 'nullable|date|after_or_equal:valid_from',
