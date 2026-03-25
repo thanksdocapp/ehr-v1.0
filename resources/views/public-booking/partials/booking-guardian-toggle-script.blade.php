@@ -10,6 +10,9 @@
         var el = document.getElementById('date_of_birth');
         if (!el || !el.value) return null;
         var v = el.value.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+            return v;
+        }
         var m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
         if (m) return m[3] + '-' + m[2] + '-' + m[1];
         return null;

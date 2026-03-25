@@ -54,21 +54,26 @@
         </div>
     </div>
 
+    @php
+        $pbDobMin = \Carbon\Carbon::now()->subYears(150)->format('Y-m-d');
+        $pbDobMax = \Carbon\Carbon::now()->format('Y-m-d');
+        $slotDobYmd = old('date_of_birth') ? parseDateInput(old('date_of_birth')) : '';
+    @endphp
     <div class="form-card">
         <form method="POST" action="{{ route('public.booking.store-slot-dob') }}" id="slot-dob-form">
             @csrf
             <div class="mb-3">
                 <label for="slot_booking_date_of_birth" class="form-label">Date of birth <span class="text-danger">*</span></label>
-                <input type="text"
-                       class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror"
+                <input type="date"
+                       class="form-control public-booking-dob-native @error('date_of_birth') is-invalid @enderror"
                        id="slot_booking_date_of_birth"
                        name="date_of_birth"
-                       data-uk-date="true"
                        required
-                       value="{{ old('date_of_birth') }}"
-                       placeholder="dd/mm/yyyy"
-                       autocomplete="off">
-                <small class="form-text text-muted">Format: dd/mm/yyyy</small>
+                       min="{{ $pbDobMin }}"
+                       max="{{ $pbDobMax }}"
+                       value="{{ $slotDobYmd }}"
+                       autocomplete="bday">
+                <small class="form-text text-muted">Use your device’s date picker on mobile.</small>
                 @error('date_of_birth')
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
@@ -98,31 +103,4 @@
     <div class="text-center mt-5 mb-3">
         <small class="text-muted">Powered by ThanksDoc</small>
     </div>
-@endsection
-
-@section('scripts')
-<script>
-(function() {
-    function initSlotDobPicker() {
-        var el = document.getElementById('slot_booking_date_of_birth');
-        if (!el || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
-        try {
-            flatpickr(el, {
-                dateFormat: 'd/m/Y',
-                allowInput: true,
-                clickOpens: true,
-                maxDate: 'today',
-                minDate: new Date(new Date().setFullYear(new Date().getFullYear() - 150)),
-                locale: { firstDayOfWeek: 1 },
-            });
-            el.setAttribute('data-flatpickr-initialized', 'true');
-        } catch (e) { console.error('Slot DOB Flatpickr init error:', e); }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() { setTimeout(initSlotDobPicker, 150); });
-    } else {
-        setTimeout(initSlotDobPicker, 150);
-    }
-})();
-</script>
 @endsection

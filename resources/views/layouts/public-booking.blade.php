@@ -254,6 +254,12 @@
             outline: none;
         }
 
+        /* Native DOB on booking: mobile-friendly picker, avoid tiny text on iOS */
+        input.form-control[type="date"].public-booking-dob-native {
+            min-height: 48px;
+            font-size: 1rem;
+        }
+
         .form-control.is-invalid {
             border-color: #dc2626;
         }

@@ -100,13 +100,15 @@
                         $dobHiddenYmd = $parsedDob;
                     }
                 }
-                $dobFieldVal = old('date_of_birth');
-                if ($dobFieldVal && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dobFieldVal)) {
-                    $dobFieldVal = \Carbon\Carbon::parse($dobFieldVal)->format('d/m/Y');
+                $dobInputYmd = $dobHiddenYmd;
+                if (old('date_of_birth')) {
+                    $p = parseDateInput(old('date_of_birth'));
+                    if ($p) {
+                        $dobInputYmd = $p;
+                    }
                 }
-                if (!$dobFieldVal && $bookingDobSessionYmd) {
-                    $dobFieldVal = \Carbon\Carbon::parse($bookingDobSessionYmd)->format('d/m/Y');
-                }
+                $pbDobMin = \Carbon\Carbon::now()->subYears(150)->format('Y-m-d');
+                $pbDobMax = \Carbon\Carbon::now()->format('Y-m-d');
             @endphp
             @if($bookingDobSessionYmd && !$showDobPicker)
                 <input type="hidden" name="date_of_birth" value="{{ $dobHiddenYmd }}">
@@ -115,8 +117,8 @@
                 @if($showDobPicker)
                 <div class="col-md-6 mb-3">
                     <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror" id="date_of_birth" name="date_of_birth" data-uk-date="true" required value="{{ $dobFieldVal }}" placeholder="dd/mm/yyyy" autocomplete="off">
-                    <small class="form-text text-muted">Format: dd/mm/yyyy</small>
+                    <input type="date" class="form-control public-booking-dob-native @error('date_of_birth') is-invalid @enderror" id="date_of_birth" name="date_of_birth" required min="{{ $pbDobMin }}" max="{{ $pbDobMax }}" value="{{ $dobInputYmd }}" autocomplete="bday">
+                    <small class="form-text text-muted">Use your device’s date picker for best results on phones.</small>
                     @error('date_of_birth')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 @endif
@@ -159,29 +161,6 @@
 @endsection
 
 @section('scripts')
-<script>
-(function() {
-    function initDobPicker() {
-        var el = document.getElementById('date_of_birth');
-        if (!el || el.type === 'hidden' || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
-        try {
-            flatpickr(el, {
-                dateFormat: 'd/m/Y',
-                allowInput: true,
-                maxDate: 'today',
-                onChange: function() {
-                    if (el) el.dispatchEvent(new Event('change', { bubbles: true }));
-                    if (typeof window.publicBookingToggleGuardian === 'function') {
-                        window.publicBookingToggleGuardian();
-                    }
-                }
-            });
-            el.setAttribute('data-flatpickr-initialized', 'true');
-        } catch (e) {}
-    }
-    document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', function() { setTimeout(initDobPicker, 150); }) : setTimeout(initDobPicker, 150);
-})();
-</script>
 @include('public-booking.partials.booking-guardian-toggle-script')
 @include('public-booking.partials.ideal-postcodes-public-booking-script')
 @include('public-booking.partials.booking-reason-60s-draft')

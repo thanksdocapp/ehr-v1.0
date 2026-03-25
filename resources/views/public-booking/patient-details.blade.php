@@ -109,13 +109,15 @@
                         $dobHiddenYmd = $parsedDob;
                     }
                 }
-                $dobFieldVal = old('date_of_birth');
-                if ($dobFieldVal && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dobFieldVal)) {
-                    $dobFieldVal = \Carbon\Carbon::parse($dobFieldVal)->format('d/m/Y');
+                $dobInputYmd = $dobHiddenYmd;
+                if (old('date_of_birth')) {
+                    $p = parseDateInput(old('date_of_birth'));
+                    if ($p) {
+                        $dobInputYmd = $p;
+                    }
                 }
-                if (!$dobFieldVal && $bookingDobSessionYmd) {
-                    $dobFieldVal = \Carbon\Carbon::parse($bookingDobSessionYmd)->format('d/m/Y');
-                }
+                $pbDobMin = \Carbon\Carbon::now()->subYears(150)->format('Y-m-d');
+                $pbDobMax = \Carbon\Carbon::now()->format('Y-m-d');
             @endphp
             @if($bookingDobSessionYmd && !$showDobPicker)
                 <input type="hidden" name="date_of_birth" value="{{ $dobHiddenYmd }}">
@@ -124,16 +126,16 @@
                 @if($showDobPicker)
                 <div class="col-md-6 mb-3">
                     <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                    <input type="text"
-                           class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror"
+                    <input type="date"
+                           class="form-control public-booking-dob-native @error('date_of_birth') is-invalid @enderror"
                            id="date_of_birth"
                            name="date_of_birth"
-                           data-uk-date="true"
                            required
-                           value="{{ $dobFieldVal }}"
-                           placeholder="dd/mm/yyyy"
-                           autocomplete="off">
-                    <small class="form-text text-muted">Format: dd/mm/yyyy (e.g., 15/01/2025)</small>
+                           min="{{ $pbDobMin }}"
+                           max="{{ $pbDobMax }}"
+                           value="{{ $dobInputYmd }}"
+                           autocomplete="bday">
+                    <small class="form-text text-muted">Use your device’s date picker for best results on phones.</small>
                     @error('date_of_birth')
                     <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -194,37 +196,6 @@
 @endsection
 
 @section('scripts')
-<script>
-(function() {
-    function initDobPicker() {
-        var el = document.getElementById('date_of_birth');
-        if (!el || el.type === 'hidden' || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
-        try {
-            flatpickr(el, {
-                dateFormat: 'd/m/Y',
-                allowInput: true,
-                clickOpens: true,
-                maxDate: 'today',
-                minDate: new Date(new Date().setFullYear(new Date().getFullYear() - 150)),
-                locale: { firstDayOfWeek: 1 },
-                onChange: function(selectedDates, dateStr, instance) {
-                    if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                        var d = new Date(dateStr);
-                        instance.input.value = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
-                    }
-                    instance.input.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            });
-            el.setAttribute('data-flatpickr-initialized', 'true');
-        } catch (e) { console.error('DOB Flatpickr init error:', e); }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() { setTimeout(initDobPicker, 150); });
-    } else {
-        setTimeout(initDobPicker, 150);
-    }
-})();
-</script>
 @include('public-booking.partials.booking-guardian-toggle-script')
 @include('public-booking.partials.ideal-postcodes-public-booking-script')
 @include('public-booking.partials.booking-reason-60s-draft')

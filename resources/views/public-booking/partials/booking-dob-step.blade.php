@@ -21,21 +21,26 @@
     </div>
 </div>
 
+@php
+    $pbDobMin = \Carbon\Carbon::now()->subYears(150)->format('Y-m-d');
+    $pbDobMax = \Carbon\Carbon::now()->format('Y-m-d');
+    $publicBookingDobYmd = old('date_of_birth') ? parseDateInput(old('date_of_birth')) : '';
+@endphp
 <div class="form-card">
     <form method="POST" action="{{ route('public.booking.store-dob') }}" id="public-booking-dob-form">
         @csrf
         <div class="mb-3">
             <label for="public_booking_date_of_birth" class="form-label">Date of birth <span class="text-danger">*</span></label>
-            <input type="text"
-                   class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror"
+            <input type="date"
+                   class="form-control public-booking-dob-native @error('date_of_birth') is-invalid @enderror"
                    id="public_booking_date_of_birth"
                    name="date_of_birth"
-                   data-uk-date="true"
                    required
-                   value="{{ old('date_of_birth') }}"
-                   placeholder="dd/mm/yyyy"
-                   autocomplete="off">
-            <small class="form-text text-muted">Format: dd/mm/yyyy</small>
+                   min="{{ $pbDobMin }}"
+                   max="{{ $pbDobMax }}"
+                   value="{{ $publicBookingDobYmd }}"
+                   autocomplete="bday">
+            <small class="form-text text-muted">Use your device’s date picker on mobile.</small>
             @error('date_of_birth')
             <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror
@@ -47,12 +52,3 @@
         </div>
     </form>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var el = document.getElementById('public_booking_date_of_birth');
-    if (el && typeof window.initUkDatePicker === 'function') {
-        window.initUkDatePicker(el, { maxDate: 'today' });
-    }
-});
-</script>
