@@ -36,13 +36,14 @@
                         <input type="number" name="discount_value" class="form-control" step="0.01" min="0" value="{{ old('discount_value') }}" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Limit to one booking service</label>
-                        <select name="booking_service_id" class="form-select">
-                            <option value="">— All active services this doctor offers —</option>
+                        @php $selectedSvcIds = \App\Models\DoctorBookingDiscountCode::normalizeServiceIdList(old('booking_service_ids')); @endphp
+                        <label class="form-label">Limit to specific booking services</label>
+                        <select name="booking_service_ids[]" class="form-select" multiple size="{{ min(8, max(3, $services->count() ?: 3)) }}">
                             @foreach($services as $svc)
-                            <option value="{{ $svc->id }}" @selected(old('booking_service_id') == $svc->id)>{{ $svc->name }}</option>
+                            <option value="{{ $svc->id }}" @selected(in_array((int) $svc->id, $selectedSvcIds, true))>{{ $svc->name }}</option>
                             @endforeach
                         </select>
+                        <div class="form-text">Hold <kbd>Ctrl</kbd> (Windows) or <kbd>⌘</kbd> (Mac) to select multiple. Leave none selected so the code applies to <strong>every</strong> service this doctor offers.</div>
                         @if($services->isEmpty())
                         <div class="form-text text-warning">No active services are enabled for this doctor in admin pricing. Codes will only work as “all services” until services are configured.</div>
                         @endif

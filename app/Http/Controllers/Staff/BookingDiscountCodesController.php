@@ -58,7 +58,7 @@ class BookingDiscountCodesController extends Controller
         $doctor = $this->doctorForUser();
         $codes = DoctorBookingDiscountCode::query()
             ->where('doctor_id', $doctor->id)
-            ->with('bookingService')
+            ->with(['bookingServices', 'bookingService'])
             ->orderByDesc('is_active')
             ->orderBy('code')
             ->get();
@@ -102,7 +102,8 @@ class BookingDiscountCodesController extends Controller
             ],
             'discount_type' => 'required|in:percent,fixed',
             'discount_value' => 'required|numeric|min:0',
-            'booking_service_id' => 'nullable|exists:booking_services,id',
+            'booking_service_ids' => 'nullable|array',
+            'booking_service_ids.*' => 'integer|exists:booking_services,id',
             'max_uses' => 'nullable|integer|min:1',
             'valid_from' => 'nullable|date',
             'valid_until' => 'nullable|date|after_or_equal:valid_from',
@@ -113,26 +114,31 @@ class BookingDiscountCodesController extends Controller
             return back()->withErrors(['discount_value' => 'Percentage cannot exceed 100.'])->withInput();
         }
 
-        if (!empty($validated['booking_service_id'])) {
-            $svc = BookingService::find($validated['booking_service_id']);
+        $serviceIds = DoctorBookingDiscountCode::normalizeServiceIdList($validated['booking_service_ids'] ?? null);
+        foreach ($serviceIds as $sid) {
+            $svc = BookingService::find($sid);
             if (!$svc || !$svc->isAvailableForDoctor($doctor->id)) {
                 return back()->withErrors([
-                    'booking_service_id' => 'Select a service you offer on your booking link, or leave blank for all services.',
+                    'booking_service_ids' => 'Select only services you offer on your booking link, or leave all unselected for every service.',
                 ])->withInput();
             }
         }
 
-        DoctorBookingDiscountCode::create([
+        $code = DoctorBookingDiscountCode::create([
             'doctor_id' => $doctor->id,
             'code' => $codeNormalized,
             'discount_type' => $validated['discount_type'],
             'discount_value' => $validated['discount_value'],
-            'booking_service_id' => $validated['booking_service_id'] ?? null,
+            'booking_service_id' => null,
             'max_uses' => $validated['max_uses'] ?? null,
             'valid_from' => $validated['valid_from'] ?? null,
             'valid_until' => $validated['valid_until'] ?? null,
             'is_active' => $request->boolean('is_active', true),
         ]);
+
+        if (Schema::hasTable('doctor_booking_discount_code_services')) {
+            $code->replaceRestrictedBookingServices($serviceIds);
+        }
 
         return redirect()->route('staff.booking-discount-codes.index')
             ->with('success', 'Discount code created. Patients can enter it on the review step before they pay.');
@@ -147,6 +153,7 @@ class BookingDiscountCodesController extends Controller
         $doctor = $this->doctorForUser();
         $this->authorizeCode($bookingDiscountCode, $doctor);
 
+        $bookingDiscountCode->load('bookingServices');
         $services = $this->bookingServicesForDoctor($doctor);
 
         return view('staff.booking-discount-codes.edit', compact('doctor', 'bookingDiscountCode', 'services'));
@@ -178,7 +185,8 @@ class BookingDiscountCodesController extends Controller
             ],
             'discount_type' => 'required|in:percent,fixed',
             'discount_value' => 'required|numeric|min:0',
-            'booking_service_id' => 'nullable|exists:booking_services,id',
+            'booking_service_ids' => 'nullable|array',
+            'booking_service_ids.*' => 'integer|exists:booking_services,id',
             'max_uses' => 'nullable|integer|min:1',
             'valid_from' => 'nullable|date',
             'valid_until' => 'nullable|date|after_or_equal:valid_from',
@@ -196,11 +204,12 @@ class BookingDiscountCodesController extends Controller
             ])->withInput();
         }
 
-        if (!empty($validated['booking_service_id'])) {
-            $svc = BookingService::find($validated['booking_service_id']);
+        $serviceIds = DoctorBookingDiscountCode::normalizeServiceIdList($validated['booking_service_ids'] ?? null);
+        foreach ($serviceIds as $sid) {
+            $svc = BookingService::find($sid);
             if (!$svc || !$svc->isAvailableForDoctor($doctor->id)) {
                 return back()->withErrors([
-                    'booking_service_id' => 'Select a service you offer on your booking link, or leave blank for all services.',
+                    'booking_service_ids' => 'Select only services you offer on your booking link, or leave all unselected for every service.',
                 ])->withInput();
             }
         }
@@ -209,12 +218,15 @@ class BookingDiscountCodesController extends Controller
             'code' => $codeNormalized,
             'discount_type' => $validated['discount_type'],
             'discount_value' => $validated['discount_value'],
-            'booking_service_id' => $validated['booking_service_id'] ?? null,
             'max_uses' => $validated['max_uses'] ?? null,
             'valid_from' => $validated['valid_from'] ?? null,
             'valid_until' => $validated['valid_until'] ?? null,
             'is_active' => $request->boolean('is_active', true),
         ]);
+
+        if (Schema::hasTable('doctor_booking_discount_code_services')) {
+            $bookingDiscountCode->replaceRestrictedBookingServices($serviceIds);
+        }
 
         return redirect()->route('staff.booking-discount-codes.index')
             ->with('success', 'Discount code updated.');

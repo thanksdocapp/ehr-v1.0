@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
             <h4 class="mb-1 fw-bold">Doctor booking codes — {{ $doctor->title }} {{ $doctor->first_name }} {{ $doctor->last_name }}</h4>
-            <p class="text-muted small mb-0">Used on this doctor’s <strong>public booking link</strong> before payment. Codes are per doctor; the linked service must be one they offer.</p>
+            <p class="text-muted small mb-0">Used on this doctor’s <strong>public booking link</strong> before payment. Optionally restrict each code to specific services they offer, or leave unselected so it applies to all of them.</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('admin.doctors.booking-discount-codes.create', $doctor) }}" class="btn btn-primary btn-sm">
@@ -52,10 +52,11 @@
                                 @endif
                             </td>
                             <td>
-                                @if($c->booking_service_id)
-                                    {{ $c->bookingService?->name ?? '—' }}
-                                @else
+                                @php $scopeNames = $c->restrictedServiceNamesForDisplay(); @endphp
+                                @if($scopeNames->isEmpty())
                                     <span class="text-muted">All services this doctor offers</span>
+                                @else
+                                    {{ $scopeNames->join(', ') }}
                                 @endif
                             </td>
                             <td>

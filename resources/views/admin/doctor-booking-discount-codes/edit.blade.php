@@ -37,19 +37,23 @@
                         <input type="number" name="discount_value" class="form-control" step="0.01" min="0" value="{{ old('discount_value', $doctorBookingDiscountCode->discount_value) }}" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Limit to one booking service</label>
-                        <select name="booking_service_id" class="form-select">
-                            <option value="">— All active services this doctor offers —</option>
+                        @php
+                            $selectedSvcIds = \App\Models\DoctorBookingDiscountCode::normalizeServiceIdList(
+                                old('booking_service_ids', $doctorBookingDiscountCode->selectedBookingServiceIdsForForm())
+                            );
+                        @endphp
+                        <label class="form-label">Limit to specific booking services</label>
+                        <select name="booking_service_ids[]" class="form-select" multiple size="{{ min(8, max(3, $services->count() ?: 3)) }}">
                             @foreach($services as $svc)
-                            <option value="{{ $svc->id }}" @selected(old('booking_service_id', $doctorBookingDiscountCode->booking_service_id) == $svc->id)>{{ $svc->name }}</option>
+                            <option value="{{ $svc->id }}" @selected(in_array((int) $svc->id, $selectedSvcIds, true))>{{ $svc->name }}</option>
                             @endforeach
                         </select>
+                        <div class="form-text">Hold <kbd>Ctrl</kbd> (Windows) or <kbd>⌘</kbd> (Mac) to select multiple. Leave none selected for <strong>every</strong> service.</div>
                         @php
-                            $currentSvcId = $doctorBookingDiscountCode->booking_service_id;
-                            $currentInList = $currentSvcId && $services->contains('id', (int) $currentSvcId);
+                            $missingSelected = collect($selectedSvcIds)->contains(fn ($id) => !$services->contains('id', (int) $id));
                         @endphp
-                        @if($currentSvcId && !$currentInList)
-                        <div class="form-text text-warning">Current service is not in the list (inactive or disabled for this doctor). Choose another or clear to “all services”.</div>
+                        @if($missingSelected)
+                        <div class="form-text text-warning">Some selected services are not in the list (inactive or disabled for this doctor). Adjust the selection or clear all for “all services”.</div>
                         @elseif($services->isEmpty())
                         <div class="form-text text-warning">No active services are enabled for this doctor. Service-scoped codes may be invalid until pricing is configured.</div>
                         @endif

@@ -69,6 +69,7 @@ class PublicBookingService
                 $code = DoctorBookingDiscountCode::query()
                     ->where('doctor_id', $doctor->id)
                     ->where('code', $rawCode)
+                    ->with('bookingServices')
                     ->lockForUpdate()
                     ->first();
 
@@ -141,6 +142,7 @@ class PublicBookingService
         $code = DoctorBookingDiscountCode::query()
             ->where('doctor_id', $doctor->id)
             ->where('code', $rawCode)
+            ->with('bookingServices')
             ->first();
 
         if (!$code || !$code->isUsableForBooking($service->id)) {

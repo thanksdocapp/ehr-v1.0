@@ -40,13 +40,14 @@
                         <input type="number" name="discount_value" class="form-control" step="0.01" min="0" value="{{ old('discount_value') }}" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Limit to one service</label>
-                        <select name="booking_service_id" class="form-select">
-                            <option value="">— All services on my doctor booking link —</option>
+                        @php $selectedSvcIds = \App\Models\DoctorBookingDiscountCode::normalizeServiceIdList(old('booking_service_ids')); @endphp
+                        <label class="form-label">Limit to specific services</label>
+                        <select name="booking_service_ids[]" class="form-select" multiple size="{{ min(8, max(3, $services->count() ?: 3)) }}">
                             @foreach($services as $svc)
-                            <option value="{{ $svc->id }}" @selected(old('booking_service_id') == $svc->id)>{{ $svc->name }}</option>
+                            <option value="{{ $svc->id }}" @selected(in_array((int) $svc->id, $selectedSvcIds, true))>{{ $svc->name }}</option>
                             @endforeach
                         </select>
+                        <div class="form-text">Hold <kbd>Ctrl</kbd> / <kbd>⌘</kbd> for multiple. Leave none selected to allow <strong>all</strong> services on your link.</div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Maximum uses</label>

@@ -51,10 +51,11 @@
                                 @endif
                             </td>
                             <td>
-                                @if($c->booking_service_id)
-                                    {{ $c->bookingService?->name ?? '—' }}
-                                @else
+                                @php $scopeNames = $c->restrictedServiceNamesForDisplay(); @endphp
+                                @if($scopeNames->isEmpty())
                                     <span class="text-muted">All your services</span>
+                                @else
+                                    {{ $scopeNames->join(', ') }}
                                 @endif
                             </td>
                             <td>

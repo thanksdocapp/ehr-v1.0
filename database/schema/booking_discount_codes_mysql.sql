@@ -30,6 +30,29 @@ CREATE TABLE IF NOT EXISTS `doctor_booking_discount_codes` (
   CONSTRAINT `doctor_booking_discount_codes_booking_service_id_foreign` FOREIGN KEY (`booking_service_id`) REFERENCES `booking_services` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Multi-service restriction for doctor codes. Run CREATE, then backfill, then clear
+-- legacy column (same order as php artisan migrate).
+CREATE TABLE IF NOT EXISTS `doctor_booking_discount_code_services` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `doctor_booking_discount_code_id` bigint unsigned NOT NULL,
+  `booking_service_id` bigint unsigned NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `doc_disc_code_svc_unique` (`doctor_booking_discount_code_id`,`booking_service_id`),
+  CONSTRAINT `doc_disc_code_svc_code_fk` FOREIGN KEY (`doctor_booking_discount_code_id`) REFERENCES `doctor_booking_discount_codes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `doc_disc_code_svc_service_fk` FOREIGN KEY (`booking_service_id`) REFERENCES `booking_services` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `doctor_booking_discount_code_services` (`doctor_booking_discount_code_id`, `booking_service_id`, `created_at`, `updated_at`)
+SELECT `id`, `booking_service_id`, NOW(), NOW()
+FROM `doctor_booking_discount_codes`
+WHERE `booking_service_id` IS NOT NULL;
+
+UPDATE `doctor_booking_discount_codes`
+SET `booking_service_id` = NULL
+WHERE `booking_service_id` IS NOT NULL;
+
 ALTER TABLE `invoices`
   ADD COLUMN `doctor_booking_discount_code_id` bigint unsigned DEFAULT NULL;
 
