@@ -220,15 +220,36 @@ class SlotAvailabilityService
      */
     private function getWorkingSessions($doctor, $dayName): array
     {
-        if (!$doctor->availability || !isset($doctor->availability[$dayName])) {
-            $weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-            if (in_array($dayName, $weekdays)) {
-                return [['start' => '09:00', 'end' => '17:00']];
+        $availability = $doctor->availability;
+        $hasSavedWeeklySchedule = is_array($availability) && count($availability) > 0;
+
+        if (!$availability || !isset($availability[$dayName])) {
+            if (!$hasSavedWeeklySchedule) {
+                $weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+                if (in_array($dayName, $weekdays, true)) {
+                    return [['start' => '09:00', 'end' => '17:00']];
+                }
+
+                return [];
             }
+
+            // Doctor has saved weekly availability but this weekday has no row — treat as closed
+            // so clinic / public booking does not invent 9–17 when they turned this day off.
             return [];
         }
 
-        $dayAvailability = $doctor->availability[$dayName];
+        $dayAvailability = $availability[$dayName];
+        if (!is_array($dayAvailability)) {
+            return [];
+        }
+
+        // Respect explicit "closed" before parsing sessions (avoids stale session rows when toggled off)
+        if (array_key_exists('available', $dayAvailability)) {
+            $flag = $dayAvailability['available'];
+            if ($flag === false || $flag === 0 || $flag === '0' || $flag === '' || $flag === null) {
+                return [];
+            }
+        }
 
         // New format: multiple sessions per day
         if (!empty($dayAvailability['sessions']) && is_array($dayAvailability['sessions'])) {
@@ -238,13 +259,11 @@ class SlotAvailabilityService
                     $sessions[] = ['start' => $s['start'], 'end' => $s['end']];
                 }
             }
+
             return $sessions;
         }
 
         // Legacy format: single start/end with optional breaks
-        if (empty($dayAvailability['available'])) {
-            return [];
-        }
         $start = $dayAvailability['start'] ?? $dayAvailability['from'] ?? '09:00';
         $end = $dayAvailability['end'] ?? $dayAvailability['to'] ?? '17:00';
         $breaks = $dayAvailability['breaks'] ?? [];
