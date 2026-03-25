@@ -47,7 +47,7 @@ class CaptureBookingUtmParams
             return false;
         }
         // Don't capture on success, review, confirm, or API paths
-        $exclude = ['book/success', 'book/review', 'book/confirm', 'book/select-datetime', 'book/patient-details'];
+        $exclude = ['book/success', 'book/review', 'book/clinic-review', 'book/confirm', 'book/select-datetime', 'book/patient-details'];
         foreach ($exclude as $ex) {
             if (str_starts_with($path, $ex)) {
                 return false;

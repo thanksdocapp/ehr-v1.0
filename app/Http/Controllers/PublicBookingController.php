@@ -42,6 +42,11 @@ class PublicBookingController extends Controller
         return 'public_booking_pending';
     }
 
+    private function clinicBookingReviewSessionKey(): string
+    {
+        return 'clinic_booking_review';
+    }
+
     /**
      * Patient home address captured during public / clinic booking (Ideal Postcodes + manual fields).
      *
@@ -467,6 +472,15 @@ class PublicBookingController extends Controller
         }
         $patientData['department_id'] = $department->id;
 
+        session([$this->clinicBookingReviewSessionKey() => [
+            'department_id' => $department->id,
+            'service_id' => $service->id,
+            'appointment_date' => $request->appointment_date,
+            'appointment_time' => $request->appointment_time,
+            'patient_data' => $patientData,
+            'price' => $price,
+        ]]);
+
         return view('public-booking.clinic-review', [
             'department' => $department,
             'service' => $service,
@@ -475,6 +489,78 @@ class PublicBookingController extends Controller
             'patient_data' => $patientData,
             'price' => $price,
             'step' => 3
+        ]);
+    }
+
+    /**
+     * Clinic flow: review step (GET — refresh, bookmark, or direct URL).
+     */
+    public function showClinicReview(Request $request)
+    {
+        $this->checkBookingEnabled();
+
+        $data = session($this->clinicBookingReviewSessionKey());
+        if (!$data || !isset($data['department_id'], $data['service_id'], $data['appointment_date'], $data['appointment_time'], $data['patient_data'])) {
+            return response()->view('public-booking.session-expired', [
+                'message' => 'Your booking session has expired. Please start a new booking.',
+            ]);
+        }
+
+        $department = Department::find($data['department_id']);
+        $service = BookingService::find($data['service_id']);
+        if (!$department || !$service) {
+            session()->forget($this->clinicBookingReviewSessionKey());
+
+            return response()->view('public-booking.session-expired', [
+                'message' => 'Your booking session has expired. Please start a new booking.',
+            ]);
+        }
+
+        $dobYmd = $data['patient_data']['date_of_birth'] ?? null;
+        if ($dobYmd) {
+            try {
+                if (!$service->isEligibleForAgeYears(Carbon::parse($dobYmd)->age)) {
+                    session()->forget($this->clinicBookingReviewSessionKey());
+
+                    return redirect()->route('public.booking.clinic', ['slug' => $department->slug])
+                        ->with('error', 'This service is not available for this age.');
+                }
+            } catch (\Exception $e) {
+                session()->forget($this->clinicBookingReviewSessionKey());
+
+                return response()->view('public-booking.session-expired', [
+                    'message' => 'Your booking session has expired. Please start a new booking.',
+                ]);
+            }
+        }
+
+        $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
+            $department->id,
+            $data['appointment_date'],
+            $service->id
+        );
+        $selectedSlot = collect($slots)->firstWhere('start', $data['appointment_time']);
+        if (!$selectedSlot) {
+            session()->forget($this->clinicBookingReviewSessionKey());
+
+            return redirect()->route('public.booking.clinic', ['slug' => $department->slug])
+                ->with('error', 'Selected time slot is no longer available. Please choose another time.');
+        }
+
+        $doctors = Doctor::byDepartment($department->id)->active()->get();
+        $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
+        $price = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
+
+        session([$this->clinicBookingReviewSessionKey() => array_merge($data, ['price' => $price])]);
+
+        return view('public-booking.clinic-review', [
+            'department' => $department,
+            'service' => $service,
+            'appointment_date' => $data['appointment_date'],
+            'appointment_time' => $data['appointment_time'],
+            'patient_data' => $data['patient_data'],
+            'price' => $price,
+            'step' => 3,
         ]);
     }
 
@@ -582,6 +668,7 @@ class PublicBookingController extends Controller
     {
         session()->forget($this->publicBookingDobSessionKey());
         session()->forget($this->publicBookingPendingSessionKey());
+        session()->forget($this->clinicBookingReviewSessionKey());
 
         $request = \App\Models\ClinicBookingRequest::where('request_number', $requestNumber)->with(['department', 'service'])->firstOrFail();
         $patientEmail = $request->patient_data['email'] ?? '';

@@ -122,6 +122,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/clinic-success/{requestNumber}', [\App\Http\Controllers\PublicBookingController::class, 'clinicSuccess'])->name('clinic-success');
         // GET routes for POST-only pages (prevent 404 when accessed directly)
         Route::get('/review', [\App\Http\Controllers\PublicBookingController::class, 'showReview'])->name('review.show');
+        Route::get('/clinic-review', [\App\Http\Controllers\PublicBookingController::class, 'showClinicReview'])->name('clinic-review.show');
         Route::get('/confirm', [\App\Http\Controllers\PublicBookingController::class, 'showConfirm'])->name('confirm.show');
         
         // POST routes (specific paths - must come before parameterized GET route)
