@@ -11,16 +11,21 @@
     <div class="progress-steps">
         <div class="step completed">
             <div class="step-circle"><i class="fas fa-check"></i></div>
-            <div class="step-label">Service</div>
+            <div class="step-label">Service &amp; time</div>
+        </div>
+        <div class="step-line completed"></div>
+        <div class="step completed">
+            <div class="step-circle"><i class="fas fa-check"></i></div>
+            <div class="step-label">Date of birth</div>
         </div>
         <div class="step-line completed"></div>
         <div class="step active">
-            <div class="step-circle">2</div>
-            <div class="step-label">Your Details</div>
+            <div class="step-circle">3</div>
+            <div class="step-label">Your details</div>
         </div>
         <div class="step-line"></div>
         <div class="step">
-            <div class="step-circle">3</div>
+            <div class="step-circle">4</div>
             <div class="step-label">Confirm</div>
         </div>
     </div>

@@ -3,43 +3,54 @@
 @section('title', 'Book Appointment')
 
 @section('content')
-@if(empty($bookingDob))
-    @include('public-booking.partials.booking-dob-step', [
-        'dobIntro' => 'Enter the patient\'s date of birth first. You will then see services at this clinic that are available for this age.',
-    ])
-@elseif(empty($services))
+@if(empty($services))
     <div class="booking-header">
         <h1>Book Your Appointment</h1>
-        <p>No services are available for the age you entered.</p>
+        @if(!empty($bookingDob))
+            <p>No services are available for the age on your profile.</p>
+        @else
+            <p>No bookable services are available at this clinic right now.</p>
+        @endif
     </div>
-    <div class="alert alert-info border-0">Try a different date of birth if it was entered incorrectly, or contact the clinic.</div>
+    @if(!empty($bookingDob))
+    <div class="alert alert-info border-0">Try clearing your saved date of birth and booking again, or contact the clinic.</div>
     <form method="POST" action="{{ route('public.booking.clear-dob') }}" class="text-center">
         @csrf
-        <button type="submit" class="btn btn-outline-primary">Change date of birth</button>
+        <button type="submit" class="btn btn-outline-primary">Clear saved date of birth</button>
     </form>
+    @else
+    <div class="alert alert-info border-0 text-center">Please try again later or contact the clinic.</div>
+    @endif
 @else
     <div class="booking-header">
         <h1>Book Your Appointment</h1>
         <p>Select a service and available time. A doctor from the clinic will confirm your booking.</p>
+        @if(!empty($bookingDob))
         <form method="POST" action="{{ route('public.booking.clear-dob') }}" class="mt-2 mb-0">
             @csrf
-            <button type="submit" class="btn btn-link btn-sm text-muted p-0">Change date of birth</button>
+            <button type="submit" class="btn btn-link btn-sm text-muted p-0">Clear saved date of birth</button>
         </form>
+        @endif
     </div>
 
     <div class="progress-steps">
         <div class="step active">
             <div class="step-circle">1</div>
-            <div class="step-label">Service & Time</div>
+            <div class="step-label">Service &amp; time</div>
         </div>
         <div class="step-line"></div>
         <div class="step">
             <div class="step-circle">2</div>
-            <div class="step-label">Your Details</div>
+            <div class="step-label">Date of birth</div>
         </div>
         <div class="step-line"></div>
         <div class="step">
             <div class="step-circle">3</div>
+            <div class="step-label">Your details</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+            <div class="step-circle">4</div>
             <div class="step-label">Confirm</div>
         </div>
     </div>
@@ -150,32 +161,7 @@
 @endsection
 
 @section('scripts')
-@if(empty($bookingDob))
-<script>
-(function() {
-    function initPublicBookingDobPicker() {
-        var el = document.getElementById('public_booking_date_of_birth');
-        if (!el || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
-        try {
-            flatpickr(el, {
-                dateFormat: 'd/m/Y',
-                allowInput: true,
-                clickOpens: true,
-                maxDate: 'today',
-                minDate: new Date(new Date().setFullYear(new Date().getFullYear() - 150)),
-                locale: { firstDayOfWeek: 1 },
-            });
-            el.setAttribute('data-flatpickr-initialized', 'true');
-        } catch (e) { console.error('Public booking DOB Flatpickr init error:', e); }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() { setTimeout(initPublicBookingDobPicker, 150); });
-    } else {
-        setTimeout(initPublicBookingDobPicker, 150);
-    }
-})();
-</script>
-@elseif(!empty($services))
+@if(!empty($services))
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('clinic-booking-form');

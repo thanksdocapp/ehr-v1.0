@@ -16,11 +16,21 @@
         <div class="step-line completed"></div>
         <div class="step active">
             <div class="step-circle">2</div>
-            <div class="step-label">Your Details</div>
+            <div class="step-label">Date &amp; time</div>
         </div>
         <div class="step-line"></div>
         <div class="step">
             <div class="step-circle">3</div>
+            <div class="step-label">Date of birth</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+            <div class="step-circle">4</div>
+            <div class="step-label">Your details</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+            <div class="step-circle">5</div>
             <div class="step-label">Confirm</div>
         </div>
     </div>

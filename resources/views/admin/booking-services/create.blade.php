@@ -12,8 +12,17 @@
                 </div>
                 
                 <div class="card-body">
+                    @if(!empty($forDoctor))
+                        <div class="alert alert-info border-0 mb-4">
+                            <i class="fas fa-user-md me-2"></i>
+                            This service will be owned by <strong>{{ $forDoctor->full_name }}</strong> for public booking and will appear on their doctor profile.
+                        </div>
+                    @endif
                     <form action="{{ route('admin.booking-services.store') }}" method="POST">
                         @csrf
+                        @if(!empty($forDoctor))
+                        <input type="hidden" name="created_for_doctor_id" value="{{ $forDoctor->id }}">
+                        @endif
 
                         <div class="row">
                             <div class="col-md-8">
@@ -113,7 +122,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <a href="{{ route('admin.booking-services.index') }}" class="btn btn-outline-secondary">
+                            <a href="{{ !empty($forDoctor) ? route('admin.doctors.show', $forDoctor) : route('admin.booking-services.index') }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-2"></i>Cancel
                             </a>
                             <button type="submit" class="btn btn-primary">

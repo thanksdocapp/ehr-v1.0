@@ -46,10 +46,17 @@ class BookingServicesController extends Controller
 
     /**
      * Show the form for creating a new booking service.
+     *
+     * Optional query ?doctor_id= sets created_by to that doctor's user (public booking lists by creator).
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('admin.booking-services.create');
+        $forDoctor = null;
+        if ($request->filled('doctor_id')) {
+            $forDoctor = Doctor::find($request->integer('doctor_id'));
+        }
+
+        return view('admin.booking-services.create', compact('forDoctor'));
     }
 
     /**
@@ -65,6 +72,7 @@ class BookingServicesController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'is_active' => 'boolean',
+            'created_for_doctor_id' => 'nullable|exists:doctors,id',
         ]);
 
         if ($validator->fails()) {
@@ -80,6 +88,18 @@ class BookingServicesController extends Controller
             $request->boolean('adults_only')
         );
 
+        $createdBy = Auth::id();
+        $forDoctorId = $request->input('created_for_doctor_id');
+        if ($forDoctorId) {
+            $forDoctor = Doctor::findOrFail($forDoctorId);
+            if (!$forDoctor->user_id) {
+                return back()->withErrors([
+                    'created_for_doctor_id' => 'This doctor has no linked user account. Link a user first, then create services.',
+                ])->withInput();
+            }
+            $createdBy = $forDoctor->user_id;
+        }
+
         $service = BookingService::create([
             'name' => $request->name,
             'description' => $request->description,
@@ -88,9 +108,26 @@ class BookingServicesController extends Controller
             'minimum_age' => $minimumAge,
             'maximum_age' => $maximumAge,
             'tags' => $request->tags ?? [],
-            'created_by' => Auth::id(),
+            'created_by' => $createdBy,
             'is_active' => $request->has('is_active') ? true : false,
         ]);
+
+        if ($forDoctorId) {
+            DoctorServicePrice::firstOrCreate(
+                [
+                    'doctor_id' => (int) $forDoctorId,
+                    'service_id' => $service->id,
+                ],
+                [
+                    'custom_price' => $service->default_price,
+                    'custom_duration_minutes' => $service->default_duration_minutes,
+                    'is_active' => true,
+                ]
+            );
+
+            return redirect()->route('admin.doctors.show', ['doctor' => $forDoctorId])
+                ->with('success', 'Booking service created and linked to this doctor.');
+        }
 
         return redirect()->route('admin.booking-services.index')
             ->with('success', 'Booking service created successfully.');

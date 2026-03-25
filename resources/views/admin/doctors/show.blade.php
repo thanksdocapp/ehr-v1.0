@@ -216,9 +216,16 @@ use Illuminate\Support\Facades\Storage;
 
                             @if(isset($doctorServices) && $doctorServices->count() > 0)
                                 <div class="mb-4">
-                                    <h5 class="text-primary">
-                                        <i class="fas fa-briefcase-medical me-2"></i>Doctor Services ({{ $doctorServices->count() }})
-                                    </h5>
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                        <h5 class="text-primary mb-0">
+                                            <i class="fas fa-briefcase-medical me-2"></i>Doctor Services ({{ $doctorServices->count() }})
+                                        </h5>
+                                        @if($doctor->user_id)
+                                            <a href="{{ route('admin.booking-services.create', ['doctor_id' => $doctor->id]) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-plus me-1"></i>Add booking service
+                                            </a>
+                                        @endif
+                                    </div>
                                     <div class="table-responsive">
                                         <table class="table table-sm table-hover">
                                             <thead>
@@ -272,7 +279,19 @@ use Illuminate\Support\Facades\Storage;
                                     <h5 class="text-primary">
                                         <i class="fas fa-briefcase-medical me-2"></i>Doctor Services
                                     </h5>
-                                    <p class="text-muted">This doctor has not created any services yet.</p>
+                                    <p class="text-muted mb-3">No bookable services yet. Services must be tied to this doctor&apos;s user account to appear here and on public booking.</p>
+                                    @if($doctor->user_id)
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <a href="{{ route('admin.booking-services.create', ['doctor_id' => $doctor->id]) }}" class="btn btn-primary">
+                                                <i class="fas fa-plus me-2"></i>Create booking service
+                                            </a>
+                                            <a href="{{ route('admin.booking-services.index') }}" class="btn btn-outline-secondary">
+                                                <i class="fas fa-list me-2"></i>All booking services
+                                            </a>
+                                        </div>
+                                    @else
+                                        <p class="text-warning small mb-0"><i class="fas fa-exclamation-triangle me-1"></i>Link a staff user to this doctor first, then add services.</p>
+                                    @endif
                                 </div>
                             @endif
                         </div>

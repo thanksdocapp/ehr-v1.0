@@ -3,11 +3,6 @@
 @section('title', 'Book Appointment')
 
 @section('content')
-@if(empty($bookingDob))
-    @include('public-booking.partials.booking-dob-step', [
-        'dobIntro' => 'Enter the patient\'s date of birth first. You will then see services available for this age.',
-    ])
-@else
     @if(session('warning'))
     <div class="alert alert-warning border-0 mb-3">{{ session('warning') }}</div>
     @endif
@@ -17,27 +12,34 @@
     <!-- Header -->
     <div class="booking-header">
         <h1>Book Your Appointment</h1>
-        <p>Select a doctor and service to continue</p>
+        <p>Select a doctor, service, and appointment time to continue</p>
+        @if(!empty($bookingDob))
         <form method="POST" action="{{ route('public.booking.clear-dob') }}" class="mt-2 mb-0">
             @csrf
-            <button type="submit" class="btn btn-link btn-sm text-muted p-0">Change date of birth</button>
+            <button type="submit" class="btn btn-link btn-sm text-muted p-0">Clear saved date of birth</button>
         </form>
+        @endif
     </div>
 
     <!-- Progress Steps -->
     <div class="progress-steps">
         <div class="step active">
             <div class="step-circle">1</div>
-            <div class="step-label">Service</div>
+            <div class="step-label">Service &amp; time</div>
         </div>
         <div class="step-line"></div>
         <div class="step">
             <div class="step-circle">2</div>
-            <div class="step-label">Your Details</div>
+            <div class="step-label">Date of birth</div>
         </div>
         <div class="step-line"></div>
         <div class="step">
             <div class="step-circle">3</div>
+            <div class="step-label">Your details</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+            <div class="step-circle">4</div>
             <div class="step-label">Confirm</div>
         </div>
     </div>
@@ -369,32 +371,6 @@
 @endsection
 
 @section('scripts')
-@if(empty($bookingDob))
-<script>
-(function() {
-    function initPublicBookingDobPicker() {
-        var el = document.getElementById('public_booking_date_of_birth');
-        if (!el || el.hasAttribute('data-flatpickr-initialized') || typeof flatpickr === 'undefined') return;
-        try {
-            flatpickr(el, {
-                dateFormat: 'd/m/Y',
-                allowInput: true,
-                clickOpens: true,
-                maxDate: 'today',
-                minDate: new Date(new Date().setFullYear(new Date().getFullYear() - 150)),
-                locale: { firstDayOfWeek: 1 },
-            });
-            el.setAttribute('data-flatpickr-initialized', 'true');
-        } catch (e) { console.error('Public booking DOB Flatpickr init error:', e); }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() { setTimeout(initPublicBookingDobPicker, 150); });
-    } else {
-        setTimeout(initPublicBookingDobPicker, 150);
-    }
-})();
-</script>
-@else
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const doctorSelect = document.getElementById('doctor-select');
@@ -836,5 +812,4 @@
         });
     });
 </script>
-@endif
 @endsection

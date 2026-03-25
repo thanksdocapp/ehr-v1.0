@@ -36,6 +36,11 @@ class PublicBookingController extends Controller
         return 'public_booking_dob';
     }
 
+    private function publicBookingPendingSessionKey(): string
+    {
+        return 'public_booking_pending';
+    }
+
     /**
      * Patient home address captured during public / clinic booking (Ideal Postcodes + manual fields).
      *
@@ -100,7 +105,7 @@ class PublicBookingController extends Controller
     {
         $dobYmd = $dobYmd ?? session($this->publicBookingDobSessionKey());
         if (!$dobYmd) {
-            return redirect()->back()->with('error', 'Please enter your date of birth first.')->withInput();
+            return null;
         }
         if (!$service->isEligibleForAgeYears(Carbon::parse($dobYmd)->age)) {
             return redirect()->back()->with('error', 'This service is not available for this age.')->withInput();
@@ -131,8 +136,100 @@ class PublicBookingController extends Controller
     {
         $this->checkBookingEnabled();
         session()->forget($this->publicBookingDobSessionKey());
+        session()->forget($this->publicBookingPendingSessionKey());
 
         return back();
+    }
+
+    /**
+     * After service/date/time are chosen, collect date of birth before contact details.
+     */
+    public function storeSlotBookingDob(Request $request)
+    {
+        $this->checkBookingEnabled();
+
+        if ($request->filled('date_of_birth')) {
+            $parsed = parseDateInput($request->date_of_birth);
+            if ($parsed) {
+                $request->merge(['date_of_birth' => $parsed]);
+            }
+        }
+
+        $validator = Validator::make($request->all(), [
+            'date_of_birth' => 'required|date|before:today',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $pending = session($this->publicBookingPendingSessionKey());
+        if (!is_array($pending) || empty($pending['flow']) || empty($pending['service_id'])) {
+            return back()->with('error', 'Your booking session expired. Please start again.');
+        }
+
+        $ymd = $request->date_of_birth;
+        $service = BookingService::findOrFail($pending['service_id']);
+
+        if (!$service->isEligibleForAgeYears(Carbon::parse($ymd)->age)) {
+            return back()->withErrors(['date_of_birth' => 'This service is not available for this age.'])->withInput();
+        }
+
+        session([$this->publicBookingDobSessionKey() => $ymd]);
+        session()->forget($this->publicBookingPendingSessionKey());
+
+        if ($pending['flow'] === 'clinic') {
+            $department = Department::findOrFail($pending['department_id']);
+            $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
+                $department->id,
+                $pending['appointment_date'],
+                $service->id
+            );
+            $selectedSlot = collect($slots)->firstWhere('start', $pending['appointment_time']);
+            if (!$selectedSlot) {
+                return redirect()->route('public.booking.clinic', ['slug' => $department->slug])
+                    ->with('error', 'Selected time slot is no longer available. Please choose again.');
+            }
+
+            return view('public-booking.clinic-patient-details', [
+                'department' => $department,
+                'service' => $service,
+                'appointment_date' => $pending['appointment_date'],
+                'appointment_time' => $pending['appointment_time'],
+                'consultation_type' => $pending['consultation_type'] ?? 'in_person',
+                'step' => 3,
+                'bookingDobYmd' => $ymd,
+            ]);
+        }
+
+        if ($pending['flow'] === 'doctor') {
+            $doctor = Doctor::findOrFail($pending['doctor_id']);
+            $slots = $this->slotAvailabilityService->getAvailableSlots(
+                $doctor->id,
+                $pending['appointment_date'],
+                $service->id
+            );
+            $selectedSlot = collect($slots)->firstWhere('start', $pending['appointment_time']);
+            if (!$selectedSlot) {
+                return redirect()->route('public.booking.doctor', ['slug' => $doctor->slug])
+                    ->with('error', 'Selected time slot is no longer available. Please choose again.');
+            }
+
+            $departmentId = $pending['department_id'] ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
+
+            return view('public-booking.patient-details', [
+                'doctor' => $doctor,
+                'service' => $service,
+                'appointment_date' => $pending['appointment_date'],
+                'appointment_time' => $pending['appointment_time'],
+                'consultation_type' => $pending['consultation_type'] ?? 'in_person',
+                'department_id' => $departmentId,
+                'step' => 3,
+                'bookingDobYmd' => $ymd,
+            ]);
+        }
+
+        return back()->with('error', 'Invalid booking flow.');
     }
 
     /**
@@ -255,10 +352,6 @@ class PublicBookingController extends Controller
         $department = Department::findOrFail($request->department_id);
         $service = BookingService::findOrFail($request->service_id);
 
-        if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service)) {
-            return $redirect;
-        }
-
         $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
             $department->id,
             $request->appointment_date,
@@ -270,14 +363,41 @@ class PublicBookingController extends Controller
             return redirect()->back()->with('error', 'Selected time slot is no longer available.');
         }
 
+        $bookingDob = session($this->publicBookingDobSessionKey());
+        if (!$bookingDob) {
+            session([$this->publicBookingPendingSessionKey() => [
+                'flow' => 'clinic',
+                'department_id' => $department->id,
+                'service_id' => $service->id,
+                'appointment_date' => $request->appointment_date,
+                'appointment_time' => $request->appointment_time,
+                'consultation_type' => $request->consultation_type ?? 'in_person',
+            ]]);
+
+            return view('public-booking.slot-date-of-birth', [
+                'flow' => 'clinic',
+                'department' => $department,
+                'doctor' => null,
+                'service' => $service,
+                'appointment_date' => $request->appointment_date,
+                'appointment_time' => $request->appointment_time,
+                'consultation_type' => $request->consultation_type ?? 'in_person',
+                'step' => 2,
+            ]);
+        }
+
+        if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service)) {
+            return $redirect;
+        }
+
         return view('public-booking.clinic-patient-details', [
             'department' => $department,
             'service' => $service,
             'appointment_date' => $request->appointment_date,
             'appointment_time' => $request->appointment_time,
             'consultation_type' => $request->consultation_type ?? 'in_person',
-            'step' => 2,
-            'bookingDobYmd' => session($this->publicBookingDobSessionKey()),
+            'step' => 3,
+            'bookingDobYmd' => $bookingDob,
         ]);
     }
 
@@ -445,6 +565,7 @@ class PublicBookingController extends Controller
     public function clinicSuccess($requestNumber)
     {
         session()->forget($this->publicBookingDobSessionKey());
+        session()->forget($this->publicBookingPendingSessionKey());
 
         $request = \App\Models\ClinicBookingRequest::where('request_number', $requestNumber)->with(['department', 'service'])->firstOrFail();
         $patientEmail = $request->patient_data['email'] ?? '';
@@ -585,6 +706,32 @@ class PublicBookingController extends Controller
         // Get department_id from request (if booking through clinic link) or from doctor
         $departmentId = $request->department_id ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
 
+        $bookingDob = session($this->publicBookingDobSessionKey());
+        if (!$bookingDob) {
+            session([$this->publicBookingPendingSessionKey() => [
+                'flow' => 'doctor',
+                'doctor_id' => $doctor->id,
+                'department_id' => $departmentId,
+                'service_id' => $service->id,
+                'appointment_date' => $request->appointment_date,
+                'appointment_time' => $request->appointment_time,
+                'consultation_type' => $request->consultation_type ?? 'in_person',
+            ]]);
+
+            $department = $departmentId ? Department::find($departmentId) : null;
+
+            return view('public-booking.slot-date-of-birth', [
+                'flow' => 'doctor',
+                'department' => $department,
+                'doctor' => $doctor,
+                'service' => $service,
+                'appointment_date' => $request->appointment_date,
+                'appointment_time' => $request->appointment_time,
+                'consultation_type' => $request->consultation_type ?? 'in_person',
+                'step' => 2,
+            ]);
+        }
+
         if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service)) {
             return $redirect;
         }
@@ -597,7 +744,7 @@ class PublicBookingController extends Controller
             'consultation_type' => $request->consultation_type ?? 'in_person',
             'department_id' => $departmentId,
             'step' => 3,
-            'bookingDobYmd' => session($this->publicBookingDobSessionKey()),
+            'bookingDobYmd' => $bookingDob,
         ]);
     }
 
@@ -965,6 +1112,7 @@ class PublicBookingController extends Controller
     public function success($appointmentNumber)
     {
         session()->forget($this->publicBookingDobSessionKey());
+        session()->forget($this->publicBookingPendingSessionKey());
 
         $appointment = \App\Models\Appointment::where('appointment_number', $appointmentNumber)
             ->with(['patient', 'doctor', 'service'])
