@@ -308,9 +308,11 @@ class PublicBookingController extends Controller
         $servicesMap = [];
 
         foreach ($doctors as $doctor) {
-            $doctorServices = BookingService::where('created_by', $doctor->user_id)
+            $doctorServices = BookingService::query()
                 ->where('is_active', true)
-                ->get();
+                ->ordered()
+                ->get()
+                ->filter(fn (BookingService $svc) => $svc->isAvailableForDoctor($doctor->id));
             foreach ($doctorServices as $svc) {
                 if ($patientAgeYears !== null && !$svc->isEligibleForAgeYears($patientAgeYears)) {
                     continue;
@@ -1385,18 +1387,18 @@ class PublicBookingController extends Controller
     }
 
     /**
-     * Get services available for a doctor.
-     * Only returns services created by the doctor (private services).
+     * Active booking services this doctor can offer (matches admin/staff discount UI and invoice pricing).
      */
     private function getServicesForDoctor($doctorId)
     {
         $doctor = Doctor::findOrFail($doctorId);
-        
-        // Only get services created by this doctor's user account (order by sort_order)
-        return BookingService::where('created_by', $doctor->user_id)
+
+        return BookingService::query()
             ->where('is_active', true)
             ->ordered()
-            ->get();
+            ->get()
+            ->filter(fn (BookingService $svc) => $svc->isAvailableForDoctor($doctor->id))
+            ->values();
     }
 }
 

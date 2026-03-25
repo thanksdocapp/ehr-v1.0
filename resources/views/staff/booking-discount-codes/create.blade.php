@@ -21,6 +21,7 @@
 
             <form method="POST" action="{{ route('staff.booking-discount-codes.store') }}">
                 @csrf
+                <p class="text-muted small">These codes work only on your <strong>personal</strong> booking URL (<code>/book/…</code> with your name), not on clinic or department booking pages. Clinic pages use separate codes set by admin.</p>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Code <span class="text-danger">*</span></label>
@@ -41,7 +42,7 @@
                     <div class="col-md-6">
                         <label class="form-label">Limit to one service</label>
                         <select name="booking_service_id" class="form-select">
-                            <option value="">— All my services —</option>
+                            <option value="">— All services on my doctor booking link —</option>
                             @foreach($services as $svc)
                             <option value="{{ $svc->id }}" @selected(old('booking_service_id') == $svc->id)>{{ $svc->name }}</option>
                             @endforeach

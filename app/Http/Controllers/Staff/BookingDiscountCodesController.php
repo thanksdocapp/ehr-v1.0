@@ -7,6 +7,7 @@ use App\Models\BookingService;
 use App\Models\Doctor;
 use App\Models\DoctorBookingDiscountCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
@@ -33,6 +34,21 @@ class BookingDiscountCodesController extends Controller
         return null;
     }
 
+    /**
+     * Services this doctor may book publicly — same rule as patient-facing doctor link and admin discount codes.
+     *
+     * @return Collection<int, BookingService>
+     */
+    private function bookingServicesForDoctor(Doctor $doctor): Collection
+    {
+        return BookingService::query()
+            ->where('is_active', true)
+            ->ordered()
+            ->get()
+            ->filter(fn (BookingService $svc) => $svc->isAvailableForDoctor($doctor->id))
+            ->values();
+    }
+
     public function index()
     {
         if ($redirect = $this->assertTableExists()) {
@@ -57,7 +73,7 @@ class BookingDiscountCodesController extends Controller
         }
 
         $doctor = $this->doctorForUser();
-        $services = BookingService::where('created_by', Auth::id())->ordered()->get();
+        $services = $this->bookingServicesForDoctor($doctor);
 
         return view('staff.booking-discount-codes.create', compact('doctor', 'services'));
     }
@@ -98,11 +114,11 @@ class BookingDiscountCodesController extends Controller
         }
 
         if (!empty($validated['booking_service_id'])) {
-            $owns = BookingService::where('id', $validated['booking_service_id'])
-                ->where('created_by', Auth::id())
-                ->exists();
-            if (!$owns) {
-                return back()->withErrors(['booking_service_id' => 'Select one of your services, or leave blank for all services.'])->withInput();
+            $svc = BookingService::find($validated['booking_service_id']);
+            if (!$svc || !$svc->isAvailableForDoctor($doctor->id)) {
+                return back()->withErrors([
+                    'booking_service_id' => 'Select a service you offer on your booking link, or leave blank for all services.',
+                ])->withInput();
             }
         }
 
@@ -131,7 +147,7 @@ class BookingDiscountCodesController extends Controller
         $doctor = $this->doctorForUser();
         $this->authorizeCode($bookingDiscountCode, $doctor);
 
-        $services = BookingService::where('created_by', Auth::id())->ordered()->get();
+        $services = $this->bookingServicesForDoctor($doctor);
 
         return view('staff.booking-discount-codes.edit', compact('doctor', 'bookingDiscountCode', 'services'));
     }
@@ -181,11 +197,11 @@ class BookingDiscountCodesController extends Controller
         }
 
         if (!empty($validated['booking_service_id'])) {
-            $owns = BookingService::where('id', $validated['booking_service_id'])
-                ->where('created_by', Auth::id())
-                ->exists();
-            if (!$owns) {
-                return back()->withErrors(['booking_service_id' => 'Select one of your services, or leave blank for all services.'])->withInput();
+            $svc = BookingService::find($validated['booking_service_id']);
+            if (!$svc || !$svc->isAvailableForDoctor($doctor->id)) {
+                return back()->withErrors([
+                    'booking_service_id' => 'Select a service you offer on your booking link, or leave blank for all services.',
+                ])->withInput();
             }
         }
 
