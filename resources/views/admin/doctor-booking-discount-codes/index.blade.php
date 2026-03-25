@@ -1,20 +1,20 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Clinic booking discount codes')
+@section('title', 'Doctor booking discount codes')
 
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
-            <h4 class="mb-1 fw-bold">Clinic booking codes — {{ $department->name }}</h4>
-            <p class="text-muted small mb-0">Used on the <strong>public clinic booking</strong> flow before payment. For doctor booking links, use each doctor’s page → <strong>Booking codes</strong> (admin) or Staff → Booking discount codes.</p>
+            <h4 class="mb-1 fw-bold">Doctor booking codes — {{ $doctor->title }} {{ $doctor->first_name }} {{ $doctor->last_name }}</h4>
+            <p class="text-muted small mb-0">Used on this doctor’s <strong>public booking link</strong> before payment. Codes are per doctor; the linked service must be one they offer.</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.departments.clinic-booking-discount-codes.create', $department) }}" class="btn btn-primary btn-sm">
+            <a href="{{ route('admin.doctors.booking-discount-codes.create', $doctor) }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus me-1"></i>New code
             </a>
-            <a href="{{ route('admin.departments.show', $department) }}" class="btn btn-outline-secondary btn-sm">
-                <i class="fas fa-arrow-left me-1"></i>Clinic
+            <a href="{{ route('admin.doctors.show', $doctor) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Doctor
             </a>
         </div>
     </div>
@@ -55,7 +55,7 @@
                                 @if($c->booking_service_id)
                                     {{ $c->bookingService?->name ?? '—' }}
                                 @else
-                                    <span class="text-muted">All services</span>
+                                    <span class="text-muted">All services this doctor offers</span>
                                 @endif
                             </td>
                             <td>
@@ -80,8 +80,8 @@
                                 @endif
                             </td>
                             <td class="text-end">
-                                <a href="{{ route('admin.departments.clinic-booking-discount-codes.edit', [$department, $c]) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                <form action="{{ route('admin.departments.clinic-booking-discount-codes.destroy', [$department, $c]) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this code?');">
+                                <a href="{{ route('admin.doctors.booking-discount-codes.edit', [$doctor, $c]) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <form action="{{ route('admin.doctors.booking-discount-codes.destroy', [$doctor, $c]) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this code?');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>

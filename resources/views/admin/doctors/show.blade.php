@@ -16,7 +16,10 @@ use Illuminate\Support\Facades\Storage;
                     <h1 class="modern-page-title">{{ $doctor->title }} {{ $doctor->first_name }} {{ $doctor->last_name }}</h1>
                     <p class="modern-page-subtitle">{{ $doctor->specialization }}</p>
                 </div>
-                <div class="mt-3 mt-md-0">
+                <div class="mt-3 mt-md-0 d-flex flex-wrap gap-2">
+                    <a href="{{ route('admin.doctors.booking-discount-codes.index', $doctor) }}" class="btn btn-outline-info btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-ticket-alt me-2"></i>Booking codes
+                    </a>
                     <a href="{{ contextRoute('doctors.edit', $doctor->id) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
                         <i class="fas fa-edit me-2"></i>Edit
                     </a>

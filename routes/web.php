@@ -866,7 +866,16 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/doctors/{doctor}/toggle-status', [\App\Http\Controllers\Admin\DoctorsController::class, 'toggleStatus'])->name('doctors.toggle-status');
         Route::post('/doctors/{doctor}/reset-password', [\App\Http\Controllers\Admin\DoctorsController::class, 'resetPassword'])->name('doctors.reset-password');
         Route::post('/doctors/{doctor}/resend-credentials', [\App\Http\Controllers\Admin\DoctorsController::class, 'resendCredentials'])->name('doctors.resend-credentials');
-        
+
+        Route::prefix('doctors/{doctor}/booking-discount-codes')->name('doctors.booking-discount-codes.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\DoctorBookingDiscountCodesController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Admin\DoctorBookingDiscountCodesController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Admin\DoctorBookingDiscountCodesController::class, 'store'])->name('store');
+            Route::get('/{doctorBookingDiscountCode}/edit', [\App\Http\Controllers\Admin\DoctorBookingDiscountCodesController::class, 'edit'])->name('edit');
+            Route::put('/{doctorBookingDiscountCode}', [\App\Http\Controllers\Admin\DoctorBookingDiscountCodesController::class, 'update'])->name('update');
+            Route::delete('/{doctorBookingDiscountCode}', [\App\Http\Controllers\Admin\DoctorBookingDiscountCodesController::class, 'destroy'])->name('destroy');
+        });
+
         // Billing Management
         Route::prefix('billing')->name('billing.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\BillingsController::class, 'index'])->name('index');
