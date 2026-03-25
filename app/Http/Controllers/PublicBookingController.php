@@ -7,7 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\Doctor;
 use App\Models\Department;
 use App\Models\BookingService;
+use App\Models\DoctorServicePrice;
 use App\Models\Setting;
+use Illuminate\Support\Collection;
 use App\Services\SlotAvailabilityService;
 use App\Services\PublicBookingService;
 use App\Services\ClinicBookingService;
@@ -308,11 +310,7 @@ class PublicBookingController extends Controller
         $servicesMap = [];
 
         foreach ($doctors as $doctor) {
-            $doctorServices = BookingService::query()
-                ->where('is_active', true)
-                ->ordered()
-                ->get()
-                ->filter(fn (BookingService $svc) => $svc->isAvailableForDoctor($doctor->id));
+            $doctorServices = $this->getServicesForDoctor($doctor->id);
             foreach ($doctorServices as $svc) {
                 if ($patientAgeYears !== null && !$svc->isEligibleForAgeYears($patientAgeYears)) {
                     continue;
@@ -359,6 +357,11 @@ class PublicBookingController extends Controller
 
         $department = Department::findOrFail($request->department_id);
         $service = BookingService::findOrFail($request->service_id);
+
+        if (!$this->serviceIsBookableAtClinic((int) $service->id, (int) $department->id)) {
+            return redirect()->route('public.booking.clinic', ['slug' => $department->slug])
+                ->with('error', 'This service is not available at this clinic.');
+        }
 
         $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
             $department->id,
@@ -443,6 +446,12 @@ class PublicBookingController extends Controller
         $department = Department::findOrFail($request->department_id);
         $service = BookingService::findOrFail($request->service_id);
 
+        if (!$this->serviceIsBookableAtClinic((int) $service->id, (int) $department->id)) {
+            return redirect()->route('public.booking.clinic', ['slug' => $department->slug])
+                ->with('error', 'This service is not available at this clinic.')
+                ->withInput();
+        }
+
         $dobYmd = parseDateInput($request->date_of_birth);
         if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service, $dobYmd)) {
             return $redirect;
@@ -516,6 +525,13 @@ class PublicBookingController extends Controller
             return response()->view('public-booking.session-expired', [
                 'message' => 'Your booking session has expired. Please start a new booking.',
             ]);
+        }
+
+        if (!$this->serviceIsBookableAtClinic((int) $service->id, (int) $department->id)) {
+            session()->forget($this->clinicBookingReviewSessionKey());
+
+            return redirect()->route('public.booking.clinic', ['slug' => $department->slug])
+                ->with('error', 'This service is no longer available at this clinic. Please start again.');
         }
 
         $dobYmd = $data['patient_data']['date_of_birth'] ?? null;
@@ -599,6 +615,12 @@ class PublicBookingController extends Controller
 
         $department = Department::findOrFail($request->department_id);
         $service = BookingService::findOrFail($request->service_id);
+
+        if (!$this->serviceIsBookableAtClinic((int) $service->id, (int) $department->id)) {
+            return redirect()->route('public.booking.clinic', ['slug' => $department->slug])
+                ->with('error', 'This service is not available at this clinic.')
+                ->withInput();
+        }
 
         $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
             $department->id,
@@ -691,8 +713,7 @@ class PublicBookingController extends Controller
         $service = BookingService::findOrFail($serviceId);
         $doctor = Doctor::where('id', $doctorId)->active()->firstOrFail();
 
-        // Verify service is available for this doctor
-        if (!$service->isAvailableForDoctor($doctor->id)) {
+        if (!$this->serviceIsBookableForDoctor($service->id, $doctor->id)) {
             abort(404, 'This service is not available for the selected doctor.');
         }
 
@@ -744,9 +765,7 @@ class PublicBookingController extends Controller
             $doctors = Doctor::byDepartment($department->id)
                 ->active()
                 ->get()
-                ->filter(function($doctor) use ($service) {
-                    return $service->isAvailableForDoctor($doctor->id);
-                });
+                ->filter(fn (Doctor $doctor) => $this->serviceIsBookableForDoctor($service->id, $doctor->id));
 
             return view('public-booking.doctor-selection', [
                 'department' => $department,
@@ -760,8 +779,7 @@ class PublicBookingController extends Controller
         if ($request->doctor_id) {
             $doctor = Doctor::findOrFail($request->doctor_id);
 
-            // Check if service is available for this doctor
-            if (!$service->isAvailableForDoctor($doctor->id)) {
+            if (!$this->serviceIsBookableForDoctor($service->id, $doctor->id)) {
                 return redirect()->back()->with('error', 'Selected service is not available for this doctor.');
             }
 
@@ -795,6 +813,10 @@ class PublicBookingController extends Controller
 
         $doctor = Doctor::findOrFail($request->doctor_id);
         $service = BookingService::findOrFail($request->service_id);
+
+        if (!$this->serviceIsBookableForDoctor($service->id, $doctor->id)) {
+            return redirect()->back()->with('error', 'Selected service is not available for this doctor.')->withInput();
+        }
 
         // Verify slot is still available
         $slots = $this->slotAvailabilityService->getAvailableSlots(
@@ -869,7 +891,7 @@ class PublicBookingController extends Controller
             $doctor = Doctor::find($bookingData['doctor_id']);
             $service = BookingService::find($bookingData['service_id'] ?? null);
 
-            if ($doctor && $service) {
+            if ($doctor && $service && $this->serviceIsBookableForDoctor((int) $service->id, (int) $doctor->id)) {
                 $price = $service->getPriceForDoctor($doctor->id);
 
                 return view('public-booking.review', [
@@ -968,6 +990,10 @@ class PublicBookingController extends Controller
 
         $doctor = Doctor::findOrFail($request->doctor_id);
         $service = BookingService::findOrFail($request->service_id);
+
+        if (!$this->serviceIsBookableForDoctor((int) $service->id, (int) $doctor->id)) {
+            return redirect()->back()->with('error', 'Selected service is not available for this doctor.')->withInput();
+        }
 
         $dobYmd = parseDateInput($request->date_of_birth);
         if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service, $dobYmd)) {
@@ -1122,6 +1148,13 @@ class PublicBookingController extends Controller
         }
 
         $service = BookingService::findOrFail($request->service_id);
+        $doctor = Doctor::findOrFail($request->doctor_id);
+        if (!$this->serviceIsBookableForDoctor((int) $service->id, (int) $doctor->id)) {
+            return redirect()->back()
+                ->with('error', 'Selected service is not available for this doctor.')
+                ->withInput();
+        }
+
         if ($request->filled('date_of_birth')) {
             $dobYmd = $request->date_of_birth;
             if (!$service->isEligibleForAgeYears(Carbon::parse($dobYmd)->age)) {
@@ -1283,6 +1316,12 @@ class PublicBookingController extends Controller
             return response()->json(['error' => $validator->errors()->first()], 400);
         }
 
+        if ($request->filled('service_id')) {
+            if (!$this->serviceIsBookableAtClinic((int) $request->service_id, (int) $departmentId)) {
+                return response()->json(['error' => 'Service is not available at this clinic.'], 422);
+            }
+        }
+
         $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
             $departmentId,
             $request->date,
@@ -1309,6 +1348,12 @@ class PublicBookingController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()->first()], 400);
+        }
+
+        if ($request->filled('service_id')) {
+            if (!$this->serviceIsBookableForDoctor((int) $request->service_id, (int) $doctorId)) {
+                return response()->json(['error' => 'Service is not available for this doctor.'], 422);
+            }
         }
 
         $slots = $this->slotAvailabilityService->getAvailableSlots(
@@ -1387,18 +1432,52 @@ class PublicBookingController extends Controller
     }
 
     /**
-     * Active booking services this doctor can offer (matches admin/staff discount UI and invoice pricing).
+     * Services this doctor may list on public booking: owned by their staff user and/or explicitly assigned
+     * (doctor_service_prices). Avoids showing every globally active service when no per-doctor row exists.
      */
-    private function getServicesForDoctor($doctorId)
+    private function getServicesForDoctor(int $doctorId): Collection
     {
         $doctor = Doctor::findOrFail($doctorId);
 
+        $ids = collect();
+
+        if ($doctor->user_id) {
+            $ids = $ids->merge(
+                BookingService::query()
+                    ->where('created_by', $doctor->user_id)
+                    ->where('is_active', true)
+                    ->pluck('id')
+            );
+        }
+
+        $ids = $ids->merge(
+            DoctorServicePrice::query()
+                ->where('doctor_id', $doctor->id)
+                ->where('is_active', true)
+                ->pluck('service_id')
+        );
+
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
         return BookingService::query()
+            ->whereIn('id', $ids->unique()->values()->all())
             ->where('is_active', true)
             ->ordered()
             ->get()
             ->filter(fn (BookingService $svc) => $svc->isAvailableForDoctor($doctor->id))
             ->values();
+    }
+
+    private function serviceIsBookableForDoctor(int $serviceId, int $doctorId): bool
+    {
+        return $this->getServicesForDoctor($doctorId)->contains(fn (BookingService $s) => (int) $s->id === (int) $serviceId);
+    }
+
+    private function serviceIsBookableAtClinic(int $serviceId, int $departmentId): bool
+    {
+        return collect($this->getClinicServices($departmentId))->pluck('id')->map(fn ($id) => (int) $id)->contains((int) $serviceId);
     }
 }
 
