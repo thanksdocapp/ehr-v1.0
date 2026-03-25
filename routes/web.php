@@ -136,6 +136,8 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/clinic-confirm', [\App\Http\Controllers\PublicBookingController::class, 'clinicConfirm'])->name('clinic-confirm');
         Route::post('/review', [\App\Http\Controllers\PublicBookingController::class, 'review'])->name('review');
         Route::post('/confirm', [\App\Http\Controllers\PublicBookingController::class, 'confirm'])->name('confirm');
+        Route::post('/preview-doctor-discount', [\App\Http\Controllers\PublicBookingController::class, 'previewDoctorBookingDiscount'])->name('preview-doctor-discount');
+        Route::post('/preview-clinic-discount', [\App\Http\Controllers\PublicBookingController::class, 'previewClinicBookingDiscount'])->name('preview-clinic-discount');
         
         // Parameterized route last (catches /book/{slug}) - GET only
         Route::get('/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showDoctorBooking'])->name('doctor');

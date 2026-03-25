@@ -1323,6 +1323,68 @@ class PublicBookingController extends Controller
     }
 
     /**
+     * AJAX: validate discount code on doctor booking review (does not consume a use).
+     */
+    public function previewDoctorBookingDiscount(Request $request)
+    {
+        if (Setting::get('public_booking_enabled', '1') != '1') {
+            return response()->json(['ok' => false, 'message' => 'Online booking is currently unavailable.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'doctor_id' => 'required|exists:doctors,id',
+            'service_id' => 'required|exists:booking_services,id',
+            'discount_code' => 'required|string|max:64',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'ok' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        $result = $this->bookingService->previewDoctorBookingDiscount(
+            (int) $request->doctor_id,
+            (int) $request->service_id,
+            (string) $request->discount_code
+        );
+
+        return response()->json($result, $result['ok'] ? 200 : 422);
+    }
+
+    /**
+     * AJAX: validate discount code on clinic booking review (does not consume a use).
+     */
+    public function previewClinicBookingDiscount(Request $request)
+    {
+        if (Setting::get('public_booking_enabled', '1') != '1') {
+            return response()->json(['ok' => false, 'message' => 'Online booking is currently unavailable.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'department_id' => 'required|exists:departments,id',
+            'service_id' => 'required|exists:booking_services,id',
+            'discount_code' => 'required|string|max:64',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'ok' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        $result = $this->clinicBookingService->previewClinicBookingDiscount(
+            (int) $request->department_id,
+            (int) $request->service_id,
+            (string) $request->discount_code
+        );
+
+        return response()->json($result, $result['ok'] ? 200 : 422);
+    }
+
+    /**
      * Get services available for a doctor.
      * Only returns services created by the doctor (private services).
      */

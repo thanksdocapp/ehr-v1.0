@@ -112,6 +112,53 @@ class PublicBookingService
     }
 
     /**
+     * Preview a doctor booking discount on the review step (read-only: no locks, no use count).
+     *
+     * @return array{ok: bool, list_price?: float, discount_amount?: float, amount_due?: float, message?: string}
+     */
+    public function previewDoctorBookingDiscount(int $doctorId, int $serviceId, string $discountCodeRaw): array
+    {
+        $rawCode = DoctorBookingDiscountCode::normalizeCode($discountCodeRaw);
+        if ($rawCode === '') {
+            return ['ok' => false, 'message' => 'Enter a discount code.'];
+        }
+
+        if (!Schema::hasTable('doctor_booking_discount_codes')) {
+            return ['ok' => false, 'message' => 'Discount codes are not available right now.'];
+        }
+
+        $doctor = Doctor::find($doctorId);
+        $service = BookingServiceModel::find($serviceId);
+        if (!$doctor || !$service) {
+            return ['ok' => false, 'message' => 'Invalid booking selection.'];
+        }
+
+        $listPrice = (float) ($service->getPriceForDoctor($doctor->id) ?? 0);
+        if ($listPrice <= 0) {
+            return ['ok' => false, 'message' => 'There is no fee to apply a discount to.'];
+        }
+
+        $code = DoctorBookingDiscountCode::query()
+            ->where('doctor_id', $doctor->id)
+            ->where('code', $rawCode)
+            ->first();
+
+        if (!$code || !$code->isUsableForBooking($service->id)) {
+            return ['ok' => false, 'message' => 'This discount code is not valid for this booking.'];
+        }
+
+        $discountAmount = $code->computeDiscountAmount($listPrice);
+        $amountDue = round(max(0, $listPrice - $discountAmount), 2);
+
+        return [
+            'ok' => true,
+            'list_price' => $listPrice,
+            'discount_amount' => $discountAmount,
+            'amount_due' => $amountDue,
+        ];
+    }
+
+    /**
      * Create immediate booking (for free services).
      * Creates patient, appointment, and billing immediately.
      */
