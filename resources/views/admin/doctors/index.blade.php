@@ -272,6 +272,10 @@
                                            class="btn btn-sm btn-outline-secondary" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <a href="{{ route('admin.doctors.booking-discount-codes.index', $doctor) }}"
+                                           class="btn btn-sm btn-outline-success" title="Booking discount codes">
+                                            <i class="fas fa-ticket-alt"></i>
+                                        </a>
                                         @if($doctor->user_id)
                                         <button class="btn btn-sm btn-outline-warning" 
                                                 onclick="resetPassword({{ $doctor->id }}, '{{ $doctor->full_name }}')" 

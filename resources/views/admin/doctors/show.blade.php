@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
                     <p class="modern-page-subtitle">{{ $doctor->specialization }}</p>
                 </div>
                 <div class="mt-3 mt-md-0 d-flex flex-wrap gap-2">
-                    <a href="{{ route('admin.doctors.booking-discount-codes.index', $doctor) }}" class="btn btn-outline-info btn-lg" style="border-radius: 12px; font-weight: 600;">
+                    <a href="{{ route('admin.doctors.booking-discount-codes.index', $doctor) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
                         <i class="fas fa-ticket-alt me-2"></i>Booking codes
                     </a>
                     <a href="{{ contextRoute('doctors.edit', $doctor->id) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
@@ -223,11 +223,16 @@ use Illuminate\Support\Facades\Storage;
                                         <h5 class="text-primary mb-0">
                                             <i class="fas fa-briefcase-medical me-2"></i>Doctor Services ({{ $doctorServices->count() }})
                                         </h5>
-                                        @if($doctor->user_id)
-                                            <a href="{{ route('admin.booking-services.create', ['doctor_id' => $doctor->id]) }}" class="btn btn-sm btn-primary">
-                                                <i class="fas fa-plus me-1"></i>Add booking service
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <a href="{{ route('admin.doctors.booking-discount-codes.index', $doctor) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-ticket-alt me-1"></i>Voucher codes
                                             </a>
-                                        @endif
+                                            @if($doctor->user_id)
+                                                <a href="{{ route('admin.booking-services.create', ['doctor_id' => $doctor->id]) }}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-plus me-1"></i>Add booking service
+                                                </a>
+                                            @endif
+                                        </div>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-sm table-hover">
@@ -285,9 +290,14 @@ use Illuminate\Support\Facades\Storage;
                                 </div>
                             @elseif(isset($doctorServices))
                                 <div class="mb-4">
-                                    <h5 class="text-primary">
-                                        <i class="fas fa-briefcase-medical me-2"></i>Doctor Services
-                                    </h5>
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                        <h5 class="text-primary mb-0">
+                                            <i class="fas fa-briefcase-medical me-2"></i>Doctor Services
+                                        </h5>
+                                        <a href="{{ route('admin.doctors.booking-discount-codes.index', $doctor) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-ticket-alt me-1"></i>Voucher codes
+                                        </a>
+                                    </div>
                                     <p class="text-muted mb-3">No bookable services yet. Services must be tied to this doctor&apos;s user account to appear here and on public booking.</p>
                                     @if($doctor->user_id)
                                         <div class="d-flex flex-wrap gap-2">
@@ -429,6 +439,10 @@ use Illuminate\Support\Facades\Storage;
                                         <a href="{{ contextRoute('doctors.edit', $doctor->id) }}#availability" class="btn btn-secondary btn-sm">
                                             <i class="fas fa-calendar-alt"></i> Edit availability
                                         </a>
+
+                                        <a href="{{ route('admin.doctors.booking-discount-codes.index', $doctor) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-ticket-alt"></i> Booking discount codes
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -460,7 +474,10 @@ use Illuminate\Support\Facades\Storage;
                         <a href="{{ contextRoute('doctors.index') }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Back to Doctors
                         </a>
-                        <div>
+                        <div class="d-flex flex-wrap gap-2 justify-content-end">
+                            <a href="{{ route('admin.doctors.booking-discount-codes.index', $doctor) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-ticket-alt"></i> Booking codes
+                            </a>
                             <a href="{{ contextRoute('doctors.edit', $doctor->id) }}" class="btn btn-warning">
                                 <i class="fas fa-edit"></i> Edit Doctor
                             </a>
