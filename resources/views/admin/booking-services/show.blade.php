@@ -39,6 +39,10 @@
                                     <td><span class="badge bg-light text-dark">{{ $bookingService->default_duration_minutes }} minutes</span></td>
                                 </tr>
                                 <tr>
+                                    <th>Default consultation type:</th>
+                                    <td><span class="badge bg-info text-dark">{{ ucfirst(str_replace('_', ' ', $bookingService->default_consultation_type ?? 'in_person')) }}</span></td>
+                                </tr>
+                                <tr>
                                     <th>Default Price:</th>
                                     <td>
                                         @if($bookingService->default_price)

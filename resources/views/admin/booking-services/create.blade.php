@@ -91,6 +91,8 @@
 
                                 @include('partials.booking-service-age-restrictions', ['bookingService' => null])
 
+                                @include('partials.booking-service-default-consultation-type', ['bookingService' => null])
+
                                 <div class="mb-3">
                                     <label for="tags" class="form-label fw-semibold">Tags</label>
                                     <input type="text" 

@@ -124,6 +124,18 @@
                     @endif
                 </span>
             </div>
+            @if($price && (float) $price > 0)
+            <div class="review-row align-items-start">
+                <span class="review-label pt-1">Discount code</span>
+                <span class="review-value">
+                    <input type="text" name="discount_code" id="discount_code" class="form-control form-control-sm @error('discount_code') is-invalid @enderror" value="{{ old('discount_code') }}" maxlength="64" placeholder="Optional" autocomplete="off" style="max-width: 14rem;">
+                    @error('discount_code')
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+                    <small class="text-muted d-block mt-1">If your doctor gave you a code, enter it here. The amount you pay will be reduced when you continue.</small>
+                </span>
+            </div>
+            @endif
         </div>
 
         <div class="review-card">

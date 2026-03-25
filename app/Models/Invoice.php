@@ -24,6 +24,9 @@ class Invoice extends Model
         'subtotal',
         'tax_amount',
         'discount_amount',
+        'doctor_booking_discount_code_id',
+        'clinic_booking_discount_code_id',
+        'discount_code_redemption_recorded_at',
         'total_amount',
         'status',
         'description',
@@ -42,6 +45,9 @@ class Invoice extends Model
         'subtotal' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
+        'doctor_booking_discount_code_id' => 'integer',
+        'clinic_booking_discount_code_id' => 'integer',
+        'discount_code_redemption_recorded_at' => 'datetime',
         'total_amount' => 'decimal:2',
     ];
 
@@ -59,6 +65,16 @@ class Invoice extends Model
     public function appointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class);
+    }
+
+    public function doctorBookingDiscountCode(): BelongsTo
+    {
+        return $this->belongsTo(DoctorBookingDiscountCode::class);
+    }
+
+    public function clinicBookingDiscountCode(): BelongsTo
+    {
+        return $this->belongsTo(ClinicBookingDiscountCode::class);
     }
 
     public function invoiceItems(): HasMany

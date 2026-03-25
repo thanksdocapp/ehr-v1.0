@@ -70,6 +70,9 @@ use Illuminate\Support\Facades\Storage;
                     <a href="{{ contextRoute('departments.edit', $department->id) }}" class="btn btn-primary">
                         <i class="fas fa-edit me-2"></i>Edit
                     </a>
+                    <a href="{{ contextRoute('departments.clinic-booking-discount-codes.index', $department->id) }}" class="btn btn-outline-info">
+                        <i class="fas fa-ticket-alt me-2"></i>Clinic booking codes
+                    </a>
                 </div>
             </div>
         </div>

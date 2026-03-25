@@ -56,6 +56,18 @@
             <div class="review-row"><span class="review-label">Date</span><span class="review-value">{{ \Carbon\Carbon::parse($appointment_date)->format('l, j F Y') }}</span></div>
             <div class="review-row"><span class="review-label">Time</span><span class="review-value">{{ \Carbon\Carbon::parse($appointment_time)->format('g:i A') }}</span></div>
             <div class="review-row"><span class="review-label">Price</span><span class="review-price">£{{ number_format($price ?? 0, 2) }}</span></div>
+            @if(isset($price) && (float) $price > 0)
+            <div class="review-row align-items-start">
+                <span class="review-label pt-1">Discount code</span>
+                <span class="review-value">
+                    <input type="text" name="discount_code" id="discount_code" class="form-control form-control-sm @error('discount_code') is-invalid @enderror" value="{{ old('discount_code') }}" maxlength="64" placeholder="Optional" autocomplete="off" style="max-width: 14rem;">
+                    @error('discount_code')
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+                    <small class="text-muted d-block mt-1">If your clinic gave you a code, enter it here. The payment amount will be reduced.</small>
+                </span>
+            </div>
+            @endif
         </div>
 
         <div class="review-card">

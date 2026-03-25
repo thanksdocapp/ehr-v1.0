@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\Billing;
+use App\Models\DoctorBookingDiscountCode;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\PendingBooking;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class PublicBookingService
 {
@@ -53,20 +55,59 @@ class PublicBookingService
             // Determine the department/clinic for this booking
             $departmentId = $data['department_id'] ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
 
-            // Calculate fee
-            $fee = 0;
+            // List price (before discount)
+            $listPrice = 0;
             if ($service) {
-                $fee = $service->getPriceForDoctor($doctor->id) ?? 0;
+                $listPrice = (float) ($service->getPriceForDoctor($doctor->id) ?? 0);
             }
 
-            // If fee is 0, create patient and appointment immediately (no payment needed)
-            if ($fee <= 0) {
-                return $this->createImmediateBooking($data, $doctor, $service, $departmentId);
+            $discountCodeId = null;
+            $discountAmount = 0;
+            $rawCode = DoctorBookingDiscountCode::normalizeCode((string) ($data['discount_code'] ?? ''));
+
+            if ($listPrice > 0 && $rawCode !== '' && Schema::hasTable('doctor_booking_discount_codes')) {
+                $code = DoctorBookingDiscountCode::query()
+                    ->where('doctor_id', $doctor->id)
+                    ->where('code', $rawCode)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$code || !$code->isUsableForBooking($service?->id)) {
+                    throw ValidationException::withMessages([
+                        'discount_code' => ['This discount code is not valid for this booking.'],
+                    ]);
+                }
+
+                $discountAmount = $code->computeDiscountAmount($listPrice);
+                $discountCodeId = $code->id;
+            } elseif ($listPrice > 0 && $rawCode !== '' && !Schema::hasTable('doctor_booking_discount_codes')) {
+                throw ValidationException::withMessages([
+                    'discount_code' => ['Discount codes are not available right now. Please try again without a code.'],
+                ]);
             }
 
-            // For paid services, create pending booking and invoice only
-            // Patient and appointment will be created after payment
-            return $this->createPendingBooking($data, $doctor, $service, $departmentId, $fee);
+            $payableFee = round(max(0, $listPrice - $discountAmount), 2);
+
+            // Free service or fully discounted: no payment needed
+            if ($payableFee <= 0) {
+                $result = $this->createImmediateBooking($data, $doctor, $service, $departmentId);
+                if ($discountCodeId !== null && Schema::hasTable('doctor_booking_discount_codes')) {
+                    DoctorBookingDiscountCode::whereKey($discountCodeId)->increment('uses_count');
+                }
+
+                return $result;
+            }
+
+            // Paid balance: pending booking + invoice
+            return $this->createPendingBooking(
+                $data,
+                $doctor,
+                $service,
+                $departmentId,
+                $listPrice,
+                $discountAmount,
+                $discountCodeId
+            );
         });
     }
 
@@ -187,8 +228,16 @@ class PublicBookingService
      * Create pending booking (for paid services).
      * Creates pending booking record and invoice, but NO patient/appointment yet.
      */
-    private function createPendingBooking(array $data, Doctor $doctor, ?BookingServiceModel $service, ?int $departmentId, float $fee)
-    {
+    private function createPendingBooking(
+        array $data,
+        Doctor $doctor,
+        ?BookingServiceModel $service,
+        ?int $departmentId,
+        float $listPriceFee,
+        float $discountAmount,
+        ?int $discountCodeId
+    ) {
+        $payableFee = round(max(0, $listPriceFee - $discountAmount), 2);
         // Store patient data for later creation
         $patientData = [
             'first_name' => $data['first_name'],
@@ -249,26 +298,30 @@ class PublicBookingService
             'is_online' => isset($data['consultation_type']) && $data['consultation_type'] === 'online',
             'notes' => $data['notes'] ?? null,
             'patient_data' => $patientData,
-            'fee' => $fee,
+            'fee' => $payableFee,
             'status' => 'pending_payment',
             'expires_at' => now()->addHours(24), // Booking expires in 24 hours
         ]);
 
         // Create invoice for payment (patient exists even though appointment/billing is deferred)
-        $invoice = Invoice::create([
+        $invoicePayload = [
             'billing_id' => null, // No billing yet
             'patient_id' => $patient->id,
             'appointment_id' => null, // No appointment yet
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'invoice_date' => now(),
             'due_date' => now()->addDays(7),
-            'subtotal' => $fee,
+            'subtotal' => $listPriceFee,
             'tax_amount' => 0,
-            'discount_amount' => 0,
-            'total_amount' => $fee,
+            'discount_amount' => $discountAmount,
+            'total_amount' => $payableFee,
             'status' => 'pending',
             'description' => $service ? $service->name : 'Appointment Consultation',
-        ]);
+        ];
+        if ($discountCodeId !== null && Schema::hasColumn('invoices', 'doctor_booking_discount_code_id')) {
+            $invoicePayload['doctor_booking_discount_code_id'] = $discountCodeId;
+        }
+        $invoice = Invoice::create($invoicePayload);
 
         // Create invoice item
         $serviceName = $service ? $service->name : 'Appointment Consultation';
@@ -278,8 +331,8 @@ class PublicBookingService
             'item_name' => $serviceName,
             'description' => $serviceName,
             'quantity' => 1,
-            'unit_price' => $fee,
-            'total_price' => $fee,
+            'unit_price' => $listPriceFee,
+            'total_price' => $listPriceFee,
         ]);
 
         // Link invoice to pending booking
@@ -291,7 +344,9 @@ class PublicBookingService
         Log::info('Pending booking created - awaiting payment', [
             'pending_booking_id' => $pendingBooking->id,
             'invoice_id' => $invoice->id,
-            'fee' => $fee,
+            'list_price' => $listPriceFee,
+            'payable_fee' => $payableFee,
+            'discount_amount' => $discountAmount,
             'patient_email' => $patientData['email'],
         ]);
 
@@ -329,6 +384,21 @@ class PublicBookingService
             $doctor = $pendingBooking->doctor;
             $service = $pendingBooking->service;
             $invoice = $pendingBooking->invoice;
+
+            if ($invoice
+                && $invoice->doctor_booking_discount_code_id
+                && Schema::hasColumn('invoices', 'discount_code_redemption_recorded_at')
+                && $invoice->discount_code_redemption_recorded_at === null
+                && Schema::hasTable('doctor_booking_discount_codes')) {
+                $discountCode = DoctorBookingDiscountCode::query()
+                    ->whereKey($invoice->doctor_booking_discount_code_id)
+                    ->lockForUpdate()
+                    ->first();
+                if ($discountCode) {
+                    $discountCode->increment('uses_count');
+                }
+                $invoice->update(['discount_code_redemption_recorded_at' => now()]);
+            }
 
             // Prefer patient already linked to invoice (new flow); fallback to old flow if missing
             $patient = null;
@@ -406,6 +476,7 @@ class PublicBookingService
             // Create billing
             $createdBy = User::where('role', 'admin')->orWhere('is_admin', true)->first()?->id ?? 1;
 
+            $billingDiscount = $invoice ? (float) $invoice->discount_amount : 0;
             $billing = Billing::create([
                 'bill_number' => Billing::generateBillNumber(),
                 'patient_id' => $patient->id,
@@ -415,8 +486,8 @@ class PublicBookingService
                 'due_date' => now()->addDays(7),
                 'type' => 'consultation',
                 'description' => $service ? $service->name : 'Appointment Consultation',
-                'subtotal' => $pendingBooking->fee,
-                'discount' => 0,
+                'subtotal' => $invoice ? (float) $invoice->subtotal : $pendingBooking->fee,
+                'discount' => $billingDiscount,
                 'tax' => 0,
                 'total_amount' => $pendingBooking->fee,
                 'paid_amount' => $pendingBooking->fee,

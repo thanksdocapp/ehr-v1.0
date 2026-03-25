@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ClinicBookingRequest;
+use App\Models\ClinicBookingDiscountCode;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\PendingClinicBooking;
@@ -15,6 +16,8 @@ use App\Services\HospitalEmailNotificationService;
 use App\Services\WherebyService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 class ClinicBookingService
 {
@@ -32,8 +35,9 @@ class ClinicBookingService
     /**
      * Create a pending clinic booking with invoice (for paid services).
      * Patient pays first; after payment, ClinicBookingRequest is created.
+     * If a discount code reduces the balance to zero, creates the clinic request immediately (no invoice).
      *
-     * @return array{invoice: Invoice, pending_clinic_booking: PendingClinicBooking}
+     * @return array{invoice: ?Invoice, pending_clinic_booking: ?PendingClinicBooking, clinic_request?: ClinicBookingRequest}
      */
     public function createPendingFromClinicBooking(array $data): array
     {
@@ -43,12 +47,39 @@ class ClinicBookingService
             $departmentId = $data['department_id'];
             $service = BookingService::find($data['service_id'] ?? null);
 
-            $fee = 0;
+            $listPrice = 0;
             if ($service) {
                 $doctors = Doctor::byDepartment($departmentId)->active()->get();
                 $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
-                $fee = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
+                $listPrice = $prices->isEmpty() ? (float) ($service->default_price ?? 0) : (float) $prices->min();
             }
+
+            $discountCodeId = null;
+            $discountAmount = 0;
+            $rawCode = ClinicBookingDiscountCode::normalizeCode((string) ($data['discount_code'] ?? ''));
+
+            if ($listPrice > 0 && $rawCode !== '' && Schema::hasTable('clinic_booking_discount_codes')) {
+                $code = ClinicBookingDiscountCode::query()
+                    ->where('department_id', $departmentId)
+                    ->where('code', $rawCode)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$code || !$code->isUsableForBooking($service?->id)) {
+                    throw ValidationException::withMessages([
+                        'discount_code' => ['This discount code is not valid for this booking.'],
+                    ]);
+                }
+
+                $discountAmount = $code->computeDiscountAmount($listPrice);
+                $discountCodeId = $code->id;
+            } elseif ($listPrice > 0 && $rawCode !== '' && !Schema::hasTable('clinic_booking_discount_codes')) {
+                throw ValidationException::withMessages([
+                    'discount_code' => ['Discount codes are not available right now. Please try again without a code.'],
+                ]);
+            }
+
+            $payableFee = round(max(0, $listPrice - $discountAmount), 2);
 
             $patientData = [
                 'first_name' => $data['first_name'],
@@ -89,6 +120,19 @@ class ClinicBookingService
                 'guardian_phone' => $patientData['guardian_phone'] ?? null,
             ]);
 
+            if ($payableFee <= 0) {
+                $clinicRequest = $this->createFromClinicBooking($data);
+                if ($discountCodeId !== null && Schema::hasTable('clinic_booking_discount_codes')) {
+                    ClinicBookingDiscountCode::whereKey($discountCodeId)->increment('uses_count');
+                }
+
+                return [
+                    'invoice' => null,
+                    'pending_clinic_booking' => null,
+                    'clinic_request' => $clinicRequest,
+                ];
+            }
+
             $pendingBooking = PendingClinicBooking::create([
                 'booking_token' => PendingClinicBooking::generateBookingToken(),
                 'department_id' => $departmentId,
@@ -97,26 +141,30 @@ class ClinicBookingService
                 'appointment_time' => $data['appointment_time'],
                 'notes' => $data['notes'] ?? null,
                 'patient_data' => $patientData,
-                'fee' => $fee,
+                'fee' => $payableFee,
                 'status' => 'pending_payment',
                 'expires_at' => now()->addHours(24),
             ]);
 
             $serviceName = $service ? $service->name : 'Clinic Consultation';
-            $invoice = Invoice::create([
+            $invoicePayload = [
                 'billing_id' => null,
                 'patient_id' => $patient->id,
                 'appointment_id' => null,
                 'invoice_number' => Invoice::generateInvoiceNumber(),
                 'invoice_date' => now(),
                 'due_date' => now()->addDays(7),
-                'subtotal' => $fee,
+                'subtotal' => $listPrice,
                 'tax_amount' => 0,
-                'discount_amount' => 0,
-                'total_amount' => $fee,
+                'discount_amount' => $discountAmount,
+                'total_amount' => $payableFee,
                 'status' => 'pending',
                 'description' => $serviceName,
-            ]);
+            ];
+            if ($discountCodeId !== null && Schema::hasColumn('invoices', 'clinic_booking_discount_code_id')) {
+                $invoicePayload['clinic_booking_discount_code_id'] = $discountCodeId;
+            }
+            $invoice = Invoice::create($invoicePayload);
 
             InvoiceItem::create([
                 'invoice_id' => $invoice->id,
@@ -124,8 +172,8 @@ class ClinicBookingService
                 'item_name' => $serviceName,
                 'description' => $serviceName,
                 'quantity' => 1,
-                'unit_price' => $fee,
-                'total_price' => $fee,
+                'unit_price' => $listPrice,
+                'total_price' => $listPrice,
             ]);
 
             $pendingBooking->update(['invoice_id' => $invoice->id]);
@@ -135,7 +183,9 @@ class ClinicBookingService
             Log::info('Pending clinic booking created - awaiting payment', [
                 'pending_clinic_booking_id' => $pendingBooking->id,
                 'invoice_id' => $invoice->id,
-                'fee' => $fee,
+                'list_price' => $listPrice,
+                'payable_fee' => $payableFee,
+                'discount_amount' => $discountAmount,
             ]);
 
             return [
@@ -192,10 +242,29 @@ class ClinicBookingService
             'guardian_phone' => $pd['guardian_phone'] ?? null,
         ];
 
-        $clinicRequest = $this->createFromClinicBooking($data);
-        $pending->markCompleted();
+        return DB::transaction(function () use ($pending, $data) {
+            $invoice = $pending->invoice;
 
-        return $clinicRequest;
+            if ($invoice
+                && $invoice->clinic_booking_discount_code_id
+                && Schema::hasColumn('invoices', 'discount_code_redemption_recorded_at')
+                && $invoice->discount_code_redemption_recorded_at === null
+                && Schema::hasTable('clinic_booking_discount_codes')) {
+                $discountCode = ClinicBookingDiscountCode::query()
+                    ->whereKey($invoice->clinic_booking_discount_code_id)
+                    ->lockForUpdate()
+                    ->first();
+                if ($discountCode) {
+                    $discountCode->increment('uses_count');
+                }
+                $invoice->update(['discount_code_redemption_recorded_at' => now()]);
+            }
+
+            $clinicRequest = $this->createFromClinicBooking($data);
+            $pending->markCompleted();
+
+            return $clinicRequest;
+        });
     }
 
     /**

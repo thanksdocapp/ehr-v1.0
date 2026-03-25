@@ -42,6 +42,22 @@
                             @enderror
                         </div>
 
+                        <div class="mb-3">
+                            <label for="consultation_type" class="form-label fw-semibold">Consultation type <span class="text-danger">*</span></label>
+                            @php
+                                $ctSel = old('consultation_type', $bookingService->default_consultation_type ?? 'in_person');
+                            @endphp
+                            <select name="consultation_type" id="consultation_type" class="form-select @error('consultation_type') is-invalid @enderror" required>
+                                <option value="in_person" @selected($ctSel === 'in_person')>In person</option>
+                                <option value="online" @selected($ctSel === 'online')>Online (video)</option>
+                                <option value="telephone" @selected($ctSel === 'telephone')>Telephone</option>
+                            </select>
+                            @error('consultation_type')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">Default from service: {{ str_replace('_', ' ', $bookingService->default_consultation_type ?? 'in_person') }}</small>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">

@@ -72,6 +72,11 @@ class Department extends Model
         return $this->hasMany(Service::class);
     }
 
+    public function clinicBookingDiscountCodes(): HasMany
+    {
+        return $this->hasMany(ClinicBookingDiscountCode::class, 'department_id');
+    }
+
     // Many-to-many relationship with patients
     public function patients(): BelongsToMany
     {

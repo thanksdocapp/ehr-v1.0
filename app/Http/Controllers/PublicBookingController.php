@@ -12,6 +12,7 @@ use App\Services\SlotAvailabilityService;
 use App\Services\PublicBookingService;
 use App\Services\ClinicBookingService;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class PublicBookingController extends Controller
 {
@@ -501,6 +502,7 @@ class PublicBookingController extends Controller
             'gender' => 'required|in:male,female,other',
             'consultation_type' => 'nullable|in:in_person,online,telephone',
             'notes' => 'required|string|max:10000',
+            'discount_code' => 'nullable|string|max:64',
         ], $this->publicBookingAddressValidationRules(), $this->publicBookingGuardianFieldRules($request)));
 
         if ($validator->fails()) {
@@ -540,19 +542,33 @@ class PublicBookingController extends Controller
         try {
             if ($price > 0) {
                 $result = $this->clinicBookingService->createPendingFromClinicBooking($data);
+                if (!empty($result['clinic_request'])) {
+                    $clinicRequest = $result['clinic_request'];
+
+                    return redirect()->route('public.booking.clinic-success', ['requestNumber' => $clinicRequest->request_number])
+                        ->with('request', $clinicRequest);
+                }
                 $invoice = $result['invoice'];
                 $pending = $result['pending_clinic_booking'];
 
-                if ($invoice->payment_token) {
+                if ($invoice && $invoice->payment_token) {
                     session(['pending_clinic_booking_token' => $pending->booking_token]);
+
                     return redirect()->route('public.billing.pay', ['token' => $invoice->payment_token]);
                 }
+
                 return redirect()->back()->with('error', 'Payment setup failed. Please try again.')->withInput();
             }
 
             $clinicRequest = $this->clinicBookingService->createFromClinicBooking($data);
+
             return redirect()->route('public.booking.clinic-success', ['requestNumber' => $clinicRequest->request_number])
                 ->with('request', $clinicRequest);
+        } catch (ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->withInput()
+                ->with('error', 'Please check the form and try again.');
         } catch (\Exception $e) {
             \Log::error('Clinic booking failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return redirect()->back()->with('error', 'Failed to submit booking request. Please try again.')->withInput();
@@ -968,6 +984,7 @@ class PublicBookingController extends Controller
             'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
             'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
             'notes' => 'required|string|max:10000',
+            'discount_code' => 'nullable|string|max:64',
         ], $this->publicBookingAddressValidationRules());
         
         // Require date_of_birth and gender if they are provided (not empty strings)
@@ -1085,6 +1102,11 @@ class PublicBookingController extends Controller
 
             // Fallback - something went wrong
             throw new \Exception('Booking could not be processed');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->withInput()
+                ->with('error', 'Please check the form and try again.');
         } catch (\Exception $e) {
             \Log::error('Public booking failed', [
                 'error' => $e->getMessage(),

@@ -420,6 +420,15 @@ Route::group(['middleware' => 'installed'], function () {
             Route::post('/generate-booking-link', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'generateBookingLink'])->name('generate-booking-link');
         });
 
+        Route::prefix('booking-discount-codes')->name('booking-discount-codes.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Staff\BookingDiscountCodesController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Staff\BookingDiscountCodesController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Staff\BookingDiscountCodesController::class, 'store'])->name('store');
+            Route::get('/{bookingDiscountCode}/edit', [\App\Http\Controllers\Staff\BookingDiscountCodesController::class, 'edit'])->name('edit');
+            Route::put('/{bookingDiscountCode}', [\App\Http\Controllers\Staff\BookingDiscountCodesController::class, 'update'])->name('update');
+            Route::delete('/{bookingDiscountCode}', [\App\Http\Controllers\Staff\BookingDiscountCodesController::class, 'destroy'])->name('destroy');
+        });
+
         // Doctor Schedule / Availability Management
         Route::prefix('schedule')->name('schedule.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Staff\ScheduleController::class, 'index'])->name('index');
@@ -907,6 +916,15 @@ Route::group(['middleware' => 'installed'], function () {
         Route::put('/departments/{department}', [\App\Http\Controllers\Admin\DepartmentsController::class, 'update'])->name('departments.update');
         Route::delete('/departments/{department}', [\App\Http\Controllers\Admin\DepartmentsController::class, 'destroy'])->name('departments.destroy');
         Route::post('/departments/{department}/toggle-status', [\App\Http\Controllers\Admin\DepartmentsController::class, 'toggleStatus'])->name('departments.toggle-status');
+
+        Route::prefix('departments/{department}/clinic-booking-discount-codes')->name('departments.clinic-booking-discount-codes.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\ClinicBookingDiscountCodesController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Admin\ClinicBookingDiscountCodesController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Admin\ClinicBookingDiscountCodesController::class, 'store'])->name('store');
+            Route::get('/{clinicBookingDiscountCode}/edit', [\App\Http\Controllers\Admin\ClinicBookingDiscountCodesController::class, 'edit'])->name('edit');
+            Route::put('/{clinicBookingDiscountCode}', [\App\Http\Controllers\Admin\ClinicBookingDiscountCodesController::class, 'update'])->name('update');
+            Route::delete('/{clinicBookingDiscountCode}', [\App\Http\Controllers\Admin\ClinicBookingDiscountCodesController::class, 'destroy'])->name('destroy');
+        });
         
         // Website Content Management - Removed (Banner Slides, Homepage Features, Testimonials, FAQs, Services, About Us, Contact Page)
         // Route::resource('banner-slides', \App\Http\Controllers\Admin\BannerSlideController::class);

@@ -69,6 +69,7 @@ class BookingServicesController extends Controller
             'description' => 'nullable|string',
             'default_duration_minutes' => 'required|integer|min:5|max:480',
             'default_price' => 'nullable|numeric|min:0',
+            'default_consultation_type' => 'required|in:in_person,online,telephone',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'is_active' => 'boolean',
@@ -88,6 +89,8 @@ class BookingServicesController extends Controller
             $request->boolean('adults_only')
         );
 
+        $defaultConsultationType = $request->input('default_consultation_type', 'in_person');
+
         $createdBy = Auth::id();
         $forDoctorId = $request->input('created_for_doctor_id');
         if ($forDoctorId) {
@@ -104,6 +107,7 @@ class BookingServicesController extends Controller
             'name' => $request->name,
             'description' => $request->description,
             'default_duration_minutes' => $request->default_duration_minutes,
+            'default_consultation_type' => $defaultConsultationType,
             'default_price' => $request->default_price,
             'minimum_age' => $minimumAge,
             'maximum_age' => $maximumAge,
@@ -121,6 +125,7 @@ class BookingServicesController extends Controller
                 [
                     'custom_price' => $service->default_price,
                     'custom_duration_minutes' => $service->default_duration_minutes,
+                    'consultation_type' => $defaultConsultationType,
                     'is_active' => true,
                 ]
             );
@@ -168,6 +173,7 @@ class BookingServicesController extends Controller
             'description' => 'nullable|string',
             'default_duration_minutes' => 'required|integer|min:5|max:480',
             'default_price' => 'nullable|numeric|min:0',
+            'default_consultation_type' => 'required|in:in_person,online,telephone',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'is_active' => 'boolean',
@@ -193,6 +199,7 @@ class BookingServicesController extends Controller
             'name' => $request->name,
             'description' => $request->description,
             'default_duration_minutes' => $request->default_duration_minutes,
+            'default_consultation_type' => $request->input('default_consultation_type', 'in_person'),
             'default_price' => $newDefaultPrice,
             'minimum_age' => $minimumAge,
             'maximum_age' => $maximumAge,
@@ -290,6 +297,7 @@ class BookingServicesController extends Controller
             'doctor_id' => 'required|exists:doctors,id',
             'custom_price' => 'nullable|numeric|min:0',
             'custom_duration_minutes' => 'nullable|integer|min:5|max:480',
+            'consultation_type' => 'required|in:in_person,online,telephone',
             'is_active' => 'boolean',
         ]);
 
@@ -306,6 +314,7 @@ class BookingServicesController extends Controller
                 [
                     'custom_price' => $request->custom_price ?? $bookingService->default_price,
                     'custom_duration_minutes' => $request->custom_duration_minutes ?? $bookingService->default_duration_minutes,
+                    'consultation_type' => $request->input('consultation_type', $bookingService->default_consultation_type ?? 'in_person'),
                     'is_active' => $request->boolean('is_active', true),
                 ]
             );

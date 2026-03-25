@@ -16,6 +16,7 @@ class BookingService extends Model
         'name',
         'description',
         'default_duration_minutes',
+        'default_consultation_type',
         'default_price',
         'minimum_age',
         'maximum_age',
@@ -98,7 +99,9 @@ class BookingService extends Model
             ->where('is_active', true)
             ->first();
 
-        return $doctorPrice?->consultation_type ?? 'in_person';
+        $fallback = $this->default_consultation_type ?: 'in_person';
+
+        return $doctorPrice?->consultation_type ?? $fallback;
     }
 
     public function isUnder18OnlyService(): bool
