@@ -229,13 +229,9 @@
                                         <label for="estimated_duration" class="form-label fw-semibold">Duration <span class="text-danger">*</span></label>
                                         <select class="form-control @error('estimated_duration') is-invalid @enderror"
                                                 id="estimated_duration" name="estimated_duration" required>
-                                            <option value="15" {{ old('estimated_duration') === '15' ? 'selected' : '' }}>15 min</option>
-                                            <option value="30" {{ old('estimated_duration', '30') === '30' ? 'selected' : '' }}>30 min</option>
-                                            <option value="45" {{ old('estimated_duration') === '45' ? 'selected' : '' }}>45 min</option>
-                                            <option value="60" {{ old('estimated_duration') === '60' ? 'selected' : '' }}>1 hour</option>
-                                            <option value="90" {{ old('estimated_duration') === '90' ? 'selected' : '' }}>1.5 hours</option>
-                                            <option value="120" {{ old('estimated_duration') === '120' ? 'selected' : '' }}>2 hours</option>
+                                            @include('staff.appointments.partials.duration-select-options', ['selectedDuration' => old('estimated_duration', '30')])
                                         </select>
+                                        <small class="text-muted">15-minute increments (up to 8 hours).</small>
                                         @error('estimated_duration')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
@@ -246,16 +242,7 @@
                                         <label for="appointment_time" class="form-label fw-semibold">Time <span class="text-danger">*</span></label>
                                         <select class="form-control @error('appointment_time') is-invalid @enderror"
                                                 id="appointment_time" name="appointment_time" required>
-                                            <option value="">Select time</option>
-                                            @for($hour = 8; $hour <= 17; $hour++)
-                                                @for($minute = 0; $minute < 60; $minute += 30)
-                                                    @php
-                                                        $time = sprintf('%02d:%02d', $hour, $minute);
-                                                        $displayTime = date('g:i A', strtotime($time));
-                                                    @endphp
-                                                    <option value="{{ $time }}" {{ old('appointment_time') === $time ? 'selected' : '' }}>{{ $displayTime }}</option>
-                                                @endfor
-                                            @endfor
+                                            @include('staff.appointments.partials.time-slot-options', ['selectedTime' => old('appointment_time')])
                                         </select>
                                         @error('appointment_time')
                                             <div class="invalid-feedback">{{ $message }}</div>
@@ -813,7 +800,7 @@ $(document).ready(function() {
                 if (!timeValue) return;
                 const [hour, minute] = timeValue.split(':').map(Number);
                 const timeInMinutes = hour * 60 + minute;
-                $(this).prop('disabled', timeInMinutes <= currentTimeInMinutes + 30); // 30 min buffer
+                $(this).prop('disabled', timeInMinutes <= currentTimeInMinutes + 15); // 15 min buffer (matches slot grid)
             });
         } else {
             // Enable all time slots for future dates
@@ -880,7 +867,7 @@ $(document).ready(function() {
 
             const slots = Array.isArray(data?.slots) ? data.slots : [];
 
-            // Apply a 30-min buffer client-side for today's date (matches previous UI behavior)
+            // Apply a 15-min buffer client-side for today's date (matches 15-min slot grid)
             const today = new Date();
             // Parse date - handle both UK format (dd/mm/yyyy) and standard format
             let selectedDate;
@@ -890,7 +877,7 @@ $(document).ready(function() {
             } else {
                 selectedDate = new Date(date);
             }
-            const nowPlusBuffer = new Date(Date.now() + 30 * 60 * 1000);
+            const nowPlusBuffer = new Date(Date.now() + 15 * 60 * 1000);
 
             const filtered = slots.filter(s => {
                 const start = s.start || s.time;

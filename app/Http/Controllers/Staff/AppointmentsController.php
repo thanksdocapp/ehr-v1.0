@@ -10,6 +10,7 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class AppointmentsController extends Controller
@@ -374,6 +375,7 @@ class AppointmentsController extends Controller
             'appointment_date' => 'required|date|after_or_equal:today',
             'appointment_time' => 'required',
             'appointment_type' => 'required|in:consultation,follow_up',
+            'estimated_duration' => ['required', 'integer', Rule::in(range(15, 480, 15))],
             'notes' => 'nullable|string',
             'consultation_type' => 'nullable|in:in_person,online,telephone',
             'is_online' => 'nullable|boolean',
@@ -610,7 +612,7 @@ class AppointmentsController extends Controller
             'appointment_type' => 'required|in:consultation,follow_up',
             'reason' => 'nullable|string',
             'priority' => 'nullable|in:normal,high,urgent',
-            'estimated_duration' => 'nullable|integer|min:15|max:480',
+            'estimated_duration' => ['nullable', 'integer', 'min:15', 'max:480', Rule::in(range(15, 480, 15))],
             'status' => 'nullable|in:pending,confirmed,completed,cancelled',
             'notes' => 'nullable|string',
             'edit_reason' => 'required|string|min:5',

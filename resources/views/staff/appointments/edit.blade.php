@@ -215,19 +215,16 @@
                                     <select class="form-control @error('appointment_time') is-invalid @enderror" 
                                             id="appointment_time" name="appointment_time" required
                                             {{ in_array($appointment->status, ['completed', 'cancelled']) ? 'disabled' : '' }}>
-                                        <option value="">Select Time</option>
-                                        @for($hour = 8; $hour <= 17; $hour++)
-                                            @for($minute = 0; $minute < 60; $minute += 30)
-                                                @php
-                                                    $time = sprintf('%02d:%02d', $hour, $minute);
-                                                    $displayTime = date('g:i A', strtotime($time));
-                                                    $selected = old('appointment_time', $appointment->appointment_time) === $time ? 'selected' : '';
-                                                @endphp
-                                                <option value="{{ $time }}" {{ $selected }}>
-                                                    {{ $displayTime }}
-                                                </option>
-                                            @endfor
-                                        @endfor
+                                        @php
+                                            $editTimeSelected = old('appointment_time');
+                                            if ($editTimeSelected === null && $appointment->appointment_time) {
+                                                $t = $appointment->appointment_time;
+                                                $editTimeSelected = $t instanceof \Carbon\CarbonInterface
+                                                    ? $t->format('H:i')
+                                                    : substr((string) $t, 0, 5);
+                                            }
+                                        @endphp
+                                        @include('staff.appointments.partials.time-slot-options', ['selectedTime' => $editTimeSelected])
                                     </select>
                                     @error('appointment_time')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -445,12 +442,9 @@
                             <label for="estimated_duration" class="form-label">Estimated Duration (minutes)</label>
                             <select class="form-control @error('estimated_duration') is-invalid @enderror" 
                                     id="estimated_duration" name="estimated_duration">
-                                <option value="30" {{ old('estimated_duration', $appointment->estimated_duration ?? '30') == '30' ? 'selected' : '' }}>30 minutes</option>
-                                <option value="45" {{ old('estimated_duration', $appointment->estimated_duration) == '45' ? 'selected' : '' }}>45 minutes</option>
-                                <option value="60" {{ old('estimated_duration', $appointment->estimated_duration) == '60' ? 'selected' : '' }}>1 hour</option>
-                                <option value="90" {{ old('estimated_duration', $appointment->estimated_duration) == '90' ? 'selected' : '' }}>1.5 hours</option>
-                                <option value="120" {{ old('estimated_duration', $appointment->estimated_duration) == '120' ? 'selected' : '' }}>2 hours</option>
+                                @include('staff.appointments.partials.duration-select-options', ['selectedDuration' => old('estimated_duration', $appointment->estimated_duration ?? '30')])
                             </select>
+                            <small class="text-muted">15-minute increments (up to 8 hours).</small>
                             @error('estimated_duration')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -772,7 +766,7 @@ $(document).ready(function() {
                     const timeInMinutes = hour * 60 + minute;
                     const currentTimeInMinutes = currentHour * 60 + currentMinute;
                     
-                    if (timeInMinutes <= currentTimeInMinutes + 30) {
+                    if (timeInMinutes <= currentTimeInMinutes + 15) {
                         $(this).prop('disabled', true);
                     } else {
                         $(this).prop('disabled', false);
