@@ -417,6 +417,8 @@ Route::group(['middleware' => 'installed'], function () {
             Route::post('{doctorSettlement}/submit', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'submit'])->name('submit');
         });
 
+        Route::get('/booking-payments', [\App\Http\Controllers\Staff\BookingPaymentsController::class, 'index'])->name('booking-payments.index');
+
         // Doctor Services Management
         Route::prefix('doctor-services')->name('doctor-services.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'index'])->name('index');
@@ -907,6 +909,8 @@ Route::group(['middleware' => 'installed'], function () {
             Route::get('{doctorSettlement}', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'show'])->name('show');
             Route::patch('{doctorSettlement}/status', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'updateStatus'])->name('update-status');
         });
+
+        Route::get('/booking-payments', [\App\Http\Controllers\Admin\BookingPaymentsController::class, 'index'])->name('booking-payments.index');
 
         // Payment Gateway Management
         Route::prefix('payment-gateways')->name('payment-gateways.')->group(function () {

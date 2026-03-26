@@ -291,6 +291,56 @@
     </div>
     @endif
 
+    @if(!empty($bookingPaymentStats))
+    <div class="row g-3 mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="text-muted text-uppercase small fw-semibold mb-0">
+                <i class="fas fa-credit-card me-1"></i>Payments (visits, billing, booking checkout &amp; offers)
+            </h6>
+            <a href="{{ route('staff.booking-payments.index') }}" class="btn btn-sm btn-outline-primary">View all booking payments</a>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="stat-card-enhanced" onclick="window.location.href='{{ route('staff.booking-payments.index') }}'">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper" style="background: #6f42c1;">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ CurrencyHelper::format((float) ($bookingPaymentStats['total_this_month'] ?? 0)) }}</div>
+                        <div class="stat-label">Booking payments this month</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="stat-card-enhanced" onclick="window.location.href='{{ route('staff.booking-payments.index') }}'">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper" style="background: #20c997;">
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ CurrencyHelper::format((float) ($bookingPaymentStats['total_this_week'] ?? 0)) }}</div>
+                        <div class="stat-label">Booking payments this week</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="stat-card-enhanced" onclick="window.location.href='{{ route('staff.booking-payments.index') }}'">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper" style="background: #6610f2;">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ CurrencyHelper::format((float) ($bookingPaymentStats['total_all_time'] ?? 0)) }}</div>
+                        <div class="stat-label">All-time ({{ (int) ($bookingPaymentStats['payment_count'] ?? 0) }} payments)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Quincy Prescription Delivery Status -->
     @if(isset($quincyDeliveryStatus) && ($quincyDeliveryStatus['available'] ?? false))
     <div class="row g-3 mb-4">

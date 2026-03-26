@@ -202,6 +202,7 @@ class RoleMenuVisibility extends Model
                 'alerts' => ['label' => 'Patient Alerts', 'icon' => 'fa-exclamation-triangle', 'order' => 11],
                 'billing' => ['label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'order' => 12],
                 'doctor-settlements' => ['label' => 'Settlement requests', 'icon' => 'fa-hand-holding-usd', 'order' => 12.5],
+                'booking-payments' => ['label' => 'Payments (bookings & billing)', 'icon' => 'fa-credit-card', 'order' => 12.6],
                 'feedback' => ['label' => 'Patient Feedback', 'icon' => 'fa-comment-dots', 'order' => 13],
             ];
         } else {
@@ -297,6 +298,7 @@ class RoleMenuVisibility extends Model
                 'alerts' => true,
                 'billing' => true,
                 'doctor-settlements' => true,
+                'booking-payments' => true,
                 'feedback' => true,
             ],
             'nurse' => [
@@ -314,6 +316,7 @@ class RoleMenuVisibility extends Model
                 'alerts' => true,
                 'billing' => false,
                 'doctor-settlements' => false,
+                'booking-payments' => false,
                 'feedback' => false,
             ],
             'receptionist' => [
@@ -331,6 +334,7 @@ class RoleMenuVisibility extends Model
                 'alerts' => true,
                 'billing' => true,
                 'doctor-settlements' => false,
+                'booking-payments' => false,
                 'feedback' => false,
             ],
             'pharmacist' => [
@@ -347,6 +351,7 @@ class RoleMenuVisibility extends Model
                 'alerts' => true,
                 'billing' => false,
                 'doctor-settlements' => false,
+                'booking-payments' => false,
                 'feedback' => false,
             ],
             'technician' => [
@@ -363,6 +368,7 @@ class RoleMenuVisibility extends Model
                 'alerts' => true,
                 'billing' => false,
                 'doctor-settlements' => false,
+                'booking-payments' => false,
                 'feedback' => false,
             ],
             'staff' => [
@@ -380,6 +386,7 @@ class RoleMenuVisibility extends Model
                 'alerts' => true,
                 'billing' => false,
                 'doctor-settlements' => false,
+                'booking-payments' => false,
                 'feedback' => false,
             ],
         ];

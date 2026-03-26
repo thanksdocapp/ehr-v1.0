@@ -11,6 +11,7 @@ use App\Models\Billing;
 use App\Models\ClinicBookingRequest;
 use App\Models\IntegrationModule;
 use App\Models\Notice;
+use App\Services\BookingPaymentsService;
 use App\Services\Integrations\QuincyService;
 use App\Services\PatientFeedbackService;
 use Illuminate\Http\Request;
@@ -207,8 +208,9 @@ class DashboardController extends Controller
                 ->get();
 
             $billingStats = $doctor ? $this->doctorBillingStats($doctor) : null;
+            $bookingPaymentStats = $doctor ? app(BookingPaymentsService::class)->doctorBookingPaymentStats($doctor) : null;
 
-            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations', 'notices', 'pendingPastCount', 'pendingUpcomingCount', 'pendingClinicRequestsCount', 'billingStats'));
+            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations', 'notices', 'pendingPastCount', 'pendingUpcomingCount', 'pendingClinicRequestsCount', 'billingStats', 'bookingPaymentStats'));
         }
         
         return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus', 'notices', 'pendingPastCount', 'pendingUpcomingCount'));
@@ -261,6 +263,7 @@ class DashboardController extends Controller
             $doctor = Doctor::where('user_id', Auth::id())->first();
             if ($doctor) {
                 $payload['billing'] = $this->doctorBillingStats($doctor);
+                $payload['booking_payments'] = app(BookingPaymentsService::class)->doctorBookingPaymentStats($doctor);
             }
         }
 

@@ -95,7 +95,7 @@
     @case('billing-management')
         <div class="menu-item">
             <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.billing.*') || request()->routeIs('admin.payment-gateways.*') || request()->routeIs('admin.doctor-settlements.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.billing.*') || request()->routeIs('admin.payment-gateways.*') || request()->routeIs('admin.doctor-settlements.*') || request()->routeIs('admin.booking-payments.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                     <i class="menu-icon fas {{ $icon }}"></i>
                     <span class="menu-text">{{ $label }}</span>
                 </a>
@@ -103,6 +103,7 @@
                     <a class="dropdown-item" href="{{ route('admin.billing.index') }}">All Bills</a>
                     <a class="dropdown-item" href="{{ route('admin.billing.create') }}">Create New Bill</a>
                     <a class="dropdown-item" href="{{ route('admin.doctor-settlements.index') }}">Doctor settlement requests</a>
+                    <a class="dropdown-item" href="{{ route('admin.booking-payments.index') }}">Payments (bookings &amp; billing)</a>
                     <a class="dropdown-item" href="{{ route('admin.payment-gateways.index') }}">Payment Gateways</a>
                 </div>
             </div>

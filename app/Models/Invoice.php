@@ -87,6 +87,14 @@ class Invoice extends Model
         return $this->hasMany(Payment::class);
     }
 
+    /**
+     * Public booking pipeline rows that reference this invoice (pre-appointment payment).
+     */
+    public function pendingBookings(): HasMany
+    {
+        return $this->hasMany(PendingBooking::class);
+    }
+
     // Scopes
     public function scopeByStatus($query, $status)
     {
