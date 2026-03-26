@@ -10,6 +10,7 @@ use App\Models\Doctor;
 use App\Models\Department;
 use App\Models\User;
 use App\Models\IntegrationModule;
+use App\Models\Payment;
 use App\Services\Integrations\QuincyService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -406,17 +407,45 @@ class DashboardController extends Controller
     }
     
     /**
-     * Get revenue data (placeholder for billing integration).
+     * Revenue collected per day from completed payment records (patient payments).
      */
     private function getRevenueData($days = 30)
     {
-        // This would integrate with your billing system
-        // For now, returning sample data structure
+        $days = (int) $days;
+        if ($days < 1) {
+            $days = 30;
+        }
+        if ($days > 365) {
+            $days = 365;
+        }
+
+        $end = Carbon::today()->endOfDay();
+        $start = Carbon::today()->copy()->subDays($days - 1)->startOfDay();
+
+        $byDay = Payment::query()
+            ->completed()
+            ->whereBetween('payment_date', [$start, $end])
+            ->get()
+            ->groupBy(fn (Payment $p) => $p->payment_date->format('Y-m-d'));
+
+        $labels = [];
+        $data = [];
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            $key = $cursor->format('Y-m-d');
+            $labels[] = $cursor->format('M j');
+            $dayTotal = $byDay->get($key)?->sum('amount') ?? 0;
+            $data[] = round((float) $dayTotal, 2);
+            $cursor->addDay();
+        }
+
+        $totalRevenue = array_sum($data);
+
         return [
-            'labels' => [],
-            'data' => [],
-            'total_revenue' => 0,
-            'average_per_day' => 0
+            'labels' => $labels,
+            'data' => $data,
+            'total_revenue' => round($totalRevenue, 2),
+            'average_per_day' => $days > 0 ? round($totalRevenue / $days, 2) : 0,
         ];
     }
     

@@ -201,6 +201,7 @@ class RoleMenuVisibility extends Model
                 'patient-email' => ['label' => 'Send Email', 'icon' => 'fa-envelope', 'order' => 10],
                 'alerts' => ['label' => 'Patient Alerts', 'icon' => 'fa-exclamation-triangle', 'order' => 11],
                 'billing' => ['label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'order' => 12],
+                'doctor-settlements' => ['label' => 'Settlement requests', 'icon' => 'fa-hand-holding-usd', 'order' => 12.5],
                 'feedback' => ['label' => 'Patient Feedback', 'icon' => 'fa-comment-dots', 'order' => 13],
             ];
         } else {
@@ -294,7 +295,8 @@ class RoleMenuVisibility extends Model
                 'form-submissions' => true,
                 'patient-email' => true,
                 'alerts' => true,
-                'billing' => false, // Doctors typically don't manage billing
+                'billing' => true,
+                'doctor-settlements' => true,
                 'feedback' => true,
             ],
             'nurse' => [
@@ -311,6 +313,7 @@ class RoleMenuVisibility extends Model
                 'form-submissions' => true,
                 'alerts' => true,
                 'billing' => false,
+                'doctor-settlements' => false,
                 'feedback' => false,
             ],
             'receptionist' => [
@@ -327,6 +330,7 @@ class RoleMenuVisibility extends Model
                 'form-submissions' => true,
                 'alerts' => true,
                 'billing' => true,
+                'doctor-settlements' => false,
                 'feedback' => false,
             ],
             'pharmacist' => [
@@ -342,6 +346,7 @@ class RoleMenuVisibility extends Model
                 'form-templates' => false,
                 'alerts' => true,
                 'billing' => false,
+                'doctor-settlements' => false,
                 'feedback' => false,
             ],
             'technician' => [
@@ -357,6 +362,7 @@ class RoleMenuVisibility extends Model
                 'form-templates' => false,
                 'alerts' => true,
                 'billing' => false,
+                'doctor-settlements' => false,
                 'feedback' => false,
             ],
             'staff' => [
@@ -373,6 +379,7 @@ class RoleMenuVisibility extends Model
                 'form-templates' => false,
                 'alerts' => true,
                 'billing' => false,
+                'doctor-settlements' => false,
                 'feedback' => false,
             ],
         ];

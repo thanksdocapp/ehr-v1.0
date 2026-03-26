@@ -2170,6 +2170,10 @@
                             $route = route('staff.billing.index');
                             $isActive = request()->routeIs('staff.billing.*');
                             break;
+                        case 'doctor-settlements':
+                            $route = route('staff.doctor-settlements.index');
+                            $isActive = request()->routeIs('staff.doctor-settlements.*');
+                            break;
                         case 'patient-email':
                             $route = route('staff.patient-email.compose');
                             $isActive = request()->routeIs('staff.patient-email.*');

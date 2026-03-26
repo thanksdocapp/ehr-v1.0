@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Department;
+use App\Models\Billing;
 use App\Models\ClinicBookingRequest;
 use App\Models\IntegrationModule;
 use App\Models\Notice;
@@ -14,6 +15,7 @@ use App\Services\Integrations\QuincyService;
 use App\Services\PatientFeedbackService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -204,7 +206,9 @@ class DashboardController extends Controller
                 ->limit(5)
                 ->get();
 
-            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations', 'notices', 'pendingPastCount', 'pendingUpcomingCount', 'pendingClinicRequestsCount'));
+            $billingStats = $doctor ? $this->doctorBillingStats($doctor) : null;
+
+            return view('doctor.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'doctor', 'doctorRating', 'quincyDeliveryStatus', 'upcomingVideoConsultations', 'notices', 'pendingPastCount', 'pendingUpcomingCount', 'pendingClinicRequestsCount', 'billingStats'));
         }
         
         return view('staff.dashboard.index', compact('stats', 'recentAppointments', 'todayAppointments', 'quincyStatus', 'notices', 'pendingPastCount', 'pendingUpcomingCount'));
@@ -236,8 +240,7 @@ class DashboardController extends Controller
             $doctorsQuery->byDepartment($departmentId);
         }
         
-        // Limited stats for staff - no financial or sensitive data, filtered by department
-        return response()->json([
+        $payload = [
             'patients' => [
                 'total' => $patientsQuery->count(),
                 'new_this_month' => (clone $patientsQuery)->whereMonth('created_at', Carbon::now()->month)->count(),
@@ -252,7 +255,54 @@ class DashboardController extends Controller
                 'total' => $doctorsQuery->count(),
                 'available' => (clone $doctorsQuery)->where('availability_status', 'available')->count(),
             ],
-        ]);
+        ];
+
+        if (Auth::user()->role === 'doctor') {
+            $doctor = Doctor::where('user_id', Auth::id())->first();
+            if ($doctor) {
+                $payload['billing'] = $this->doctorBillingStats($doctor);
+            }
+        }
+
+        return response()->json($payload);
+    }
+
+    /**
+     * Billing totals attributed to this doctor (billings where doctor_id matches).
+     */
+    private function doctorBillingStats(Doctor $doctor): array
+    {
+        $doctorId = $doctor->id;
+        $monthStart = Carbon::now()->startOfMonth();
+        $monthEnd = Carbon::now()->endOfMonth();
+        $weekStart = Carbon::now()->startOfWeek();
+        $weekEnd = Carbon::now()->endOfWeek();
+
+        $collectedMonth = (float) Billing::query()
+            ->where('doctor_id', $doctorId)
+            ->where('paid_amount', '>', 0)
+            ->whereNotNull('paid_at')
+            ->whereBetween('paid_at', [$monthStart, $monthEnd])
+            ->sum('paid_amount');
+
+        $collectedWeek = (float) Billing::query()
+            ->where('doctor_id', $doctorId)
+            ->where('paid_amount', '>', 0)
+            ->whereNotNull('paid_at')
+            ->whereBetween('paid_at', [$weekStart, $weekEnd])
+            ->sum('paid_amount');
+
+        $outstanding = (float) DB::table('billings')
+            ->where('doctor_id', $doctorId)
+            ->whereIn('status', ['pending', 'partial', 'overdue'])
+            ->selectRaw('COALESCE(SUM(total_amount - paid_amount), 0) as s')
+            ->value('s');
+
+        return [
+            'collected_this_month' => round($collectedMonth, 2),
+            'collected_this_week' => round($collectedWeek, 2),
+            'outstanding' => round($outstanding, 2),
+        ];
     }
 
     /**

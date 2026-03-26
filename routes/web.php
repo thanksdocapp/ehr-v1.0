@@ -408,7 +408,15 @@ Route::group(['middleware' => 'installed'], function () {
             Route::put('{billing}', [\App\Http\Controllers\Staff\BillingsController::class, 'update'])->name('update');
             Route::post('{billing}/send-to-patient', [\App\Http\Controllers\Staff\BillingsController::class, 'sendToPatient'])->name('send-to-patient');
         });
-        
+
+        Route::prefix('doctor-settlements')->name('doctor-settlements.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'store'])->name('store');
+            Route::get('{doctorSettlement}', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'show'])->name('show');
+            Route::post('{doctorSettlement}/submit', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'submit'])->name('submit');
+        });
+
         // Doctor Services Management
         Route::prefix('doctor-services')->name('doctor-services.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Staff\DoctorServicesController::class, 'index'])->name('index');
@@ -893,7 +901,13 @@ Route::group(['middleware' => 'installed'], function () {
             Route::get('{billing}/invoice', [\App\Http\Controllers\Admin\BillingsController::class, 'generateInvoice'])->name('invoice');
             Route::post('{billing}/send-to-patient', [\App\Http\Controllers\Admin\BillingsController::class, 'sendToPatient'])->name('send-to-patient');
         });
-        
+
+        Route::prefix('doctor-settlements')->name('doctor-settlements.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'index'])->name('index');
+            Route::get('{doctorSettlement}', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'show'])->name('show');
+            Route::patch('{doctorSettlement}/status', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'updateStatus'])->name('update-status');
+        });
+
         // Payment Gateway Management
         Route::prefix('payment-gateways')->name('payment-gateways.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\PaymentGatewayController::class, 'index'])->name('index');

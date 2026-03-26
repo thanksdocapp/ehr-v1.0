@@ -5,6 +5,9 @@
 @section('page-subtitle', 'Manage your practice efficiently')
 
 @section('content')
+@php
+    use App\Helpers\CurrencyHelper;
+@endphp
 <div class="fade-in-up">
     <!-- System Notices -->
     @if(isset($notices) && $notices->count() > 0)
@@ -238,6 +241,55 @@
             </div>
         </div>
     </div>
+
+    @if(!empty($billingStats))
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <h6 class="text-muted text-uppercase small fw-semibold mb-2">
+                <i class="fas fa-file-invoice-dollar me-1"></i>Your billing (attributed to you)
+            </h6>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="stat-card-enhanced" onclick="window.location.href='{{ route('staff.billing.index') }}'">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper" style="background: #198754;">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ CurrencyHelper::format((float) ($billingStats['collected_this_month'] ?? 0)) }}</div>
+                        <div class="stat-label">Collected this month</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="stat-card-enhanced" onclick="window.location.href='{{ route('staff.billing.index') }}'">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper" style="background: #0d6efd;">
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ CurrencyHelper::format((float) ($billingStats['collected_this_week'] ?? 0)) }}</div>
+                        <div class="stat-label">Collected this week</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="stat-card-enhanced" onclick="window.location.href='{{ route('staff.billing.index') }}'">
+                <div class="stat-card-content">
+                    <div class="stat-icon-wrapper" style="background: #fd7e14;">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">{{ CurrencyHelper::format((float) ($billingStats['outstanding'] ?? 0)) }}</div>
+                        <div class="stat-label">Outstanding on open bills</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     <!-- Quincy Prescription Delivery Status -->
     @if(isset($quincyDeliveryStatus) && ($quincyDeliveryStatus['available'] ?? false))

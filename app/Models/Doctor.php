@@ -105,6 +105,11 @@ class Doctor extends Model
         return $this->hasMany(DoctorBookingDiscountCode::class);
     }
 
+    public function doctorSettlements(): HasMany
+    {
+        return $this->hasMany(DoctorSettlement::class);
+    }
+
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(BookingService::class, 'doctor_service_prices', 'doctor_id', 'service_id')
