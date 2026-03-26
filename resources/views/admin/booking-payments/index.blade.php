@@ -2,6 +2,18 @@
 @php
     use App\Helpers\CurrencyHelper;
 @endphp
+@php
+    $fmtApptSlot = static function ($appt) {
+        if (!$appt || !$appt->appointment_date) {
+            return '—';
+        }
+        $d = formatDateUk($appt->appointment_date);
+        if (!empty($appt->appointment_time)) {
+            $d .= ', '.formatTime($appt->appointment_time, 'g:i A');
+        }
+        return $d;
+    };
+@endphp
 
 @section('title', 'Booking payments')
 
@@ -92,7 +104,7 @@
                                 }
                             @endphp
                             <tr>
-                                <td>{{ $payment->payment_date ? $payment->payment_date->format('Y-m-d H:i') : '—' }}</td>
+                                <td>{{ $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—' }}</td>
                                 <td class="text-end">{{ CurrencyHelper::format((float) $payment->amount) }}</td>
                                 <td>{{ $payment->payment_method ?? '—' }}</td>
                                 <td><span class="badge bg-{{ $badgeClass }}">{{ $src }}</span></td>
@@ -107,9 +119,9 @@
                                 </td>
                                 <td>
                                     @if($appt)
-                                        {{ $appt->appointment_date?->format('Y-m-d') }} {{ $appt->appointment_time ?? '' }}
+                                        {{ $fmtApptSlot($appt) }}
                                     @elseif($inv?->billing?->appointment)
-                                        {{ $inv->billing->appointment->appointment_date?->format('Y-m-d') }} {{ $inv->billing->appointment->appointment_time ?? '' }} <span class="text-muted small">(billing)</span>
+                                        {{ $fmtApptSlot($inv->billing->appointment) }} <span class="text-muted small">(billing)</span>
                                     @elseif($inv && $inv->pendingBookings->isNotEmpty())
                                         <span class="text-muted">Pending booking</span>
                                     @else

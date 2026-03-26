@@ -54,7 +54,7 @@
                         <tr>
                             <td>#{{ $s->id }}</td>
                             <td>{{ $s->doctor?->user?->name ?? 'Doctor #'.$s->doctor_id }}</td>
-                            <td>{{ $s->period_start->format('M j, Y') }} — {{ $s->period_end->format('M j, Y') }}</td>
+                            <td>{{ formatDateUk($s->period_start) }} — {{ formatDateUk($s->period_end) }}</td>
                             <td>{{ ucfirst($s->period_type) }}</td>
                             <td class="text-end">{{ CurrencyHelper::format((float) $s->total_amount) }}</td>
                             <td>

@@ -2,6 +2,18 @@
 @php
     use App\Helpers\CurrencyHelper;
 @endphp
+@php
+    $fmtApptSlot = static function ($appt) {
+        if (!$appt || !$appt->appointment_date) {
+            return '—';
+        }
+        $d = formatDateUk($appt->appointment_date);
+        if (!empty($appt->appointment_time)) {
+            $d .= ', '.formatTime($appt->appointment_time, 'g:i A');
+        }
+        return $d;
+    };
+@endphp
 
 @section('title', 'Booking payments')
 @section('page-title', 'Booking payments')
@@ -104,7 +116,7 @@
                                 };
                             @endphp
                             <tr>
-                                <td>{{ $payment->payment_date ? $payment->payment_date->format('Y-m-d H:i') : '—' }}</td>
+                                <td>{{ $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—' }}</td>
                                 <td class="text-end fw-semibold">{{ CurrencyHelper::format((float) $payment->amount) }}</td>
                                 <td>{{ $payment->payment_method_label ?? $payment->payment_method }}</td>
                                 <td><span class="badge bg-{{ $badgeClass }}">{{ $src }}</span></td>
@@ -118,10 +130,10 @@
                                 </td>
                                 <td>
                                     @if($appt)
-                                        <a href="{{ route('staff.appointments.show', $appt->id) }}">{{ $appt->appointment_date?->format('Y-m-d') }} {{ $appt->appointment_time ?? '' }}</a>
+                                        <a href="{{ route('staff.appointments.show', $appt->id) }}">{{ $fmtApptSlot($appt) }}</a>
                                     @elseif($inv?->billing?->appointment_id && $inv->billing->appointment)
                                         <span class="text-muted">Via billing</span>
-                                        <a href="{{ route('staff.appointments.show', $inv->billing->appointment_id) }}" class="d-block small">{{ $inv->billing->appointment->appointment_date?->format('Y-m-d') }}</a>
+                                        <a href="{{ route('staff.appointments.show', $inv->billing->appointment_id) }}" class="d-block small">{{ $fmtApptSlot($inv->billing->appointment) }}</a>
                                     @elseif($inv && $inv->pendingBookings->isNotEmpty())
                                         <span class="text-muted">Pending booking checkout</span>
                                     @else

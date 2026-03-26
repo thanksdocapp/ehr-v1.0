@@ -5,7 +5,7 @@
 
 @section('title', 'Settlement #'.$doctorSettlement->id)
 @section('page-title', 'Settlement request')
-@section('page-subtitle', $doctorSettlement->period_start->format('M j, Y').' — '.$doctorSettlement->period_end->format('M j, Y'))
+@section('page-subtitle', formatDateUk($doctorSettlement->period_start).' — '.formatDateUk($doctorSettlement->period_end))
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ contextRoute('dashboard') }}">Dashboard</a></li>
@@ -45,7 +45,7 @@
             </div>
             <p class="mb-1"><strong>Total:</strong> {{ CurrencyHelper::format((float) $doctorSettlement->total_amount) }}</p>
             @if($doctorSettlement->submitted_at)
-                <p class="text-muted small mb-0">Submitted {{ $doctorSettlement->submitted_at->format('Y-m-d H:i') }}</p>
+                <p class="text-muted small mb-0">Submitted {{ formatDateTimeUkAmPm($doctorSettlement->submitted_at) }}</p>
             @endif
             @if($doctorSettlement->notes)
                 <div class="mt-3">

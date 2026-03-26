@@ -27,14 +27,14 @@
                 <div class="card-body">
                     <h2 class="h4 mb-3">Settlement #{{ $doctorSettlement->id }}</h2>
                     <p class="mb-1"><strong>Doctor:</strong> {{ $doctorSettlement->doctor->user->name ?? '—' }}</p>
-                    <p class="mb-1"><strong>Period:</strong> {{ $doctorSettlement->period_start->format('M j, Y') }} — {{ $doctorSettlement->period_end->format('M j, Y') }} ({{ $doctorSettlement->period_type }})</p>
+                    <p class="mb-1"><strong>Period:</strong> {{ formatDateUk($doctorSettlement->period_start) }} — {{ formatDateUk($doctorSettlement->period_end) }} ({{ $doctorSettlement->period_type }})</p>
                     <p class="mb-1"><strong>Total:</strong> {{ CurrencyHelper::format((float) $doctorSettlement->total_amount) }}</p>
                     <p class="mb-1"><strong>Status:</strong> {{ $doctorSettlement->status }}</p>
                     @if($doctorSettlement->submitted_at)
-                        <p class="text-muted small">Submitted {{ $doctorSettlement->submitted_at->format('Y-m-d H:i') }}</p>
+                        <p class="text-muted small">Submitted {{ formatDateTimeUkAmPm($doctorSettlement->submitted_at) }}</p>
                     @endif
                     @if($doctorSettlement->reviewed_at)
-                        <p class="text-muted small">Last reviewed {{ $doctorSettlement->reviewed_at->format('Y-m-d H:i') }}
+                        <p class="text-muted small">Last reviewed {{ formatDateTimeUkAmPm($doctorSettlement->reviewed_at) }}
                             @if($doctorSettlement->reviewedByUser)
                                 by {{ $doctorSettlement->reviewedByUser->name }}
                             @endif

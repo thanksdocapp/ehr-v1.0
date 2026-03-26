@@ -120,8 +120,8 @@
                         @endif
                     </div>
                     <p class="mb-0" style="font-size: 1rem; color: #6c757d;">
-                        <i class="fas fa-calendar-day me-2"></i>{{ \Carbon\Carbon::now()->format('l, F j, Y') }}
-                        <span class="ms-3"><i class="fas fa-clock me-2"></i><span id="hero-current-time">{{ \Carbon\Carbon::now()->format('h:i A') }}</span></span>
+                        <i class="fas fa-calendar-day me-2"></i>{{ \Carbon\Carbon::now()->format('l, j F Y') }}
+                        <span class="ms-3"><i class="fas fa-clock me-2"></i><span id="hero-current-time">{{ \Carbon\Carbon::now()->format('g:i A') }}</span></span>
                     </p>
                 </div>
                 <div class="mt-3 mt-md-0 d-flex flex-column align-items-stretch align-items-md-end gap-2">
@@ -504,10 +504,10 @@
                                                 <h6 class="mb-1 fw-bold">{{ $videoAppt->patient->first_name }} {{ $videoAppt->patient->last_name }}</h6>
                                                 <div class="text-muted small">
                                                     <i class="fas fa-calendar me-1"></i>
-                                                    {{ $videoAppt->appointment_date->format('D, M j, Y') }}
+                                                    {{ $videoAppt->appointment_date->format('D, j M Y') }}
                                                     <span class="mx-1">•</span>
                                                     <i class="fas fa-clock me-1"></i>
-                                                    {{ \Carbon\Carbon::parse($videoAppt->appointment_time)->format('h:i A') }}
+                                                    {{ formatTime($videoAppt->appointment_time, 'g:i A') }}
                                                 </div>
                                             </div>
                                             @if($videoAppt->appointment_date->isToday())
@@ -788,7 +788,7 @@
                             Today's schedule
                         </h6>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="text-muted small" id="current-time">{{ now()->format('H:i A') }}</span>
+                            <span class="text-muted small" id="current-time">{{ now()->format('g:i A') }}</span>
                         </div>
                     </div>
                 </div>
@@ -808,7 +808,7 @@
                                             <div>
                                                 <div class="fw-semibold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
                                                 <small class="text-muted">
-                                                    <i class="fas fa-clock me-1"></i>{{ $appointment->appointment_time ? \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') : 'TBD' }}
+                                                    <i class="fas fa-clock me-1"></i>{{ $appointment->appointment_time ? formatTime($appointment->appointment_time, 'g:i A') : 'TBD' }}
                                                 </small>
                                             </div>
                                             <span class="badge 
@@ -892,11 +892,11 @@
                                     @foreach($recentAppointments->take(8) as $appointment)
                                     <tr>
                                         <td>
-                                            <div class="fw-semibold">{{ $appointment->appointment_date->format('M d') }}</div>
+                                            <div class="fw-semibold">{{ $appointment->appointment_date->format('j M') }}</div>
                                             <small class="text-muted">{{ $appointment->appointment_date->format('Y') }}</small>
                                         </td>
                                         <td>
-                                            <strong>{{ $appointment->appointment_time ? \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') : 'TBD' }}</strong>
+                                            <strong>{{ $appointment->appointment_time ? formatTime($appointment->appointment_time, 'g:i A') : 'TBD' }}</strong>
                                         </td>
                                         <td>
                                             <div class="d-flex align-items-center">
@@ -1308,10 +1308,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update current time every minute
     function updateTime() {
         const now = new Date();
-        const timeString = now.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
+        const timeString = now.toLocaleTimeString('en-GB', {
+            hour: 'numeric',
             minute: '2-digit',
-            hour12: true 
+            hour12: true,
         });
         const timeElement = document.getElementById('current-time');
         const heroTimeElement = document.getElementById('hero-current-time');

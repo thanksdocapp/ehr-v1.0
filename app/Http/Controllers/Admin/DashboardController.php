@@ -433,7 +433,7 @@ class DashboardController extends Controller
         $cursor = $start->copy();
         while ($cursor->lte($end)) {
             $key = $cursor->format('Y-m-d');
-            $labels[] = $cursor->format('M j');
+            $labels[] = $cursor->format('j M');
             $dayTotal = $byDay->get($key)?->sum('amount') ?? 0;
             $data[] = round((float) $dayTotal, 2);
             $cursor->addDay();
