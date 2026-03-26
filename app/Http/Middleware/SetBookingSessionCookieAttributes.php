@@ -33,7 +33,26 @@ class SetBookingSessionCookieAttributes
             }
         }
 
-        return $next($request);
+        $response = $next($request);
+
+        // Prevent CDN/proxy/browser from caching booking HTML with a stale @csrf token (common cause of 419 on Continue).
+        if ($this->isPublicBookingPath($request)) {
+            $response->headers->set('Cache-Control', 'private, no-store, no-cache, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', 'Fri, 01 Jan 1990 00:00:00 GMT');
+        }
+
+        return $response;
+    }
+
+    /**
+     * /book/* HTML and POSTs — never cache (popup/iframe flows rely on fresh session + CSRF).
+     */
+    private function isPublicBookingPath(Request $request): bool
+    {
+        $path = trim($request->path(), '/');
+
+        return $path === 'book' || str_starts_with($path, 'book/');
     }
 
     private function isEmbeddablePath(Request $request): bool

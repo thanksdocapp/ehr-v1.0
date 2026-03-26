@@ -496,9 +496,11 @@
             continueBtn.disabled = true;
 
             fetch(`{{ url('/api/public/doctors') }}/${doctorId}/services`, {
+                credentials: 'same-origin',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 }
             })
             .then(response => response.json())
@@ -681,9 +683,11 @@
             const visibleDates = currentDates;
             const datePromises = visibleDates.map(dateStr => {
                 return fetch(`{{ url('/api/public/doctors') }}/${selectedDoctorId}/slots?date=${dateStr}&service_id=${selectedServiceId}`, {
+                    credentials: 'same-origin',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                     }
                 })
                 .then(response => response.json())

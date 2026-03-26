@@ -218,7 +218,12 @@ document.addEventListener('DOMContentLoaded', function() {
         noSlotsMsg.style.display = 'none';
 
         fetch(`/api/public/clinics/${departmentId}/slots?service_id=${serviceId}&date=${selectedDate}&duration=${duration}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
         })
         .then(r => r.json())
         .then(data => {
