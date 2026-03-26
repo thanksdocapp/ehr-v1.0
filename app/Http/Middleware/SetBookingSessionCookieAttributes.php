@@ -18,6 +18,7 @@ class SetBookingSessionCookieAttributes
         if ($this->isEmbeddablePath($request)) {
             // SameSite=None + Secure ensures cookie is sent when returning from payment gateway (Stripe, etc.)
             // Fixes 403 on first load after payment; refresh worked because cookie was then present
+            // Requires TrustProxies so $request->secure() is true behind TLS-terminating proxies.
             if ($request->secure()) {
                 config([
                     'session.same_site' => 'none',

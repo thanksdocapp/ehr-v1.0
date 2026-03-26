@@ -10,9 +10,16 @@ class TrustProxies extends Middleware
     /**
      * The trusted proxies for this application.
      *
+     * Behind nginx, Cloudflare, AWS ELB, etc., this must be set so Laravel sees
+     * HTTPS via X-Forwarded-Proto. Otherwise $request->secure() is false, session
+     * cookies stay SameSite=Lax, and embedded booking iframes lose the session
+     * on POST → 419 Page Expired.
+     *
+     * Override with TRUSTED_PROXIES in .env (comma-separated IPs), or * for all.
+     *
      * @var array<int, string>|string|null
      */
-    protected $proxies;
+    protected $proxies = '*';
 
     /**
      * The headers that should be used to detect proxies.
