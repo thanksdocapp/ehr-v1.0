@@ -444,7 +444,7 @@
                                     id="estimated_duration" name="estimated_duration">
                                 @include('staff.appointments.partials.duration-select-options', ['selectedDuration' => old('estimated_duration', $appointment->estimated_duration ?? '30')])
                             </select>
-                            <small class="text-muted">15-minute increments (up to 8 hours).</small>
+                            <small class="text-muted">5-minute increments, up to 2 hours.</small>
                             @error('estimated_duration')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

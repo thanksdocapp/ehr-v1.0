@@ -1,8 +1,8 @@
-{{-- Every option is a multiple of 15 minutes (matches SlotAvailabilityService / availability API). --}}
+{{-- 5-minute increments, 5–120 min (2 hours max). --}}
 @php
     $selected = (string) ($selectedDuration ?? '30');
 @endphp
-@for($minutes = 15; $minutes <= 480; $minutes += 15)
+@for($minutes = 5; $minutes <= 120; $minutes += 5)
     <option value="{{ $minutes }}" @selected($selected === (string) $minutes)>
         @if($minutes < 60)
             {{ $minutes }} min
