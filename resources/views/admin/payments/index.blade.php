@@ -13,36 +13,66 @@
         }
         return $d;
     };
+    $statusBadge = static function (string $status): string {
+        return match ($status) {
+            'completed' => 'success',
+            'pending' => 'warning text-dark',
+            'failed' => 'danger',
+            'cancelled' => 'secondary',
+            'refunded' => 'info',
+            default => 'light text-dark',
+        };
+    };
 @endphp
 
-@section('title', 'Booking payments')
+@section('title', 'All payments')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-    <li class="breadcrumb-item active">Booking payments</li>
+    <li class="breadcrumb-item active">All payments</li>
 @endsection
 
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h1 class="h3 mb-1">Booking payments</h1>
-            <p class="text-muted mb-0">All completed patient payments (including legacy invoices that only have a patient or generic invoice link). Use <strong>Source</strong> to see how each row is tied—older rows may show as <strong>Invoice</strong>. Filter by doctor to match the doctor portal (only payments attributable to that doctor).</p>
+            <h1 class="h3 mb-1">All payments</h1>
+            <p class="text-muted mb-0">Full payment ledger (including historical rows recorded before booking-source rules). Filter by status, date, patient, invoice, or method. Use <strong>Booking payments</strong> for the same list with a doctor filter matching the doctor portal.</p>
         </div>
         <div class="fw-semibold">Filtered total: {{ CurrencyHelper::format((float) $totalAmount) }}</div>
     </div>
 
     <form method="get" class="row g-2 align-items-end mb-3">
-        <div class="col-md-3">
-            <label class="form-label small mb-0">Doctor</label>
-            <select name="doctor_id" class="form-select form-select-sm">
-                <option value="">All doctors</option>
-                @foreach($doctors as $d)
-                    <option value="{{ $d->id }}" {{ (string) request('doctor_id') === (string) $d->id ? 'selected' : '' }}>
-                        {{ $d->user->name ?? ($d->first_name.' '.$d->last_name) }}
-                    </option>
-                @endforeach
+        <div class="col-md-2">
+            <label class="form-label small mb-0">Status</label>
+            <select name="status" class="form-select form-select-sm">
+                <option value="">All</option>
+                <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
+                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>Failed</option>
+                <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                <option value="refunded" {{ request('status') === 'refunded' ? 'selected' : '' }}>Refunded</option>
             </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-0">Method</label>
+            <select name="payment_method" class="form-select form-select-sm">
+                <option value="">Any</option>
+                <option value="credit_card" {{ request('payment_method') === 'credit_card' ? 'selected' : '' }}>Credit card</option>
+                <option value="debit_card" {{ request('payment_method') === 'debit_card' ? 'selected' : '' }}>Debit card</option>
+                <option value="bank_transfer" {{ request('payment_method') === 'bank_transfer' ? 'selected' : '' }}>Bank transfer</option>
+                <option value="cash" {{ request('payment_method') === 'cash' ? 'selected' : '' }}>Cash</option>
+                <option value="insurance" {{ request('payment_method') === 'insurance' ? 'selected' : '' }}>Insurance</option>
+                <option value="online" {{ request('payment_method') === 'online' ? 'selected' : '' }}>Online</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-0">Invoice #</label>
+            <input type="text" name="invoice_number" class="form-control form-control-sm" value="{{ request('invoice_number') }}" placeholder="Search">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-0">Patient</label>
+            <input type="text" name="patient" class="form-control form-control-sm" value="{{ request('patient') }}" placeholder="Name">
         </div>
         <div class="col-auto">
             <label class="form-label small mb-0">From</label>
@@ -54,8 +84,8 @@
         </div>
         <div class="col-auto">
             <button type="submit" class="btn btn-sm btn-primary">Apply</button>
-            @if(request()->hasAny(['doctor_id','from','to']))
-                <a href="{{ route('admin.booking-payments.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+            @if(request()->hasAny(['status','payment_method','invoice_number','patient','from','to']))
+                <a href="{{ route('admin.payments.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
             @endif
         </div>
     </form>
@@ -67,6 +97,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Date</th>
+                            <th>Status</th>
                             <th class="text-end">Amount</th>
                             <th>Method</th>
                             <th>Source</th>
@@ -109,6 +140,7 @@
                             @endphp
                             <tr>
                                 <td>{{ $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—' }}</td>
+                                <td><span class="badge bg-{{ $statusBadge($payment->status) }}">{{ ucfirst($payment->status) }}</span></td>
                                 <td class="text-end">{{ CurrencyHelper::format((float) $payment->amount) }}</td>
                                 <td>{{ $payment->payment_method_label }}</td>
                                 <td><span class="badge bg-{{ $badgeClass }}">{{ $src }}</span></td>
@@ -135,7 +167,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">No payments match.</td>
+                                <td colspan="9" class="text-center text-muted py-4">No payments match.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -10,22 +10,13 @@ use Illuminate\Database\Eloquent\Builder;
 class BookingPaymentsService
 {
     /**
-     * Completed payments on invoices linked to clinical / booking activity:
-     * appointment, pending public booking, billing record, or booking discount codes.
+     * All completed patient payments (every row in `payments` is tied to an invoice).
+     * Used for admin lists so legacy payments still appear even when the invoice predates
+     * booking/discount linkage fields.
      */
     public function completedBookingPaymentsBase(): Builder
     {
-        return Payment::query()
-            ->completed()
-            ->whereHas('invoice', function ($q) {
-                $q->where(function ($q2) {
-                    $q2->whereNotNull('appointment_id')
-                        ->orWhereHas('pendingBookings')
-                        ->orWhereNotNull('billing_id')
-                        ->orWhereNotNull('doctor_booking_discount_code_id')
-                        ->orWhereNotNull('clinic_booking_discount_code_id');
-                });
-            });
+        return Payment::query()->completed();
     }
 
     /**

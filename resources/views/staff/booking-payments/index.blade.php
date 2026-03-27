@@ -112,6 +112,7 @@
                                     'Billing' => 'secondary',
                                     'Doctor booking offer' => 'warning text-dark',
                                     'Clinic booking offer' => 'warning text-dark',
+                                    'Invoice' => 'secondary',
                                     default => 'light text-dark',
                                 };
                             @endphp

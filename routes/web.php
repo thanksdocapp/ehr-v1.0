@@ -911,6 +911,7 @@ Route::group(['middleware' => 'installed'], function () {
         });
 
         Route::get('/booking-payments', [\App\Http\Controllers\Admin\BookingPaymentsController::class, 'index'])->name('booking-payments.index');
+        Route::get('/payments', [\App\Http\Controllers\Admin\PaymentsController::class, 'index'])->name('payments.index');
 
         // Payment Gateway Management
         Route::prefix('payment-gateways')->name('payment-gateways.')->group(function () {
