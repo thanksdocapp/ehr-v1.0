@@ -33,7 +33,7 @@ return [
         'gone_title' => 'This link is no longer active',
         'gone' => 'The information here has been removed or archived and is not available anymore.',
         'page_expired_title' => 'Please refresh this page',
-        'page_expired' => 'For your security, this form session has timed out. Refresh the page, then try your action again.',
+        'page_expired' => 'For your security, this form session has timed out. If your browser asks whether to resubmit data you entered earlier, choose Cancel (or close the dialog), then refresh this page and try again. You can also use the Refresh button below.',
         'too_many_requests_title' => 'Take a short pause',
         'too_many_requests' => 'Too many actions happened in a short time. Please wait a moment, then try again.',
         'server_error_title' => 'We hit a snag',
