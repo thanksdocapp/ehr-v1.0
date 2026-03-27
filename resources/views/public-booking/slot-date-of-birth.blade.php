@@ -64,16 +64,19 @@
             @csrf
             <div class="mb-3">
                 <label for="slot_booking_date_of_birth" class="form-label">Date of birth <span class="text-danger">*</span></label>
-                <input type="date"
-                       class="form-control public-booking-dob-native @error('date_of_birth') is-invalid @enderror"
+                <input type="text"
+                       class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror"
                        id="slot_booking_date_of_birth"
                        name="date_of_birth"
                        required
-                       min="{{ $pbDobMin }}"
-                       max="{{ $pbDobMax }}"
-                       value="{{ $slotDobYmd }}"
-                       autocomplete="bday">
-                <small class="form-text text-muted">Use your device’s date picker on mobile.</small>
+                       data-uk-date="true"
+                       data-min-date="{{ $pbDobMin }}"
+                       data-max-date="{{ $pbDobMax }}"
+                       placeholder="dd/mm/yyyy"
+                       value="{{ $slotDobYmd ? formatDateUkSlash($slotDobYmd) : '' }}"
+                       autocomplete="bday"
+                       inputmode="numeric">
+                <small class="form-text text-muted">UK format: dd/mm/yyyy. Use the calendar or type the date.</small>
                 @error('date_of_birth')
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror

@@ -126,16 +126,19 @@
                 @if($showDobPicker)
                 <div class="col-md-6 mb-3">
                     <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                    <input type="date"
-                           class="form-control public-booking-dob-native @error('date_of_birth') is-invalid @enderror"
+                    <input type="text"
+                           class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror"
                            id="date_of_birth"
                            name="date_of_birth"
                            required
-                           min="{{ $pbDobMin }}"
-                           max="{{ $pbDobMax }}"
-                           value="{{ $dobInputYmd }}"
-                           autocomplete="bday">
-                    <small class="form-text text-muted">Use your device’s date picker for best results on phones.</small>
+                           data-uk-date="true"
+                           data-min-date="{{ $pbDobMin }}"
+                           data-max-date="{{ $pbDobMax }}"
+                           placeholder="dd/mm/yyyy"
+                           value="{{ $dobInputYmd ? formatDateUkSlash($dobInputYmd) : '' }}"
+                           autocomplete="bday"
+                           inputmode="numeric">
+                    <small class="form-text text-muted">UK format: day / month / year (dd/mm/yyyy). Use the calendar or type the date.</small>
                     @error('date_of_birth')
                     <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
