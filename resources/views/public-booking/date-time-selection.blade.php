@@ -57,7 +57,7 @@
 
         <div class="form-card">
             <label class="form-label">Select Date</label>
-            <input type="text" name="appointment_date" id="appointment-date" class="form-control uk-date" data-min-date="{{ date('Y-m-d') }}" data-uk-date="true" placeholder="dd/mm/yyyy" required autocomplete="off">
+            <input type="text" name="appointment_date" id="appointment-date" class="form-control uk-date" data-min-date="{{ date('Y-m-d') }}" data-uk-date="true" required autocomplete="off">
             <small class="text-muted d-block mt-2">Select a date to see available time slots</small>
 
             <div id="time-slots-container" style="display: none; margin-top: 2rem;">

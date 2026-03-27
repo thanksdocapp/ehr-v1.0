@@ -125,11 +125,9 @@
                            data-uk-date="true"
                            data-min-date="{{ $pbDobMin }}"
                            data-max-date="{{ $pbDobMax }}"
-                           placeholder="dd/mm/yyyy"
                            value="{{ $dobInputYmd ? formatDateUkSlash($dobInputYmd) : '' }}"
                            autocomplete="bday"
                            inputmode="numeric">
-                    <small class="form-text text-muted">UK format: day / month / year (dd/mm/yyyy). Use the calendar or type the date.</small>
                     @error('date_of_birth')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 @endif
