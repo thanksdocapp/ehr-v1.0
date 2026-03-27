@@ -1,5 +1,13 @@
-@extends('errors::minimal')
+@extends('errors.layout-ehr')
 
 @section('title', __('errors.web.forbidden_title'))
-@section('code', '403')
-@section('message', __('errors.web.forbidden'))
+
+@section('content')
+    @include('errors.partials.panel', [
+        'icon' => 'fa-user-lock',
+        'tone' => 'warning',
+        'heading' => __('errors.web.forbidden_title'),
+        'body' => __('errors.web.forbidden'),
+        'show_sign_in' => true,
+    ])
+@endsection

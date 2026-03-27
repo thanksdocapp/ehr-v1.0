@@ -1,5 +1,13 @@
-@extends('errors::minimal')
+@extends('errors.layout-ehr')
 
 @section('title', __('errors.web.gone_title'))
-@section('code', '410')
-@section('message', __('errors.web.gone'))
+
+@section('content')
+    @include('errors.partials.panel', [
+        'icon' => 'fa-box-archive',
+        'tone' => 'muted',
+        'heading' => __('errors.web.gone_title'),
+        'body' => __('errors.web.gone'),
+        'show_sign_in' => true,
+    ])
+@endsection

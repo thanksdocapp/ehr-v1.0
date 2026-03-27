@@ -1,5 +1,13 @@
-@extends('errors::minimal')
+@extends('errors.layout-ehr')
 
 @section('title', __('errors.web.not_found_title'))
-@section('code', '404')
-@section('message', __('errors.web.not_found'))
+
+@section('content')
+    @include('errors.partials.panel', [
+        'icon' => 'fa-compass',
+        'tone' => 'info',
+        'heading' => __('errors.web.not_found_title'),
+        'body' => __('errors.web.not_found'),
+        'show_sign_in' => true,
+    ])
+@endsection
