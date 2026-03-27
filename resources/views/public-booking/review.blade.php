@@ -234,9 +234,9 @@
         </div>
 
         <div class="d-flex justify-content-between">
-            <button type="button" onclick="window.history.back()" class="btn btn-outline-secondary btn-lg">
+            <a href="{{ route('public.booking.patient-details.show') }}" class="btn btn-outline-secondary btn-lg">
                 <i class="fas fa-arrow-left me-2"></i>Back
-            </button>
+            </a>
             <button type="submit" class="btn btn-success btn-lg" id="confirm-btn">
                 <i class="fas fa-check me-2"></i>Confirm Appointment
             </button>

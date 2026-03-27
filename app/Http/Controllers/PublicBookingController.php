@@ -49,6 +49,16 @@ class PublicBookingController extends Controller
         return 'clinic_booking_review';
     }
 
+    private function publicBookingClinicPatientContextKey(): string
+    {
+        return 'public_booking_clinic_patient_context';
+    }
+
+    private function publicBookingDoctorPatientContextKey(): string
+    {
+        return 'public_booking_doctor_patient_context';
+    }
+
     /**
      * Patient home address captured during public / clinic booking (Ideal Postcodes + manual fields).
      *
@@ -199,15 +209,15 @@ class PublicBookingController extends Controller
                     ->with('error', 'Selected time slot is no longer available. Please choose again.');
             }
 
-            return view('public-booking.clinic-patient-details', [
-                'department' => $department,
-                'service' => $service,
+            session([$this->publicBookingClinicPatientContextKey() => [
+                'department_id' => $department->id,
+                'service_id' => $service->id,
                 'appointment_date' => $pending['appointment_date'],
                 'appointment_time' => $pending['appointment_time'],
                 'consultation_type' => $pending['consultation_type'] ?? 'in_person',
-                'step' => 3,
-                'bookingDobYmd' => $ymd,
-            ]);
+            ]]);
+
+            return redirect()->route('public.booking.clinic-patient-details.show');
         }
 
         if ($pending['flow'] === 'doctor') {
@@ -225,16 +235,16 @@ class PublicBookingController extends Controller
 
             $departmentId = $pending['department_id'] ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
 
-            return view('public-booking.patient-details', [
-                'doctor' => $doctor,
-                'service' => $service,
+            session([$this->publicBookingDoctorPatientContextKey() => [
+                'doctor_id' => $doctor->id,
+                'service_id' => $service->id,
                 'appointment_date' => $pending['appointment_date'],
                 'appointment_time' => $pending['appointment_time'],
                 'consultation_type' => $pending['consultation_type'] ?? 'in_person',
                 'department_id' => $departmentId,
-                'step' => 3,
-                'bookingDobYmd' => $ymd,
-            ]);
+            ]]);
+
+            return redirect()->route('public.booking.patient-details.show');
         }
 
         return back()->with('error', 'Invalid booking flow.');
@@ -401,12 +411,95 @@ class PublicBookingController extends Controller
             return $redirect;
         }
 
-        return view('public-booking.clinic-patient-details', [
-            'department' => $department,
-            'service' => $service,
+        session([$this->publicBookingClinicPatientContextKey() => [
+            'department_id' => $department->id,
+            'service_id' => $service->id,
             'appointment_date' => $request->appointment_date,
             'appointment_time' => $request->appointment_time,
             'consultation_type' => $request->consultation_type ?? 'in_person',
+        ]]);
+
+        return redirect()->route('public.booking.clinic-patient-details.show');
+    }
+
+    /**
+     * Clinic flow: patient details (GET — after PRG; avoids POST resubmission warnings on Back/refresh).
+     */
+    public function showClinicPatientDetailsGet(Request $request)
+    {
+        $this->checkBookingEnabled();
+
+        $ctx = session($this->publicBookingClinicPatientContextKey());
+        if (! is_array($ctx) || empty($ctx['department_id']) || empty($ctx['service_id'])
+            || empty($ctx['appointment_date']) || empty($ctx['appointment_time'])) {
+            return response()->view('public-booking.session-expired', [
+                'message' => 'Your booking session has expired. Please start a new booking.',
+            ]);
+        }
+
+        $department = Department::find($ctx['department_id']);
+        $service = BookingService::find($ctx['service_id']);
+        if (! $department || ! $service) {
+            session()->forget($this->publicBookingClinicPatientContextKey());
+
+            return response()->view('public-booking.session-expired', [
+                'message' => 'Your booking session has expired. Please start a new booking.',
+            ]);
+        }
+
+        if (! $this->serviceIsBookableAtClinic((int) $service->id, (int) $department->id)) {
+            session()->forget($this->publicBookingClinicPatientContextKey());
+
+            return redirect()->route('public.booking.clinic', ['slug' => $department->slug])
+                ->with('error', 'This service is not available at this clinic.');
+        }
+
+        $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
+            $department->id,
+            $ctx['appointment_date'],
+            $service->id
+        );
+        $selectedSlot = collect($slots)->firstWhere('start', $ctx['appointment_time']);
+        if (! $selectedSlot) {
+            session()->forget($this->publicBookingClinicPatientContextKey());
+
+            return redirect()->route('public.booking.clinic', ['slug' => $department->slug])
+                ->with('error', 'Selected time slot is no longer available. Please choose again.');
+        }
+
+        $bookingDob = session($this->publicBookingDobSessionKey());
+        if (! $bookingDob) {
+            session([$this->publicBookingPendingSessionKey() => [
+                'flow' => 'clinic',
+                'department_id' => $department->id,
+                'service_id' => $service->id,
+                'appointment_date' => $ctx['appointment_date'],
+                'appointment_time' => $ctx['appointment_time'],
+                'consultation_type' => $ctx['consultation_type'] ?? 'in_person',
+            ]]);
+
+            return view('public-booking.slot-date-of-birth', [
+                'flow' => 'clinic',
+                'department' => $department,
+                'doctor' => null,
+                'service' => $service,
+                'appointment_date' => $ctx['appointment_date'],
+                'appointment_time' => $ctx['appointment_time'],
+                'consultation_type' => $ctx['consultation_type'] ?? 'in_person',
+                'step' => 2,
+            ]);
+        }
+
+        if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service)) {
+            return $redirect;
+        }
+
+        return view('public-booking.clinic-patient-details', [
+            'department' => $department,
+            'service' => $service,
+            'appointment_date' => $ctx['appointment_date'],
+            'appointment_time' => $ctx['appointment_time'],
+            'consultation_type' => $ctx['consultation_type'] ?? 'in_person',
             'step' => 3,
             'bookingDobYmd' => $bookingDob,
         ]);
@@ -492,15 +585,7 @@ class PublicBookingController extends Controller
             'price' => $price,
         ]]);
 
-        return view('public-booking.clinic-review', [
-            'department' => $department,
-            'service' => $service,
-            'appointment_date' => $request->appointment_date,
-            'appointment_time' => $request->appointment_time,
-            'patient_data' => $patientData,
-            'price' => $price,
-            'step' => 3
-        ]);
+        return redirect()->route('public.booking.clinic-review.show');
     }
 
     /**
@@ -863,12 +948,101 @@ class PublicBookingController extends Controller
             return $redirect;
         }
 
-        return view('public-booking.patient-details', [
-            'doctor' => $doctor,
-            'service' => $service,
+        session([$this->publicBookingDoctorPatientContextKey() => [
+            'doctor_id' => $doctor->id,
+            'service_id' => $service->id,
             'appointment_date' => $request->appointment_date,
             'appointment_time' => $request->appointment_time,
             'consultation_type' => $request->consultation_type ?? 'in_person',
+            'department_id' => $departmentId,
+        ]]);
+
+        return redirect()->route('public.booking.patient-details.show');
+    }
+
+    /**
+     * Doctor flow: patient details (GET — after PRG).
+     */
+    public function showPatientDetailsGet(Request $request)
+    {
+        $this->checkBookingEnabled();
+
+        $ctx = session($this->publicBookingDoctorPatientContextKey());
+        if (! is_array($ctx) || empty($ctx['doctor_id']) || empty($ctx['service_id'])
+            || empty($ctx['appointment_date']) || empty($ctx['appointment_time'])) {
+            return response()->view('public-booking.session-expired', [
+                'message' => 'Your booking session has expired. Please start a new booking.',
+            ]);
+        }
+
+        $doctor = Doctor::find($ctx['doctor_id']);
+        $service = BookingService::find($ctx['service_id']);
+        if (! $doctor || ! $service) {
+            session()->forget($this->publicBookingDoctorPatientContextKey());
+
+            return response()->view('public-booking.session-expired', [
+                'message' => 'Your booking session has expired. Please start a new booking.',
+            ]);
+        }
+
+        if (! $this->serviceIsBookableForDoctor((int) $service->id, (int) $doctor->id)) {
+            session()->forget($this->publicBookingDoctorPatientContextKey());
+
+            return redirect()->route('public.booking.doctor', ['slug' => $doctor->slug])
+                ->with('error', 'Selected service is not available for this doctor.');
+        }
+
+        $slots = $this->slotAvailabilityService->getAvailableSlots(
+            $doctor->id,
+            $ctx['appointment_date'],
+            $service->id
+        );
+        $selectedSlot = collect($slots)->firstWhere('start', $ctx['appointment_time']);
+        if (! $selectedSlot) {
+            session()->forget($this->publicBookingDoctorPatientContextKey());
+
+            return redirect()->route('public.booking.doctor', ['slug' => $doctor->slug])
+                ->with('error', 'Selected time slot is no longer available. Please choose again.');
+        }
+
+        $departmentId = $ctx['department_id'] ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
+
+        $bookingDob = session($this->publicBookingDobSessionKey());
+        if (! $bookingDob) {
+            session([$this->publicBookingPendingSessionKey() => [
+                'flow' => 'doctor',
+                'doctor_id' => $doctor->id,
+                'department_id' => $departmentId,
+                'service_id' => $service->id,
+                'appointment_date' => $ctx['appointment_date'],
+                'appointment_time' => $ctx['appointment_time'],
+                'consultation_type' => $ctx['consultation_type'] ?? 'in_person',
+            ]]);
+
+            $department = $departmentId ? Department::find($departmentId) : null;
+
+            return view('public-booking.slot-date-of-birth', [
+                'flow' => 'doctor',
+                'department' => $department,
+                'doctor' => $doctor,
+                'service' => $service,
+                'appointment_date' => $ctx['appointment_date'],
+                'appointment_time' => $ctx['appointment_time'],
+                'consultation_type' => $ctx['consultation_type'] ?? 'in_person',
+                'step' => 2,
+            ]);
+        }
+
+        if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service)) {
+            return $redirect;
+        }
+
+        return view('public-booking.patient-details', [
+            'doctor' => $doctor,
+            'service' => $service,
+            'appointment_date' => $ctx['appointment_date'],
+            'appointment_time' => $ctx['appointment_time'],
+            'consultation_type' => $ctx['consultation_type'] ?? 'in_person',
             'department_id' => $departmentId,
             'step' => 3,
             'bookingDobYmd' => $bookingDob,
@@ -1047,15 +1221,7 @@ class PublicBookingController extends Controller
             ]
         ]);
 
-        return view('public-booking.review', [
-            'doctor' => $doctor,
-            'service' => $service,
-            'appointment_date' => $request->appointment_date,
-            'appointment_time' => $request->appointment_time,
-            'patient_data' => $patientData,
-            'price' => $price,
-            'step' => 4
-        ]);
+        return redirect()->route('public.booking.review.show');
     }
 
     /**

@@ -184,9 +184,9 @@
         </div>
 
         <div class="d-flex justify-content-between">
-            <button type="button" onclick="window.history.back()" class="btn btn-outline-secondary btn-lg">
+            <a href="{{ route('public.booking.doctor', ['slug' => $doctor->slug]) }}" class="btn btn-outline-secondary btn-lg">
                 <i class="fas fa-arrow-left me-2"></i>Back
-            </button>
+            </a>
             <button type="submit" class="btn btn-primary btn-lg">
                 Continue <i class="fas fa-arrow-right ms-2"></i>
             </button>
