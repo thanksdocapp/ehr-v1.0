@@ -33,6 +33,9 @@
                 dateFormat: "d/m/Y",
                 altInput: false,
                 altFormat: "d/m/Y",
+                // Must be true for UK text inputs on phones: default Flatpickr mobile path uses
+                // native pickers that do not match d/m/Y on type="text", so taps often do nothing.
+                disableMobile: true,
                 locale: {
                     firstDayOfWeek: 1 // Monday
                 },
@@ -114,6 +117,7 @@
                 altFormat: "d/m/Y H:i",
                 enableTime: true,
                 time_24hr: true,
+                disableMobile: true,
                 locale: {
                     firstDayOfWeek: 1 // Monday
                 },

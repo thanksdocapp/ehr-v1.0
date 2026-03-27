@@ -535,6 +535,16 @@
         /* Desktop layout only when iframe is wide (script adds .embed-desktop); mobile keeps fluid layout */
         body.embed-mode.embed-desktop .booking-container { min-width: 900px; }
 
+        /* Flatpickr: stay above booking UI; larger day cells for touch (mobile UK DOB) */
+        .flatpickr-calendar {
+            z-index: 100050 !important;
+        }
+        .flatpickr-day {
+            touch-action: manipulation;
+            min-height: 40px;
+            line-height: 38px;
+        }
+
         @yield('styles')
     </style>
     
