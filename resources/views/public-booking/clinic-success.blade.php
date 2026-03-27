@@ -22,8 +22,8 @@
     <div class="review-row"><span class="review-label">Status</span><span class="review-value"><span class="badge bg-info">Awaiting Doctor</span></span></div>
     <div class="review-row"><span class="review-label">Clinic</span><span class="review-value">{{ $request->department->name }}</span></div>
     <div class="review-row"><span class="review-label">Service</span><span class="review-value">{{ $request->service->name ?? 'Consultation' }}</span></div>
-    <div class="review-row"><span class="review-label">Date</span><span class="review-value">{{ $request->appointment_date->format('l, j F Y') }}</span></div>
-    <div class="review-row"><span class="review-label">Time</span><span class="review-value">{{ $request->appointment_time instanceof \DateTimeInterface ? $request->appointment_time->format('g:i A') : $request->appointment_time }}</span></div>
+    <div class="review-row"><span class="review-label">Date</span><span class="review-value">{{ formatDateUkLongWeekday($request->appointment_date) }}</span></div>
+    <div class="review-row"><span class="review-label">Time</span><span class="review-value">{{ formatTime($request->appointment_time, 'g:i A') }}</span></div>
 
     <p class="text-muted small mt-4 mb-0">Check your email (<strong>{{ $patientEmail }}</strong>) for updates. If you have any questions, please contact the clinic directly.</p>
 </div>

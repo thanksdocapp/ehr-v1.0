@@ -40,6 +40,46 @@ if (!function_exists('formatDateUkLong')) {
     }
 }
 
+if (!function_exists('formatDateUkLongWeekday')) {
+    /**
+     * UK: weekday + full date (e.g. Monday, 31 December 2025). Uses en_GB for week start context.
+     *
+     * @param \Carbon\Carbon|string|null $date
+     * @return string
+     */
+    function formatDateUkLongWeekday($date)
+    {
+        if (! $date) {
+            return '';
+        }
+        try {
+            return \Carbon\Carbon::parse($date)->locale('en_GB')->isoFormat('dddd, D MMMM YYYY');
+        } catch (\Exception $e) {
+            return (string) $date;
+        }
+    }
+}
+
+if (!function_exists('formatDateUkSlash')) {
+    /**
+     * UK numeric date: dd/mm/yyyy
+     *
+     * @param \Carbon\Carbon|string|null $date
+     * @return string
+     */
+    function formatDateUkSlash($date)
+    {
+        if (! $date) {
+            return '';
+        }
+        try {
+            return \Carbon\Carbon::parse($date)->format('d/m/Y');
+        } catch (\Exception $e) {
+            return (string) $date;
+        }
+    }
+}
+
 if (!function_exists('formatDateTimeUk')) {
     /**
      * Format date and time in UK style: 31 Dec 2025, 14:30

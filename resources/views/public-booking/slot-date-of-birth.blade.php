@@ -49,7 +49,7 @@
         <div class="summary-row">
             <span class="summary-label">Date &amp; time</span>
             <span class="summary-value">
-                {{ \Carbon\Carbon::parse($appointment_date)->format('l, j F Y') }} at {{ \Carbon\Carbon::parse($appointment_time)->format('g:i A') }}
+                {{ formatDateUkLongWeekday($appointment_date) }} at {{ formatTime($appointment_time, 'g:i A') }}
             </span>
         </div>
     </div>

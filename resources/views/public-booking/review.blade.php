@@ -108,11 +108,11 @@
             </div>
             <div class="review-row">
                 <span class="review-label">Date</span>
-                <span class="review-value">{{ \Carbon\Carbon::parse($appointment_date)->format('l, j F Y') }}</span>
+                <span class="review-value">{{ formatDateUkLongWeekday($appointment_date) }}</span>
             </div>
             <div class="review-row">
                 <span class="review-label">Time</span>
-                <span class="review-value">{{ \Carbon\Carbon::parse($appointment_time)->format('g:i A') }}</span>
+                <span class="review-value">{{ formatTime($appointment_time, 'g:i A') }}</span>
             </div>
             <div class="review-row">
                 <span class="review-label">Price</span>
@@ -163,7 +163,7 @@
             @if(isset($patient_data['date_of_birth']))
             <div class="review-row">
                 <span class="review-label">Date of Birth</span>
-                <span class="review-value">{{ \Carbon\Carbon::parse($patient_data['date_of_birth'])->format('d/m/Y') }}</span>
+                <span class="review-value">{{ formatDateUkSlash($patient_data['date_of_birth']) }}</span>
             </div>
             @endif
             @if(isset($patient_data['gender']))

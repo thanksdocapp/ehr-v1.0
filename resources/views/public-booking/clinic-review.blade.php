@@ -53,8 +53,8 @@
                     <i class="fas fa-hospital me-1"></i>In Person
                 @endif
             </span></div>
-            <div class="review-row"><span class="review-label">Date</span><span class="review-value">{{ \Carbon\Carbon::parse($appointment_date)->format('l, j F Y') }}</span></div>
-            <div class="review-row"><span class="review-label">Time</span><span class="review-value">{{ \Carbon\Carbon::parse($appointment_time)->format('g:i A') }}</span></div>
+            <div class="review-row"><span class="review-label">Date</span><span class="review-value">{{ formatDateUkLongWeekday($appointment_date) }}</span></div>
+            <div class="review-row"><span class="review-label">Time</span><span class="review-value">{{ formatTime($appointment_time, 'g:i A') }}</span></div>
             <div class="review-row"><span class="review-label">Price</span><span class="review-price">
                 @if(isset($price) && (float) $price > 0)
                 <span id="cl-list-line">£{{ number_format($price, 2) }}</span>

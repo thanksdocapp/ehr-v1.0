@@ -23,9 +23,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'web' => [
-        'action_home' => 'Home',
         'action_back' => 'Go back',
-        'action_sign_in' => 'Sign in',
+        'action_refresh' => 'Refresh',
 
         'forbidden_title' => 'You need different access',
         'forbidden' => 'Your account does not have permission to open this page. If you expected to see this content, ask your practice administrator to update your role.',

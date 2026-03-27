@@ -8,6 +8,5 @@
         'tone' => 'info',
         'heading' => __('errors.web.not_found_title'),
         'body' => __('errors.web.not_found'),
-        'show_sign_in' => true,
     ])
 @endsection

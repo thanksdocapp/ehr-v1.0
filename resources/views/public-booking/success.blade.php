@@ -83,11 +83,11 @@
                                 <div class="row mb-3">
                                     <div class="col-md-6 mb-2">
                                         <small class="text-muted">Date</small>
-                                        <div><strong>{{ $appointment->appointment_date->format('l, j F Y') }}</strong></div>
+                                        <div><strong>{{ formatDateUkLongWeekday($appointment->appointment_date) }}</strong></div>
                                     </div>
                                     <div class="col-md-6 mb-2">
                                         <small class="text-muted">Time</small>
-                                        <div><strong>{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</strong></div>
+                                        <div><strong>{{ formatTime($appointment->appointment_time, 'g:i A') }}</strong></div>
                                     </div>
                                 </div>
 

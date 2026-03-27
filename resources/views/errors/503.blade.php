@@ -8,6 +8,5 @@
         'tone' => 'info',
         'heading' => __('errors.web.service_unavailable_title'),
         'body' => __('errors.web.service_unavailable'),
-        'show_sign_in' => false,
     ])
 @endsection

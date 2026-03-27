@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 @php $embed = $embed ?? request()->boolean('embed') || session('embed', false); @endphp
-<html lang="en">
+<html lang="en-GB">
 <head>
     @include('partials.gtm-head')
     <meta charset="UTF-8">

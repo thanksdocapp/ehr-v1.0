@@ -8,6 +8,5 @@
         'tone' => 'muted',
         'heading' => __('errors.web.gone_title'),
         'body' => __('errors.web.gone'),
-        'show_sign_in' => true,
     ])
 @endsection

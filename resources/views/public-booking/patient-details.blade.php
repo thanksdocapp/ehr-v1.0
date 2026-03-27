@@ -38,13 +38,13 @@
         <div class="summary-row">
             <span class="summary-label">Date & Time</span>
             <span class="summary-value">
-                {{ \Carbon\Carbon::parse($appointment_date)->format('l, j F Y') }} at {{ \Carbon\Carbon::parse($appointment_time)->format('g:i A') }}
+                {{ formatDateUkLongWeekday($appointment_date) }} at {{ formatTime($appointment_time, 'g:i A') }}
             </span>
         </div>
         @if(!empty($bookingDobYmd ?? null) && !$errors->has('date_of_birth'))
         <div class="summary-row">
             <span class="summary-label">Date of birth</span>
-            <span class="summary-value">{{ \Carbon\Carbon::parse($bookingDobYmd)->format('l, j F Y') }}</span>
+            <span class="summary-value">{{ formatDateUkLongWeekday($bookingDobYmd) }}</span>
         </div>
         @endif
     </div>

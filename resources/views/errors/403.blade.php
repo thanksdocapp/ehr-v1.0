@@ -8,6 +8,5 @@
         'tone' => 'warning',
         'heading' => __('errors.web.forbidden_title'),
         'body' => __('errors.web.forbidden'),
-        'show_sign_in' => true,
     ])
 @endsection

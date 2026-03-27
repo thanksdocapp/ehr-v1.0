@@ -8,6 +8,5 @@
         'tone' => 'warning',
         'heading' => __('errors.web.too_many_requests_title'),
         'body' => __('errors.web.too_many_requests'),
-        'show_sign_in' => true,
     ])
 @endsection

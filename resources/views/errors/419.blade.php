@@ -8,6 +8,5 @@
         'tone' => 'warning',
         'heading' => __('errors.web.page_expired_title'),
         'body' => __('errors.web.page_expired'),
-        'show_sign_in' => true,
     ])
 @endsection
