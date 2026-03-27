@@ -1,5 +1,9 @@
 @extends('layouts.public-booking')
 
+@php
+    $pbEmbed = request()->boolean('embed') || session('embed', false);
+@endphp
+
 @section('title', 'Session Expired')
 @section('container-width', '500px')
 
@@ -23,10 +27,10 @@
     </div>
 
     <div class="d-flex flex-wrap gap-2 justify-content-center mt-4">
-        <button type="button" class="btn btn-primary btn-lg" onclick="location.reload()">
+        <button type="button" class="btn btn-primary btn-lg" id="pb-session-refresh-btn">
             <i class="fas fa-rotate-right me-2"></i>Refresh page
         </button>
-        <a href="/" class="btn btn-outline-secondary btn-lg">
+        <a href="{{ url('/') }}" class="btn btn-outline-secondary btn-lg" @if($pbEmbed) target="_top" rel="noopener noreferrer" @endif>
             <i class="fas fa-home me-2"></i>Homepage
         </a>
     </div>
@@ -35,4 +39,37 @@
     <div class="text-center mt-5 mb-3">
         <small class="text-muted">Powered by ThanksDoc</small>
     </div>
+@endsection
+
+@section('scripts')
+<script>
+(function () {
+    function pbSessionRefresh() {
+        var href = window.location.href.split('#')[0];
+        try {
+            window.location.replace(href);
+        } catch (e1) {
+            try {
+                window.location.href = href;
+            } catch (e2) {
+                window.location.reload();
+            }
+        }
+    }
+    function bindPbRefresh() {
+        var btn = document.getElementById('pb-session-refresh-btn');
+        if (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                pbSessionRefresh();
+            });
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindPbRefresh);
+    } else {
+        bindPbRefresh();
+    }
+})();
+</script>
 @endsection
