@@ -33,6 +33,7 @@
                     <a class="dropdown-item" href="{{ route('admin.patients.index') }}">All Patients</a>
                     <a class="dropdown-item" href="{{ route('admin.patients.create') }}">Add New Patient</a>
                     <a class="dropdown-item" href="{{ route('admin.appointments.index') }}">Patient Appointments</a>
+                    <a class="dropdown-item" href="{{ route('admin.clinic-booking-requests.index') }}">Clinic booking requests</a>
                 </div>
             </div>
         </div>
@@ -50,6 +51,15 @@
     @case('appointments')
         <div class="menu-item">
             <a href="{{ route('admin.appointments.index') }}" class="menu-link {{ request()->routeIs('admin.appointments.*') ? 'active' : '' }}">
+                <i class="menu-icon fas {{ $icon }}"></i>
+                <span class="menu-text">{{ $label }}</span>
+            </a>
+        </div>
+        @break
+
+    @case('clinic-booking-requests')
+        <div class="menu-item">
+            <a href="{{ route('admin.clinic-booking-requests.index') }}" class="menu-link {{ request()->routeIs('admin.clinic-booking-requests.*') ? 'active' : '' }}">
                 <i class="menu-icon fas {{ $icon }}"></i>
                 <span class="menu-text">{{ $label }}</span>
             </a>

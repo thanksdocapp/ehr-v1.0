@@ -59,6 +59,137 @@ class PublicBookingController extends Controller
         return 'public_booking_doctor_patient_context';
     }
 
+    private function publicBookingEntryUrlSessionKey(): string
+    {
+        return 'public_booking_entry_url';
+    }
+
+    /**
+     * Remember the booking link the patient opened (for restart after session loss).
+     */
+    private function rememberPublicBookingEntryUrl(Request $request): void
+    {
+        session([$this->publicBookingEntryUrlSessionKey() => $request->fullUrl()]);
+    }
+
+    /**
+     * Safe internal URL for /book/* only, same host as current request.
+     */
+    private function sanitizeInternalBookingUrl(string $url, Request $request): ?string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+        try {
+            if (str_starts_with($url, '/')) {
+                $path = parse_url($url, PHP_URL_PATH);
+                $path = $path ?: $url;
+                if (! preg_match('#^/book(/|$)#', $path)) {
+                    return null;
+                }
+
+                return $request->getSchemeAndHttpHost().$url;
+            }
+            $parsed = parse_url($url);
+            if ($parsed === false || empty($parsed['path'])) {
+                return null;
+            }
+            if (! preg_match('#^/book(/|$)#', $parsed['path'])) {
+                return null;
+            }
+            $host = $parsed['host'] ?? null;
+            if ($host !== null && strcasecmp($host, $request->getHost()) !== 0) {
+                return null;
+            }
+
+            return $url;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function appendBookingEmbedQuery(Request $request): string
+    {
+        if (! $request->boolean('embed') && ! session('embed', false)) {
+            return '';
+        }
+
+        return '?embed=1';
+    }
+
+    /**
+     * Best URL to restart the booking flow (practice link). Uses stored entry URL, then session hints.
+     */
+    private function publicBookingRestartUrl(Request $request): string
+    {
+        $stored = session($this->publicBookingEntryUrlSessionKey());
+        if (is_string($stored) && $stored !== '') {
+            $safe = $this->sanitizeInternalBookingUrl($stored, $request);
+            if ($safe !== null) {
+                return $safe;
+            }
+        }
+
+        $pending = session($this->publicBookingPendingSessionKey());
+        if (is_array($pending)) {
+            if (! empty($pending['doctor_id'])) {
+                $doctor = Doctor::find($pending['doctor_id']);
+                if ($doctor) {
+                    return route('public.booking.doctor', ['slug' => $doctor->slug]).$this->appendBookingEmbedQuery($request);
+                }
+            }
+            if (! empty($pending['department_id'])) {
+                $department = Department::find($pending['department_id']);
+                if ($department) {
+                    return route('public.booking.clinic', ['slug' => $department->slug]).$this->appendBookingEmbedQuery($request);
+                }
+            }
+        }
+
+        $ctxDoc = session($this->publicBookingDoctorPatientContextKey());
+        if (is_array($ctxDoc) && ! empty($ctxDoc['doctor_id'])) {
+            $doctor = Doctor::find($ctxDoc['doctor_id']);
+            if ($doctor) {
+                return route('public.booking.doctor', ['slug' => $doctor->slug]).$this->appendBookingEmbedQuery($request);
+            }
+        }
+
+        $ctxClinic = session($this->publicBookingClinicPatientContextKey());
+        if (is_array($ctxClinic) && ! empty($ctxClinic['department_id'])) {
+            $department = Department::find($ctxClinic['department_id']);
+            if ($department) {
+                return route('public.booking.clinic', ['slug' => $department->slug]).$this->appendBookingEmbedQuery($request);
+            }
+        }
+
+        $bookingData = session('booking_data');
+        if (is_array($bookingData) && ! empty($bookingData['doctor_id'])) {
+            $doctor = Doctor::find($bookingData['doctor_id']);
+            if ($doctor) {
+                return route('public.booking.doctor', ['slug' => $doctor->slug]).$this->appendBookingEmbedQuery($request);
+            }
+        }
+
+        $clinicReview = session($this->clinicBookingReviewSessionKey());
+        if (is_array($clinicReview) && ! empty($clinicReview['department_id'])) {
+            $department = Department::find($clinicReview['department_id']);
+            if ($department) {
+                return route('public.booking.clinic', ['slug' => $department->slug]).$this->appendBookingEmbedQuery($request);
+            }
+        }
+
+        return url('/');
+    }
+
+    private function sessionExpiredResponse(?string $message = null, ?string $bookingRestartUrl = null): \Illuminate\Http\Response
+    {
+        return response()->view('public-booking.session-expired', [
+            'message' => $message ?? 'Your booking session has expired. Please start a new booking.',
+            'booking_restart_url' => $bookingRestartUrl ?? $this->publicBookingRestartUrl(request()),
+        ]);
+    }
+
     /**
      * Patient home address captured during public / clinic booking (Ideal Postcodes + manual fields).
      *
@@ -264,9 +395,11 @@ class PublicBookingController extends Controller
     /**
      * Step 1: Access via unique link - /book/{doctorSlug}
      */
-    public function showDoctorBooking($slug)
+    public function showDoctorBooking(Request $request, $slug)
     {
         $this->checkBookingEnabled();
+
+        $this->rememberPublicBookingEntryUrl($request);
 
         $doctor = Doctor::where('slug', $slug)->active()->firstOrFail();
         
@@ -283,9 +416,11 @@ class PublicBookingController extends Controller
      * Step 1: Access via clinic link - /book/clinic/{clinicSlug}
      * In clinic mode: patient books into clinic, doctors accept. No doctor selection.
      */
-    public function showClinicBooking($slug)
+    public function showClinicBooking(Request $request, $slug)
     {
         $this->checkBookingEnabled();
+
+        $this->rememberPublicBookingEntryUrl($request);
 
         $department = Department::where('slug', $slug)->active()->firstOrFail();
 
@@ -432,19 +567,16 @@ class PublicBookingController extends Controller
         $ctx = session($this->publicBookingClinicPatientContextKey());
         if (! is_array($ctx) || empty($ctx['department_id']) || empty($ctx['service_id'])
             || empty($ctx['appointment_date']) || empty($ctx['appointment_time'])) {
-            return response()->view('public-booking.session-expired', [
-                'message' => 'Your booking session has expired. Please start a new booking.',
-            ]);
+            return $this->sessionExpiredResponse();
         }
 
         $department = Department::find($ctx['department_id']);
         $service = BookingService::find($ctx['service_id']);
         if (! $department || ! $service) {
+            $restart = $this->publicBookingRestartUrl(request());
             session()->forget($this->publicBookingClinicPatientContextKey());
 
-            return response()->view('public-booking.session-expired', [
-                'message' => 'Your booking session has expired. Please start a new booking.',
-            ]);
+            return $this->sessionExpiredResponse(null, $restart);
         }
 
         if (! $this->serviceIsBookableAtClinic((int) $service->id, (int) $department->id)) {
@@ -597,19 +729,16 @@ class PublicBookingController extends Controller
 
         $data = session($this->clinicBookingReviewSessionKey());
         if (!$data || !isset($data['department_id'], $data['service_id'], $data['appointment_date'], $data['appointment_time'], $data['patient_data'])) {
-            return response()->view('public-booking.session-expired', [
-                'message' => 'Your booking session has expired. Please start a new booking.',
-            ]);
+            return $this->sessionExpiredResponse();
         }
 
         $department = Department::find($data['department_id']);
         $service = BookingService::find($data['service_id']);
         if (!$department || !$service) {
+            $restart = $this->publicBookingRestartUrl(request());
             session()->forget($this->clinicBookingReviewSessionKey());
 
-            return response()->view('public-booking.session-expired', [
-                'message' => 'Your booking session has expired. Please start a new booking.',
-            ]);
+            return $this->sessionExpiredResponse(null, $restart);
         }
 
         if (!$this->serviceIsBookableAtClinic((int) $service->id, (int) $department->id)) {
@@ -629,11 +758,10 @@ class PublicBookingController extends Controller
                         ->with('error', 'This service is not available for this age.');
                 }
             } catch (\Exception $e) {
+                $restart = $this->publicBookingRestartUrl(request());
                 session()->forget($this->clinicBookingReviewSessionKey());
 
-                return response()->view('public-booking.session-expired', [
-                    'message' => 'Your booking session has expired. Please start a new booking.',
-                ]);
+                return $this->sessionExpiredResponse(null, $restart);
             }
         }
 
@@ -791,9 +919,11 @@ class PublicBookingController extends Controller
     /**
      * Step 1: Access via service-specific booking link - /book/service/{serviceId}/{doctorId}
      */
-    public function showServiceBooking($serviceId, $doctorId)
+    public function showServiceBooking(Request $request, $serviceId, $doctorId)
     {
         $this->checkBookingEnabled();
+
+        $this->rememberPublicBookingEntryUrl($request);
 
         $service = BookingService::findOrFail($serviceId);
         $doctor = Doctor::where('id', $doctorId)->active()->firstOrFail();
@@ -970,19 +1100,16 @@ class PublicBookingController extends Controller
         $ctx = session($this->publicBookingDoctorPatientContextKey());
         if (! is_array($ctx) || empty($ctx['doctor_id']) || empty($ctx['service_id'])
             || empty($ctx['appointment_date']) || empty($ctx['appointment_time'])) {
-            return response()->view('public-booking.session-expired', [
-                'message' => 'Your booking session has expired. Please start a new booking.',
-            ]);
+            return $this->sessionExpiredResponse();
         }
 
         $doctor = Doctor::find($ctx['doctor_id']);
         $service = BookingService::find($ctx['service_id']);
         if (! $doctor || ! $service) {
+            $restart = $this->publicBookingRestartUrl(request());
             session()->forget($this->publicBookingDoctorPatientContextKey());
 
-            return response()->view('public-booking.session-expired', [
-                'message' => 'Your booking session has expired. Please start a new booking.',
-            ]);
+            return $this->sessionExpiredResponse(null, $restart);
         }
 
         if (! $this->serviceIsBookableForDoctor((int) $service->id, (int) $doctor->id)) {
@@ -1081,9 +1208,7 @@ class PublicBookingController extends Controller
         }
 
         // No valid session data - show error page instead of redirecting
-        return response()->view('public-booking.session-expired', [
-            'message' => 'Your booking session has expired. Please start a new booking.'
-        ]);
+        return $this->sessionExpiredResponse();
     }
 
     /**
@@ -1120,9 +1245,7 @@ class PublicBookingController extends Controller
         }
 
         // No valid session data - show error page instead of redirecting
-        return response()->view('public-booking.session-expired', [
-            'message' => 'Your booking session has expired. Please start a new booking.'
-        ]);
+        return $this->sessionExpiredResponse();
     }
 
     /**

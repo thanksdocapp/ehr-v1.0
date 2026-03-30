@@ -712,6 +712,10 @@ Route::group(['middleware' => 'installed'], function () {
         // AJAX Routes for Calendar
         Route::get('/api/appointments/calendar-data', [\App\Http\Controllers\Admin\AppointmentsController::class, 'getCalendarData'])->name('api.appointments.calendar-data');
         Route::get('/api/appointments/today', [\App\Http\Controllers\Admin\AppointmentsController::class, 'getTodayAppointments'])->name('api.appointments.today');
+
+        // Clinic booking requests (awaiting doctor assignment — practice-wide)
+        Route::get('/clinic-booking-requests', [\App\Http\Controllers\Admin\ClinicBookingRequestsController::class, 'index'])->name('clinic-booking-requests.index');
+        Route::post('/clinic-booking-requests/{clinicBookingRequest}/accept', [\App\Http\Controllers\Admin\ClinicBookingRequestsController::class, 'accept'])->name('clinic-booking-requests.accept');
         
         // Booking Services Management
         Route::resource('booking-services', \App\Http\Controllers\Admin\BookingServicesController::class);
