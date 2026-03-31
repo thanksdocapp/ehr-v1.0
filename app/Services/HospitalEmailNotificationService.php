@@ -9,6 +9,7 @@ use App\Models\Patient;
 use App\Models\MedicalRecord;
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\ClinicBookingRequest;
 use App\Models\Billing;
 use App\Models\LabReport;
 use App\Models\ContactMessage;
@@ -1085,6 +1086,92 @@ class HospitalEmailNotificationService
             [$user->email => $doctor->name],
             $variables
         );
+    }
+
+    /**
+     * Email every active doctor in the clinic when a new pooled clinic booking request is created (awaiting acceptance).
+     */
+    public function notifyClinicDoctorsNewBookingRequest(ClinicBookingRequest $request): void
+    {
+        $request->loadMissing(['department', 'service']);
+
+        $pd = $request->patient_data ?? [];
+        $patientName = trim(($pd['first_name'] ?? '').' '.($pd['last_name'] ?? ''));
+        if ($patientName === '') {
+            $patientName = 'Patient';
+        }
+
+        $deptName = $request->department?->name ?? 'the clinic';
+        $serviceName = $request->service?->name ?? 'Consultation';
+        $dateStr = $request->appointment_date ? formatDateUkLong($request->appointment_date) : '';
+        $timeStr = '';
+        if ($request->appointment_time) {
+            try {
+                $timeStr = \Carbon\Carbon::parse($request->appointment_time)->format('g:i A');
+            } catch (\Exception $e) {
+                $timeStr = (string) $request->appointment_time;
+            }
+        }
+
+        $consultationType = str_replace('_', ' ', (string) ($request->consultation_type ?? 'in_person'));
+        $rawNotes = (string) ($pd['notes'] ?? $request->notes ?? '');
+        $bookingNotes = $rawNotes !== '' ? \Illuminate\Support\Str::limit(strip_tags($rawNotes), 500) : '—';
+
+        try {
+            $acceptUrl = route('staff.clinic-booking-requests.index');
+        } catch (\Exception $e) {
+            $acceptUrl = url('/staff/clinic-booking-requests');
+        }
+
+        $hospitalName = config('app.name', 'Hospital');
+
+        $doctors = Doctor::query()
+            ->byDepartment($request->department_id)
+            ->active()
+            ->with('user')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        foreach ($doctors as $doctor) {
+            $toEmail = $doctor->user?->email ?: $doctor->email;
+            if (! $toEmail) {
+                continue;
+            }
+
+            $toName = $doctor->user?->name ?? trim(($doctor->first_name ?? '').' '.($doctor->last_name ?? ''));
+            $doctorDisplay = $doctor->name ?? $toName;
+
+            $variables = [
+                'doctor_name' => $this->doctorNameForTemplate($doctorDisplay),
+                'patient_name' => $patientName,
+                'patient_phone' => $pd['phone'] ?? 'Not provided',
+                'patient_email' => $pd['email'] ?? 'Not provided',
+                'clinic_name' => $deptName,
+                'service_name' => $serviceName,
+                'appointment_date' => $dateStr,
+                'appointment_time' => $timeStr,
+                'consultation_type' => $consultationType,
+                'request_number' => $request->request_number,
+                'booking_notes' => $bookingNotes,
+                'accept_requests_url' => $acceptUrl,
+                'hospital_name' => $hospitalName,
+            ];
+
+            try {
+                $this->emailService->sendTemplateEmail(
+                    'doctor_clinic_booking_request',
+                    [$toEmail => $toName ?: 'Doctor'],
+                    $variables
+                );
+            } catch (\Exception $e) {
+                Log::error('Failed to send clinic booking request email to doctor', [
+                    'doctor_id' => $doctor->id,
+                    'clinic_booking_request_id' => $request->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**

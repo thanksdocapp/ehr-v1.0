@@ -316,6 +316,31 @@ class EmailTemplateSeeder extends Seeder
                 'sender_email' => 'no-reply@hospital.com'
             ],
             [
+                'name' => 'doctor_clinic_booking_request',
+                'subject' => 'New clinic booking request – {{clinic_name}} – {{appointment_date}}',
+                'category' => 'notification',
+                'status' => 'active',
+                'description' => 'Sent to each active doctor in the clinic when a patient books via the public clinic link (pending acceptance)',
+                'body' => 'Dear Dr. {{doctor_name}},\n\nA new online booking request has been submitted at {{clinic_name}} and is waiting for a doctor to accept it.\n\nRequest reference: {{request_number}}\nPatient: {{patient_name}}\nPhone: {{patient_phone}}\nEmail: {{patient_email}}\nService: {{service_name}}\nPreferred date: {{appointment_date}}\nPreferred time: {{appointment_time}}\nConsultation: {{consultation_type}}\n\nReason for booking:\n{{booking_notes}}\n\nOpen Clinic Requests in the staff portal to review and accept:\n{{accept_requests_url}}\n\nRegards,\n{{hospital_name}}',
+                'variables' => [
+                    'doctor_name' => 'Doctor name (no Dr. prefix)',
+                    'patient_name' => 'Patient full name',
+                    'patient_phone' => 'Patient phone',
+                    'patient_email' => 'Patient email',
+                    'clinic_name' => 'Clinic name',
+                    'service_name' => 'Service name',
+                    'appointment_date' => 'Requested date',
+                    'appointment_time' => 'Requested time',
+                    'consultation_type' => 'Consultation type',
+                    'request_number' => 'Request reference',
+                    'booking_notes' => 'Reason for booking',
+                    'accept_requests_url' => 'Staff inbox URL',
+                    'hospital_name' => 'Hospital name',
+                ],
+                'sender_name' => 'Hospital Notifications',
+                'sender_email' => 'no-reply@hospital.com'
+            ],
+            [
                 'name' => 'staff_new_patient_registration',
                 'subject' => 'New Patient Registered - {{patient_name}}',
                 'category' => 'notification',

@@ -321,7 +321,7 @@ class ClinicBookingService
      */
     public function createFromClinicBooking(array $data): ClinicBookingRequest
     {
-        return DB::transaction(function () use ($data) {
+        $request = DB::transaction(function () use ($data) {
             $departmentId = $data['department_id'];
             $service = BookingService::find($data['service_id'] ?? null);
 
@@ -374,6 +374,17 @@ class ClinicBookingService
 
             return $request;
         });
+
+        try {
+            $this->emailService->notifyClinicDoctorsNewBookingRequest($request);
+        } catch (\Throwable $e) {
+            Log::error('Clinic booking request doctor emails failed', [
+                'clinic_booking_request_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $request;
     }
 
     /**
