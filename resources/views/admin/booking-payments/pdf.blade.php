@@ -142,7 +142,11 @@
     </div>
 
     <div class="fee-note">
-        <strong>Note:</strong> Amounts shown are payment totals recorded in the system. Where card payments are processed via Stripe, Stripe deducts its own processing fees from the charge; the net amount settled to your account may therefore be lower than the figures in this report. Refer to Stripe documentation for details.
+        <strong>Note:</strong> Amounts shown are payment totals recorded in the system. Where card payments are processed via Stripe, Stripe deducts its own processing fees from the charge; the net amount settled to your account may therefore be lower than the figures in this report.
+        <br><br>
+        <strong>UK (GBP) — indicative Stripe card fees</strong> (subject to change; your mix of card types may differ): Stripe’s published UK pricing is typically around <strong>1.5% + 20p</strong> per successful charge for standard UK cards, <strong>1.9% + 20p</strong> for UK commercial cards, <strong>2.5% + 20p</strong> for EEA cards, and <strong>3.25% + 20p</strong> for international cards. Currency conversion, disputes, or other products may add further costs.
+        <br><br>
+        Refer to <strong>Stripe’s UK pricing</strong> at <strong>stripe.com/gb/pricing</strong> and your Stripe Dashboard for current fees and payouts.
     </div>
 </body>
 </html>
