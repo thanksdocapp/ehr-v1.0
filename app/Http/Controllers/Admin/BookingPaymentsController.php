@@ -10,6 +10,7 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -61,9 +62,7 @@ class BookingPaymentsController extends Controller
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
 
-        $from = $request->filled('from') ? $request->string('from') : 'start';
-        $to = $request->filled('to') ? $request->string('to') : 'end';
-        $filename = 'booking_payments_'.$from.'_to_'.$to.'.pdf';
+        $filename = $this->bookingPaymentsExportFilename($request, 'pdf');
 
         return response()->streamDownload(function () use ($dompdf) {
             echo $dompdf->output();
@@ -78,9 +77,7 @@ class BookingPaymentsController extends Controller
             ->orderByDesc('payment_date')
             ->get();
 
-        $from = $request->filled('from') ? $request->string('from') : 'start';
-        $to = $request->filled('to') ? $request->string('to') : 'end';
-        $filename = 'booking_payments_'.$from.'_to_'.$to.'.csv';
+        $filename = $this->bookingPaymentsExportFilename($request, 'csv');
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -171,6 +168,45 @@ class BookingPaymentsController extends Controller
             'invoice.doctorBookingDiscountCode.doctor.departments',
             'invoice.clinicBookingDiscountCode.department',
         ];
+    }
+
+    /**
+     * Safe download filename: booking_payments_{from}_to_{to}[_doctor_{slug}][_clinic_{slug}].{ext}
+     */
+    private function bookingPaymentsExportFilename(Request $request, string $extension): string
+    {
+        $from = $request->filled('from') ? $request->string('from') : 'start';
+        $to = $request->filled('to') ? $request->string('to') : 'end';
+        $segments = ['booking_payments', $from, 'to', $to];
+
+        if ($request->filled('doctor_id')) {
+            $doctor = Doctor::with('user')->find($request->integer('doctor_id'));
+            $label = $doctor
+                ? (string) ($doctor->user->name ?? trim(($doctor->first_name ?? '').' '.($doctor->last_name ?? '')))
+                : '';
+            $slug = Str::slug($label, '-');
+            if ($slug === '') {
+                $slug = 'id-'.$request->integer('doctor_id');
+            }
+            $segments[] = 'doctor';
+            $segments[] = $slug;
+        }
+
+        if ($request->filled('department_id')) {
+            $department = Department::find($request->integer('department_id'));
+            $label = $department?->name ?? '';
+            $slug = Str::slug($label, '-');
+            if ($slug === '') {
+                $slug = 'id-'.$request->integer('department_id');
+            }
+            $segments[] = 'clinic';
+            $segments[] = $slug;
+        }
+
+        $base = implode('_', $segments);
+        $base = substr($base, 0, 180);
+
+        return $base.'.'.ltrim($extension, '.');
     }
 
     private function filterSummaryForExport(Request $request): string
