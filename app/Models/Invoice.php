@@ -95,6 +95,14 @@ class Invoice extends Model
         return $this->hasMany(PendingBooking::class);
     }
 
+    /**
+     * Pool clinic booking flow rows (pre-payment) that reference this invoice.
+     */
+    public function pendingClinicBookings(): HasMany
+    {
+        return $this->hasMany(PendingClinicBooking::class, 'invoice_id');
+    }
+
     // Scopes
     public function scopeByStatus($query, $status)
     {

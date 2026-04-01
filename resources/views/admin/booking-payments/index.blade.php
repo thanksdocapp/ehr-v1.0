@@ -72,6 +72,7 @@
                             <th>Source</th>
                             <th>Invoice</th>
                             <th>Doctor</th>
+                            <th>Clinic</th>
                             <th>Patient</th>
                             <th>Appointment</th>
                         </tr>
@@ -93,19 +94,8 @@
                                     'Invoice' => 'secondary',
                                     default => 'light text-dark',
                                 };
-                                $doctorName = null;
-                                if ($appt?->doctor) {
-                                    $doctorName = $appt->doctor->user->name ?? trim(($appt->doctor->first_name ?? '').' '.($appt->doctor->last_name ?? ''));
-                                } elseif ($inv?->billing?->doctor) {
-                                    $bd = $inv->billing->doctor;
-                                    $doctorName = $bd->user->name ?? trim(($bd->first_name ?? '').' '.($bd->last_name ?? ''));
-                                } elseif ($inv && $inv->pendingBookings->isNotEmpty()) {
-                                    $pbDoc = $inv->pendingBookings->first()?->doctor;
-                                    $doctorName = $pbDoc?->user->name ?? ($pbDoc ? trim(($pbDoc->first_name ?? '').' '.($pbDoc->last_name ?? '')) : null);
-                                } elseif ($inv?->doctorBookingDiscountCode?->doctor) {
-                                    $doc = $inv->doctorBookingDiscountCode->doctor;
-                                    $doctorName = $doc->user->name ?? trim(($doc->first_name ?? '').' '.($doc->last_name ?? ''));
-                                }
+                                $doctorName = $bookingPaymentsService->doctorNameForBookingPayment($payment);
+                                $clinicName = $bookingPaymentsService->clinicNameForBookingPayment($payment);
                             @endphp
                             <tr>
                                 <td>{{ $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—' }}</td>
@@ -114,6 +104,7 @@
                                 <td><span class="badge bg-{{ $badgeClass }}">{{ $src }}</span></td>
                                 <td>{{ $inv?->invoice_number ?? ('#'.$inv?->id) }}</td>
                                 <td>{{ $doctorName ?? '—' }}</td>
+                                <td>{{ $clinicName ?? '—' }}</td>
                                 <td>
                                     @if($patient)
                                         {{ trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')) ?: '—' }}
@@ -135,7 +126,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">No payments match.</td>
+                                <td colspan="9" class="text-center text-muted py-4">No payments match.</td>
                             </tr>
                         @endforelse
                     </tbody>

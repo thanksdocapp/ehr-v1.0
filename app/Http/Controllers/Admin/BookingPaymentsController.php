@@ -29,11 +29,19 @@ class BookingPaymentsController extends Controller
             ->with([
                 'invoice.patient',
                 'invoice.appointment.doctor.user',
+                'invoice.appointment.department',
                 'invoice.pendingBookings.doctor.user',
+                'invoice.pendingBookings.department',
+                'invoice.pendingClinicBookings.department',
                 'invoice.billing.doctor.user',
-                'invoice.billing.appointment',
-                'invoice.doctorBookingDiscountCode',
-                'invoice.clinicBookingDiscountCode',
+                'invoice.billing.doctor.department',
+                'invoice.billing.doctor.departments',
+                'invoice.billing.appointment.doctor.user',
+                'invoice.billing.appointment.department',
+                'invoice.doctorBookingDiscountCode.doctor.user',
+                'invoice.doctorBookingDiscountCode.doctor.department',
+                'invoice.doctorBookingDiscountCode.doctor.departments',
+                'invoice.clinicBookingDiscountCode.department',
             ])
             ->orderByDesc('payment_date')
             ->paginate(30)

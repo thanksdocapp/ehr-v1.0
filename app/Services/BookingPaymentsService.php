@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Doctor;
 use App\Models\Payment;
+use App\Models\Invoice;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -123,5 +124,107 @@ class BookingPaymentsService
             'total_all_time' => round($totalAll, 2),
             'payment_count' => $count,
         ];
+    }
+
+    /**
+     * Relating doctor for admin booking-payments list (deterministic priority).
+     */
+    public function doctorNameForBookingPayment(Payment $payment): ?string
+    {
+        $inv = $payment->invoice;
+        if (! $inv instanceof Invoice) {
+            return null;
+        }
+
+        $doctor = null;
+
+        if ($inv->appointment_id && $inv->appointment) {
+            $doctor = $inv->appointment->doctor;
+        }
+
+        if (! $doctor && $inv->billing) {
+            $billing = $inv->billing;
+            $doctor = $billing->appointment?->doctor ?? $billing->doctor;
+        }
+
+        if (! $doctor && $inv->pendingBookings->isNotEmpty()) {
+            $doctor = $inv->pendingBookings->first()?->doctor;
+        }
+
+        if (! $doctor && $inv->doctorBookingDiscountCode) {
+            $doctor = $inv->doctorBookingDiscountCode->doctor;
+        }
+
+        return $this->formatDoctorName($doctor);
+    }
+
+    /**
+     * Relating clinic (department) for admin booking-payments list.
+     */
+    public function clinicNameForBookingPayment(Payment $payment): ?string
+    {
+        $inv = $payment->invoice;
+        if (! $inv instanceof Invoice) {
+            return null;
+        }
+
+        if ($inv->appointment_id && $inv->appointment?->department) {
+            return $inv->appointment->department->name;
+        }
+
+        if ($inv->billing) {
+            $billing = $inv->billing;
+            if ($billing->appointment_id && $billing->appointment?->department) {
+                return $billing->appointment->department->name;
+            }
+            if ($billing->doctor) {
+                $doc = $billing->doctor;
+                if ($doc->departments->isNotEmpty()) {
+                    return $doc->departments->first()->name;
+                }
+
+                return $doc->department?->name;
+            }
+        }
+
+        if ($inv->pendingBookings->isNotEmpty()) {
+            $dept = $inv->pendingBookings->first()?->department;
+            if ($dept) {
+                return $dept->name;
+            }
+        }
+
+        if ($inv->pendingClinicBookings->isNotEmpty()) {
+            $dept = $inv->pendingClinicBookings->first()?->department;
+            if ($dept) {
+                return $dept->name;
+            }
+        }
+
+        if ($inv->clinicBookingDiscountCode?->department) {
+            return $inv->clinicBookingDiscountCode->department->name;
+        }
+
+        if ($inv->doctorBookingDiscountCode?->doctor) {
+            $doc = $inv->doctorBookingDiscountCode->doctor;
+            if ($doc->departments->isNotEmpty()) {
+                return $doc->departments->first()->name;
+            }
+
+            return $doc->department?->name;
+        }
+
+        return null;
+    }
+
+    private function formatDoctorName(?Doctor $doctor): ?string
+    {
+        if (! $doctor) {
+            return null;
+        }
+
+        $name = $doctor->user?->name ?? trim(($doctor->first_name ?? '').' '.($doctor->last_name ?? ''));
+
+        return $name !== '' ? $name : null;
     }
 }
