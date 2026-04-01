@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Exception;
 
 class HospitalEmailNotificationService
@@ -1211,6 +1212,71 @@ class HospitalEmailNotificationService
                 'doctor_ids' => $doctors->pluck('id')->all(),
             ]);
         }
+
+        // Fallback: department inbox so the clinic still gets the request if doctor rows lack usable addresses.
+        if ($sentCount === 0 && $request->department) {
+            $fallbackEmail = trim((string) ($request->department->email ?? ''));
+            if ($fallbackEmail !== '' && $this->isValidNotificationEmail($fallbackEmail)) {
+                $fallbackVariables = [
+                    'doctor_name' => 'Colleague',
+                    'patient_name' => $patientName,
+                    'patient_phone' => $pd['phone'] ?? 'Not provided',
+                    'patient_email' => $pd['email'] ?? 'Not provided',
+                    'clinic_name' => $deptName,
+                    'service_name' => $serviceName,
+                    'appointment_date' => $dateStr,
+                    'appointment_time' => $timeStr,
+                    'consultation_type' => $consultationType,
+                    'request_number' => $request->request_number,
+                    'booking_notes' => $bookingNotes,
+                    'accept_requests_url' => $acceptUrl,
+                    'hospital_name' => $hospitalName,
+                ];
+                try {
+                    $log = $this->emailService->sendTemplateEmail(
+                        'doctor_clinic_booking_request',
+                        [$fallbackEmail => ($request->department->name ?? 'Clinic')],
+                        $fallbackVariables,
+                        ['body_format' => 'plain']
+                    );
+                    if ($log === null) {
+                        Log::error('Clinic booking email: department fallback send returned null', [
+                            'clinic_booking_request_id' => $request->id,
+                            'department_id' => $request->department_id,
+                            'recipient' => $fallbackEmail,
+                        ]);
+                    } elseif ($log->status === 'failed') {
+                        Log::error('Clinic booking email: department fallback transport failed', [
+                            'clinic_booking_request_id' => $request->id,
+                            'email_log_id' => $log->id,
+                            'error_message' => $log->error_message,
+                        ]);
+                    } else {
+                        Log::info('Clinic booking email sent to department inbox (no doctor addresses)', [
+                            'clinic_booking_request_id' => $request->id,
+                            'department_id' => $request->department_id,
+                            'recipient' => $fallbackEmail,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('Clinic booking email: department fallback failed', [
+                        'clinic_booking_request_id' => $request->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            } else {
+                Log::warning('Clinic booking email: no sends; set a valid department email as fallback or add emails to doctor profiles', [
+                    'clinic_booking_request_id' => $request->id,
+                    'department_id' => $request->department_id,
+                    'department_email_empty_or_invalid' => $fallbackEmail === '',
+                ]);
+            }
+        } elseif ($sentCount === 0) {
+            Log::warning('Clinic booking email: no sends and request has no department record', [
+                'clinic_booking_request_id' => $request->id,
+                'department_id' => $request->department_id,
+            ]);
+        }
     }
 
     /**
@@ -1227,12 +1293,28 @@ class HospitalEmailNotificationService
         }
 
         foreach ($candidates as $email) {
-            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if ($this->isValidNotificationEmail($email)) {
                 return $email;
             }
         }
 
         return null;
+    }
+
+    /**
+     * filter_var rejects some valid addresses; Laravel's email rule is a practical second check.
+     */
+    protected function isValidNotificationEmail(string $email): bool
+    {
+        $email = trim($email);
+        if ($email === '') {
+            return false;
+        }
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) !== false) {
+            return true;
+        }
+
+        return Validator::make(['email' => $email], ['email' => 'email'])->passes();
     }
 
     /**
