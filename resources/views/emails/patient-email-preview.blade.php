@@ -111,7 +111,7 @@
             <div class="footer-divider"></div>
 
             <div class="disclaimer">
-                <p><strong>Disclaimer:</strong> This email is for informational purposes only. Please do not reply to this email as this mailbox is not monitored. For any queries, please contact {{ $emailData['department_name'] ?? 'your healthcare provider' }} directly. For emergencies, please 999.</p>
+                <p><strong>Disclaimer:</strong> This email is for informational purposes only. Please do not reply to this email as this mailbox is not monitored. For any queries, please contact {{ $emailData['department_name'] ?? 'your healthcare provider' }} directly. For emergencies, please dial 999.</p>
             </div>
         </div>
     </div>
