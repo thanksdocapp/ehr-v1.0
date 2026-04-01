@@ -142,7 +142,7 @@
     </div>
 
     <div class="fee-note">
-        <strong>Note:</strong> Amounts shown are payment totals recorded in the system. Where card payments are processed via Stripe, Stripe deducts its own processing fees from the charge; the net amount settled to your account may therefore be lower than the figures in this report. Refer to your Stripe dashboard for exact fees and payouts.
+        <strong>Note:</strong> Amounts shown are payment totals recorded in the system. Where card payments are processed via Stripe, Stripe deducts its own processing fees from the charge; the net amount settled to your account may therefore be lower than the figures in this report. Refer to Stripe documentation for details.
     </div>
 </body>
 </html>
