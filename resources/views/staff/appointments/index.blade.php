@@ -558,7 +558,7 @@
                                     @endif
                                 </td>
                                 @endif
-                                <td>
+                                <td data-order="{{ $appointment->appointment_date_time->format('Y-m-d H:i:s') }}">
                                     <div class="fw-bold">{{ formatDate($appointment->appointment_date) }}</div>
                                     <small class="text-muted">{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</small>
                                     @if($appointment->is_online)
