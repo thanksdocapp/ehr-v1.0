@@ -15,6 +15,12 @@ use Dompdf\Options;
 class ConsultationsReportController extends Controller
 {
     /**
+     * Minutes credited per standalone medical record row (no linked appointment) in this report.
+     * Records with appointment_id set are excluded — time is counted on the appointment side.
+     */
+    private const STANDALONE_MEDICAL_RECORD_DURATION_MINUTES = 10;
+
+    /**
      * Display consultations report
      */
     public function index(Request $request)
@@ -283,7 +289,10 @@ class ConsultationsReportController extends Controller
 
         $recordDateExpression = "DATE(COALESCE(medical_records.record_date, medical_records.created_at))";
 
-        // Group standalone medical records by same calendar day + department: count as 1 consultation per group (within 24h)
+        $standaloneMrMins = self::STANDALONE_MEDICAL_RECORD_DURATION_MINUTES;
+
+        // Standalone medical records only (appointment_id IS NULL). Linked records are omitted — duration is on the appointment.
+        // Group by calendar day + department: one consultation per group.
         $medicalRecordRows = DB::table('medical_records')
             ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
             ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
@@ -295,7 +304,7 @@ class ConsultationsReportController extends Controller
                 {$recordDateExpression} as record_date,
                 doctors.department_id as department_id,
                 departments.name as department_name,
-                20 as duration_minutes
+                {$standaloneMrMins} as duration_minutes
             ");
 
         if (!empty($departmentId)) {
@@ -358,7 +367,10 @@ class ConsultationsReportController extends Controller
 
         $recordDateExpression = "DATE(COALESCE(medical_records.record_date, medical_records.created_at))";
 
-        // Group standalone medical records by same calendar day + department (within 24h = one consultation)
+        $standaloneMrMins = self::STANDALONE_MEDICAL_RECORD_DURATION_MINUTES;
+
+        // Standalone medical records only (appointment_id IS NULL). Linked records are omitted from this report.
+        // Group by calendar day + department (within 24h = one consultation)
         $medicalRecordGroups = DB::table('medical_records')
             ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
             ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
@@ -390,7 +402,7 @@ class ConsultationsReportController extends Controller
                 departments.name as department_name,
                 medical_records.record_type as consultation_type,
                 'medical_record' as source,
-                20 as duration_minutes
+                {$standaloneMrMins} as duration_minutes
             ");
 
         return DB::query()->fromSub($appointmentRows->unionAll($medicalRecordRows), 'consultation_details');
