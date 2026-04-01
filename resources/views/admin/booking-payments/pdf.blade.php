@@ -69,6 +69,17 @@
             color: #7f8c8d;
             font-size: 8px;
         }
+        .fee-note {
+            margin-top: 10px;
+            padding: 8px 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            text-align: left;
+            color: #444;
+            font-size: 7px;
+            line-height: 1.35;
+        }
     </style>
 </head>
 <body>
@@ -128,6 +139,10 @@
 
     <div class="footer">
         ThanksDoc EPR — Booking payments export
+    </div>
+
+    <div class="fee-note">
+        <strong>Note:</strong> Amounts shown are payment totals recorded in the system. Where card payments are processed via Stripe, Stripe deducts its own processing fees from the charge; the net amount settled to your account may therefore be lower than the figures in this report. Refer to your Stripe dashboard for exact fees and payouts.
     </div>
 </body>
 </html>
