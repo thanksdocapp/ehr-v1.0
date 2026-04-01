@@ -1133,9 +1133,21 @@ class HospitalEmailNotificationService
             ->orderBy('first_name')
             ->get();
 
+        if ($doctors->isEmpty()) {
+            Log::warning('Clinic booking doctor email skipped: no active doctors in department', [
+                'clinic_booking_request_id' => $request->id,
+                'department_id' => $request->department_id,
+            ]);
+        }
+
+        $sentCount = 0;
+        $skippedNoEmail = 0;
+
         foreach ($doctors as $doctor) {
-            $toEmail = $doctor->user?->email ?: $doctor->email;
+            $toEmail = $this->resolveDoctorNotificationEmail($doctor);
             if (! $toEmail) {
+                $skippedNoEmail++;
+
                 continue;
             }
 
@@ -1159,12 +1171,31 @@ class HospitalEmailNotificationService
             ];
 
             try {
-                $this->emailService->sendTemplateEmail(
+                $log = $this->emailService->sendTemplateEmail(
                     'doctor_clinic_booking_request',
                     [$toEmail => $toName ?: 'Doctor'],
-                    $variables
+                    $variables,
+                    ['body_format' => 'plain']
                 );
-            } catch (\Exception $e) {
+
+                if ($log === null) {
+                    Log::error('Clinic booking doctor email: send failed or template missing (sendTemplateEmail returned null)', [
+                        'doctor_id' => $doctor->id,
+                        'clinic_booking_request_id' => $request->id,
+                        'recipient' => $toEmail,
+                        'hint' => 'Ensure email template doctor_clinic_booking_request exists and is active; check logs for CRITICAL sendTemplateEmail errors.',
+                    ]);
+                } elseif ($log->status === 'failed') {
+                    Log::error('Clinic booking doctor email: mail transport failed', [
+                        'doctor_id' => $doctor->id,
+                        'clinic_booking_request_id' => $request->id,
+                        'email_log_id' => $log->id,
+                        'error_message' => $log->error_message,
+                    ]);
+                } else {
+                    $sentCount++;
+                }
+            } catch (\Throwable $e) {
                 Log::error('Failed to send clinic booking request email to doctor', [
                     'doctor_id' => $doctor->id,
                     'clinic_booking_request_id' => $request->id,
@@ -1172,6 +1203,36 @@ class HospitalEmailNotificationService
                 ]);
             }
         }
+
+        if ($doctors->isNotEmpty() && $sentCount === 0 && $skippedNoEmail === $doctors->count()) {
+            Log::warning('Clinic booking doctor email: no valid email addresses for any doctor in department', [
+                'clinic_booking_request_id' => $request->id,
+                'department_id' => $request->department_id,
+                'doctor_ids' => $doctors->pluck('id')->all(),
+            ]);
+        }
+    }
+
+    /**
+     * Prefer linked user email, then doctor record email; require non-empty and valid format.
+     */
+    protected function resolveDoctorNotificationEmail(Doctor $doctor): ?string
+    {
+        $candidates = [];
+        if ($doctor->user && filled($doctor->user->email)) {
+            $candidates[] = trim((string) $doctor->user->email);
+        }
+        if (filled($doctor->email ?? null)) {
+            $candidates[] = trim((string) $doctor->email);
+        }
+
+        foreach ($candidates as $email) {
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $email;
+            }
+        }
+
+        return null;
     }
 
     /**

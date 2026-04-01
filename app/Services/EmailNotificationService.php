@@ -53,7 +53,12 @@ class EmailNotificationService
                 
                 $parsedSubject = $this->parseContent($template->subject, $variables);
                 $parsedBody = $this->parseContent($template->body, $variables);
-                
+
+                // Plain-text templates must be converted for Mail::html(); otherwise clients may show a blank or single-line body.
+                if (!empty($options['body_format']) && $options['body_format'] === 'plain') {
+                    $parsedBody = nl2br(htmlspecialchars($parsedBody, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+                }
+
                 Log::info('Email template parsed successfully', [
                     'template_id' => $template->id,
                     'subject_length' => strlen($parsedSubject),
