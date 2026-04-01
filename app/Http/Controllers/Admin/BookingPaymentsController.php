@@ -6,12 +6,128 @@ use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Doctor;
 use App\Services\BookingPaymentsService;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BookingPaymentsController extends Controller
 {
     public function index(Request $request, BookingPaymentsService $service): View
+    {
+        $query = $this->buildFilteredPaymentsQuery($request, $service);
+
+        $totalAmount = (float) (clone $query)->sum('amount');
+
+        $payments = $query
+            ->with($this->bookingPaymentsEagerLoads())
+            ->orderByDesc('payment_date')
+            ->paginate(30)
+            ->withQueryString();
+
+        $doctors = Doctor::query()->with('user')->orderBy('last_name')->orderBy('first_name')->get();
+        $departments = Department::query()->where('is_active', true)->orderBy('name')->get();
+
+        $bookingPaymentsService = $service;
+
+        return view('admin.booking-payments.index', compact('payments', 'doctors', 'departments', 'totalAmount', 'bookingPaymentsService'));
+    }
+
+    public function exportPdf(Request $request, BookingPaymentsService $service): StreamedResponse
+    {
+        $query = $this->buildFilteredPaymentsQuery($request, $service);
+        $totalAmount = (float) (clone $query)->sum('amount');
+
+        $payments = (clone $query)
+            ->with($this->bookingPaymentsEagerLoads())
+            ->orderByDesc('payment_date')
+            ->get();
+
+        $html = view('admin.booking-payments.pdf', [
+            'payments' => $payments,
+            'bookingPaymentsService' => $service,
+            'totalAmount' => $totalAmount,
+            'filterSummary' => $this->filterSummaryForExport($request),
+        ])->render();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('chroot', base_path());
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        $from = $request->filled('from') ? $request->string('from') : 'start';
+        $to = $request->filled('to') ? $request->string('to') : 'end';
+        $filename = 'booking_payments_'.$from.'_to_'.$to.'.pdf';
+
+        return response()->streamDownload(function () use ($dompdf) {
+            echo $dompdf->output();
+        }, $filename);
+    }
+
+    public function exportCsv(Request $request, BookingPaymentsService $service): StreamedResponse
+    {
+        $query = $this->buildFilteredPaymentsQuery($request, $service);
+        $payments = (clone $query)
+            ->with($this->bookingPaymentsEagerLoads())
+            ->orderByDesc('payment_date')
+            ->get();
+
+        $from = $request->filled('from') ? $request->string('from') : 'start';
+        $to = $request->filled('to') ? $request->string('to') : 'end';
+        $filename = 'booking_payments_'.$from.'_to_'.$to.'.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ];
+
+        $callback = function () use ($payments, $service) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, [
+                'Date',
+                'Amount',
+                'Method',
+                'Source',
+                'Invoice',
+                'Doctor',
+                'Clinic',
+                'Patient',
+                'Appointment',
+                'Comments',
+            ]);
+
+            foreach ($payments as $payment) {
+                $comments = $service->commentsForBookingPayment($payment);
+
+                fputcsv($file, [
+                    $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—',
+                    number_format((float) $payment->amount, 2, '.', ''),
+                    $payment->payment_method_label,
+                    $service->labelForPayment($payment),
+                    $payment->invoice?->invoice_number ?? ('#'.$payment->invoice?->id),
+                    $service->doctorNameForBookingPayment($payment) ?? '—',
+                    $service->clinicNameForBookingPayment($payment) ?? '—',
+                    $service->patientNameForBookingPayment($payment),
+                    $service->appointmentSlotLabelForBookingPayment($payment),
+                    $comments !== '' ? $comments : '—',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    private function buildFilteredPaymentsQuery(Request $request, BookingPaymentsService $service): Builder
     {
         $query = $request->filled('doctor_id')
             ? $service->completedPaymentsForDoctor(Doctor::findOrFail($request->integer('doctor_id')))
@@ -30,35 +146,51 @@ class BookingPaymentsController extends Controller
             $query->whereDate('payment_date', '<=', $request->string('to'));
         }
 
-        $totalAmount = (float) (clone $query)->sum('amount');
+        return $query;
+    }
 
-        $payments = $query
-            ->with([
-                'invoice.patient',
-                'invoice.appointment.doctor.user',
-                'invoice.appointment.department',
-                'invoice.pendingBookings.doctor.user',
-                'invoice.pendingBookings.department',
-                'invoice.pendingClinicBookings.department',
-                'invoice.billing.doctor.user',
-                'invoice.billing.doctor.department',
-                'invoice.billing.doctor.departments',
-                'invoice.billing.appointment.doctor.user',
-                'invoice.billing.appointment.department',
-                'invoice.doctorBookingDiscountCode.doctor.user',
-                'invoice.doctorBookingDiscountCode.doctor.department',
-                'invoice.doctorBookingDiscountCode.doctor.departments',
-                'invoice.clinicBookingDiscountCode.department',
-            ])
-            ->orderByDesc('payment_date')
-            ->paginate(30)
-            ->withQueryString();
+    /**
+     * @return array<int, string>
+     */
+    private function bookingPaymentsEagerLoads(): array
+    {
+        return [
+            'invoice.patient',
+            'invoice.appointment.doctor.user',
+            'invoice.appointment.department',
+            'invoice.pendingBookings.doctor.user',
+            'invoice.pendingBookings.department',
+            'invoice.pendingClinicBookings.department',
+            'invoice.billing.doctor.user',
+            'invoice.billing.doctor.department',
+            'invoice.billing.doctor.departments',
+            'invoice.billing.appointment.doctor.user',
+            'invoice.billing.appointment.department',
+            'invoice.doctorBookingDiscountCode.doctor.user',
+            'invoice.doctorBookingDiscountCode.doctor.department',
+            'invoice.doctorBookingDiscountCode.doctor.departments',
+            'invoice.clinicBookingDiscountCode.department',
+        ];
+    }
 
-        $doctors = Doctor::query()->with('user')->orderBy('last_name')->orderBy('first_name')->get();
-        $departments = Department::query()->where('is_active', true)->orderBy('name')->get();
+    private function filterSummaryForExport(Request $request): string
+    {
+        $parts = [];
+        if ($request->filled('doctor_id')) {
+            $d = Doctor::with('user')->find($request->integer('doctor_id'));
+            $parts[] = 'Doctor: '.($d ? ($d->user->name ?? trim(($d->first_name ?? '').' '.($d->last_name ?? ''))) : '—');
+        }
+        if ($request->filled('department_id')) {
+            $dept = Department::find($request->integer('department_id'));
+            $parts[] = 'Clinic: '.($dept?->name ?? '—');
+        }
+        if ($request->filled('from')) {
+            $parts[] = 'From: '.$request->string('from');
+        }
+        if ($request->filled('to')) {
+            $parts[] = 'To: '.$request->string('to');
+        }
 
-        $bookingPaymentsService = $service;
-
-        return view('admin.booking-payments.index', compact('payments', 'doctors', 'departments', 'totalAmount', 'bookingPaymentsService'));
+        return $parts !== [] ? implode(' · ', $parts) : 'All completed payments (no filters)';
     }
 }

@@ -2,19 +2,6 @@
 @php
     use App\Helpers\CurrencyHelper;
 @endphp
-@php
-    $fmtApptSlot = static function ($appt) {
-        if (!$appt || !$appt->appointment_date) {
-            return '—';
-        }
-        $d = formatDateUk($appt->appointment_date);
-        if (!empty($appt->appointment_time)) {
-            $d .= ', '.formatTime($appt->appointment_time, 'g:i A');
-        }
-        return $d;
-    };
-@endphp
-
 @section('title', 'Booking payments')
 
 @section('breadcrumb')
@@ -29,7 +16,15 @@
             <h1 class="h3 mb-1">Booking payments</h1>
             <p class="text-muted mb-0">All completed patient payments (including legacy invoices that only have a patient or generic invoice link). Use <strong>Source</strong> to see how each row is tied—older rows may show as <strong>Invoice</strong>. Filter by doctor and/or clinic (department).</p>
         </div>
-        <div class="fw-semibold">Filtered total: {{ CurrencyHelper::format((float) $totalAmount) }}</div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="fw-semibold">Filtered total: {{ CurrencyHelper::format((float) $totalAmount) }}</span>
+            <a href="{{ route('admin.booking-payments.export-pdf', request()->query()) }}" class="btn btn-sm btn-danger">
+                <i class="fas fa-file-pdf me-1"></i>Export PDF
+            </a>
+            <a href="{{ route('admin.booking-payments.export-csv', request()->query()) }}" class="btn btn-sm btn-success">
+                <i class="fas fa-file-csv me-1"></i>Export CSV
+            </a>
+        </div>
     </div>
 
     <form method="get" class="row g-2 align-items-end mb-3">
@@ -86,6 +81,7 @@
                             <th>Clinic</th>
                             <th>Patient</th>
                             <th>Appointment</th>
+                            <th>Comments</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -93,7 +89,6 @@
                             @php
                                 $inv = $payment->invoice;
                                 $patient = $inv?->patient;
-                                $appt = $inv?->appointment;
                                 $src = $bookingPaymentsService->labelForPayment($payment);
                                 $badgeClass = match ($src) {
                                     'Appointment' => 'primary',
@@ -107,6 +102,7 @@
                                 };
                                 $doctorName = $bookingPaymentsService->doctorNameForBookingPayment($payment);
                                 $clinicName = $bookingPaymentsService->clinicNameForBookingPayment($payment);
+                                $comments = $bookingPaymentsService->commentsForBookingPayment($payment);
                             @endphp
                             <tr>
                                 <td>{{ $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—' }}</td>
@@ -123,21 +119,12 @@
                                         —
                                     @endif
                                 </td>
-                                <td>
-                                    @if($appt)
-                                        {{ $fmtApptSlot($appt) }}
-                                    @elseif($inv?->billing?->appointment)
-                                        {{ $fmtApptSlot($inv->billing->appointment) }} <span class="text-muted small">(billing)</span>
-                                    @elseif($inv && $inv->pendingBookings->isNotEmpty())
-                                        <span class="text-muted">Pending booking</span>
-                                    @else
-                                        —
-                                    @endif
-                                </td>
+                                <td>{{ $bookingPaymentsService->appointmentSlotLabelForBookingPayment($payment) }}</td>
+                                <td class="small text-break" style="max-width: 220px;">{{ $comments !== '' ? $comments : '—' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">No payments match.</td>
+                                <td colspan="10" class="text-center text-muted py-4">No payments match.</td>
                             </tr>
                         @endforelse
                     </tbody>

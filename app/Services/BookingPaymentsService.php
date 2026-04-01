@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Invoice;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class BookingPaymentsService
 {
@@ -251,6 +252,72 @@ class BookingPaymentsService
         }
 
         return null;
+    }
+
+    /**
+     * Combined comments for exports / list: payment notes, invoice notes, invoice description.
+     */
+    public function commentsForBookingPayment(Payment $payment): string
+    {
+        $parts = [];
+        if (filled($payment->notes)) {
+            $parts[] = Str::limit(trim(strip_tags((string) $payment->notes)), 800);
+        }
+        $inv = $payment->invoice;
+        if ($inv) {
+            if (filled($inv->notes)) {
+                $parts[] = Str::limit(trim(strip_tags((string) $inv->notes)), 800);
+            }
+            if (filled($inv->description ?? null)) {
+                $parts[] = Str::limit(trim(strip_tags((string) $inv->description)), 800);
+            }
+        }
+        $parts = array_values(array_unique(array_filter($parts)));
+
+        return $parts !== [] ? implode(' | ', $parts) : '';
+    }
+
+    public function patientNameForBookingPayment(Payment $payment): string
+    {
+        $patient = $payment->invoice?->patient;
+        if (! $patient) {
+            return '—';
+        }
+        $n = trim(($patient->first_name ?? '').' '.($patient->last_name ?? ''));
+
+        return $n !== '' ? $n : '—';
+    }
+
+    public function appointmentSlotLabelForBookingPayment(Payment $payment): string
+    {
+        $inv = $payment->invoice;
+        if (! $inv) {
+            return '—';
+        }
+        if ($inv->appointment_id && $inv->appointment) {
+            return $this->formatAppointmentSlotForExport($inv->appointment);
+        }
+        if ($inv->billing?->appointment) {
+            return $this->formatAppointmentSlotForExport($inv->billing->appointment).' (billing)';
+        }
+        if ($inv->pendingBookings->isNotEmpty()) {
+            return 'Pending booking';
+        }
+
+        return '—';
+    }
+
+    private function formatAppointmentSlotForExport($appt): string
+    {
+        if (! $appt || ! $appt->appointment_date) {
+            return '—';
+        }
+        $d = formatDateUk($appt->appointment_date);
+        if (! empty($appt->appointment_time)) {
+            $d .= ', '.formatTime($appt->appointment_time, 'g:i A');
+        }
+
+        return $d;
     }
 
     private function formatDoctorName(?Doctor $doctor): ?string

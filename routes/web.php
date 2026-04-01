@@ -917,6 +917,8 @@ Route::group(['middleware' => 'installed'], function () {
         });
 
         Route::get('/booking-payments', [\App\Http\Controllers\Admin\BookingPaymentsController::class, 'index'])->name('booking-payments.index');
+        Route::get('/booking-payments/export-pdf', [\App\Http\Controllers\Admin\BookingPaymentsController::class, 'exportPdf'])->name('booking-payments.export-pdf');
+        Route::get('/booking-payments/export-csv', [\App\Http\Controllers\Admin\BookingPaymentsController::class, 'exportCsv'])->name('booking-payments.export-csv');
         Route::get('/payments', [\App\Http\Controllers\Admin\PaymentsController::class, 'index'])->name('payments.index');
 
         // Payment Gateway Management
