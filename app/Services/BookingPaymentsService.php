@@ -54,6 +54,42 @@ class BookingPaymentsService
     }
 
     /**
+     * Keep payments whose invoice relates to the given department/clinic (matches clinicNameForBookingPayment logic).
+     */
+    public function restrictPaymentsToDepartment(Builder $query, int $departmentId): Builder
+    {
+        return $query->whereHas('invoice', function ($inv) use ($departmentId) {
+            $inv->where(function ($q) use ($departmentId) {
+                $q->whereHas('appointment', fn ($a) => $a->where('department_id', $departmentId))
+                    ->orWhereHas('billing', function ($b) use ($departmentId) {
+                        $b->where(function ($inner) use ($departmentId) {
+                            $inner->whereHas('appointment', fn ($a) => $a->where('department_id', $departmentId))
+                                ->orWhereHas('doctor', function ($doc) use ($departmentId) {
+                                    $doc->where(function ($dq) use ($departmentId) {
+                                        $dq->where('department_id', $departmentId)
+                                            ->orWhereHas('departments', function ($dep) use ($departmentId) {
+                                                $dep->where('departments.id', $departmentId);
+                                            });
+                                    });
+                                });
+                        });
+                    })
+                    ->orWhereHas('pendingBookings', fn ($pb) => $pb->where('department_id', $departmentId))
+                    ->orWhereHas('pendingClinicBookings', fn ($pcb) => $pcb->where('department_id', $departmentId))
+                    ->orWhereHas('clinicBookingDiscountCode', fn ($c) => $c->where('department_id', $departmentId))
+                    ->orWhereHas('doctorBookingDiscountCode.doctor', function ($doc) use ($departmentId) {
+                        $doc->where(function ($dq) use ($departmentId) {
+                            $dq->where('department_id', $departmentId)
+                                ->orWhereHas('departments', function ($dep) use ($departmentId) {
+                                    $dep->where('departments.id', $departmentId);
+                                });
+                        });
+                    });
+            });
+        });
+    }
+
+    /**
      * Human-readable source for UI (one primary reason, deterministic priority).
      */
     public function labelForPayment(Payment $payment): string

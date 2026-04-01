@@ -27,7 +27,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h1 class="h3 mb-1">Booking payments</h1>
-            <p class="text-muted mb-0">All completed patient payments (including legacy invoices that only have a patient or generic invoice link). Use <strong>Source</strong> to see how each row is tied—older rows may show as <strong>Invoice</strong>. Filter by doctor to match the doctor portal (only payments attributable to that doctor).</p>
+            <p class="text-muted mb-0">All completed patient payments (including legacy invoices that only have a patient or generic invoice link). Use <strong>Source</strong> to see how each row is tied—older rows may show as <strong>Invoice</strong>. Filter by doctor and/or clinic (department).</p>
         </div>
         <div class="fw-semibold">Filtered total: {{ CurrencyHelper::format((float) $totalAmount) }}</div>
     </div>
@@ -44,6 +44,17 @@
                 @endforeach
             </select>
         </div>
+        <div class="col-md-3">
+            <label class="form-label small mb-0">Clinic</label>
+            <select name="department_id" class="form-select form-select-sm">
+                <option value="">All clinics</option>
+                @foreach($departments as $dept)
+                    <option value="{{ $dept->id }}" {{ (string) request('department_id') === (string) $dept->id ? 'selected' : '' }}>
+                        {{ $dept->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
         <div class="col-auto">
             <label class="form-label small mb-0">From</label>
             <input type="date" name="from" class="form-control form-control-sm" value="{{ request('from') }}">
@@ -54,7 +65,7 @@
         </div>
         <div class="col-auto">
             <button type="submit" class="btn btn-sm btn-primary">Apply</button>
-            @if(request()->hasAny(['doctor_id','from','to']))
+            @if(request()->hasAny(['doctor_id','department_id','from','to']))
                 <a href="{{ route('admin.booking-payments.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
             @endif
         </div>

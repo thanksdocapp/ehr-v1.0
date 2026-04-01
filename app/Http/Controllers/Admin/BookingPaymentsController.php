@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\Doctor;
 use App\Services\BookingPaymentsService;
 use Illuminate\Http\Request;
@@ -15,6 +16,12 @@ class BookingPaymentsController extends Controller
         $query = $request->filled('doctor_id')
             ? $service->completedPaymentsForDoctor(Doctor::findOrFail($request->integer('doctor_id')))
             : $service->completedBookingPaymentsBase();
+
+        if ($request->filled('department_id')) {
+            $departmentId = $request->integer('department_id');
+            Department::query()->where('is_active', true)->whereKey($departmentId)->firstOrFail();
+            $query = $service->restrictPaymentsToDepartment($query, $departmentId);
+        }
 
         if ($request->filled('from')) {
             $query->whereDate('payment_date', '>=', $request->string('from'));
@@ -48,9 +55,10 @@ class BookingPaymentsController extends Controller
             ->withQueryString();
 
         $doctors = Doctor::query()->with('user')->orderBy('last_name')->orderBy('first_name')->get();
+        $departments = Department::query()->where('is_active', true)->orderBy('name')->get();
 
         $bookingPaymentsService = $service;
 
-        return view('admin.booking-payments.index', compact('payments', 'doctors', 'totalAmount', 'bookingPaymentsService'));
+        return view('admin.booking-payments.index', compact('payments', 'doctors', 'departments', 'totalAmount', 'bookingPaymentsService'));
     }
 }
