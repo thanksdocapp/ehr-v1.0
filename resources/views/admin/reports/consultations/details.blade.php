@@ -47,7 +47,6 @@
                             <th>Patient</th>
                             <th>Doctor</th>
                             <th>Type</th>
-                            <th>Source</th>
                             <th class="text-end">Duration (Minutes)</th>
                             <th class="text-end">Details</th>
                         </tr>
@@ -66,27 +65,16 @@
                                     {{ ucfirst(str_replace('_', ' ', $row->consultation_type)) }}
                                 </span>
                             </td>
-                            <td>
-                                <span class="badge bg-light text-dark">
-                                    {{ ucwords(str_replace('_', ' ', $row->source)) }}
-                                </span>
-                            </td>
                             <td class="text-end">
                                 {{ number_format($row->duration_minutes) }}
                             </td>
                             <td class="text-end">
-                                @if(!empty($row->appointment_id))
-                                    <a href="{{ route('admin.appointments.show', $row->appointment_id) }}" class="btn btn-sm btn-outline-primary">Appointment</a>
-                                @elseif(!empty($row->medical_record_id))
-                                    <a href="{{ route('admin.medical-records.show', $row->medical_record_id) }}" class="btn btn-sm btn-outline-primary">Record</a>
-                                @else
-                                    <span class="text-muted">N/A</span>
-                                @endif
+                                <a href="{{ route('admin.appointments.show', $row->appointment_id) }}" class="btn btn-sm btn-outline-primary">Appointment</a>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center py-5">
+                            <td colspan="6" class="text-center py-5">
                                 <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                                 <p class="text-muted">No consultations found for this department and month.</p>
                             </td>

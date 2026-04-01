@@ -15,12 +15,6 @@ use Dompdf\Options;
 class ConsultationsReportController extends Controller
 {
     /**
-     * Minutes credited per standalone medical record row (no linked appointment) in this report.
-     * Records with appointment_id set are excluded — time is counted on the appointment side.
-     */
-    private const STANDALONE_MEDICAL_RECORD_DURATION_MINUTES = 10;
-
-    /**
      * Display consultations report
      */
     public function index(Request $request)
@@ -287,34 +281,8 @@ class ConsultationsReportController extends Controller
             $appointmentRows->where('appointments.department_id', $departmentId);
         }
 
-        $recordDateExpression = "DATE(COALESCE(medical_records.record_date, medical_records.created_at))";
-
-        $standaloneMrMins = self::STANDALONE_MEDICAL_RECORD_DURATION_MINUTES;
-
-        // Standalone medical records only (appointment_id IS NULL). Linked records are omitted — duration is on the appointment.
-        // Group by calendar day + department: one consultation per group.
-        $medicalRecordRows = DB::table('medical_records')
-            ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
-            ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
-            ->whereNull('medical_records.appointment_id')
-            ->whereIn('medical_records.record_type', ['consultation', 'followup'])
-            ->whereBetween(DB::raw($recordDateExpression), [$startDate, $endDate])
-            ->groupByRaw("{$recordDateExpression}, doctors.department_id, departments.name")
-            ->selectRaw("
-                {$recordDateExpression} as record_date,
-                doctors.department_id as department_id,
-                departments.name as department_name,
-                {$standaloneMrMins} as duration_minutes
-            ");
-
-        if (!empty($departmentId)) {
-            $medicalRecordRows->where('doctors.department_id', $departmentId);
-        }
-
-        $unionQuery = $appointmentRows->unionAll($medicalRecordRows);
-
         $query = DB::query()
-            ->fromSub($unionQuery, 'consultation_rows')
+            ->fromSub($appointmentRows, 'consultation_rows')
             ->selectRaw("
                 DATE_FORMAT(MIN(record_date), '%Y-%m') as month_key,
                 DATE_FORMAT(MIN(record_date), '%M %Y') as month_name,
@@ -355,57 +323,15 @@ class ConsultationsReportController extends Controller
             ->whereNotIn('appointments.status', ['pending', 'cancelled'])
             ->selectRaw("
                 appointments.id as appointment_id,
-                NULL as medical_record_id,
                 appointments.appointment_date as record_date,
                 CONCAT(patients.first_name, ' ', patients.last_name) as patient_name,
                 CONCAT(doctors.first_name, ' ', doctors.last_name) as doctor_name,
                 departments.name as department_name,
                 appointments.type as consultation_type,
-                'appointment' as source,
                 $durationExpression as duration_minutes
             ");
 
-        $recordDateExpression = "DATE(COALESCE(medical_records.record_date, medical_records.created_at))";
-
-        $standaloneMrMins = self::STANDALONE_MEDICAL_RECORD_DURATION_MINUTES;
-
-        // Standalone medical records only (appointment_id IS NULL). Linked records are omitted from this report.
-        // Group by calendar day + department (within 24h = one consultation)
-        $medicalRecordGroups = DB::table('medical_records')
-            ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
-            ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
-            ->whereNull('medical_records.appointment_id')
-            ->where('doctors.department_id', $departmentId)
-            ->whereIn('medical_records.record_type', ['consultation', 'followup'])
-            ->whereBetween(DB::raw($recordDateExpression), [$startDate, $endDate])
-            ->groupByRaw("{$recordDateExpression}, doctors.department_id, departments.name")
-            ->selectRaw("
-                {$recordDateExpression} as record_date,
-                doctors.department_id as department_id,
-                departments.name as department_name,
-                MIN(medical_records.id) as first_record_id,
-                COUNT(*) as record_count
-            ");
-
-        $medicalRecordRows = DB::table(DB::raw("({$medicalRecordGroups->toSql()}) as mr_grp"))
-            ->mergeBindings($medicalRecordGroups)
-            ->join('medical_records', 'medical_records.id', '=', 'mr_grp.first_record_id')
-            ->leftJoin('patients', 'medical_records.patient_id', '=', 'patients.id')
-            ->leftJoin('doctors', 'medical_records.doctor_id', '=', 'doctors.id')
-            ->leftJoin('departments', 'doctors.department_id', '=', 'departments.id')
-            ->selectRaw("
-                NULL as appointment_id,
-                medical_records.id as medical_record_id,
-                mr_grp.record_date as record_date,
-                CONCAT(COALESCE(patients.first_name, ''), ' ', COALESCE(patients.last_name, '')) as patient_name,
-                CONCAT(COALESCE(doctors.first_name, ''), ' ', COALESCE(doctors.last_name, '')) as doctor_name,
-                departments.name as department_name,
-                medical_records.record_type as consultation_type,
-                'medical_record' as source,
-                {$standaloneMrMins} as duration_minutes
-            ");
-
-        return DB::query()->fromSub($appointmentRows->unionAll($medicalRecordRows), 'consultation_details');
+        return DB::query()->fromSub($appointmentRows, 'consultation_details');
     }
 }
 
