@@ -11,6 +11,9 @@ use Carbon\Carbon;
 
 class SlotAvailabilityService
 {
+    /** Start times are offered on this grid (minutes). Duration still defines slot length. */
+    private const SLOT_START_INCREMENT_MINUTES = 5;
+
     /**
      * Get available time slots for a doctor on a specific date.
      *
@@ -92,8 +95,8 @@ class SlotAvailabilityService
                     ];
                 }
 
-                // Advance by duration to avoid overlap (e.g. 20 min slots: 9:00, 9:20, 9:40)
-                $currentTime->addMinutes($duration);
+                // Advance start time on a fixed grid (e.g. 5 min) so offers include 9:00, 9:05, 9:10… for a 30 min visit
+                $currentTime->addMinutes(self::SLOT_START_INCREMENT_MINUTES);
             }
         }
 

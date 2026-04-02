@@ -800,7 +800,7 @@ $(document).ready(function() {
                 if (!timeValue) return;
                 const [hour, minute] = timeValue.split(':').map(Number);
                 const timeInMinutes = hour * 60 + minute;
-                $(this).prop('disabled', timeInMinutes <= currentTimeInMinutes + 15); // 15 min buffer (matches slot grid)
+                $(this).prop('disabled', timeInMinutes <= currentTimeInMinutes + 15); // min lead time for same-day; times are on a 5-min grid
             });
         } else {
             // Enable all time slots for future dates
@@ -867,7 +867,7 @@ $(document).ready(function() {
 
             const slots = Array.isArray(data?.slots) ? data.slots : [];
 
-            // Apply a 15-min buffer client-side for today's date (matches 15-min slot grid)
+            // Apply a 15-min lead-time buffer for today's date (slot starts use a 5-min grid server-side)
             const today = new Date();
             // Parse date - handle both UK format (dd/mm/yyyy) and standard format
             let selectedDate;
