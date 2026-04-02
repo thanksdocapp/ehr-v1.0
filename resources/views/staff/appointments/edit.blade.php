@@ -224,7 +224,10 @@
                                                     : substr((string) $t, 0, 5);
                                             }
                                         @endphp
-                                        @include('staff.appointments.partials.time-slot-options', ['selectedTime' => $editTimeSelected])
+                                        @include('staff.appointments.partials.time-slot-options', [
+                                            'selectedTime' => $editTimeSelected,
+                                            'incrementMinutes' => (int) old('estimated_duration', $appointment->estimated_duration ?? 30),
+                                        ])
                                     </select>
                                     @error('appointment_time')
                                         <div class="invalid-feedback">{{ $message }}</div>

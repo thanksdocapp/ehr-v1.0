@@ -242,7 +242,10 @@
                                         <label for="appointment_time" class="form-label fw-semibold">Time <span class="text-danger">*</span></label>
                                         <select class="form-control @error('appointment_time') is-invalid @enderror"
                                                 id="appointment_time" name="appointment_time" required>
-                                            @include('staff.appointments.partials.time-slot-options', ['selectedTime' => old('appointment_time')])
+                                            @include('staff.appointments.partials.time-slot-options', [
+                                                'selectedTime' => old('appointment_time'),
+                                                'incrementMinutes' => (int) old('estimated_duration', 30),
+                                            ])
                                         </select>
                                         @error('appointment_time')
                                             <div class="invalid-feedback">{{ $message }}</div>
@@ -753,7 +756,12 @@ $(document).ready(function() {
     // Source of truth: Public booking availability API (uses SlotAvailabilityService / doctor availability + exceptions)
     const $timeSelect = $('#appointment_time');
     const $dateInput = $('#appointment_date');
-    const originalTimeOptions = $timeSelect.find('option').clone(true, true);
+
+    function formatTime12hLabel(h, min) {
+        const hour12 = h % 12 || 12;
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        return hour12 + ':' + String(min).padStart(2, '0') + ' ' + ampm;
+    }
 
     function getDoctorIdForSlots() {
         const $doctorSelect = $('#doctor_id');
@@ -764,11 +772,18 @@ $(document).ready(function() {
     }
 
     function restoreStaticTimesFallback() {
-        // Restore original static options
+        // Match server fallback: times from 08:00–17:30 stepped by selected duration (same as Duration dropdown increments)
+        const duration = parseInt($('#estimated_duration').val(), 10) || 30;
+        let inc = Math.max(5, Math.min(120, duration));
+        inc = Math.round(inc / 5) * 5;
         $timeSelect.empty();
-        originalTimeOptions.each(function() {
-            $timeSelect.append($(this).clone());
-        });
+        $timeSelect.append($('<option value="">Select Time</option>'));
+        for (let m = 8 * 60; m <= 17 * 60 + 30; m += inc) {
+            const h = Math.floor(m / 60);
+            const min = m % 60;
+            const time = String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+            $timeSelect.append($('<option></option>').attr('value', time).text(formatTime12hLabel(h, min)));
+        }
         applyTodayPastTimeDisabling();
     }
 
@@ -800,7 +815,7 @@ $(document).ready(function() {
                 if (!timeValue) return;
                 const [hour, minute] = timeValue.split(':').map(Number);
                 const timeInMinutes = hour * 60 + minute;
-                $(this).prop('disabled', timeInMinutes <= currentTimeInMinutes + 15); // min lead time for same-day; times are on a 5-min grid
+                $(this).prop('disabled', timeInMinutes <= currentTimeInMinutes + 15); // min lead time for same-day (aligned to duration-based slot grid)
             });
         } else {
             // Enable all time slots for future dates
@@ -867,7 +882,7 @@ $(document).ready(function() {
 
             const slots = Array.isArray(data?.slots) ? data.slots : [];
 
-            // Apply a 15-min lead-time buffer for today's date (slot starts use a 5-min grid server-side)
+            // Apply a 15-min lead-time buffer for today's date (server slots step by selected duration)
             const today = new Date();
             // Parse date - handle both UK format (dd/mm/yyyy) and standard format
             let selectedDate;

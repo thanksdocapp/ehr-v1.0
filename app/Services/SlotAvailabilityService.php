@@ -11,9 +11,6 @@ use Carbon\Carbon;
 
 class SlotAvailabilityService
 {
-    /** Start times are offered on this grid (minutes). Duration still defines slot length. */
-    private const SLOT_START_INCREMENT_MINUTES = 5;
-
     /**
      * Get available time slots for a doctor on a specific date.
      *
@@ -46,6 +43,10 @@ class SlotAvailabilityService
                 $duration = $service->getDurationForDoctor($doctorId);
             }
         }
+
+        // Offer start times on the same step as visit length (e.g. 30 min duration → 9:00, 9:30, 10:00…)
+        $slotStartIncrementMinutes = max(5, min(120, $duration));
+        $slotStartIncrementMinutes = (int) (round($slotStartIncrementMinutes / 5) * 5);
 
         // Get doctor's working sessions (one or more time windows) for this day
         $dayName = strtolower($dateObj->format('l')); // monday, tuesday, etc.
@@ -95,8 +96,7 @@ class SlotAvailabilityService
                     ];
                 }
 
-                // Advance start time on a fixed grid (e.g. 5 min) so offers include 9:00, 9:05, 9:10… for a 30 min visit
-                $currentTime->addMinutes(self::SLOT_START_INCREMENT_MINUTES);
+                $currentTime->addMinutes($slotStartIncrementMinutes);
             }
         }
 

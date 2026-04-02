@@ -61,8 +61,7 @@
             <small class="text-muted d-block mt-2">Select a date to see available time slots</small>
 
             <div id="time-slots-container" style="display: none; margin-top: 2rem;">
-                <label class="form-label">Available Time Slots</label>
-                <div id="time-slots-grid" class="time-slots-grid"></div>
+                <div id="time-slots-picker" class="time-slots-picker"></div>
                 <div id="no-slots-message" class="empty-message" style="display: none;">
                     <i class="fas fa-info-circle me-2"></i>No available slots on this date. Please select another date.
                 </div>
@@ -92,16 +91,29 @@
     </div>
 @endsection
 
+@section('styles')
+    <style>
+        .time-slots-picker { margin-top: 0.25rem; max-width: 28rem; }
+        .time-slots-picker .form-label { font-weight: 600; color: #334155; }
+        .time-slots-picker select { border-radius: 8px; border-width: 2px; }
+        .time-slot-hint { font-size: 0.8125rem; color: #64748b; margin-top: 0.5rem; }
+    </style>
+@endsection
+
 @section('scripts')
+@php
+    $serviceDurationMinutes = (int) ($service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 60);
+@endphp
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const dateInput = document.getElementById('appointment-date');
         const timeSlotsContainer = document.getElementById('time-slots-container');
-        const timeSlotsGrid = document.getElementById('time-slots-grid');
+        const timeSlotsPicker = document.getElementById('time-slots-picker');
         const noSlotsMessage = document.getElementById('no-slots-message');
         const loadingSlots = document.getElementById('loading-slots');
         const continueBtn = document.getElementById('continue-btn');
         const form = document.getElementById('datetime-form');
+        const durationMinutes = {{ $serviceDurationMinutes }};
         let selectedTime = null;
 
         function getDateValueYmd(input) {
@@ -128,7 +140,7 @@
             continueBtn.disabled = true;
             selectedTime = null;
 
-            fetch(`{{ route('public.api.available-slots', $doctor->id) }}?date=${selectedDate}&service_id={{ $service->id }}`, {
+            fetch(`{{ route('public.api.available-slots', $doctor->id) }}?date=${selectedDate}&service_id={{ $service->id }}&duration=${durationMinutes}`, {
                 credentials: 'same-origin',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -140,25 +152,42 @@
             .then(data => {
                 loadingSlots.style.display = 'none';
                 timeSlotsContainer.style.display = 'block';
-                timeSlotsGrid.innerHTML = '';
+                timeSlotsPicker.innerHTML = '';
 
                 if (data.slots && data.slots.length > 0) {
                     noSlotsMessage.style.display = 'none';
-                    data.slots.forEach(slot => {
-                        const slotBtn = document.createElement('button');
-                        slotBtn.type = 'button';
-                        slotBtn.className = 'time-slot-btn';
-                        slotBtn.textContent = slot.display || slot.start;
-                        slotBtn.dataset.time = slot.start;
-                        slotBtn.addEventListener('click', function() {
-                            document.querySelectorAll('.time-slot-btn').forEach(btn => {
-                                btn.classList.remove('selected');
-                            });
-                            this.classList.add('selected');
-                            selectedTime = this.dataset.time;
+                    const lbl = document.createElement('label');
+                    lbl.className = 'form-label';
+                    lbl.htmlFor = 'doctor-slot-time-select';
+                    lbl.textContent = 'Start time';
+                    const sel = document.createElement('select');
+                    sel.id = 'doctor-slot-time-select';
+                    sel.className = 'form-select form-select-lg';
+                    sel.required = true;
+                    const ph = document.createElement('option');
+                    ph.value = '';
+                    ph.textContent = 'Choose a time…';
+                    sel.appendChild(ph);
+                    data.slots.forEach(function(slot) {
+                        const o = document.createElement('option');
+                        o.value = slot.start;
+                        o.textContent = slot.display || slot.start;
+                        sel.appendChild(o);
+                    });
+                    const hint = document.createElement('p');
+                    hint.className = 'time-slot-hint mb-0';
+                    hint.textContent = 'Each option is one appointment (' + durationMinutes + ' minutes).';
+                    timeSlotsPicker.appendChild(lbl);
+                    timeSlotsPicker.appendChild(sel);
+                    timeSlotsPicker.appendChild(hint);
+                    sel.addEventListener('change', function() {
+                        if (sel.value) {
+                            selectedTime = sel.value;
                             continueBtn.disabled = false;
-                        });
-                        timeSlotsGrid.appendChild(slotBtn);
+                        } else {
+                            selectedTime = null;
+                            continueBtn.disabled = true;
+                        }
                     });
                 } else {
                     noSlotsMessage.style.display = 'block';

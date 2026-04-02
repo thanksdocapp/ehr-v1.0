@@ -112,7 +112,7 @@
                 <div class="date-display" id="date-display"></div>
             </div>
             <div id="time-slots-container">
-                <div id="time-slots-calendar" class="time-slots-calendar"></div>
+                <div id="time-slots-picker" class="time-slots-picker" style="display: none;"></div>
                 <div id="no-slots-message" class="empty-message" style="display: none;">
                     <i class="fas fa-info-circle me-2"></i>No available slots. Please try different dates.
                 </div>
@@ -152,10 +152,10 @@
     .date-item { padding: 0.5rem 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; min-width: 90px; text-align: center; }
     .date-item:hover { border-color: var(--booking-primary, #007bff); }
     .date-item.selected { border-color: var(--booking-primary); background: var(--booking-primary); color: #fff; }
-    .time-slots-calendar { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
-    .time-slot-btn { padding: 0.5rem; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; }
-    .time-slot-btn:hover { border-color: var(--booking-primary); }
-    .time-slot-btn.selected { background: var(--booking-primary); color: #fff; border-color: var(--booking-primary); }
+    .time-slots-picker { margin-top: 0.75rem; max-width: 28rem; margin-left: auto; margin-right: auto; }
+    .time-slots-picker .form-label { font-weight: 600; color: #334155; }
+    .time-slots-picker select { border-radius: 8px; border-width: 2px; }
+    .time-slot-hint { font-size: 0.8125rem; color: #64748b; margin-top: 0.5rem; }
     @media (max-width: 768px) { .clinic-service-row { flex-direction: column; } }
 </style>
 @endsection
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const serviceSelect = document.getElementById('service-select');
     const scheduleCard = document.getElementById('schedule-card');
     const dateDisplay = document.getElementById('date-display');
-    const slotsContainer = document.getElementById('time-slots-calendar');
+    const slotsContainer = document.getElementById('time-slots-picker');
     const noSlotsMsg = document.getElementById('no-slots-message');
     const loadingSlots = document.getElementById('loading-slots');
     const continueBtn = document.getElementById('continue-btn');
@@ -215,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         loadingSlots.style.display = 'block';
         slotsContainer.innerHTML = '';
+        slotsContainer.style.display = 'none';
         noSlotsMsg.style.display = 'none';
 
         fetch(`/api/public/clinics/${departmentId}/slots?service_id=${serviceId}&date=${selectedDate}&duration=${duration}`, {
@@ -229,17 +230,42 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             loadingSlots.style.display = 'none';
             if (data.slots && data.slots.length > 0) {
-                slotsContainer.innerHTML = data.slots.map(s => `
-                    <button type="button" class="time-slot-btn" data-time="${s.start}">${s.display || s.start}</button>
-                `).join('');
-                slotsContainer.querySelectorAll('.time-slot-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        slotsContainer.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
-                        btn.classList.add('selected');
-                        selectedTime = btn.dataset.time;
+                slotsContainer.innerHTML = '';
+                const lbl = document.createElement('label');
+                lbl.className = 'form-label';
+                lbl.htmlFor = 'clinic-slot-time-select';
+                lbl.textContent = 'Start time';
+                const sel = document.createElement('select');
+                sel.id = 'clinic-slot-time-select';
+                sel.className = 'form-select form-select-lg';
+                sel.required = true;
+                const ph = document.createElement('option');
+                ph.value = '';
+                ph.textContent = 'Choose a time…';
+                sel.appendChild(ph);
+                data.slots.forEach(s => {
+                    const o = document.createElement('option');
+                    o.value = s.start;
+                    o.textContent = s.display || s.start;
+                    sel.appendChild(o);
+                });
+                const hint = document.createElement('p');
+                hint.className = 'time-slot-hint mb-0';
+                hint.textContent = 'Each option is one appointment (' + duration + ' minutes). Only times that fit the clinic schedule are listed.';
+                slotsContainer.appendChild(lbl);
+                slotsContainer.appendChild(sel);
+                slotsContainer.appendChild(hint);
+                slotsContainer.style.display = 'block';
+                sel.addEventListener('change', () => {
+                    if (sel.value) {
+                        selectedTime = sel.value;
                         timeInput.value = selectedTime;
                         continueBtn.disabled = false;
-                    });
+                    } else {
+                        selectedTime = null;
+                        timeInput.value = '';
+                        continueBtn.disabled = true;
+                    }
                 });
             } else {
                 noSlotsMsg.style.display = 'block';
