@@ -416,8 +416,8 @@ use Illuminate\Support\Facades\Storage;
                                 </div>
                                 <div class="modern-card-body">
                                     <div class="d-grid gap-2">
-                                        <button class="btn btn-{{ $doctor->is_active ? 'warning' : 'success' }} btn-sm toggle-status" 
-                                                data-url="{{ contextRoute('doctors.toggle-status', $doctor->id) }}">
+                                        <button type="button" class="btn btn-{{ $doctor->is_active ? 'warning' : 'success' }} btn-sm toggle-status" 
+                                                data-url="{{ route('admin.doctors.toggle-status', $doctor) }}">
                                             <i class="fas fa-toggle-{{ $doctor->is_active ? 'on' : 'off' }}"></i>
                                             {{ $doctor->is_active ? 'Deactivate' : 'Activate' }}
                                         </button>
@@ -495,112 +495,89 @@ use Illuminate\Support\Facades\Storage;
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    // Toggle status
-    $('.toggle-status').click(function() {
-        let button = $(this);
-        let url = button.data('url');
-        
-        $.ajax({
-            url: url,
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    location.reload(); // Reload to show updated status
-                } else {
-                    toastr.error('Error updating doctor status');
-                }
-            },
-            error: function() {
-                toastr.error('Error updating doctor status');
-            }
+(function() {
+    function showError(message) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ icon: 'error', title: 'Error', text: message });
+        } else {
+            alert(message);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.toggle-status').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var url = btn.getAttribute('data-url');
+                if (!url) return;
+                var meta = document.querySelector('meta[name="csrf-token"]');
+                var token = meta ? meta.getAttribute('content') : '';
+                btn.disabled = true;
+                var body = new URLSearchParams();
+                body.append('_token', token);
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': token
+                    },
+                    credentials: 'same-origin',
+                    body: body
+                })
+                .then(function(response) {
+                    return response.text().then(function(text) {
+                        var data = {};
+                        try { data = text ? JSON.parse(text) : {}; } catch (err) { /* non-JSON */ }
+                        return { ok: response.ok, data: data };
+                    });
+                })
+                .then(function(result) {
+                    if (result.ok && result.data && result.data.success) {
+                        location.reload();
+                        return;
+                    }
+                    var msg = (result.data && result.data.message) ? result.data.message : 'Could not update doctor status.';
+                    showError(msg);
+                })
+                .catch(function() {
+                    showError('Could not update doctor status. Please try again.');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                });
+            });
         });
     });
 
-    // Delete confirmation - using comprehensive confirmation dialog
     window.deleteDoctor = function(doctorId) {
-        console.log('Delete doctor called with ID:', doctorId);
-        
-        // Prevent any default behavior if event exists
         if (window.event) {
             window.event.preventDefault();
             window.event.stopPropagation();
         }
-        
-        // Handle both sync and async confirm dialogs
-        function handleConfirmation(confirmResult) {
-            console.log('User confirmation result:', confirmResult);
-            
-            if (confirmResult === true) {
-                console.log('User confirmed deletion, proceeding...');
-                
-                // Add a small delay to ensure the dialog is properly closed
-                setTimeout(() => {
-                    console.log('Creating form for deletion...');
-                    
-                    // Create a form to submit the DELETE request
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = `/admin/doctors/${doctorId}`;
-                    form.style.display = 'none';
-                    
-                    // Add CSRF token - try multiple methods
-                    const csrfToken = document.createElement('input');
-                    csrfToken.type = 'hidden';
-                    csrfToken.name = '_token';
-                    
-                    // Try to get CSRF token from meta tag or Laravel's global
-                    let csrfTokenValue = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                    if (!csrfTokenValue && typeof Laravel !== 'undefined') {
-                        csrfTokenValue = Laravel.csrfToken;
-                    }
-                    if (!csrfTokenValue && typeof window.Laravel !== 'undefined') {
-                        csrfTokenValue = window.Laravel.csrfToken;
-                    }
-                    
-                    csrfToken.value = csrfTokenValue;
-                    form.appendChild(csrfToken);
-                    
-                    console.log('CSRF token:', csrfTokenValue);
-                    
-                    // Add DELETE method
-                    const methodInput = document.createElement('input');
-                    methodInput.type = 'hidden';
-                    methodInput.name = '_method';
-                    methodInput.value = 'DELETE';
-                    form.appendChild(methodInput);
-                    
-                    console.log('Form action:', form.action);
-                    console.log('Form method:', form.method);
-                    console.log('Form children:', form.children);
-                    
-                    // Add form to document and submit
-                    document.body.appendChild(form);
-                    console.log('Form added to document, submitting...');
-                    form.submit();
-                }, 100);
-            } else {
-                console.log('User cancelled deletion');
-            }
-        }
-        
-        // Use a more explicit confirmation dialog
-        const confirmDelete = confirm('⚠️ WARNING: Are you sure you want to permanently delete this doctor?\n\nThis action cannot be undone and will remove all doctor data including:\n- Personal information\n- Professional credentials\n- Appointment history\n- Patient relationships\n\nClick OK to confirm deletion or Cancel to abort.');
-        
-        // Handle both Promise and boolean returns
-        if (confirmDelete && typeof confirmDelete.then === 'function') {
-            // If it's a Promise, wait for it to resolve
-            confirmDelete.then(handleConfirmation).catch(() => handleConfirmation(false));
-        } else {
-            // If it's a boolean, handle it directly
-            handleConfirmation(confirmDelete);
-        }
-        
+        var confirmDelete = confirm('WARNING: Are you sure you want to permanently delete this doctor?\n\nThis action cannot be undone and will remove all doctor data including:\n- Personal information\n- Professional credentials\n- Appointment history\n- Patient relationships\n\nClick OK to confirm deletion or Cancel to abort.');
+        if (!confirmDelete) return false;
+        setTimeout(function() {
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/admin/doctors/' + doctorId;
+            form.style.display = 'none';
+            var csrfTokenValue = document.querySelector('meta[name="csrf-token"]') && document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            var csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = csrfTokenValue || '';
+            form.appendChild(csrfInput);
+            var methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'DELETE';
+            form.appendChild(methodInput);
+            document.body.appendChild(form);
+            form.submit();
+        }, 100);
         return false;
     };
-});
+})();
 </script>
 @endpush
