@@ -139,12 +139,15 @@ class ScheduleController extends Controller
         $request->validate([
             'exception_date' => 'required|date|after_or_equal:today',
             'reason' => 'nullable|string|max:255',
-            'is_all_day' => 'boolean',
+            'is_all_day' => 'sometimes|boolean',
             'start_time' => 'nullable|required_if:is_all_day,false',
             'end_time' => 'nullable|required_if:is_all_day,false'
         ]);
 
         $exceptionDate = Carbon::parse($request->exception_date);
+
+        // Full-day blocks from the staff form: always treat as all-day (never trust raw "" / "0" from inputs)
+        $isAllDay = $request->boolean('is_all_day', true);
 
         // Check if date already blocked
         $existing = DoctorAvailabilityException::where('doctor_id', $doctor->id)
@@ -169,9 +172,9 @@ class ScheduleController extends Controller
             'exception_date' => $exceptionDate,
             'type' => 'blocked',
             'reason' => $request->reason,
-            'is_all_day' => $request->is_all_day ?? true,
-            'start_time' => $request->is_all_day ? null : $request->start_time,
-            'end_time' => $request->is_all_day ? null : $request->end_time
+            'is_all_day' => $isAllDay,
+            'start_time' => $isAllDay ? null : $request->start_time,
+            'end_time' => $isAllDay ? null : $request->end_time
         ]);
 
         $message = 'Date blocked successfully.';
@@ -183,7 +186,12 @@ class ScheduleController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'exception' => $exception,
+                'exception' => [
+                    'id' => $exception->id,
+                    'exception_date' => $exception->exception_date->format('Y-m-d'),
+                    'reason' => $exception->reason,
+                    'is_all_day' => (bool) $exception->is_all_day,
+                ],
                 'appointments_count' => $appointmentsOnDate
             ]);
         }

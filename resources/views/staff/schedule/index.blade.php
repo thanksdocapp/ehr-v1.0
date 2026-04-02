@@ -428,13 +428,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fetch('{{ route("staff.schedule.add-blocked-date") }}', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: formData
         })
-        .then(response => response.json())
+        .then(async function(response) {
+            const text = await response.text();
+            var data = {};
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch (e) {
+                throw new Error(response.status === 419 ? 'Session expired. Please refresh the page and try again.' : 'Unexpected server response.');
+            }
+            if (!response.ok) {
+                var msg = data.message;
+                if (!msg && data.errors) {
+                    var first = Object.values(data.errors)[0];
+                    msg = Array.isArray(first) ? first[0] : first;
+                }
+                throw new Error(msg || 'Could not save blocked date.');
+            }
+            return data;
+        })
         .then(data => {
             if (data.success) {
                 // Add to list
@@ -500,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'Failed to block date. Please try again.'
+                text: error.message || 'Failed to block date. Please try again.'
             });
         });
     });
@@ -518,12 +537,26 @@ document.addEventListener('DOMContentLoaded', function() {
             if (result.isConfirmed) {
                 fetch(`{{ url('staff/schedule/blocked-date') }}/${id}`, {
                     method: 'DELETE',
+                    credentials: 'same-origin',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
-                .then(response => response.json())
+                .then(async function(response) {
+                    const text = await response.text();
+                    var data = {};
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (e) {
+                        throw new Error(response.status === 419 ? 'Session expired. Please refresh the page and try again.' : 'Unexpected server response.');
+                    }
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Could not remove blocked date.');
+                    }
+                    return data;
+                })
                 .then(data => {
                     if (data.success) {
                         const item = document.querySelector(`.blocked-date-item[data-id="${id}"]`);
@@ -554,6 +587,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         // Reload page to update preview
                         setTimeout(() => location.reload(), 1500);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'Failed to remove blocked date.'
+                        });
                     }
                 })
                 .catch(error => {
@@ -561,7 +600,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: 'Failed to remove blocked date.'
+                        text: error.message || 'Failed to remove blocked date.'
                     });
                 });
             }

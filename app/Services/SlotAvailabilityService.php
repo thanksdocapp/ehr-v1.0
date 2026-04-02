@@ -191,10 +191,17 @@ class SlotAvailabilityService
      */
     public function isDateBlocked($doctorId, $date)
     {
+        // Full-day block: type blocked and either all-day flag, or no partial window (null times).
+        // Partial-day blocks (start/end set) are handled in getBlockedTimes(), not here.
         return DoctorAvailabilityException::where('doctor_id', $doctorId)
             ->whereDate('exception_date', $date)
             ->where('type', 'blocked')
-            ->where('is_all_day', true)
+            ->where(function ($q) {
+                $q->where('is_all_day', true)
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('start_time')->whereNull('end_time');
+                    });
+            })
             ->exists();
     }
 
