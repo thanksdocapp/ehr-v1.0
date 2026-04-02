@@ -45,10 +45,22 @@ class ScheduleController extends Controller
             $blockedDates = collect([]);
         }
 
-        // Get upcoming appointments count per day (next 7 days)
+        // Calendar days from today through the same calendar day next month (inclusive)
+        $schedulePreviewDates = collect();
+        $cursor = now()->startOfDay();
+        $previewEnd = now()->copy()->addMonth()->startOfDay();
+        while ($cursor->lte($previewEnd)) {
+            $schedulePreviewDates->push($cursor->copy());
+            $cursor->addDay();
+        }
+
+        // Get upcoming appointments count per day for that preview window
         $upcomingAppointments = Appointment::where('doctor_id', $doctor->id)
             ->whereIn('status', ['pending', 'confirmed'])
-            ->whereBetween('appointment_date', [now()->toDateString(), now()->addDays(7)->toDateString()])
+            ->whereBetween('appointment_date', [
+                $schedulePreviewDates->first()->toDateString(),
+                $schedulePreviewDates->last()->toDateString(),
+            ])
             ->get()
             ->groupBy(function ($appointment) {
                 return $appointment->appointment_date->format('Y-m-d');
@@ -65,6 +77,7 @@ class ScheduleController extends Controller
             'availability',
             'blockedDates',
             'upcomingAppointments',
+            'schedulePreviewDates',
             'daysOfWeek'
         ));
     }

@@ -104,14 +104,13 @@
             <div class="doctor-card">
                 <div class="doctor-card-header">
                     <h5 class="doctor-card-title mb-0">
-                        <i class="fas fa-calendar-check me-2"></i>Next 7 Days Preview
+                        <i class="fas fa-calendar-check me-2"></i>Next 1 Month Preview
                     </h5>
                 </div>
                 <div class="doctor-card-body">
-                    <div class="row g-2">
-                        @for($i = 0; $i < 7; $i++)
+                    <div class="row g-2 schedule-preview-month">
+                        @foreach($schedulePreviewDates as $date)
                             @php
-                                $date = now()->addDays($i);
                                 $dayName = strtolower($date->format('l'));
                                 $dayData = $availability[$dayName] ?? ['available' => false];
                                 $isAvailable = $dayData['available'] ?? false;
@@ -120,23 +119,23 @@
                                     return $blocked->exception_date->format('Y-m-d') === $date->format('Y-m-d');
                                 });
                             @endphp
-                            <div class="col">
-                                <div class="text-center p-3 rounded-3 {{ $isBlocked ? 'bg-danger bg-opacity-10 border border-danger' : ($isAvailable ? 'bg-success bg-opacity-10 border border-success' : 'bg-secondary bg-opacity-10 border') }}">
-                                    <div class="fw-bold small text-uppercase {{ $i === 0 ? 'text-primary' : '' }}">
-                                        {{ $i === 0 ? 'Today' : $date->format('D') }}
+                            <div class="col-6 col-sm-4 col-md-3 col-lg-2 col-xl-1">
+                                <div class="text-center p-2 rounded-3 schedule-preview-day {{ $isBlocked ? 'bg-danger bg-opacity-10 border border-danger' : ($isAvailable ? 'bg-success bg-opacity-10 border border-success' : 'bg-secondary bg-opacity-10 border') }}">
+                                    <div class="fw-bold small text-uppercase {{ $date->isToday() ? 'text-primary' : '' }}">
+                                        {{ $date->isToday() ? 'Today' : $date->format('D') }}
                                     </div>
-                                    <div class="fs-4 fw-bold my-1">{{ $date->format('j') }}</div>
-                                    <div class="small">{{ $date->format('M') }}</div>
+                                    <div class="fs-6 fw-bold my-1">{{ $date->format('j') }}</div>
+                                    <div class="small text-muted">{{ $date->format('M') }}</div>
                                     @if($isBlocked)
-                                        <span class="badge bg-danger mt-2">Blocked</span>
+                                        <span class="badge bg-danger mt-1 small">Blocked</span>
                                     @elseif($isAvailable)
-                                        <span class="badge bg-success mt-2">{{ $appointmentCount }} appts</span>
+                                        <span class="badge bg-success mt-1 small">{{ $appointmentCount }} appts</span>
                                     @else
-                                        <span class="badge bg-secondary mt-2">Off</span>
+                                        <span class="badge bg-secondary mt-1 small">Off</span>
                                     @endif
                                 </div>
                             </div>
-                        @endfor
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -282,6 +281,9 @@
 .summary-stat-card {
     background: var(--doctor-primary, #0d6efd);
     color: #fff;
+}
+.schedule-preview-day {
+    min-height: 5.5rem;
 }
 </style>
 @endpush
