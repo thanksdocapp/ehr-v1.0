@@ -10,6 +10,7 @@ use App\Models\Doctor;
 use App\Models\Appointment;
 use App\Models\Department;
 use App\Services\HospitalEmailNotificationService;
+use App\Support\MedicalRecordAuditDiff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -472,6 +473,8 @@ class MedicalRecordsController extends Controller
             'is_private' => $request->boolean('is_private'),
             'updated_by' => auth()->id(),
         ];
+
+        $auditDiff = MedicalRecordAuditDiff::build($medicalRecord, $updateData);
         
         // Use database transaction to ensure atomicity
         try {
@@ -626,6 +629,22 @@ class MedicalRecordsController extends Controller
             \Log::info('Medical record update transaction committed', [
                 'medical_record_id' => $finalCheck->id,
             ]);
+
+            if (!empty($auditDiff['old_values']) || !empty($auditDiff['new_values'])) {
+                $patientNameForAudit = $patient
+                    ? trim(($patient->first_name ?? '').' '.($patient->last_name ?? ''))
+                    : 'Unknown Patient';
+                \App\Models\UserActivity::log([
+                    'user_id' => auth()->id(),
+                    'action' => 'update',
+                    'model_type' => MedicalRecord::class,
+                    'model_id' => $finalCheck->id,
+                    'description' => 'Medical record #'.$finalCheck->id.' updated for patient '.$patientNameForAudit,
+                    'old_values' => !empty($auditDiff['old_values']) ? $auditDiff['old_values'] : null,
+                    'new_values' => !empty($auditDiff['new_values']) ? $auditDiff['new_values'] : null,
+                    'severity' => 'medium',
+                ]);
+            }
             
             // Use the verified record for redirect
             return redirect()->route('admin.medical-records.show', $finalCheck)

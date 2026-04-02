@@ -8,6 +8,7 @@ use App\Models\MedicalRecordAttachment;
 use App\Models\Patient;
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Support\MedicalRecordAuditDiff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -841,6 +842,8 @@ class MedicalRecordsController extends Controller
             'notes' => $request->notes,
             'updated_by' => $user->id,
         ];
+
+        $auditDiff = MedicalRecordAuditDiff::build($medicalRecord, $updateData);
         
         // Use database transaction to ensure atomicity
         try {
@@ -917,17 +920,17 @@ class MedicalRecordsController extends Controller
             $patient = $medicalRecord->patient;
             $patientName = $patient ? ($patient->first_name . ' ' . $patient->last_name) : 'Unknown Patient';
             
-            // Log the edit in audit trail
+            // Log the edit in audit trail (field-level old/new; edit_reason metadata in new_values)
+            $newValuesAudit = $auditDiff['new_values'];
+            $newValuesAudit['edit_reason'] = $request->edit_reason;
             \App\Models\UserActivity::log([
                 'user_id' => $user->id,
                 'action' => 'update',
                 'model_type' => MedicalRecord::class,
                 'model_id' => $medicalRecord->id,
                 'description' => "Medical record updated by {$user->name} for patient {$patientName}. Reason: {$request->edit_reason}",
-                'new_values' => [
-                    'edit_reason' => $request->edit_reason,
-                    'updated_fields' => array_keys($request->except(['_token', '_method', 'attachments', 'attachments_category', 'attachments_description', 'edit_reason'])),
-                ],
+                'old_values' => !empty($auditDiff['old_values']) ? $auditDiff['old_values'] : null,
+                'new_values' => $newValuesAudit,
                 'severity' => 'medium',
             ]);
             
