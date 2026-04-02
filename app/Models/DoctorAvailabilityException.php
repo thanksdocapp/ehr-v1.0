@@ -46,7 +46,9 @@ class DoctorAvailabilityException extends Model
 
     public function scopeForDate($query, $date)
     {
-        return $query->whereDate('exception_date', $date);
+        $d = $date instanceof \Carbon\Carbon ? $date->toDateString() : \Carbon\Carbon::parse($date)->toDateString();
+
+        return $query->where('exception_date', $d);
     }
 
     public function scopeUpcoming($query)

@@ -185,22 +185,32 @@ class SlotAvailabilityService
     /**
      * Check if a specific date is blocked by the doctor.
      *
+     * Full-day blocks exclude all slots. Partial-day blocks (explicit start/end) are applied in
+     * getBlockedTimes() only. Compare exception_date as a calendar Y-m-d to avoid whereDate/timezone
+     * mismatches against the DATE column.
+     *
+     * Note: Clinic/department public booking unions slots across doctors. If several doctors work
+     * the same clinic, a block on one doctor still leaves other doctors' slots visible unless each
+     * doctor blocks that day or clinic-wide blocking is added separately.
+     *
      * @param int $doctorId
-     * @param Carbon $date
+     * @param \Carbon\Carbon|string $date
      * @return bool
      */
     public function isDateBlocked($doctorId, $date)
     {
-        // Full-day block: type blocked and either all-day flag, or no partial window (null times).
-        // Partial-day blocks (start/end set) are handled in getBlockedTimes(), not here.
+        $dateStr = $this->exceptionDateString($date);
+
         return DoctorAvailabilityException::where('doctor_id', $doctorId)
-            ->whereDate('exception_date', $date)
+            ->where('exception_date', $dateStr)
             ->where('type', 'blocked')
             ->where(function ($q) {
-                $q->where('is_all_day', true)
-                    ->orWhere(function ($q2) {
-                        $q2->whereNull('start_time')->whereNull('end_time');
-                    });
+                // Partial-day: is_all_day false with both window times set → handled in getBlockedTimes().
+                $q->whereNot(function ($q2) {
+                    $q2->where('is_all_day', false)
+                        ->whereNotNull('start_time')
+                        ->whereNotNull('end_time');
+                });
             })
             ->exists();
     }
@@ -209,13 +219,15 @@ class SlotAvailabilityService
      * Get blocked date exception for a specific date (if any).
      *
      * @param int $doctorId
-     * @param Carbon $date
+     * @param \Carbon\Carbon|string $date
      * @return DoctorAvailabilityException|null
      */
     public function getBlockedException($doctorId, $date)
     {
+        $dateStr = $this->exceptionDateString($date);
+
         return DoctorAvailabilityException::where('doctor_id', $doctorId)
-            ->whereDate('exception_date', $date)
+            ->where('exception_date', $dateStr)
             ->first();
     }
 
@@ -368,9 +380,12 @@ class SlotAvailabilityService
         }
 
         // Check for partial day blocks from exceptions
+        $dateStr = $this->exceptionDateString($date);
         $exception = DoctorAvailabilityException::where('doctor_id', $doctor->id)
-            ->whereDate('exception_date', $date)
+            ->where('exception_date', $dateStr)
             ->where('is_all_day', false)
+            ->whereNotNull('start_time')
+            ->whereNotNull('end_time')
             ->first();
 
         if ($exception && $exception->start_time && $exception->end_time) {
@@ -499,5 +514,17 @@ class SlotAvailabilityService
             ->whereBetween('exception_date', [$startDate, $endDate])
             ->where('type', 'blocked')
             ->get();
+    }
+
+    /**
+     * Normalize to Y-m-d for querying the exception_date DATE column (avoids timezone drift with whereDate).
+     */
+    private function exceptionDateString(Carbon|string|\DateTimeInterface $date): string
+    {
+        if ($date instanceof Carbon) {
+            return $date->toDateString();
+        }
+
+        return Carbon::parse($date)->toDateString();
     }
 }

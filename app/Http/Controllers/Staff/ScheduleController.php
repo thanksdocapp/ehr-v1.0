@@ -151,7 +151,7 @@ class ScheduleController extends Controller
 
         // Check if date already blocked
         $existing = DoctorAvailabilityException::where('doctor_id', $doctor->id)
-            ->whereDate('exception_date', $exceptionDate)
+            ->where('exception_date', $exceptionDate->toDateString())
             ->first();
 
         if ($existing) {
@@ -254,7 +254,7 @@ class ScheduleController extends Controller
 
         // Check if date is blocked
         $isBlocked = DoctorAvailabilityException::where('doctor_id', $doctor->id)
-            ->whereDate('exception_date', $dateObj)
+            ->where('exception_date', $dateObj->toDateString())
             ->blocked()
             ->exists();
 
