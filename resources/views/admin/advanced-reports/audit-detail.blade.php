@@ -11,6 +11,18 @@
 
 @push('styles')
 @include('admin.shared.modern-ui')
+<style>
+    .audit-diff-table th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; color: #5a5c69; }
+    .audit-diff-table td { vertical-align: top; font-size: 0.95rem; }
+    .audit-diff-cell {
+        max-width: 420px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        line-height: 1.45;
+    }
+    .audit-diff-before { background: rgba(239, 68, 68, 0.06); border-left: 3px solid rgba(239, 68, 68, 0.45) !important; }
+    .audit-diff-after { background: rgba(34, 197, 94, 0.08); border-left: 3px solid rgba(34, 197, 94, 0.5) !important; }
+</style>
 @endpush
 
 @section('content')
@@ -141,36 +153,57 @@
 
             <!-- Changes (if available) -->
             @if($auditLog->old_values || $auditLog->new_values)
+            @php
+                $auditChangeRows = \App\Support\AuditChangePresentation::buildRows(
+                    $auditLog->old_values,
+                    $auditLog->new_values
+                );
+            @endphp
             <div class="row mt-4">
                 <div class="col-12">
-                    <h5 class="mb-3">Changes</h5>
-                    <div class="row">
-                        @if($auditLog->old_values)
-                        <div class="col-md-6">
-                            <div class="modern-card">
-                                <div class="modern-card-header">
-                                    <h6 class="modern-card-title mb-0"><i class="fas fa-minus-circle"></i>Old Values</h6>
-                                </div>
-                                <div class="modern-card-body">
-                                    <pre class="mb-0">{{ json_encode($auditLog->old_values, JSON_PRETTY_PRINT) }}</pre>
-                                </div>
-                            </div>
-                        </div>
-                        @endif
+                    <h5 class="mb-2"><i class="fas fa-exchange-alt me-2 text-primary"></i>What changed</h5>
+                    <p class="text-muted small mb-3">Each row is one field. “Before” is the previous value; “After” is the value after this action.</p>
 
-                        @if($auditLog->new_values)
-                        <div class="col-md-6">
-                            <div class="modern-card">
-                                <div class="modern-card-header">
-                                    <h6 class="modern-card-title mb-0"><i class="fas fa-plus-circle"></i>New Values</h6>
-                                </div>
-                                <div class="modern-card-body">
-                                    <pre class="mb-0">{{ json_encode($auditLog->new_values, JSON_PRETTY_PRINT) }}</pre>
-                                </div>
-                            </div>
-                        </div>
-                        @endif
+                    @if(count($auditChangeRows) > 0)
+                    <div class="table-responsive border rounded overflow-hidden">
+                        <table class="table table-hover audit-diff-table mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" style="width: 26%;">Field</th>
+                                    <th scope="col" style="width: 37%;"><i class="fas fa-arrow-left text-danger me-1"></i>Before</th>
+                                    <th scope="col" style="width: 37%;"><i class="fas fa-arrow-right text-success me-1"></i>After</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($auditChangeRows as $row)
+                                <tr>
+                                    <td class="fw-semibold text-body">{{ $row['label'] }}</td>
+                                    <td class="audit-diff-before"><div class="audit-diff-cell">{{ $row['before'] }}</div></td>
+                                    <td class="audit-diff-after"><div class="audit-diff-cell">{{ $row['after'] }}</div></td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
+                    @else
+                    <div class="alert alert-light border mb-0">
+                        <p class="small text-muted mb-2">No field-by-field diff could be built. Raw payload:</p>
+                        <div class="row g-2">
+                            @if($auditLog->old_values)
+                            <div class="col-md-6">
+                                <div class="small text-muted mb-1">Old values (JSON)</div>
+                                <pre class="small bg-white border rounded p-2 mb-0" style="max-height: 280px; overflow: auto;">{{ json_encode($auditLog->old_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                            </div>
+                            @endif
+                            @if($auditLog->new_values)
+                            <div class="col-md-6">
+                                <div class="small text-muted mb-1">New values (JSON)</div>
+                                <pre class="small bg-white border rounded p-2 mb-0" style="max-height: 280px; overflow: auto;">{{ json_encode($auditLog->new_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
             @endif
