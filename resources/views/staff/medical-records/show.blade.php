@@ -628,6 +628,8 @@
             </div>
             @endif
 
+            @include('staff.medical-records.partials.amendment-history', ['amendmentHistory' => $amendmentHistory ?? null])
+
         </div>
 
         <!-- Sidebar -->

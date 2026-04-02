@@ -9,8 +9,10 @@ use App\Models\Patient;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Support\MedicalRecordAuditDiff;
+use App\Models\UserActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -80,6 +82,40 @@ class MedicalRecordsController extends Controller
         }
         
         return $departmentIds;
+    }
+
+    /**
+     * Doctors may view UserActivity for a medical record only when they are the responsible clinician
+     * (attributed doctor_id) or, if unset, when they created the record (created_by).
+     */
+    private function amendmentHistoryForDoctor($user, MedicalRecord $medicalRecord): ?Collection
+    {
+        if (!$user || strtolower($user->role ?? '') !== 'doctor') {
+            return null;
+        }
+
+        $doctor = Doctor::where('user_id', $user->id)->first();
+        if (!$doctor) {
+            return null;
+        }
+
+        $isTheirRecord = false;
+        if ($medicalRecord->doctor_id) {
+            $isTheirRecord = (int) $medicalRecord->doctor_id === (int) $doctor->id;
+        } else {
+            $isTheirRecord = (int) ($medicalRecord->created_by ?? 0) === (int) $user->id;
+        }
+
+        if (!$isTheirRecord) {
+            return null;
+        }
+
+        return UserActivity::query()
+            ->where('model_type', MedicalRecord::class)
+            ->where('model_id', $medicalRecord->id)
+            ->with('user')
+            ->orderByDesc('created_at')
+            ->get();
     }
 
     public function index(Request $request)
@@ -663,7 +699,9 @@ class MedicalRecordsController extends Controller
             }
         }
         
-        return view('staff.medical-records.show', compact('medicalRecord', 'documents', 'totalDocumentsCount'));
+        $amendmentHistory = $this->amendmentHistoryForDoctor($user, $medicalRecord);
+
+        return view('staff.medical-records.show', compact('medicalRecord', 'documents', 'totalDocumentsCount', 'amendmentHistory'));
     }
 
     public function edit(MedicalRecord $medicalRecord)
