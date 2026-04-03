@@ -285,6 +285,11 @@
             align-items: center;
             gap: 1.5rem;
             flex: 1;
+            min-width: 0;
+        }
+
+        .doctor-header-left > div {
+            min-width: 0;
         }
 
         .doctor-header-title {
@@ -411,6 +416,12 @@
             border-bottom: 2px solid #d97706;
             padding: 0.75rem 2rem;
             box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2);
+        }
+
+        @media (max-width: 767.98px) {
+            .pending-appointments-bar {
+                padding: 0.65rem 1rem;
+            }
         }
         .pending-appointments-bar i {
             color: #d97706;
@@ -1919,21 +1930,24 @@
                 font-size: 0.65rem;
             }
 
-            /* Hide less important columns in tables on mobile */
-            .table th:nth-child(n+4),
-            .table td:nth-child(n+4) {
-                display: none;
+            /* Do not globally hide table columns — breaks data-heavy staff tables (e.g. clinic requests). */
+        }
+
+        /* Mobile: wide tables scroll horizontally; notification dropdown fits narrow viewports */
+        @media (max-width: 991.98px) {
+            .doctor-table-horizontal-scroll {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior-x: contain;
             }
 
-            /* Make buttons smaller on mobile */
-            .btn-sm {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.75rem;
+            .doctor-table-horizontal-scroll > table {
+                min-width: 640px;
             }
 
-            .btn-group-sm .btn {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.75rem;
+            .doctor-notif-dropdown.dropdown-menu {
+                width: min(100vw - 1.5rem, 380px) !important;
+                max-width: min(100vw - 1.5rem, 380px) !important;
             }
         }
 
@@ -2340,7 +2354,7 @@
                         <i class="fas fa-bell"></i>
                         <span id="doctorNotificationCount" class="badge rounded-pill bg-danger position-absolute" style="display: none; top: -2px; right: -2px; font-size: 0.6rem; min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px;">0</span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="width: 380px; max-height: 450px; overflow-y: auto; border-radius: 16px; margin-top: 0.5rem;">
+                    <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 doctor-notif-dropdown" style="width: 380px; max-height: min(45vh, 450px); overflow-y: auto; border-radius: 16px; margin-top: 0.5rem;">
                         <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
                             <h6 class="mb-0 fw-bold"><i class="fas fa-bell me-2"></i>Notifications</h6>
                             <a href="javascript:void(0)" class="text-muted small" onclick="markAllNotificationsRead()">Mark all read</a>
@@ -2416,10 +2430,10 @@
         <!-- Pending Appointments Bar (fixed, shown on all pages until resolved) -->
         @if((isset($layoutPendingPastCount) && $layoutPendingPastCount > 0) || (isset($layoutPendingUpcomingCount) && $layoutPendingUpcomingCount > 0))
         <div class="pending-appointments-bar">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <div class="d-flex align-items-center gap-3">
-                    <i class="fas fa-exclamation-triangle fa-lg"></i>
-                    <span>
+            <div class="d-flex align-items-stretch align-items-md-center justify-content-between flex-column flex-md-row flex-wrap gap-2 gap-md-3">
+                <div class="d-flex align-items-start align-items-md-center gap-2 gap-md-3">
+                    <i class="fas fa-exclamation-triangle fa-lg flex-shrink-0 mt-1 mt-md-0"></i>
+                    <span class="small">
                         @if($layoutPendingPastCount > 0 && $layoutPendingUpcomingCount > 0)
                             {{ $layoutPendingPastCount }} overdue and {{ $layoutPendingUpcomingCount }} pending appointment(s) need your action.
                         @elseif($layoutPendingPastCount > 0)
@@ -2429,7 +2443,7 @@
                         @endif
                     </span>
                 </div>
-                <a href="{{ route('staff.appointments.index', ['status' => 'pending']) }}" class="btn btn-warning btn-sm">
+                <a href="{{ route('staff.appointments.index', ['status' => 'pending']) }}" class="btn btn-warning btn-sm w-100 w-md-auto flex-shrink-0 align-self-stretch align-self-md-center">
                     <i class="fas fa-check-circle me-1"></i>View & take action
                 </a>
             </div>

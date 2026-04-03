@@ -15,9 +15,9 @@
             <div class="col-12">
                 @foreach($notices as $notice)
                     <div class="alert alert-{{ $notice->type }} alert-dismissible fade show mb-3" role="alert">
-                        <div class="d-flex align-items-start">
-                            <i class="fas {{ $notice->type_icon }} fa-2x me-3 mt-1"></i>
-                            <div class="flex-grow-1">
+                        <div class="d-flex align-items-start gap-2 gap-md-3">
+                            <i class="fas {{ $notice->type_icon }} fa-2x flex-shrink-0 mt-1"></i>
+                            <div class="flex-grow-1" style="min-width: 0;">
                                 <h5 class="alert-heading mb-2">
                                     @if($notice->priority === 'urgent')
                                         <span class="badge bg-danger me-2">URGENT</span>
@@ -36,7 +36,7 @@
                                     </small>
                                 @endif
                             </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close flex-shrink-0 ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     </div>
                 @endforeach
@@ -47,16 +47,20 @@
     <!-- Pending appointments awaiting confirmation - remind doctors to confirm -->
     @if(isset($pendingUpcomingCount) && $pendingUpcomingCount > 0)
         <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert" style="border-left: 4px solid #d97706;">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-exclamation-circle fa-2x me-3 text-warning"></i>
-                <div class="flex-grow-1">
-                    <strong>Pending appointments awaiting confirmation</strong>
-                    <p class="mb-0 mt-1">You have {{ $pendingUpcomingCount }} {{ \Illuminate\Support\Str::plural('appointment', $pendingUpcomingCount) }} that {{ $pendingUpcomingCount === 1 ? 'needs' : 'need' }} confirmation. Please confirm {{ $pendingUpcomingCount === 1 ? 'it' : 'them' }} so patients know their appointment is secured.</p>
+            <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3">
+                <div class="d-flex align-items-start flex-grow-1 gap-2 gap-md-3">
+                    <i class="fas fa-exclamation-circle fa-2x text-warning flex-shrink-0"></i>
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <strong>Pending appointments awaiting confirmation</strong>
+                        <p class="mb-0 mt-1">You have {{ $pendingUpcomingCount }} {{ \Illuminate\Support\Str::plural('appointment', $pendingUpcomingCount) }} that {{ $pendingUpcomingCount === 1 ? 'needs' : 'need' }} confirmation. Please confirm {{ $pendingUpcomingCount === 1 ? 'it' : 'them' }} so patients know their appointment is secured.</p>
+                    </div>
                 </div>
-                <a href="{{ route('staff.appointments.index', ['status' => 'pending']) }}" class="btn btn-warning ms-3">
-                    <i class="fas fa-check-circle me-1"></i> Confirm appointments
-                </a>
-                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <a href="{{ route('staff.appointments.index', ['status' => 'pending']) }}" class="btn btn-warning w-100 w-md-auto">
+                        <i class="fas fa-check-circle me-1"></i> Confirm appointments
+                    </a>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
             </div>
         </div>
     @endif
@@ -64,16 +68,20 @@
     <!-- Pending clinic booking requests - awaiting doctor acceptance -->
     @if(isset($pendingClinicRequestsCount) && $pendingClinicRequestsCount > 0)
         <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-inbox fa-2x me-3"></i>
-                <div class="flex-grow-1">
-                    <strong>Clinic booking requests awaiting acceptance</strong>
-                    <p class="mb-0 mt-1">{{ $pendingClinicRequestsCount }} {{ \Illuminate\Support\Str::plural('patient', $pendingClinicRequestsCount) }} {{ $pendingClinicRequestsCount === 1 ? 'has' : 'have' }} requested an appointment at your clinic. Accept to add {{ $pendingClinicRequestsCount === 1 ? 'them' : 'them' }} to your schedule.</p>
+            <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3">
+                <div class="d-flex align-items-start flex-grow-1 gap-2 gap-md-3">
+                    <i class="fas fa-inbox fa-2x flex-shrink-0"></i>
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <strong>Clinic booking requests awaiting acceptance</strong>
+                        <p class="mb-0 mt-1">{{ $pendingClinicRequestsCount }} {{ \Illuminate\Support\Str::plural('patient', $pendingClinicRequestsCount) }} {{ $pendingClinicRequestsCount === 1 ? 'has' : 'have' }} requested an appointment at your clinic. Accept to add {{ $pendingClinicRequestsCount === 1 ? 'them' : 'them' }} to your schedule.</p>
+                    </div>
                 </div>
-                <a href="{{ route('staff.clinic-booking-requests.index') }}" class="btn btn-info ms-3">
-                    <i class="fas fa-inbox me-1"></i> View & accept
-                </a>
-                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <a href="{{ route('staff.clinic-booking-requests.index') }}" class="btn btn-info w-100 w-md-auto">
+                        <i class="fas fa-inbox me-1"></i> View & accept
+                    </a>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
             </div>
         </div>
     @endif
@@ -81,16 +89,20 @@
     <!-- Pending appointments that have passed - flag for action -->
     @if(isset($pendingPastCount) && $pendingPastCount > 0)
         <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
-                <div class="flex-grow-1">
-                    <strong>Pending appointments need action</strong>
-                    <p class="mb-0 mt-1">You have {{ $pendingPastCount }} {{ \Illuminate\Support\Str::plural('appointment', $pendingPastCount) }} that {{ $pendingPastCount === 1 ? 'is' : 'are' }} still pending and {{ $pendingPastCount === 1 ? 'has' : 'have' }} passed. Please confirm, complete, or cancel {{ $pendingPastCount === 1 ? 'it' : 'them' }}.</p>
+            <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3">
+                <div class="d-flex align-items-start flex-grow-1 gap-2 gap-md-3">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning flex-shrink-0"></i>
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <strong>Pending appointments need action</strong>
+                        <p class="mb-0 mt-1">You have {{ $pendingPastCount }} {{ \Illuminate\Support\Str::plural('appointment', $pendingPastCount) }} that {{ $pendingPastCount === 1 ? 'is' : 'are' }} still pending and {{ $pendingPastCount === 1 ? 'has' : 'have' }} passed. Please confirm, complete, or cancel {{ $pendingPastCount === 1 ? 'it' : 'them' }}.</p>
+                    </div>
                 </div>
-                <a href="{{ route('staff.appointments.index', ['status' => 'pending', 'overdue' => '1']) }}" class="btn btn-warning ms-3">
-                    <i class="fas fa-tasks me-1"></i> View & take action
-                </a>
-                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <a href="{{ route('staff.appointments.index', ['status' => 'pending', 'overdue' => '1']) }}" class="btn btn-warning w-100 w-md-auto">
+                        <i class="fas fa-tasks me-1"></i> View & take action
+                    </a>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
             </div>
         </div>
     @endif
