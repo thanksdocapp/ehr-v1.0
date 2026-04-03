@@ -66,11 +66,11 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Valid from</label>
-                        <input type="date" name="valid_from" class="form-control" value="{{ old('valid_from', optional($bookingDiscountCode->valid_from)->format('Y-m-d')) }}">
+                        <input type="text" name="valid_from" class="form-control uk-date" data-uk-date="true" autocomplete="off" placeholder="dd/mm/yyyy" value="{{ formUkDateOldOrModel(old('valid_from'), $bookingDiscountCode->valid_from) }}">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Valid until</label>
-                        <input type="date" name="valid_until" class="form-control" value="{{ old('valid_until', optional($bookingDiscountCode->valid_until)->format('Y-m-d')) }}">
+                        <input type="text" name="valid_until" class="form-control uk-date" data-uk-date="true" autocomplete="off" placeholder="dd/mm/yyyy" value="{{ formUkDateOldOrModel(old('valid_until'), $bookingDiscountCode->valid_until) }}">
                     </div>
                     <div class="col-12">
                         <p class="text-muted small mb-0">Uses so far: <strong>{{ $bookingDiscountCode->uses_count }}</strong> (cannot be edited here)</p>

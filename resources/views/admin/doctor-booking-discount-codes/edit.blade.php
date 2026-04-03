@@ -72,11 +72,11 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Valid from</label>
-                        <input type="date" name="valid_from" class="form-control" value="{{ old('valid_from', optional($doctorBookingDiscountCode->valid_from)->format('Y-m-d')) }}">
+                        <input type="text" name="valid_from" class="form-control uk-date" data-uk-date="true" autocomplete="off" placeholder="dd/mm/yyyy" value="{{ formUkDateOldOrModel(old('valid_from'), $doctorBookingDiscountCode->valid_from) }}">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Valid until</label>
-                        <input type="date" name="valid_until" class="form-control" value="{{ old('valid_until', optional($doctorBookingDiscountCode->valid_until)->format('Y-m-d')) }}">
+                        <input type="text" name="valid_until" class="form-control uk-date" data-uk-date="true" autocomplete="off" placeholder="dd/mm/yyyy" value="{{ formUkDateOldOrModel(old('valid_until'), $doctorBookingDiscountCode->valid_until) }}">
                     </div>
                     <div class="col-12">
                         <p class="text-muted small mb-0">Uses recorded: <strong>{{ $doctorBookingDiscountCode->uses_count }}</strong></p>

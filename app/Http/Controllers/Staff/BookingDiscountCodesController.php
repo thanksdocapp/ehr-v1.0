@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
-use App\Models\BookingService;
 use App\Models\Doctor;
 use App\Models\DoctorBookingDiscountCode;
 use Illuminate\Http\Request;
@@ -35,18 +34,13 @@ class BookingDiscountCodesController extends Controller
     }
 
     /**
-     * Services this doctor may book publicly — same rule as patient-facing doctor link and admin discount codes.
+     * Services explicitly enabled for this doctor (doctor_service_prices), not every globally active service.
      *
-     * @return Collection<int, BookingService>
+     * @return Collection<int, \App\Models\BookingService>
      */
     private function bookingServicesForDoctor(Doctor $doctor): Collection
     {
-        return BookingService::query()
-            ->where('is_active', true)
-            ->ordered()
-            ->get()
-            ->filter(fn (BookingService $svc) => $svc->isAvailableForDoctor($doctor->id))
-            ->values();
+        return $doctor->bookableBookingServices();
     }
 
     public function index()
@@ -93,6 +87,8 @@ class BookingDiscountCodesController extends Controller
             'max_uses' => $request->filled('max_uses') ? $request->input('max_uses') : null,
         ]);
 
+        mergeUkDateNullableFieldsToIso($request, ['valid_from', 'valid_until']);
+
         $validated = $request->validate([
             'code' => [
                 'required',
@@ -115,9 +111,9 @@ class BookingDiscountCodesController extends Controller
         }
 
         $serviceIds = DoctorBookingDiscountCode::normalizeServiceIdList($validated['booking_service_ids'] ?? null);
+        $allowedServiceIds = $this->bookingServicesForDoctor($doctor)->pluck('id')->map(fn ($id) => (int) $id)->all();
         foreach ($serviceIds as $sid) {
-            $svc = BookingService::find($sid);
-            if (!$svc || !$svc->isAvailableForDoctor($doctor->id)) {
+            if (! in_array((int) $sid, $allowedServiceIds, true)) {
                 return back()->withErrors([
                     'booking_service_ids' => 'Select only services you offer on your booking link, or leave all unselected for every service.',
                 ])->withInput();
@@ -174,6 +170,8 @@ class BookingDiscountCodesController extends Controller
             'max_uses' => $request->filled('max_uses') ? $request->input('max_uses') : null,
         ]);
 
+        mergeUkDateNullableFieldsToIso($request, ['valid_from', 'valid_until']);
+
         $validated = $request->validate([
             'code' => [
                 'required',
@@ -205,9 +203,9 @@ class BookingDiscountCodesController extends Controller
         }
 
         $serviceIds = DoctorBookingDiscountCode::normalizeServiceIdList($validated['booking_service_ids'] ?? null);
+        $allowedServiceIds = $this->bookingServicesForDoctor($doctor)->pluck('id')->map(fn ($id) => (int) $id)->all();
         foreach ($serviceIds as $sid) {
-            $svc = BookingService::find($sid);
-            if (!$svc || !$svc->isAvailableForDoctor($doctor->id)) {
+            if (! in_array((int) $sid, $allowedServiceIds, true)) {
                 return back()->withErrors([
                     'booking_service_ids' => 'Select only services you offer on your booking link, or leave all unselected for every service.',
                 ])->withInput();

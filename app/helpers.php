@@ -649,3 +649,72 @@ if (!function_exists('normalize_public_booking_address_fields')) {
         ];
     }
 }
+
+if (!function_exists('mergeUkDateNullableFieldsToIso')) {
+    /**
+     * Convert dd/mm/yyyy (or existing Y-m-d) on the request to Y-m-d before Laravel date validation.
+     */
+    function mergeUkDateNullableFieldsToIso(\Illuminate\Http\Request $request, array $keys): void
+    {
+        foreach ($keys as $key) {
+            $raw = $request->input($key);
+            if ($raw === null || $raw === '') {
+                $request->merge([$key => null]);
+
+                continue;
+            }
+            if (! is_string($raw)) {
+                continue;
+            }
+            $trim = trim($raw);
+            if ($trim === '') {
+                $request->merge([$key => null]);
+
+                continue;
+            }
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $trim)) {
+                $request->merge([$key => $trim]);
+
+                continue;
+            }
+            if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}$/', $trim)) {
+                try {
+                    $dt = \Carbon\Carbon::createFromFormat('d/m/Y', $trim);
+                    $request->merge([$key => $dt->format('Y-m-d')]);
+                } catch (\Throwable) {
+                    try {
+                        $dt = \Carbon\Carbon::createFromFormat('j/n/Y', $trim);
+                        $request->merge([$key => $dt->format('Y-m-d')]);
+                    } catch (\Throwable) {
+                        // leave raw for validation to fail
+                    }
+                }
+            }
+        }
+    }
+}
+
+if (!function_exists('formUkDateOldOrModel')) {
+    /**
+     * Value for UK (dd/mm/yyyy) text date fields: old input (Y-m-d after merge) or model date.
+     *
+     * @param  mixed  $old
+     * @param  \Carbon\Carbon|string|null  $modelDate
+     */
+    function formUkDateOldOrModel($old, $modelDate = null): string
+    {
+        if ($old !== null && $old !== '') {
+            $s = (string) $old;
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $s)) {
+                return formatDateUkSlash($s);
+            }
+
+            return $s;
+        }
+        if ($modelDate) {
+            return formatDateUkSlash($modelDate);
+        }
+
+        return '';
+    }
+}

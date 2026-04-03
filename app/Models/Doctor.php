@@ -117,6 +117,19 @@ class Doctor extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Booking services explicitly enabled for this doctor (doctor_service_prices), not every globally active service.
+     */
+    public function bookableBookingServices()
+    {
+        return $this->services()
+            ->where('booking_services.is_active', true)
+            ->wherePivot('is_active', true)
+            ->orderBy('booking_services.sort_order')
+            ->orderBy('booking_services.name')
+            ->get();
+    }
+
     // Scopes
     public function scopeActive($query)
     {

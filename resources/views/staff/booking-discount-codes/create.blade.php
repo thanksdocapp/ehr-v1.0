@@ -63,11 +63,11 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Valid from</label>
-                        <input type="date" name="valid_from" class="form-control" value="{{ old('valid_from') }}">
+                        <input type="text" name="valid_from" class="form-control uk-date" data-uk-date="true" autocomplete="off" placeholder="dd/mm/yyyy" value="{{ formUkDateOldOrModel(old('valid_from'), null) }}">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Valid until</label>
-                        <input type="date" name="valid_until" class="form-control" value="{{ old('valid_until') }}">
+                        <input type="text" name="valid_until" class="form-control uk-date" data-uk-date="true" autocomplete="off" placeholder="dd/mm/yyyy" value="{{ formUkDateOldOrModel(old('valid_until'), null) }}">
                     </div>
                 </div>
                 <div class="mt-4">
