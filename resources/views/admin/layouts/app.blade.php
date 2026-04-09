@@ -75,6 +75,24 @@ use Illuminate\Support\Facades\Storage;
             padding: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
+            position: relative;
+        }
+
+        .sidebar-mobile-close {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            padding: 0.35rem 0.5rem !important;
+            line-height: 1;
+            opacity: 0.95;
+        }
+
+        .sidebar-mobile-close:hover,
+        .sidebar-mobile-close:focus {
+            opacity: 1;
+            color: #fff !important;
         }
 
         .sidebar-logo {
@@ -267,7 +285,7 @@ use Illuminate\Support\Facades\Storage;
             border-bottom: 1px solid #e9ecef;
             display: flex;
             align-items: center;
-            justify-content: between;
+            justify-content: space-between;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             position: sticky;
             top: 0;
@@ -278,6 +296,8 @@ use Illuminate\Support\Facades\Storage;
             display: flex;
             align-items: center;
             gap: 20px;
+            min-width: 0;
+            flex: 1;
         }
 
         .sidebar-toggle {
@@ -289,6 +309,12 @@ use Illuminate\Support\Facades\Storage;
             padding: 10px;
             border-radius: 8px;
             transition: all 0.3s ease;
+            flex-shrink: 0;
+            min-width: 44px;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .sidebar-toggle:hover {
@@ -301,6 +327,8 @@ use Illuminate\Support\Facades\Storage;
             margin: 0;
             padding: 0;
             font-size: 14px;
+            min-width: 0;
+            flex: 1;
         }
 
         .breadcrumb-item a {
@@ -673,6 +701,17 @@ use Illuminate\Support\Facades\Storage;
             
             .admin-header {
                 padding: 0 15px !important;
+            }
+
+            .header-left .breadcrumb {
+                overflow: hidden;
+            }
+
+            .header-left .breadcrumb .breadcrumb-item {
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             
             .page-title h1 {
@@ -1769,15 +1808,17 @@ use Illuminate\Support\Facades\Storage;
             transform: none !important;
         }
         
-        /* Ensure admin sidebar doesn't interfere */
-        .admin-sidebar {
-            z-index: 1050 !important;
+        /* Desktop only: keep sidebar under modals; mobile z-index is set in @media (max-width: 992px) */
+        @media (min-width: 993px) {
+            .admin-sidebar {
+                z-index: 1050 !important;
+            }
         }
-        
+
         .admin-main {
             z-index: 1 !important;
         }
-        
+
         .admin-header {
             z-index: 999 !important;
         }
@@ -2170,6 +2211,9 @@ use Illuminate\Support\Facades\Storage;
     <!-- Sidebar -->
     <div class="admin-sidebar" id="adminSidebar">
         <div class="sidebar-header">
+            <button type="button" class="btn btn-link text-white d-lg-none sidebar-mobile-close" id="adminSidebarClose" aria-label="Close menu">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
             <a href="{{ route('admin.dashboard') }}" class="sidebar-logo">
                 @php
                     $adminLogoPath = $site_settings['site_logo_dark'] ?? $site_settings['site_logo'] ?? null;
@@ -2235,7 +2279,7 @@ use Illuminate\Support\Facades\Storage;
         <!-- Header -->
         <header class="admin-header">
             <div class="header-left">
-                <button class="sidebar-toggle" id="sidebarToggle">
+                <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Open menu" aria-expanded="false" aria-controls="adminSidebar">
                     <i class="fas fa-bars"></i>
                 </button>
                 
@@ -2433,65 +2477,80 @@ use Illuminate\Support\Facades\Storage;
                 }
             });
 
+            function adminSidebarIsMobile() {
+                return window.matchMedia('(max-width: 992px)').matches;
+            }
+
+            function closeAdminMobileSidebar() {
+                $('#adminSidebar').removeClass('show');
+                $('#sidebarToggle').attr('aria-expanded', 'false');
+                $('.mobile-overlay').fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }
+
+            function openAdminMobileSidebar() {
+                if ($('.mobile-overlay').length === 0) {
+                    $('<div class="mobile-overlay with-sidebar"></div>').appendTo('body').hide().fadeIn(300);
+                } else {
+                    $('.mobile-overlay').addClass('with-sidebar').show().css('opacity', 1);
+                }
+                setTimeout(function() {
+                    $('#adminSidebar').addClass('show');
+                    $('#sidebarToggle').attr('aria-expanded', 'true');
+                }, 50);
+            }
+
             // Sidebar toggle for mobile and desktop
             $('#sidebarToggle').on('click', function() {
-                if (window.innerWidth <= 992) {
-                    // Mobile: show/hide sidebar with overlay
+                if (adminSidebarIsMobile()) {
                     const isShowing = $('#adminSidebar').hasClass('show');
-                    
                     if (isShowing) {
-                        // Close sidebar
-                        $('#adminSidebar').removeClass('show');
-                        $('.mobile-overlay').fadeOut(300, function() {
-                            $(this).remove();
-                        });
+                        closeAdminMobileSidebar();
                     } else {
-                        // Open sidebar - create overlay behind sidebar
-                        if ($('.mobile-overlay').length === 0) {
-                            $('<div class="mobile-overlay with-sidebar"></div>').appendTo('body').hide().fadeIn(300);
-                        } else {
-                            $('.mobile-overlay').addClass('with-sidebar');
-                        }
-                        setTimeout(() => {
-                            $('#adminSidebar').addClass('show');
-                        }, 50);
+                        openAdminMobileSidebar();
                     }
                 } else {
-                    // Desktop: collapse/expand sidebar
                     $('#adminSidebar').toggleClass('collapsed');
                     $('#adminMain').toggleClass('expanded');
                 }
             });
-            
+
+            $('#adminSidebarClose').on('click', function() {
+                if (adminSidebarIsMobile()) {
+                    closeAdminMobileSidebar();
+                }
+            });
+
             // Close sidebar when clicking overlay
             $(document).on('click', '.mobile-overlay', function() {
-                $('#adminSidebar').removeClass('show');
-                $(this).fadeOut(300, function() {
-                    $(this).remove();
-                });
+                closeAdminMobileSidebar();
             });
-            
-            // Close sidebar when clicking a link on mobile (after small delay to allow navigation)
-            if (window.innerWidth <= 992) {
-                $('.sidebar-menu .menu-link:not(.dropdown-toggle), .sidebar-menu .dropdown-item').off('click.mobile').on('click.mobile', function(e) {
-                    // Don't interfere with dropdown toggles
-                    if ($(this).hasClass('dropdown-toggle')) {
-                        return;
-                    }
-                    // Ensure navigation occurs even if other handlers run
-                    const href = this.getAttribute('href');
-                    if (href && href !== '#') {
-                        setTimeout(() => { window.location.href = href; }, 10);
-                    }
-                    // Defer sidebar close slightly so the browser can follow the link
-                    setTimeout(function() {
-                        $('#adminSidebar').removeClass('show');
-                        $('.mobile-overlay').fadeOut(300, function() {
-                            $(this).remove();
-                        });
-                    }, 200);
-                });
-            }
+
+            // Close sidebar when navigating from a menu link on mobile (default navigation unchanged)
+            $(document).on('click', '.sidebar-menu .menu-link:not(.dropdown-toggle), .sidebar-menu .dropdown-item', function() {
+                if (!adminSidebarIsMobile()) {
+                    return;
+                }
+                if ($(this).hasClass('dropdown-toggle')) {
+                    return;
+                }
+                const href = this.getAttribute('href');
+                if (!href || href === '#') {
+                    return;
+                }
+                setTimeout(function() {
+                    closeAdminMobileSidebar();
+                }, 150);
+            });
+
+            $(window).on('resize', function() {
+                if (!adminSidebarIsMobile()) {
+                    $('#adminSidebar').removeClass('show');
+                    $('.mobile-overlay').remove();
+                    $('#sidebarToggle').attr('aria-expanded', 'false');
+                }
+            });
 
             // Initialize Bootstrap dropdowns for sidebar
             // Explicitly initialize all dropdown toggles in sidebar

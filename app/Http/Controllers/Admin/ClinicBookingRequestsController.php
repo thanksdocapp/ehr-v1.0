@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -86,6 +87,7 @@ class ClinicBookingRequestsController extends Controller
     public function exportAcceptedCsv(Request $request): StreamedResponse
     {
         $rows = $this->acceptedClinicRequestsQuery($request)->get();
+        $hasAcceptedByColumn = Schema::hasColumn((new ClinicBookingRequest)->getTable(), 'accepted_by_user_id');
 
         $filename = 'clinic-booking-requests-accepted-'.now()->format('Y-m-d-His').'.csv';
 
@@ -94,7 +96,7 @@ class ClinicBookingRequestsController extends Controller
             'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
-        $callback = function () use ($rows) {
+        $callback = function () use ($rows, $hasAcceptedByColumn) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
@@ -120,7 +122,7 @@ class ClinicBookingRequestsController extends Controller
                 $doctorLabel = $req->doctor
                     ? ($req->doctor->user->name ?? trim($req->doctor->first_name.' '.$req->doctor->last_name))
                     : '';
-                $acceptor = $req->acceptedByUser;
+                $acceptor = $hasAcceptedByColumn ? $req->acceptedByUser : null;
                 $acceptorName = $acceptor ? (string) ($acceptor->name ?? '') : '';
                 $acceptorEmail = $acceptor ? (string) ($acceptor->email ?? '') : '';
                 $acceptedAt = $req->accepted_at ?? $req->updated_at;
@@ -151,15 +153,29 @@ class ClinicBookingRequestsController extends Controller
     }
 
     /**
-     * Accepted requests only; optional clinic + accepted date range (uses COALESCE(accepted_at, updated_at)).
+     * Accepted requests only; optional clinic + accepted date range.
+     * When `accepted_at` / `accepted_by_user_id` migrations are not applied yet, falls back to `updated_at` only.
      */
     protected function acceptedClinicRequestsQuery(Request $request): Builder
     {
+        $table = (new ClinicBookingRequest)->getTable();
+        $hasAcceptedAt = Schema::hasColumn($table, 'accepted_at');
+        $hasAcceptedBy = Schema::hasColumn($table, 'accepted_by_user_id');
+
+        $with = ['department', 'service', 'doctor.user', 'appointment'];
+        if ($hasAcceptedBy) {
+            $with[] = 'acceptedByUser';
+        }
+
         $q = ClinicBookingRequest::query()
-            ->with(['department', 'service', 'doctor.user', 'appointment', 'acceptedByUser'])
-            ->where('status', 'accepted')
-            ->orderByDesc('accepted_at')
-            ->orderByDesc('updated_at');
+            ->with($with)
+            ->where('status', 'accepted');
+
+        if ($hasAcceptedAt) {
+            $q->orderByDesc('accepted_at')->orderByDesc('updated_at');
+        } else {
+            $q->orderByDesc('updated_at');
+        }
 
         if ($request->filled('department_id')) {
             $q->where('department_id', $request->integer('department_id'));
@@ -167,12 +183,20 @@ class ClinicBookingRequestsController extends Controller
 
         if ($request->filled('accepted_from')) {
             $from = $request->date('accepted_from')->startOfDay();
-            $q->whereRaw('COALESCE(accepted_at, updated_at) >= ?', [$from]);
+            if ($hasAcceptedAt) {
+                $q->whereRaw('COALESCE(accepted_at, updated_at) >= ?', [$from]);
+            } else {
+                $q->where('updated_at', '>=', $from);
+            }
         }
 
         if ($request->filled('accepted_to')) {
             $to = $request->date('accepted_to')->endOfDay();
-            $q->whereRaw('COALESCE(accepted_at, updated_at) <= ?', [$to]);
+            if ($hasAcceptedAt) {
+                $q->whereRaw('COALESCE(accepted_at, updated_at) <= ?', [$to]);
+            } else {
+                $q->where('updated_at', '<=', $to);
+            }
         }
 
         return $q;

@@ -480,14 +480,19 @@ class ClinicBookingService
                 }
             }
 
-            $request->update([
+            $acceptedPayload = [
                 'status' => 'accepted',
                 'doctor_id' => $doctor->id,
                 'patient_id' => $patient->id,
                 'appointment_id' => $appointment->id,
-                'accepted_by_user_id' => $acceptedByUserId,
-                'accepted_at' => now(),
-            ]);
+            ];
+            if (Schema::hasColumn('clinic_booking_requests', 'accepted_by_user_id')) {
+                $acceptedPayload['accepted_by_user_id'] = $acceptedByUserId;
+            }
+            if (Schema::hasColumn('clinic_booking_requests', 'accepted_at')) {
+                $acceptedPayload['accepted_at'] = now();
+            }
+            $request->update($acceptedPayload);
 
             $this->emailService->sendAppointmentConfirmation($appointment);
 
