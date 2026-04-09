@@ -796,7 +796,8 @@
                         </h6>
                     </div>
                     @if(isset($recentAppointments) && $recentAppointments->count() > 0)
-                        <div class="table-responsive">
+                        {{-- Tablet/desktop: table (unchanged behaviour) --}}
+                        <div class="table-responsive d-none d-md-block">
                             <table class="table table-hover mb-0">
                                 <thead>
                                     <tr>
@@ -866,6 +867,53 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+
+                        {{-- Small screens: stacked cards (same routes/links as table) --}}
+                        <div class="d-md-none">
+                            <div class="d-flex flex-column gap-3">
+                                @foreach($recentAppointments->take(8) as $appointment)
+                                <div class="rounded border bg-white p-3 shadow-sm">
+                                    <div class="d-flex align-items-start gap-2 mb-2">
+                                        <div class="doctor-user-avatar flex-shrink-0" style="width: 40px; height: 40px; font-size: 0.85rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                            {{ strtoupper(substr($appointment->patient->first_name, 0, 1)) }}
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="fw-semibold text-truncate">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
+                                            <small class="text-muted">#{{ $appointment->appointment_number }}</small>
+                                        </div>
+                                        <span class="badge flex-shrink-0
+                                            @if($appointment->status === 'confirmed') bg-success
+                                            @elseif($appointment->status === 'pending') bg-warning
+                                            @elseif($appointment->status === 'cancelled') bg-danger
+                                            @else bg-secondary
+                                            @endif
+                                        ">{{ ucfirst($appointment->status) }}</span>
+                                    </div>
+                                    <div class="small text-muted mb-2">
+                                        <i class="fas fa-calendar-day me-1"></i>{{ $appointment->appointment_date->format('j M Y') }}
+                                        <span class="mx-1">·</span>
+                                        <i class="fas fa-clock me-1"></i>{{ $appointment->appointment_time ? formatTime($appointment->appointment_time, 'g:i A') : 'TBD' }}
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1 mb-3">
+                                        <span class="badge bg-light text-dark">{{ ucfirst(str_replace('_', ' ', $appointment->type ?? 'consultation')) }}</span>
+                                        @if($appointment->is_online)
+                                            <span class="badge bg-info"><i class="fas fa-video me-1"></i>Online</span>
+                                        @endif
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ route('staff.appointments.show', $appointment->id) }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-eye me-1"></i>View appointment
+                                        </a>
+                                        @if($appointment->is_online && ($appointment->whereby_host_url || $appointment->meeting_link) && $appointment->canJoinMeeting())
+                                            <a href="{{ $appointment->whereby_host_url ?? $appointment->meeting_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-success">
+                                                <i class="fas fa-video me-1"></i>Start meeting
+                                            </a>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
                         </div>
                     @else
                         <div class="text-center py-5">
