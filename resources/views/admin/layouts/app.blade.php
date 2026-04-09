@@ -694,6 +694,84 @@ use Illuminate\Support\Facades\Storage;
                 width: 100% !important;
                 max-width: 100% !important;
             }
+
+            /* ---- Mobile content: tables, grids, forms (CSS-only; no route/link changes) ---- */
+            .admin-content {
+                min-width: 0;
+            }
+
+            .admin-content .breadcrumb {
+                flex-wrap: wrap;
+                row-gap: 0.25rem;
+            }
+
+            /* DataTables & wide tables: scroll inside content area */
+            .admin-content .dataTables_wrapper {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                max-width: 100%;
+            }
+
+            .admin-content .dataTables_scroll,
+            .admin-content .dataTables_scrollHead,
+            .admin-content .dataTables_scrollBody {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .admin-content .table-responsive {
+                -webkit-overflow-scrolling: touch;
+                max-width: 100%;
+            }
+
+            /* Flex/grid children can shrink instead of forcing page overflow */
+            .admin-content .card {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .admin-content .row > [class*="col-"] {
+                min-width: 0;
+            }
+
+            /* Long text / emails in cells (keep headers on one line when possible) */
+            .admin-content table td {
+                word-break: break-word;
+                overflow-wrap: anywhere;
+            }
+
+            /* iOS: 16px+ on form controls reduces unwanted zoom on focus */
+            .admin-content .form-control,
+            .admin-content .form-select {
+                font-size: 16px;
+            }
+
+            .admin-content textarea.form-control {
+                font-size: 16px;
+            }
+
+            /* Touch: slightly larger tap area for icon-only / compact buttons in content */
+            @media (pointer: coarse) {
+                .admin-content .btn-sm {
+                    min-height: 2.5rem;
+                    padding-left: 0.75rem;
+                    padding-right: 0.75rem;
+                }
+            }
+
+            /* Button groups: allow wrap on narrow screens (Bootstrap handles borders) */
+            .admin-content .btn-group {
+                flex-wrap: wrap;
+                row-gap: 0.25rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            body > .modal .modal-dialog.modal-lg,
+            body > .modal .modal-dialog.modal-xl {
+                max-width: calc(100% - 1rem);
+                margin: 0.5rem auto;
+            }
         }
         
         /* Mobile Overlay */
