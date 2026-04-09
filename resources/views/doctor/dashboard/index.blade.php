@@ -772,7 +772,7 @@
     </div>
 
     <!-- Recent Appointments & Patients Row -->
-    <div class="row g-4">
+    <div class="row g-3 align-items-start">
         <!-- Recent Appointments -->
         <div class="col-xl-8 col-lg-7">
             <div class="doctor-card">
@@ -874,10 +874,10 @@
             </div>
         </div>
 
-        <!-- Sidebar Widgets -->
-        <div class="col-xl-4 col-lg-5">
+        <!-- Sidebar: stacked cards with even vertical rhythm -->
+        <div class="col-xl-4 col-lg-5 d-flex flex-column gap-3">
             <!-- Recent Patients -->
-            <div class="doctor-card mb-4">
+            <div class="doctor-card">
                 <div class="doctor-card-header">
                     <div class="d-flex align-items-center justify-content-between">
                             <h6 class="doctor-card-title mb-0">
