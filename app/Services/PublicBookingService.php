@@ -681,6 +681,10 @@ class PublicBookingService
      */
     private function sendBookingNotifications(Appointment $appointment, Patient $patient, Doctor $doctor)
     {
+        // Use the patient from the booking flow (fresh DB state) so confirmation is not sent with a stale
+        // relation after Whereby/observer loads — $appointment->patient can be out of sync with refresh().
+        $appointment->setRelation('patient', $patient->fresh());
+
         // Send confirmation email to patient
         try {
             $this->emailService->sendAppointmentConfirmation($appointment);

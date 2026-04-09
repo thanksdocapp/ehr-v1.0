@@ -54,15 +54,36 @@ class HospitalEmailNotificationService
      */
     public function sendAppointmentConfirmation(Appointment $appointment)
     {
-        if (!$appointment->patient || !$appointment->patient->email) {
-            Log::warning('Cannot send appointment confirmation: Patient email not found', [
-                'appointment_id' => $appointment->id
+        $appointment->loadMissing(['patient', 'doctor', 'department']);
+
+        $patient = $appointment->patient;
+        if (!$patient && $appointment->patient_id) {
+            $patient = Patient::query()->find($appointment->patient_id);
+            if ($patient) {
+                $appointment->setRelation('patient', $patient);
+            }
+        }
+
+        if (!$patient) {
+            Log::warning('Cannot send appointment confirmation: Patient not found', [
+                'appointment_id' => $appointment->id,
+                'patient_id' => $appointment->patient_id,
             ]);
+
+            return null;
+        }
+
+        $recipientEmail = $this->resolvePatientNotificationEmail($patient);
+        if (!$recipientEmail) {
+            Log::warning('Cannot send appointment confirmation: Patient email not found', [
+                'appointment_id' => $appointment->id,
+                'patient_id' => $patient->id,
+            ]);
+
             return null;
         }
 
         $doctor = $appointment->doctor;
-        $patient = $appointment->patient;
 
         // Format appointment time properly
         $appointmentTime = $appointment->appointment_time;
@@ -86,7 +107,7 @@ class HospitalEmailNotificationService
 
         $variables = [
             'patient_name' => $patient->full_name,
-            'patient_email' => $patient->email,
+            'patient_email' => $recipientEmail,
             'doctor_name' => $doctor ? $doctor->name : 'TBD',
             'doctor_specialization' => $doctor ? $doctor->specialization : 'General',
             'doctor_phone' => $doctor ? ($doctor->phone ?? '') : '',
@@ -112,7 +133,7 @@ class HospitalEmailNotificationService
 
         return $this->emailService->sendTemplateEmail(
             'appointment_confirmation',
-            [$patient->email => $patient->full_name],
+            [$recipientEmail => $patient->full_name],
             $variables,
             [
                 'event' => 'appointment.confirmation_sent',
@@ -1291,6 +1312,30 @@ class HospitalEmailNotificationService
     /**
      * Prefer linked user email, then doctor record email; require non-empty and valid format.
      */
+    /**
+     * Resolve a deliverable address for patient notifications (profile email, then linked user).
+     */
+    protected function resolvePatientNotificationEmail(Patient $patient): ?string
+    {
+        $patient->loadMissing('user');
+
+        $candidates = [];
+        if (filled($patient->email ?? null)) {
+            $candidates[] = trim((string) $patient->email);
+        }
+        if ($patient->user && filled($patient->user->email ?? null)) {
+            $candidates[] = trim((string) $patient->user->email);
+        }
+
+        foreach ($candidates as $email) {
+            if ($this->isValidNotificationEmail($email)) {
+                return $email;
+            }
+        }
+
+        return null;
+    }
+
     protected function resolveDoctorNotificationEmail(Doctor $doctor): ?string
     {
         $candidates = [];
