@@ -7,9 +7,12 @@ use App\Models\ClinicBookingRequest;
 use App\Models\Department;
 use App\Models\Doctor;
 use App\Services\ClinicBookingService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ClinicBookingRequestsController extends Controller
 {
@@ -46,12 +49,133 @@ class ClinicBookingRequestsController extends Controller
         $departments = Department::query()->active()->orderBy('name')->get();
         $pendingCount = ClinicBookingRequest::query()->pendingAcceptance()->count();
 
+        $acceptedPreviewQuery = $this->acceptedClinicRequestsQuery($request);
+        $acceptedTotalCount = (clone $acceptedPreviewQuery)->count();
+        $acceptedPreview = (clone $acceptedPreviewQuery)->limit(5)->get();
+
         return view('admin.clinic-booking-requests.index', compact(
             'requests',
             'doctorsByDept',
             'departments',
-            'pendingCount'
+            'pendingCount',
+            'acceptedPreview',
+            'acceptedTotalCount'
         ));
+    }
+
+    /**
+     * Full list of accepted clinic booking requests (filters + pagination).
+     */
+    public function accepted(Request $request): View
+    {
+        $departments = Department::query()->active()->orderBy('name')->get();
+
+        $acceptedRequests = $this->acceptedClinicRequestsQuery($request)
+            ->paginate(50)
+            ->withQueryString();
+
+        return view('admin.clinic-booking-requests.accepted', compact(
+            'acceptedRequests',
+            'departments'
+        ));
+    }
+
+    /**
+     * CSV export of accepted clinic booking requests (same filters as the accepted list).
+     */
+    public function exportAcceptedCsv(Request $request): StreamedResponse
+    {
+        $rows = $this->acceptedClinicRequestsQuery($request)->get();
+
+        $filename = 'clinic-booking-requests-accepted-'.now()->format('Y-m-d-His').'.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ];
+
+        $callback = function () use ($rows) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, [
+                'Request number',
+                'Clinic',
+                'Patient name',
+                'Patient email',
+                'Patient phone',
+                'Assigned doctor',
+                'Service',
+                'Appointment date',
+                'Appointment time',
+                'Accepted by (name)',
+                'Accepted by (email)',
+                'Accepted at',
+                'Appointment ID',
+            ]);
+
+            foreach ($rows as $req) {
+                $pd = $req->patient_data ?? [];
+                $patientName = trim(($pd['first_name'] ?? '').' '.($pd['last_name'] ?? ''));
+                $doctorLabel = $req->doctor
+                    ? ($req->doctor->user->name ?? trim($req->doctor->first_name.' '.$req->doctor->last_name))
+                    : '';
+                $acceptor = $req->acceptedByUser;
+                $acceptorName = $acceptor ? (string) ($acceptor->name ?? '') : '';
+                $acceptorEmail = $acceptor ? (string) ($acceptor->email ?? '') : '';
+                $acceptedAt = $req->accepted_at ?? $req->updated_at;
+
+                fputcsv($file, [
+                    $req->request_number,
+                    $req->department?->name ?? '',
+                    $patientName,
+                    $pd['email'] ?? '',
+                    $pd['phone'] ?? '',
+                    $doctorLabel,
+                    $req->service?->name ?? '',
+                    $req->appointment_date?->format('Y-m-d') ?? '',
+                    $req->appointment_time instanceof \DateTimeInterface
+                        ? $req->appointment_time->format('H:i')
+                        : (string) $req->appointment_time,
+                    $acceptor ? ($acceptorName !== '' ? $acceptorName : '—') : 'Legacy (not recorded)',
+                    $acceptor ? $acceptorEmail : '',
+                    $acceptedAt ? $acceptedAt->format('Y-m-d H:i:s') : '',
+                    $req->appointment_id ?? '',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Accepted requests only; optional clinic + accepted date range (uses COALESCE(accepted_at, updated_at)).
+     */
+    protected function acceptedClinicRequestsQuery(Request $request): Builder
+    {
+        $q = ClinicBookingRequest::query()
+            ->with(['department', 'service', 'doctor.user', 'appointment', 'acceptedByUser'])
+            ->where('status', 'accepted')
+            ->orderByDesc('accepted_at')
+            ->orderByDesc('updated_at');
+
+        if ($request->filled('department_id')) {
+            $q->where('department_id', $request->integer('department_id'));
+        }
+
+        if ($request->filled('accepted_from')) {
+            $from = $request->date('accepted_from')->startOfDay();
+            $q->whereRaw('COALESCE(accepted_at, updated_at) >= ?', [$from]);
+        }
+
+        if ($request->filled('accepted_to')) {
+            $to = $request->date('accepted_to')->endOfDay();
+            $q->whereRaw('COALESCE(accepted_at, updated_at) <= ?', [$to]);
+        }
+
+        return $q;
     }
 
     /**
@@ -87,7 +211,7 @@ class ClinicBookingRequestsController extends Controller
         }
 
         try {
-            $appointment = $this->clinicBookingService->acceptRequest($clinicBookingRequest, $doctor);
+            $appointment = $this->clinicBookingService->acceptRequest($clinicBookingRequest, $doctor, Auth::id());
             $doctorLabel = $doctor->user->name ?? trim($doctor->first_name.' '.$doctor->last_name);
 
             return redirect()->route('admin.appointments.show', $appointment)

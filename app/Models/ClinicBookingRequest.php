@@ -17,6 +17,8 @@ class ClinicBookingRequest extends Model
         'patient_id',
         'doctor_id',
         'appointment_id',
+        'accepted_by_user_id',
+        'accepted_at',
         'appointment_date',
         'appointment_time',
         'consultation_type',
@@ -32,6 +34,7 @@ class ClinicBookingRequest extends Model
         'appointment_time' => 'datetime:H:i',
         'patient_data' => 'array',
         'fee' => 'decimal:2',
+        'accepted_at' => 'datetime',
     ];
 
     public function department(): BelongsTo
@@ -57,6 +60,11 @@ class ClinicBookingRequest extends Model
     public function appointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class);
+    }
+
+    public function acceptedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'accepted_by_user_id');
     }
 
     public function scopePendingAcceptance($query)

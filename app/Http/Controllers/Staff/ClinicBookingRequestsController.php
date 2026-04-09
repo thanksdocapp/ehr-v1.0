@@ -69,7 +69,7 @@ class ClinicBookingRequestsController extends Controller
         }
 
         try {
-            $appointment = $this->clinicBookingService->acceptRequest($clinicBookingRequest, $doctor);
+            $appointment = $this->clinicBookingService->acceptRequest($clinicBookingRequest, $doctor, $user->id);
             return redirect()->route('staff.appointments.show', $appointment)
                 ->with('success', 'Booking accepted! The patient has been added to your schedule.');
         } catch (\RuntimeException $e) {

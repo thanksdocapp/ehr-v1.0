@@ -714,6 +714,8 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/api/appointments/today', [\App\Http\Controllers\Admin\AppointmentsController::class, 'getTodayAppointments'])->name('api.appointments.today');
 
         // Clinic booking requests (awaiting doctor assignment — practice-wide)
+        Route::get('/clinic-booking-requests/accepted/export', [\App\Http\Controllers\Admin\ClinicBookingRequestsController::class, 'exportAcceptedCsv'])->name('clinic-booking-requests.accepted.export.csv');
+        Route::get('/clinic-booking-requests/accepted', [\App\Http\Controllers\Admin\ClinicBookingRequestsController::class, 'accepted'])->name('clinic-booking-requests.accepted');
         Route::get('/clinic-booking-requests', [\App\Http\Controllers\Admin\ClinicBookingRequestsController::class, 'index'])->name('clinic-booking-requests.index');
         Route::post('/clinic-booking-requests/{clinicBookingRequest}/accept', [\App\Http\Controllers\Admin\ClinicBookingRequestsController::class, 'accept'])->name('clinic-booking-requests.accept');
         

@@ -125,6 +125,62 @@
         </div>
     </div>
 
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h2 class="h5 mb-0">Accepted clinic bookings</h2>
+                <p class="text-muted small mb-0 mt-1">
+                    Recent accepts (up to 5 below). <span class="fw-semibold">{{ $acceptedTotalCount }}</span> total{{ request()->filled('department_id') ? ' for this clinic filter' : '' }}.
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ route('admin.clinic-booking-requests.accepted', request()->only('department_id')) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-list me-1"></i>View all accepted
+                </a>
+                <a href="{{ route('admin.clinic-booking-requests.accepted.export.csv', request()->only('department_id')) }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-file-csv me-1"></i>Export CSV
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            @if($acceptedPreview->isEmpty())
+                <div class="text-center py-4 px-3">
+                    <p class="text-muted mb-0">No accepted bookings{{ request()->filled('department_id') ? ' for this clinic' : '' }} yet.</p>
+                </div>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Request</th>
+                                <th>Clinic</th>
+                                <th>Patient</th>
+                                <th>Assigned doctor</th>
+                                <th>Service</th>
+                                <th>Slot</th>
+                                <th>Accepted by</th>
+                                <th>Accepted</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($acceptedPreview as $req)
+                                @include('admin.clinic-booking-requests.partials.accepted-row', ['req' => $req])
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @if($acceptedTotalCount > $acceptedPreview->count())
+                    <div class="card-footer border-top-0 py-2 text-center bg-light">
+                        <a href="{{ route('admin.clinic-booking-requests.accepted', request()->only('department_id')) }}" class="small">
+                            View all {{ $acceptedTotalCount }} accepted bookings…
+                        </a>
+                    </div>
+                @endif
+            @endif
+        </div>
+    </div>
+
     <div class="alert alert-info mt-3 mb-0">
         <i class="fas fa-info-circle me-2"></i>
         Accepting creates the patient (if new), adds them to the clinic, and places the visit on the selected doctor’s diary. Confirmation emails are sent like a normal doctor acceptance.

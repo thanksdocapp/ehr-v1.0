@@ -390,9 +390,9 @@ class ClinicBookingService
     /**
      * Doctor accepts a clinic booking request. Creates patient + appointment, marks request as accepted.
      */
-    public function acceptRequest(ClinicBookingRequest $request, Doctor $doctor): Appointment
+    public function acceptRequest(ClinicBookingRequest $request, Doctor $doctor, ?int $acceptedByUserId = null): Appointment
     {
-        return DB::transaction(function () use ($request, $doctor) {
+        return DB::transaction(function () use ($request, $doctor, $acceptedByUserId) {
             // Lock and verify still pending (use fresh lock)
             $request = ClinicBookingRequest::where('id', $request->id)
                 ->where('status', 'pending_acceptance')
@@ -485,6 +485,8 @@ class ClinicBookingService
                 'doctor_id' => $doctor->id,
                 'patient_id' => $patient->id,
                 'appointment_id' => $appointment->id,
+                'accepted_by_user_id' => $acceptedByUserId,
+                'accepted_at' => now(),
             ]);
 
             $this->emailService->sendAppointmentConfirmation($appointment);
