@@ -142,13 +142,15 @@ class HospitalEmailNotificationService
             return null;
         }
 
-        // Get doctor's email (prefer user email, fall back to doctor email)
-        $doctorEmail = $doctor->user ? $doctor->user->email : $doctor->email;
+        $doctor->loadMissing('user');
+        $doctorEmail = $this->resolveDoctorNotificationEmail($doctor);
         if (!$doctorEmail) {
             Log::warning('Cannot send new appointment to doctor: Doctor email not found', [
                 'appointment_id' => $appointment->id,
-                'doctor_id' => $doctor->id
+                'doctor_id' => $doctor->id,
+                'context' => 'sendNewAppointmentToDoctor',
             ]);
+
             return null;
         }
 
@@ -1036,8 +1038,15 @@ class HospitalEmailNotificationService
      */
     public function notifyDoctorNewAppointment(Appointment $appointment, Doctor $doctor)
     {
-        $user = $doctor->user;
-        if (!$user || !$user->email) {
+        $doctor->loadMissing('user');
+        $doctorEmail = $this->resolveDoctorNotificationEmail($doctor);
+        if (!$doctorEmail) {
+            Log::warning('Cannot send new appointment to doctor: no valid email on user or doctor profile', [
+                'appointment_id' => $appointment->id,
+                'doctor_id' => $doctor->id,
+                'context' => 'notifyDoctorNewAppointment',
+            ]);
+
             return null;
         }
 
@@ -1084,7 +1093,7 @@ class HospitalEmailNotificationService
 
         return $this->emailService->sendTemplateEmail(
             'doctor_new_appointment',
-            [$user->email => $doctor->name],
+            [$doctorEmail => $doctor->name],
             $variables
         );
     }
