@@ -32,7 +32,7 @@ class SendPatientFeedbackRequests extends Command
         // DB toggle overrides env/config (Admin > Settings > Patient Feedback)
         try {
             $settings = Setting::getGroup('patient_feedback');
-            if (array_key_exists('patient_feedback_enabled', $settings) && !$settings['patient_feedback_enabled']) {
+            if ($settings->has('patient_feedback_enabled') && !$settings->get('patient_feedback_enabled')) {
                 $this->info('Patient feedback requests are disabled in settings.');
                 return 0;
             }
@@ -149,7 +149,7 @@ class SendPatientFeedbackRequests extends Command
         // Admin setting (DB) overrides env/config
         try {
             $settings = Setting::getGroup('patient_feedback');
-            $m = (int) ($settings['patient_feedback_delay_minutes'] ?? 0);
+            $m = (int) $settings->get('patient_feedback_delay_minutes', 0);
             if ($m > 0) {
                 return max(1, min(4320, $m));
             }
