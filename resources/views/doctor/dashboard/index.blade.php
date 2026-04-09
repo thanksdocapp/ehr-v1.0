@@ -771,26 +771,33 @@
         </div>
     </div>
 
-    <!-- Recent Appointments & Patients Row -->
-    <div class="row g-3 align-items-start">
-        <!-- Recent Appointments -->
-        <div class="col-xl-8 col-lg-7">
-            <div class="doctor-card">
-                <div class="doctor-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h5 class="doctor-card-title mb-0">
-                            <i class="fas fa-history me-2 text-primary"></i>
-                            Recent appointments
-                        </h5>
-                        <a href="{{ route('staff.appointments.index') }}" class="btn btn-sm btn-doctor-primary">
-                            View All <i class="fas fa-arrow-right ms-1"></i>
-                        </a>
-                    </div>
+    <!-- Recent activity: single panel (appointments + patients + insights) -->
+    <div class="doctor-card mb-4">
+        <div class="doctor-card-header">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h5 class="doctor-card-title mb-0">
+                        <i class="fas fa-th-large me-2 text-primary"></i>
+                        Recent activity
+                    </h5>
+                    <p class="text-muted small mb-0 mt-1">Appointments, recent patients, and quick stats</p>
                 </div>
-                <div class="doctor-card-body">
+                <a href="{{ route('staff.appointments.index') }}" class="btn btn-sm btn-doctor-primary">
+                    View all appointments <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+        <div class="doctor-card-body">
+            <div class="row g-4 align-items-start">
+                <div class="col-xl-8 col-lg-7">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <h6 class="mb-0 fw-semibold text-body">
+                            <i class="fas fa-history me-2 text-primary"></i>Recent appointments
+                        </h6>
+                    </div>
                     @if(isset($recentAppointments) && $recentAppointments->count() > 0)
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th>Date</th>
@@ -871,83 +878,72 @@
                         </div>
                     @endif
                 </div>
-            </div>
-        </div>
 
-        <!-- Sidebar: stacked cards with even vertical rhythm -->
-        <div class="col-xl-4 col-lg-5 d-flex flex-column gap-3">
-            <!-- Recent Patients -->
-            <div class="doctor-card">
-                <div class="doctor-card-header">
-                    <div class="d-flex align-items-center justify-content-between">
-                            <h6 class="doctor-card-title mb-0">
-                                <i class="fas fa-users me-2 text-primary"></i>
-                                Recent patients
+                <div class="col-xl-4 col-lg-5">
+                    <div class="d-flex flex-column gap-4 ps-lg-3 dashboard-activity-sidebar">
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                <h6 class="mb-0 fw-semibold text-body">
+                                    <i class="fas fa-users me-2 text-primary"></i>Recent patients
+                                </h6>
+                                <a href="{{ route('staff.patients.index') }}" class="btn btn-sm btn-link text-primary p-0">
+                                    View all <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                            @if(isset($recentAppointments) && $recentAppointments->count() > 0)
+                                @foreach($recentAppointments->take(6) as $appointment)
+                                <div class="d-flex align-items-center mb-3 pb-3 border-bottom border-light">
+                                    <div class="doctor-user-avatar me-3" style="width: 45px; height: 45px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                        {{ strtoupper(substr($appointment->patient->first_name, 0, 1)) }}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>{{ formatDateUk($appointment->appointment_date) }}
+                                        </small>
+                                    </div>
+                                    <a href="{{ route('staff.patients.show', $appointment->patient_id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                                @endforeach
+                            @else
+                                <div class="text-center py-3">
+                                    <i class="fas fa-user-slash fa-2x text-muted mb-2" style="opacity: 0.3;"></i>
+                                    <p class="text-muted mb-0 small">No recent patients</p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="pt-2 border-top border-secondary border-opacity-25">
+                            <h6 class="fw-semibold text-body mb-3">
+                                <i class="fas fa-chart-line me-2 text-primary"></i>Quick insights
                             </h6>
-                        <a href="{{ route('staff.patients.index') }}" class="btn btn-sm btn-link text-primary p-0">
-                            View All <i class="fas fa-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="doctor-card-body">
-                    @if(isset($recentAppointments) && $recentAppointments->count() > 0)
-                        @foreach($recentAppointments->take(6) as $appointment)
-                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
-                            <div class="doctor-user-avatar me-3" style="width: 45px; height: 45px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                                {{ strtoupper(substr($appointment->patient->first_name, 0, 1)) }}
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold">{{ $appointment->patient->first_name }} {{ $appointment->patient->last_name }}</div>
-                                <small class="text-muted">
-                                    <i class="fas fa-calendar me-1"></i>{{ formatDateUk($appointment->appointment_date) }}
-                                </small>
-                            </div>
-                            <a href="{{ route('staff.patients.show', $appointment->patient_id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                        </div>
-                        @endforeach
-                    @else
-                        <div class="text-center py-3">
-                            <i class="fas fa-user-slash fa-2x text-muted mb-2" style="opacity: 0.3;"></i>
-                            <p class="text-muted mb-0 small">No recent patients</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Quick Insights -->
-            <div class="doctor-card">
-                <div class="doctor-card-header">
-                    <h6 class="doctor-card-title mb-0">
-                        <i class="fas fa-chart-line me-2 text-primary"></i>
-                        Quick insights
-                    </h6>
-                </div>
-                <div class="doctor-card-body">
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <div class="text-center p-3 rounded" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%); border: 1px solid rgba(13, 110, 253, 0.2);">
-                                <div class="fs-3 fw-bold text-primary mb-1">{{ $stats['total_patients'] ?? 0 }}</div>
-                                <small class="text-muted d-block">Total Patients</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-center p-3 rounded" style="background: linear-gradient(135deg, rgba(25, 135, 84, 0.1) 0%, rgba(25, 135, 84, 0.05) 100%); border: 1px solid rgba(25, 135, 84, 0.2);">
-                                <div class="fs-3 fw-bold text-success mb-1">{{ $stats['total_appointments'] ?? 0 }}</div>
-                                <small class="text-muted d-block">Total Appointments</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-center p-3 rounded" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%); border: 1px solid rgba(255, 193, 7, 0.2);">
-                                <div class="fs-3 fw-bold text-warning mb-1">{{ $stats['pending_appointments'] ?? 0 }}</div>
-                                <small class="text-muted d-block">Pending</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-center p-3 rounded" style="background: linear-gradient(135deg, rgba(13, 202, 240, 0.1) 0%, rgba(13, 202, 240, 0.05) 100%); border: 1px solid rgba(13, 202, 240, 0.2);">
-                                <div class="fs-3 fw-bold text-info mb-1">{{ $stats['today_appointments'] ?? 0 }}</div>
-                                <small class="text-muted d-block">Today</small>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="text-center p-3 rounded" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%); border: 1px solid rgba(13, 110, 253, 0.2);">
+                                        <div class="fs-3 fw-bold text-primary mb-1">{{ $stats['total_patients'] ?? 0 }}</div>
+                                        <small class="text-muted d-block">Total Patients</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-3 rounded" style="background: linear-gradient(135deg, rgba(25, 135, 84, 0.1) 0%, rgba(25, 135, 84, 0.05) 100%); border: 1px solid rgba(25, 135, 84, 0.2);">
+                                        <div class="fs-3 fw-bold text-success mb-1">{{ $stats['total_appointments'] ?? 0 }}</div>
+                                        <small class="text-muted d-block">Total Appointments</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-3 rounded" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%); border: 1px solid rgba(255, 193, 7, 0.2);">
+                                        <div class="fs-3 fw-bold text-warning mb-1">{{ $stats['pending_appointments'] ?? 0 }}</div>
+                                        <small class="text-muted d-block">Pending</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-3 rounded" style="background: linear-gradient(135deg, rgba(13, 202, 240, 0.1) 0%, rgba(13, 202, 240, 0.05) 100%); border: 1px solid rgba(13, 202, 240, 0.2);">
+                                        <div class="fs-3 fw-bold text-info mb-1">{{ $stats['today_appointments'] ?? 0 }}</div>
+                                        <small class="text-muted d-block">Today</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1061,6 +1057,22 @@
 <!-- FullCalendar CSS -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
 <style>
+    /* Recent activity panel: divider between table (left) and sidebar (right) */
+    .dashboard-activity-sidebar {
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        padding-top: 1.25rem;
+        margin-top: 0.5rem;
+    }
+    @media (min-width: 992px) {
+        .dashboard-activity-sidebar {
+            border-top: none;
+            padding-top: 0;
+            margin-top: 0;
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+            padding-left: 1.25rem;
+        }
+    }
+
     /* FullCalendar specific styles for dashboard widget */
     #dashboard-calendar {
         font-size: 0.9rem;
