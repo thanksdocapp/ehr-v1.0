@@ -57,11 +57,11 @@
                                             @error('default_duration_minutes')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
-                                            <small class="text-muted">Minimum 5 minutes, maximum 480 minutes (8 hours). Doctor assignments that still used the previous default length are updated automatically when you change this.</small>
+                                            <small class="text-muted">Minimum 5 minutes, maximum 480 minutes (8 hours). When you change this, doctor-specific duration overrides for this service are cleared so booking uses the new length.</small>
                                             <div class="form-check mt-2">
-                                                <input class="form-check-input" type="checkbox" name="propagate_duration_to_all_doctors" id="propagate_duration_to_all_doctors" value="1">
-                                                <label class="form-check-label" for="propagate_duration_to_all_doctors">
-                                                    <strong>Reset all</strong> doctor durations to this new default (overrides custom lengths)
+                                                <input class="form-check-input" type="checkbox" name="resync_doctor_durations_to_service" id="resync_doctor_durations_to_service" value="1">
+                                                <label class="form-check-label" for="resync_doctor_durations_to_service">
+                                                    Clear doctor-specific durations now (use if public booking still shows the old length without changing the number above)
                                                 </label>
                                             </div>
                                         </div>

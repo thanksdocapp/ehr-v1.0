@@ -238,7 +238,6 @@ class BookingServicesController extends Controller
 
         $successParts = ['Booking service updated.'];
         $priceUpdated = 0;
-        $durationUpdated = 0;
 
         // Optionally propagate new default price to doctor overrides
         if (($request->boolean('propagate_price_to_doctors') || $request->boolean('propagate_price_to_all_doctors')) && $oldDefaultPrice != $newDefaultPrice) {
@@ -260,18 +259,21 @@ class BookingServicesController extends Controller
             }
         }
 
-        // Public booking uses doctor_service_prices.custom_duration_minutes when set. Keep it in sync when
-        // the service default changes: rows that still matched the old default follow the new default.
-        if ($oldDefaultDuration !== $newDefaultDuration) {
-            $durationQuery = DoctorServicePrice::where('service_id', $bookingService->id);
-            if ($request->boolean('propagate_duration_to_all_doctors')) {
-                $durationUpdated = $durationQuery->update(['custom_duration_minutes' => $newDefaultDuration]);
-            } else {
-                $durationUpdated = $durationQuery->where('custom_duration_minutes', $oldDefaultDuration)
-                    ->update(['custom_duration_minutes' => $newDefaultDuration]);
-            }
+        // Public booking prefers doctor_service_prices.custom_duration_minutes when non-null. Clear overrides
+        // whenever the service default duration changes so all doctors inherit the new value (fixes stale pivots
+        // that no longer matched the previous default). Optional resync repairs stuck data without changing the field.
+        $shouldClearDoctorDurations = $oldDefaultDuration !== $newDefaultDuration
+            || $request->boolean('resync_doctor_durations_to_service');
+
+        if ($shouldClearDoctorDurations) {
+            $durationUpdated = DoctorServicePrice::where('service_id', $bookingService->id)
+                ->whereNotNull('custom_duration_minutes')
+                ->update(['custom_duration_minutes' => null]);
+
             if ($durationUpdated > 0) {
-                $successParts[] = "{$durationUpdated} doctor-specific duration(s) updated.";
+                $successParts[] = "{$durationUpdated} doctor assignment(s) now use this service duration.";
+            } elseif ($oldDefaultDuration !== $newDefaultDuration) {
+                $successParts[] = 'Doctor assignments already follow this service duration.';
             }
         }
 
