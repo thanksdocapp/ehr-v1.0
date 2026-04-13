@@ -221,11 +221,13 @@ class BookingServicesController extends Controller
 
         $oldDefaultPrice = $bookingService->default_price;
         $newDefaultPrice = $request->default_price;
+        $oldDefaultDuration = (int) $bookingService->default_duration_minutes;
+        $newDefaultDuration = (int) $request->default_duration_minutes;
 
         $bookingService->update([
             'name' => $request->name,
             'description' => $request->description,
-            'default_duration_minutes' => $request->default_duration_minutes,
+            'default_duration_minutes' => $newDefaultDuration,
             'default_consultation_type' => $request->input('default_consultation_type', 'in_person'),
             'default_price' => $newDefaultPrice,
             'minimum_age' => $minimumAge,
@@ -234,31 +236,47 @@ class BookingServicesController extends Controller
             'is_active' => $request->has('is_active') ? true : false,
         ]);
 
-        // Optionally propagate new default to doctor overrides
+        $successParts = ['Booking service updated.'];
+        $priceUpdated = 0;
+        $durationUpdated = 0;
+
+        // Optionally propagate new default price to doctor overrides
         if (($request->boolean('propagate_price_to_doctors') || $request->boolean('propagate_price_to_all_doctors')) && $oldDefaultPrice != $newDefaultPrice) {
             $query = DoctorServicePrice::where('service_id', $bookingService->id);
             if ($request->boolean('propagate_price_to_all_doctors')) {
-                // Reset ALL doctor-specific prices to the new default
-                $updated = $query->update(['custom_price' => $newDefaultPrice]);
+                $priceUpdated = $query->update(['custom_price' => $newDefaultPrice]);
             } else {
-                // Only update doctors whose custom_price matched the old default (or was null)
                 if ($oldDefaultPrice === null || $oldDefaultPrice === '') {
-                    $updated = $query->whereNull('custom_price')->update(['custom_price' => $newDefaultPrice]);
+                    $priceUpdated = $query->whereNull('custom_price')->update(['custom_price' => $newDefaultPrice]);
                 } else {
-                    $updated = $query->where(function ($q) use ($oldDefaultPrice) {
+                    $priceUpdated = $query->where(function ($q) use ($oldDefaultPrice) {
                         $q->where('custom_price', $oldDefaultPrice)
                             ->orWhereRaw('ABS(COALESCE(custom_price, 0) - ?) < 0.01', [(float) $oldDefaultPrice]);
                     })->update(['custom_price' => $newDefaultPrice]);
                 }
             }
-            if ($updated > 0) {
-                return redirect()->route('admin.booking-services.index')
-                    ->with('success', "Booking service updated. Default price and {$updated} doctor-specific price(s) updated.");
+            if ($priceUpdated > 0) {
+                $successParts[] = "{$priceUpdated} doctor-specific price(s) updated.";
+            }
+        }
+
+        // Public booking uses doctor_service_prices.custom_duration_minutes when set. Keep it in sync when
+        // the service default changes: rows that still matched the old default follow the new default.
+        if ($oldDefaultDuration !== $newDefaultDuration) {
+            $durationQuery = DoctorServicePrice::where('service_id', $bookingService->id);
+            if ($request->boolean('propagate_duration_to_all_doctors')) {
+                $durationUpdated = $durationQuery->update(['custom_duration_minutes' => $newDefaultDuration]);
+            } else {
+                $durationUpdated = $durationQuery->where('custom_duration_minutes', $oldDefaultDuration)
+                    ->update(['custom_duration_minutes' => $newDefaultDuration]);
+            }
+            if ($durationUpdated > 0) {
+                $successParts[] = "{$durationUpdated} doctor-specific duration(s) updated.";
             }
         }
 
         return redirect()->route('admin.booking-services.index')
-            ->with('success', 'Booking service updated successfully.');
+            ->with('success', implode(' ', $successParts));
     }
 
     /**

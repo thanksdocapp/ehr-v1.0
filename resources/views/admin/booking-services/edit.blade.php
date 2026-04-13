@@ -57,7 +57,13 @@
                                             @error('default_duration_minutes')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
-                                            <small class="text-muted">Minimum 5 minutes, maximum 480 minutes (8 hours)</small>
+                                            <small class="text-muted">Minimum 5 minutes, maximum 480 minutes (8 hours). Doctor assignments that still used the previous default length are updated automatically when you change this.</small>
+                                            <div class="form-check mt-2">
+                                                <input class="form-check-input" type="checkbox" name="propagate_duration_to_all_doctors" id="propagate_duration_to_all_doctors" value="1">
+                                                <label class="form-check-label" for="propagate_duration_to_all_doctors">
+                                                    <strong>Reset all</strong> doctor durations to this new default (overrides custom lengths)
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
