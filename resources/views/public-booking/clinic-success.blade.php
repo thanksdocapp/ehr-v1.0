@@ -25,6 +25,20 @@
     <div class="review-row"><span class="review-label">Date</span><span class="review-value">{{ formatDateUkLongWeekday($request->appointment_date) }}</span></div>
     <div class="review-row"><span class="review-label">Time</span><span class="review-value">{{ formatTime($request->appointment_time, 'g:i A') }}</span></div>
 
+    @if(!empty($calendarLinks['google_url']) && !empty($calendarLinks['ics_url']))
+    <div class="mt-4">
+        <div class="mb-2 text-muted small">Add this time to your calendar</div>
+        <div class="d-flex flex-column flex-md-row gap-2">
+            <a href="{{ $calendarLinks['google_url'] }}" target="_blank" rel="noopener" class="btn btn-outline-danger btn-sm">
+                <i class="fab fa-google me-1"></i>Google Calendar
+            </a>
+            <a href="{{ $calendarLinks['ics_url'] }}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-download me-1"></i>Apple / Outlook (.ics)
+            </a>
+        </div>
+    </div>
+    @endif
+
     <p class="text-muted small mt-4 mb-0">Check your email (<strong>{{ $patientEmail }}</strong>) for updates. If you have any questions, please contact the clinic directly.</p>
 </div>
 

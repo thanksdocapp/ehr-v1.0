@@ -12,6 +12,7 @@ use App\Models\Setting;
 use Illuminate\Support\Collection;
 use App\Services\SlotAvailabilityService;
 use App\Services\PublicBookingService;
+use App\Services\AppointmentCalendarInviteService;
 use App\Services\ClinicBookingService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -21,12 +22,18 @@ class PublicBookingController extends Controller
     protected $slotAvailabilityService;
     protected $bookingService;
     protected $clinicBookingService;
+    protected $appointmentCalendarInviteService;
 
-    public function __construct(SlotAvailabilityService $slotAvailabilityService, PublicBookingService $bookingService, ClinicBookingService $clinicBookingService)
-    {
+    public function __construct(
+        SlotAvailabilityService $slotAvailabilityService,
+        PublicBookingService $bookingService,
+        ClinicBookingService $clinicBookingService,
+        AppointmentCalendarInviteService $appointmentCalendarInviteService
+    ) {
         $this->slotAvailabilityService = $slotAvailabilityService;
         $this->bookingService = $bookingService;
         $this->clinicBookingService = $clinicBookingService;
+        $this->appointmentCalendarInviteService = $appointmentCalendarInviteService;
     }
 
     private function isClinicMode(): bool
@@ -909,10 +916,12 @@ class PublicBookingController extends Controller
 
         $request = \App\Models\ClinicBookingRequest::where('request_number', $requestNumber)->with(['department', 'service'])->firstOrFail();
         $patientEmail = $request->patient_data['email'] ?? '';
+        $calendarLinks = $this->appointmentCalendarInviteService->calendarLinksForClinicRequest($request);
 
         return view('public-booking.clinic-success', [
             'request' => $request,
-            'patientEmail' => $patientEmail
+            'patientEmail' => $patientEmail,
+            'calendarLinks' => $calendarLinks,
         ]);
     }
 
@@ -1550,10 +1559,32 @@ class PublicBookingController extends Controller
         $appointment = \App\Models\Appointment::where('appointment_number', $appointmentNumber)
             ->with(['patient', 'doctor', 'service'])
             ->firstOrFail();
+        $calendarLinks = $this->appointmentCalendarInviteService->calendarLinksForAppointment($appointment);
 
         return view('public-booking.success', [
-            'appointment' => $appointment
+            'appointment' => $appointment,
+            'calendarLinks' => $calendarLinks,
         ]);
+    }
+
+    public function downloadAppointmentCalendarInvite(Request $request, string $appointmentNumber)
+    {
+        $appointment = \App\Models\Appointment::query()
+            ->where('appointment_number', $appointmentNumber)
+            ->with(['doctor', 'service'])
+            ->firstOrFail();
+
+        return $this->appointmentCalendarInviteService->appointmentIcsResponse($appointment);
+    }
+
+    public function downloadClinicRequestCalendarInvite(Request $request, string $requestNumber)
+    {
+        $clinicRequest = \App\Models\ClinicBookingRequest::query()
+            ->where('request_number', $requestNumber)
+            ->with(['department', 'service'])
+            ->firstOrFail();
+
+        return $this->appointmentCalendarInviteService->clinicRequestIcsResponse($clinicRequest);
     }
 
     /**

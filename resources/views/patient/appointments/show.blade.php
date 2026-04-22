@@ -101,6 +101,8 @@
                         </div>
                     </div>
 
+                    @include('partials.appointment-calendar-actions')
+
                     @php $ct = $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person'); @endphp
                     @if($ct === 'online')
                         <div class="alert alert-info mb-3">

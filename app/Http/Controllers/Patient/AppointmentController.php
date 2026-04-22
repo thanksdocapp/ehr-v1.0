@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Patient;
 
+use App\Services\AppointmentCalendarInviteService;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Doctor;
@@ -15,6 +16,10 @@ use Carbon\Carbon;
 
 class AppointmentController extends Controller
 {
+    public function __construct(
+        protected AppointmentCalendarInviteService $appointmentCalendarInviteService
+    ) {}
+
     /**
      * Display a listing of the patient's appointments.
      */
@@ -131,9 +136,11 @@ class AppointmentController extends Controller
             abort(403, 'Unauthorized access to appointment.');
         }
 
-        $appointment->load(['doctor', 'department']);
+        $appointment->load(['doctor', 'department', 'service']);
 
-        return view('patient.appointments.show', compact('appointment'));
+        $calendarLinks = $this->appointmentCalendarInviteService->calendarLinksForAppointment($appointment);
+
+        return view('patient.appointments.show', compact('appointment', 'calendarLinks'));
     }
 
     /**

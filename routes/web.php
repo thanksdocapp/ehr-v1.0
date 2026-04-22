@@ -140,6 +140,12 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/confirm', [\App\Http\Controllers\PublicBookingController::class, 'confirm'])->name('confirm');
         Route::post('/preview-doctor-discount', [\App\Http\Controllers\PublicBookingController::class, 'previewDoctorBookingDiscount'])->name('preview-doctor-discount');
         Route::post('/preview-clinic-discount', [\App\Http\Controllers\PublicBookingController::class, 'previewClinicBookingDiscount'])->name('preview-clinic-discount');
+        Route::get('/calendar/appointment/{appointmentNumber}.ics', [\App\Http\Controllers\PublicBookingController::class, 'downloadAppointmentCalendarInvite'])
+            ->middleware('signed')
+            ->name('calendar.appointment');
+        Route::get('/calendar/clinic-request/{requestNumber}.ics', [\App\Http\Controllers\PublicBookingController::class, 'downloadClinicRequestCalendarInvite'])
+            ->middleware('signed')
+            ->name('calendar.clinic-request');
         
         // Parameterized route last (catches /book/{slug}) - GET only
         Route::get('/{slug}', [\App\Http\Controllers\PublicBookingController::class, 'showDoctorBooking'])->name('doctor');

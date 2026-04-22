@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Staff;
 
+use App\Services\AppointmentCalendarInviteService;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Patient;
@@ -15,6 +16,10 @@ use Carbon\Carbon;
 
 class AppointmentsController extends Controller
 {
+    public function __construct(
+        protected AppointmentCalendarInviteService $appointmentCalendarInviteService
+    ) {}
+
     public function index(Request $request)
     {
         $query = Appointment::with(['patient', 'doctor', 'department']);
@@ -313,7 +318,9 @@ class AppointmentsController extends Controller
             ]);
         }
 
-        return view('staff.appointments.show', compact('appointment'));
+        $calendarLinks = $this->appointmentCalendarInviteService->calendarLinksForAppointment($appointment);
+
+        return view('staff.appointments.show', compact('appointment', 'calendarLinks'));
     }
 
     public function create()

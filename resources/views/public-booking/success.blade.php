@@ -180,6 +180,8 @@
                             </ul>
                         </div>
 
+                        @include('partials.appointment-calendar-actions')
+
                         <!-- Actions -->
                         <div class="d-flex flex-column flex-md-row gap-3 justify-content-center">
                             <a href="{{ route('public.booking.doctor', $appointment->doctor->slug) }}" class="btn btn-outline-primary btn-lg">

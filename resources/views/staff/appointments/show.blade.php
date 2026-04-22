@@ -245,6 +245,8 @@
                         </div>
                     </div>
 
+                    @include('partials.appointment-calendar-actions')
+
                     {{-- 4. Consultation method --}}
                     <div class="mb-4 pt-3 border-top">
                         <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-video me-1"></i>Consultation method</p>
