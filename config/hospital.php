@@ -61,8 +61,13 @@ return [
         
         'appointment_reminder' => [
             'enabled' => env('NOTIFY_APPOINTMENT_REMINDER', true),
-            'days_before' => [1, 3], // Send reminders 1 and 3 days before
-            'times' => ['09:00', '14:00'], // Times to send reminders
+            'send_to_patient' => env('NOTIFY_APPOINTMENT_REMINDER_PATIENT', true),
+            // Clinician inbox (doctor user email, then doctor record email). Opt-in — set env true after migration adds templates.
+            'send_to_doctor' => env('NOTIFY_APPOINTMENT_REMINDER_DOCTOR', false),
+            // Department/clinic inbox (department email field). Opt-in — skips when same address as patient or doctor.
+            'send_to_staff' => env('NOTIFY_APPOINTMENT_REMINDER_STAFF', false),
+            'days_before' => [1, 3], // Send reminders 1 and 3 days before (reserved for future use)
+            'times' => ['09:00', '14:00'], // Times to send reminders (reserved for future use)
         ],
         
         'test_results_ready' => [

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Patient;
 use App\Models\MedicalRecord;
 use App\Models\Appointment;
+use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\ClinicBookingRequest;
 use App\Models\Billing;
@@ -246,12 +247,19 @@ class HospitalEmailNotificationService
      */
     public function sendAppointmentReminder(Appointment $appointment, int $daysBefore = 1)
     {
-        if (!$appointment->patient || !$appointment->patient->email) {
+        $appointment->loadMissing(['patient', 'doctor', 'department']);
+
+        $patient = $appointment->patient;
+        if (!$patient) {
+            return null;
+        }
+
+        $recipientEmail = $this->resolvePatientNotificationEmail($patient);
+        if (!$recipientEmail) {
             return null;
         }
 
         $doctor = $appointment->doctor;
-        $patient = $appointment->patient;
 
         // Format appointment time properly
         $appointmentTime = $appointment->appointment_time;
@@ -298,7 +306,7 @@ class HospitalEmailNotificationService
 
         return $this->emailService->sendTemplateEmail(
             'appointment_reminder',
-            [$patient->email => $patient->full_name],
+            [$recipientEmail => $patient->full_name],
             $variables,
             [
                 'event' => 'appointment.reminder_sent',
@@ -307,9 +315,202 @@ class HospitalEmailNotificationService
                 'metadata' => [
                     'appointment_id' => $appointment->id,
                     'days_before' => $daysBefore,
+                    'reminder_recipient' => 'patient',
                 ]
             ]
         );
+    }
+
+    /**
+     * Reminder for the assigned doctor (clinician) — host link for online visits, staff calendar link.
+     *
+     * @return EmailLog|null
+     */
+    public function sendAppointmentReminderToDoctor(Appointment $appointment, int $daysBefore = 1)
+    {
+        $appointment->loadMissing(['patient', 'doctor.user', 'department']);
+
+        $doctor = $appointment->doctor;
+        if (!$doctor) {
+            return null;
+        }
+
+        $doctorEmail = $this->resolveDoctorNotificationEmail($doctor);
+        if (!$doctorEmail) {
+            return null;
+        }
+
+        $patient = $appointment->patient;
+
+        $appointmentTime = $appointment->appointment_time;
+        if ($appointmentTime) {
+            try {
+                $appointmentTime = \Carbon\Carbon::parse($appointmentTime)->format('g:i A');
+            } catch (\Exception $e) {
+            }
+        }
+
+        $hostLink = $appointment->whereby_host_url ?? $appointment->meeting_link ?? null;
+        $participantLink = $appointment->meeting_link ?? null;
+        $onlineConsultationSection = '';
+        if ($appointment->is_online && $hostLink) {
+            $platformName = $appointment->meeting_platform_name ?? 'Video Call';
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nPlatform: {$platformName}\nHost link (for you): {$hostLink}\n\n"
+                .($participantLink ? "Patient participant link: {$participantLink}\n\n" : '')
+                ."Please join as host 5 minutes before the scheduled time.\n";
+        } elseif ($appointment->is_online) {
+            $onlineConsultationSection = "\n*** ONLINE CONSULTATION ***\nVideo consultation — check the appointment in the staff portal for links.\n";
+        }
+
+        $variables = [
+            'doctor_name' => $this->doctorNameForTemplate($doctor->name),
+            'doctor_title' => $doctor->title ?? 'Dr.',
+            'patient_name' => $patient ? $patient->full_name : 'N/A',
+            'patient_phone' => $patient ? ($patient->phone ?? '') : '',
+            'patient_email' => $patient ? ($this->resolvePatientNotificationEmail($patient) ?? '') : '',
+            'appointment_date' => formatDateUkLong($appointment->appointment_date),
+            'appointment_time' => $appointmentTime,
+            'days_before' => $daysBefore,
+            'department' => $appointment->department ? $appointment->department->name : 'General',
+            'hospital_name' => config('app.name', 'Hospital'),
+            'hospital_phone' => config('hospital.phone', ''),
+            'hospital_address' => config('hospital.address', ''),
+            'appointment_id' => $appointment->id,
+            'appointment_url' => url('/staff/appointments/'.$appointment->id),
+            'is_online' => $appointment->is_online ?? false,
+            'meeting_link' => $hostLink,
+            'host_meeting_link' => $hostLink,
+            'participant_link' => $participantLink,
+            'meeting_platform' => $appointment->meeting_platform_name ?? null,
+            'online_consultation_section' => $onlineConsultationSection,
+        ];
+
+        return $this->emailService->sendTemplateEmail(
+            'doctor_appointment_reminder',
+            [$doctorEmail => $doctor->name],
+            $variables,
+            [
+                'event' => 'appointment.reminder_sent_doctor',
+                'email_type' => 'appointment',
+                'metadata' => [
+                    'appointment_id' => $appointment->id,
+                    'doctor_id' => $doctor->id,
+                    'days_before' => $daysBefore,
+                    'reminder_recipient' => 'doctor',
+                ],
+            ]
+        );
+    }
+
+    /**
+     * Optional reminder to the department/clinic inbox (department email).
+     *
+     * @return EmailLog|null
+     */
+    public function sendAppointmentReminderToDepartment(Appointment $appointment, int $daysBefore = 1)
+    {
+        $appointment->loadMissing(['patient', 'doctor', 'department']);
+
+        $department = $appointment->department;
+        $deptEmail = $this->resolveDepartmentNotificationEmail($department);
+        if (!$deptEmail) {
+            return null;
+        }
+
+        $doctor = $appointment->doctor;
+        $patient = $appointment->patient;
+
+        $appointmentTime = $appointment->appointment_time;
+        if ($appointmentTime) {
+            try {
+                $appointmentTime = \Carbon\Carbon::parse($appointmentTime)->format('g:i A');
+            } catch (\Exception $e) {
+            }
+        }
+
+        $variables = [
+            'department_name' => $department ? $department->name : 'Clinic',
+            'doctor_name' => $doctor ? $doctor->name : 'TBD',
+            'patient_name' => $patient ? $patient->full_name : 'N/A',
+            'patient_phone' => $patient ? ($patient->phone ?? '') : '',
+            'appointment_date' => formatDateUkLong($appointment->appointment_date),
+            'appointment_time' => $appointmentTime,
+            'days_before' => $daysBefore,
+            'hospital_name' => config('app.name', 'Hospital'),
+            'hospital_phone' => config('hospital.phone', ''),
+            'appointment_id' => $appointment->id,
+            'appointment_url' => url('/staff/appointments/'.$appointment->id),
+        ];
+
+        return $this->emailService->sendTemplateEmail(
+            'department_appointment_reminder',
+            [$deptEmail => ($department ? $department->name : 'Clinic')],
+            $variables,
+            [
+                'event' => 'appointment.reminder_sent_department',
+                'email_type' => 'appointment',
+                'metadata' => [
+                    'appointment_id' => $appointment->id,
+                    'department_id' => $department ? $department->id : null,
+                    'days_before' => $daysBefore,
+                    'reminder_recipient' => 'department',
+                ],
+            ]
+        );
+    }
+
+    protected function resolveDepartmentNotificationEmail(?Department $department): ?string
+    {
+        if (!$department || empty($department->email)) {
+            return null;
+        }
+
+        $email = trim((string) $department->email);
+
+        return $this->isValidNotificationEmail($email) ? $email : null;
+    }
+
+    /** Used by reminder command — department inbox. */
+    public function getDeliverableDepartmentEmail(?Department $department): ?string
+    {
+        return $this->resolveDepartmentNotificationEmail($department);
+    }
+
+    public function isNotificationEmailDeliverable(string $email): bool
+    {
+        return $this->isValidNotificationEmail($email);
+    }
+
+    /**
+     * Whether an appointment reminder email was already logged today for this recipient + appointment (by event).
+     */
+    public function appointmentReminderAlreadySentToday(string $recipientEmail, int $appointmentId, string $event): bool
+    {
+        return EmailLog::query()
+            ->where('recipient_email', $recipientEmail)
+            ->whereDate('created_at', today())
+            ->where('event', $event)
+            ->where(function ($q) use ($appointmentId) {
+                $q->whereJsonContains('variables->appointment_id', (string) $appointmentId)
+                    ->orWhereJsonContains('variables->appointment_id', $appointmentId);
+            })
+            ->exists();
+    }
+
+    /**
+     * Legacy-compatible check for patient reminders (subject line + variables).
+     */
+    public function patientAppointmentReminderLegacyAlreadySentToday(string $recipientEmail, int $appointmentId): bool
+    {
+        return EmailLog::query()
+            ->where('recipient_email', $recipientEmail)
+            ->where('subject', 'like', '%Appointment Reminder%')
+            ->where(function ($q) use ($appointmentId) {
+                $q->whereJsonContains('variables->appointment_id', (string) $appointmentId)
+                    ->orWhereJsonContains('variables->appointment_id', $appointmentId);
+            })
+            ->whereDate('created_at', today())
+            ->exists();
     }
 
     /**
@@ -1336,6 +1537,18 @@ class HospitalEmailNotificationService
         return null;
     }
 
+    /** Used by scheduled reminder command (recipient resolution). */
+    public function getDeliverablePatientEmail(Patient $patient): ?string
+    {
+        return $this->resolvePatientNotificationEmail($patient);
+    }
+
+    /** Used by scheduled reminder command. */
+    public function getDeliverableDoctorEmail(Doctor $doctor): ?string
+    {
+        return $this->resolveDoctorNotificationEmail($doctor);
+    }
+
     protected function resolveDoctorNotificationEmail(Doctor $doctor): ?string
     {
         $candidates = [];
@@ -1402,6 +1615,8 @@ class HospitalEmailNotificationService
             
             // Reminders (lower priority, can wait)
             'appointment_reminder' => 'reminders',
+            'doctor_appointment_reminder' => 'reminders',
+            'department_appointment_reminder' => 'reminders',
             'payment_reminder' => 'reminders',
         ];
         
