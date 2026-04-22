@@ -20,7 +20,19 @@ class BookingDiscountCodesController extends Controller
 
     private function doctorForUser(): Doctor
     {
-        return Doctor::where('user_id', Auth::id())->firstOrFail();
+        $userId = Auth::id();
+        if (!$userId) {
+            abort(403);
+        }
+
+        // Some environments can have legacy duplicate doctor rows for one user.
+        // Prefer the active/current mapping so created codes match the doctor
+        // shown in admin and the public booking URL.
+        return Doctor::query()
+            ->where('user_id', $userId)
+            ->orderByDesc('is_active')
+            ->orderByDesc('id')
+            ->firstOrFail();
     }
 
     private function assertTableExists(): ?\Illuminate\Http\RedirectResponse
