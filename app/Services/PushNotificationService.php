@@ -450,7 +450,7 @@ class PushNotificationService
         // Add token if not already registered
         if (!in_array($token, $tokens)) {
             $tokens[] = $token;
-            $user->update(['push_tokens' => json_encode($tokens)]);
+            $user->update(['push_tokens' => array_values($tokens)]);
 
             Log::info('Push token registered', [
                 'user_id' => $user->id,
@@ -470,7 +470,7 @@ class PushNotificationService
 
         if (!in_array($token, $tokens)) {
             $tokens[] = $token;
-            $patient->update(['push_tokens' => json_encode($tokens)]);
+            $patient->update(['push_tokens' => array_values($tokens)]);
 
             Log::info('Push token registered for patient', [
                 'patient_id' => $patient->id,
@@ -488,7 +488,7 @@ class PushNotificationService
     {
         $tokens = $this->getUserPushTokens($user);
         $tokens = array_filter($tokens, fn($t) => $t !== $token);
-        $user->update(['push_tokens' => json_encode(array_values($tokens))]);
+        $user->update(['push_tokens' => array_values($tokens)]);
 
         return true;
     }

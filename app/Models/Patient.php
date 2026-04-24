@@ -57,6 +57,7 @@ class Patient extends Authenticatable
         'email_verified_at',
         'remember_token',
         'notification_preferences',
+        'push_tokens',
     ];
 
     protected $hidden = [
@@ -74,6 +75,7 @@ class Patient extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'notification_preferences' => 'array',
+        'push_tokens' => 'array',
         // PHI/PII Encryption (HIPAA Compliance)
         // Use SafeEncrypted to avoid runtime crashes when legacy/plaintext values exist.
         'insurance_number' => SafeEncrypted::class,

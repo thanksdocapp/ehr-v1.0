@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Models\Patient;
+use App\Models\User;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
@@ -294,6 +296,97 @@ formatDateUk($appointmentDateTime) . " at " .
 
         } catch (\Exception $e) {
             return $this->sendServerError('Failed to update notification preferences: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Register push token for authenticated user/patient.
+     */
+    public function registerPushToken(Request $request, PushNotificationService $pushService)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string|min:10|max:2048',
+            'platform' => 'nullable|in:web,android,ios',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->sendValidationError($validator);
+        }
+
+        try {
+            $authUser = $request->user();
+            $token = trim((string) $request->string('token'));
+            $platform = (string) $request->input('platform', 'web');
+
+            if ($authUser instanceof Patient) {
+                $pushService->registerPatientToken($authUser, $token, $platform);
+
+                return $this->sendResponse([
+                    'registered' => true,
+                    'owner_type' => 'patient',
+                    'platform' => $platform,
+                ], 'Push token registered successfully');
+            }
+
+            if ($authUser instanceof User) {
+                $pushService->registerUserToken($authUser, $token, $platform);
+
+                return $this->sendResponse([
+                    'registered' => true,
+                    'owner_type' => 'user',
+                    'platform' => $platform,
+                ], 'Push token registered successfully');
+            }
+
+            return $this->sendUnauthorized('Unsupported authenticated account type');
+        } catch (\Exception $e) {
+            return $this->sendServerError('Failed to register push token: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Unregister push token for authenticated user/patient.
+     */
+    public function unregisterPushToken(Request $request, PushNotificationService $pushService)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string|min:10|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->sendValidationError($validator);
+        }
+
+        try {
+            $authUser = $request->user();
+            $token = trim((string) $request->string('token'));
+
+            if ($authUser instanceof Patient) {
+                $tokens = $authUser->push_tokens ?? [];
+                if (is_string($tokens)) {
+                    $tokens = json_decode($tokens, true) ?? [];
+                }
+                $tokens = array_values(array_filter($tokens, fn($t) => (string) $t !== $token));
+                $authUser->update(['push_tokens' => $tokens]);
+
+                return $this->sendResponse([
+                    'unregistered' => true,
+                    'owner_type' => 'patient',
+                ], 'Push token unregistered successfully');
+            }
+
+            if ($authUser instanceof User) {
+                $pushService->unregisterToken($authUser, $token);
+
+                return $this->sendResponse([
+                    'unregistered' => true,
+                    'owner_type' => 'user',
+                ], 'Push token unregistered successfully');
+            }
+
+            return $this->sendUnauthorized('Unsupported authenticated account type');
+        } catch (\Exception $e) {
+            return $this->sendServerError('Failed to unregister push token: '.$e->getMessage());
         }
     }
 

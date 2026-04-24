@@ -99,6 +99,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/unread-count', [NotificationApiController::class, 'getUnreadCount']);
         Route::post('/{id}/read', [NotificationApiController::class, 'markAsRead']);
         Route::post('/mark-all-read', [NotificationApiController::class, 'markAllAsRead']);
+        Route::post('/push-token', [NotificationApiController::class, 'registerPushToken']);
+        Route::delete('/push-token', [NotificationApiController::class, 'unregisterPushToken']);
         Route::delete('/{id}', [NotificationApiController::class, 'delete']);
         
         // Specific notification types

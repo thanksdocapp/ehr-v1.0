@@ -46,6 +46,8 @@ class User extends Authenticatable
         'two_factor_recovery_codes',
         'two_factor_confirmed_at',
         'dark_mode',
+        'notification_preferences',
+        'push_tokens',
     ];
 
     /**
@@ -75,6 +77,8 @@ class User extends Authenticatable
         'two_factor_recovery_codes' => 'array',
         'two_factor_confirmed_at' => 'datetime',
         'dark_mode' => 'boolean',
+        'notification_preferences' => 'array',
+        'push_tokens' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
