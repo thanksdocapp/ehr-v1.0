@@ -14,13 +14,6 @@
 
 @section('content')
 <div class="fade-in">
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show">{{ session('error') }}</div>
-    @endif
-
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h1 class="h3 mb-1">Settlement requests</h1>

@@ -12,13 +12,6 @@
 
 @section('content')
 <div class="container-fluid">
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
-
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Doctor settlement requests</h1>
     </div>

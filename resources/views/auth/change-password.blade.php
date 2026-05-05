@@ -16,13 +16,6 @@
                 </div>
                 <div class="doctor-card-body">
                     <!-- Alert Messages -->
-                    @if(session('error'))
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 12px; border: none;">
-                            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    @endif
-
                     <!-- Change Password Form -->
                     <form method="POST" action="{{ route('change-password') }}" id="changePasswordForm">
                         @csrf

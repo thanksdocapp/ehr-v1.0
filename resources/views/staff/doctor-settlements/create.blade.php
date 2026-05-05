@@ -12,10 +12,6 @@
 
 @section('content')
 <div class="fade-in" style="max-width: 640px;">
-    @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
-
     <div class="card shadow-sm">
         <div class="card-body">
             <h2 class="h5 mb-3">Create draft</h2>
