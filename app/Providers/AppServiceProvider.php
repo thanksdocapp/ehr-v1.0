@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\URL;
 use App\Models\User;
 use App\Observers\UserObserver;
 use App\View\Composers\PendingAppointmentsComposer;
@@ -23,9 +24,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Force HTTPS in production for security and compliance
-        if ($this->app->environment('production')) {
-            \URL::forceScheme('https');
+        // Force HTTPS URL generation only when request is truly HTTPS.
+        // This avoids redirect loops in proxy/CDN setups where scheme detection can differ.
+        if ($this->app->environment('production') && ! $this->app->runningInConsole()) {
+            $request = request();
+            $forwardedProto = strtolower((string) $request->header('X-Forwarded-Proto', ''));
+            $isHttps = $request->isSecure() || str_contains($forwardedProto, 'https');
+
+            if ($isHttps) {
+                URL::forceScheme('https');
+            }
         }
         
         // Register model observers
