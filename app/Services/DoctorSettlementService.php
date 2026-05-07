@@ -6,6 +6,7 @@ use App\Models\Billing;
 use App\Models\Doctor;
 use App\Models\DoctorSettlement;
 use App\Models\DoctorSettlementLine;
+use App\Models\Payment;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -30,23 +31,27 @@ class DoctorSettlementService
      */
     public function collectLineDataForPeriod(Doctor $doctor, Carbon $periodStart, Carbon $periodEnd)
     {
-        $billings = Billing::query()
-            ->where('doctor_id', $doctor->id)
-            ->where('paid_amount', '>', 0)
-            ->whereNotNull('paid_at')
-            ->whereBetween('paid_at', [$periodStart->copy()->startOfDay(), $periodEnd->copy()->endOfDay()])
-            ->orderBy('paid_at')
+        $payments = Payment::query()
+            ->where('status', 'completed')
+            ->whereBetween('payment_date', [$periodStart->copy()->startOfDay(), $periodEnd->copy()->endOfDay()])
+            ->whereHas('invoice.billing', function ($query) use ($doctor) {
+                $query->where('doctor_id', $doctor->id);
+            })
+            ->with(['invoice.billing'])
+            ->orderBy('payment_date')
             ->get();
 
-        return $billings->map(function (Billing $billing) {
+        return $payments->map(function (Payment $payment) {
+            /** @var Billing|null $billing */
+            $billing = $payment->invoice?->billing;
             $label = $billing->bill_number
                 ? 'Bill '.$billing->bill_number
-                : 'Billing #'.$billing->id;
+                : 'Billing #'.($billing?->id ?? '—');
 
             return [
-                'billing_id' => $billing->id,
-                'description' => $label.' — paid '.($billing->paid_at?->format('Y-m-d') ?? ''),
-                'amount' => (float) $billing->paid_amount,
+                'billing_id' => $billing?->id,
+                'description' => $label.' — payment '.($payment->payment_date?->format('Y-m-d') ?? ''),
+                'amount' => (float) $payment->amount,
             ];
         });
     }
