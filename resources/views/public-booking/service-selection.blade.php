@@ -406,7 +406,7 @@
         let monthKeys = [];
         let currentMonthIndex = 0;
         const slotsByDate = {};
-        const RANGE_DAYS = 60;
+        const RANGE_DAYS = 90;
 
         // If service is pre-selected (from service booking link), set it up first and skip loading services
         @if(isset($service) && isset($doctor))

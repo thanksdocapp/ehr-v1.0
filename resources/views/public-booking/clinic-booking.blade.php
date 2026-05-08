@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let monthKeys = [];
     let currentMonthIndex = 0;
     const slotsByDate = {};
-    const RANGE_DAYS = 60;
+    const RANGE_DAYS = 90;
     let selectedDate = null;
     let selectedTime = null;
     const prevMonthBtn = document.getElementById('prev-month');
