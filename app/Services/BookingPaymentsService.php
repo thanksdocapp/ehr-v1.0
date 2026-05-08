@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\Payment;
 use App\Models\Invoice;
@@ -18,7 +19,8 @@ class BookingPaymentsService
      */
     public function departmentIdsForDoctor(Doctor $doctor): array
     {
-        $fromPivot = $doctor->departments()->pluck('id')->all();
+        $deptTable = (new Department)->getTable();
+        $fromPivot = $doctor->departments()->pluck($deptTable.'.id')->all();
         $legacy = $doctor->department_id ? [(int) $doctor->department_id] : [];
 
         return array_values(array_unique(array_merge($fromPivot, $legacy)));
