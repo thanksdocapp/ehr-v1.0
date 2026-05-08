@@ -7,6 +7,7 @@ use App\Models\EmailLog;
 use App\Models\EmailTemplate;
 use App\Services\HospitalEmailNotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class EmailManagementController extends Controller
 {
@@ -30,10 +31,27 @@ class EmailManagementController extends Controller
         }
         
         if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('recipient_email', 'like', "%{$request->search}%")
-                  ->orWhere('subject', 'like', "%{$request->search}%");
-            });
+            $term = trim((string) $request->input('search', ''));
+            if ($term !== '') {
+                $escaped = addcslashes($term, '%_\\');
+                $like = '%'.$escaped.'%';
+                $hasEventColumn = Schema::hasColumn((new EmailLog)->getTable(), 'event');
+                $query->where(function ($q) use ($like, $hasEventColumn) {
+                    $q->where('recipient_email', 'like', $like)
+                        ->orWhere('recipient_name', 'like', $like)
+                        ->orWhere('subject', 'like', $like);
+                    $q->orWhereHas('template', function ($t) use ($like) {
+                        $t->withTrashed()
+                            ->where(function ($inner) use ($like) {
+                                $inner->where('name', 'like', $like)
+                                    ->orWhere('subject', 'like', $like);
+                            });
+                    });
+                    if ($hasEventColumn) {
+                        $q->orWhere('event', 'like', $like);
+                    }
+                });
+            }
         }
         
         if ($request->filled('date_from')) {
@@ -44,7 +62,7 @@ class EmailManagementController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
         
-        $emailLogs = $query->paginate(20);
+        $emailLogs = $query->paginate(20)->withQueryString();
         
         // Get statistics
         $stats = [
@@ -81,6 +99,10 @@ class EmailManagementController extends Controller
         if ($request->filled('type')) {
             $query->where('email_type', $request->type);
         }
+
+        if ($request->filled('template_id')) {
+            $query->where('email_template_id', $request->integer('template_id'));
+        }
         
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
@@ -91,10 +113,27 @@ class EmailManagementController extends Controller
         }
         
         if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('recipient_email', 'like', "%{$request->search}%")
-                  ->orWhere('subject', 'like', "%{$request->search}%");
-            });
+            $term = trim((string) $request->input('search', ''));
+            if ($term !== '') {
+                $escaped = addcslashes($term, '%_\\');
+                $like = '%'.$escaped.'%';
+                $hasEventColumn = Schema::hasColumn((new EmailLog)->getTable(), 'event');
+                $query->where(function ($q) use ($like, $hasEventColumn) {
+                    $q->where('recipient_email', 'like', $like)
+                        ->orWhere('recipient_name', 'like', $like)
+                        ->orWhere('subject', 'like', $like);
+                    $q->orWhereHas('template', function ($t) use ($like) {
+                        $t->withTrashed()
+                            ->where(function ($inner) use ($like) {
+                                $inner->where('name', 'like', $like)
+                                    ->orWhere('subject', 'like', $like);
+                            });
+                    });
+                    if ($hasEventColumn) {
+                        $q->orWhere('event', 'like', $like);
+                    }
+                });
+            }
         }
         
         // Lightweight stats for UI cards (global, not filter-scoped)
@@ -107,9 +146,13 @@ class EmailManagementController extends Controller
             'today' => EmailLog::whereDate('created_at', today())->count(),
         ];
 
-        $emailLogs = $query->paginate(25);
+        $templates = EmailTemplate::withTrashed()
+            ->orderBy('name')
+            ->get(['id', 'name', 'subject']);
+
+        $emailLogs = $query->paginate(25)->withQueryString();
         
-        return view('admin.email-management.logs', compact('emailLogs', 'stats'));
+        return view('admin.email-management.logs', compact('emailLogs', 'stats', 'templates'));
     }
 
     /**

@@ -91,8 +91,27 @@
             <h5 class="modern-card-title mb-0"><i class="fas fa-filter"></i>Filters</h5>
         </div>
         <div class="modern-card-body">
-            <form class="row g-3" id="filter-form">
-                <div class="col-md-3">
+            <form class="row g-3" id="filter-form" method="get" action="{{ route('admin.email-management.logs') }}">
+                <div class="col-md-6 col-lg-4">
+                    <label for="search-logs" class="modern-form-label">Search</label>
+                    <input type="search" class="modern-form-control" id="search-logs" name="search"
+                           value="{{ request('search') }}"
+                           placeholder="Recipient email, name, subject, template name…"
+                           autocomplete="off">
+                    <small class="form-help-text">Matches recipient, subject, template name/subject, and event (if logged).</small>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <label for="template-filter" class="modern-form-label">Template</label>
+                    <select class="modern-form-select" id="template-filter" name="template_id">
+                        <option value="">All templates</option>
+                        @foreach($templates ?? [] as $tpl)
+                            <option value="{{ $tpl->id }}" {{ (string) request('template_id') === (string) $tpl->id ? 'selected' : '' }}>
+                                {{ $tpl->name }}{{ $tpl->trashed() ? ' (deleted)' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3 col-lg-2">
                     <label for="status-filter" class="modern-form-label">Status</label>
                     <select class="modern-form-select" id="status-filter" name="status">
                         <option value="">All Statuses</option>
@@ -102,7 +121,7 @@
                         <option value="queued" {{ request('status') === 'queued' ? 'selected' : '' }}>Queued</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-lg-2">
                     <label for="type-filter" class="modern-form-label">Type</label>
                     <select class="modern-form-select" id="type-filter" name="type">
                         <option value="">All Types</option>
@@ -115,7 +134,7 @@
                         <option value="staff_notification" {{ request('type') === 'staff_notification' ? 'selected' : '' }}>Staff Notification</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3 col-lg-2">
                     <label for="date-from" class="modern-form-label">From Date</label>
                     <input type="text" class="modern-form-control" id="date-from" name="date_from"
                            value="{{ request('date_from') }}"
@@ -124,7 +143,7 @@
                            maxlength="10">
                     <small class="form-help-text">Format: dd-mm-yyyy</small>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3 col-lg-2">
                     <label for="date-to" class="modern-form-label">To Date</label>
                     <input type="text" class="modern-form-control" id="date-to" name="date_to"
                            value="{{ request('date_to') }}"
@@ -133,12 +152,13 @@
                            maxlength="10">
                     <small class="form-help-text">Format: dd-mm-yyyy</small>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <div class="w-100">
-                        <button type="submit" class="btn-modern btn-modern-primary w-100">
-                            <i class="fas fa-filter"></i>Apply
-                        </button>
-                    </div>
+                <div class="col-md-6 col-lg-4 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn-modern btn-modern-primary flex-grow-1">
+                        <i class="fas fa-filter"></i> Apply
+                    </button>
+                    <a href="{{ route('admin.email-management.logs') }}" class="btn-modern btn-modern-outline flex-shrink-0" title="Clear all filters">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
                 </div>
             </form>
         </div>
