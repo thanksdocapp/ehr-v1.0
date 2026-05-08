@@ -12,6 +12,19 @@ use Illuminate\Support\Str;
 class BookingPaymentsService
 {
     /**
+     * Department IDs for a doctor (pivot + legacy department_id). Used to attribute
+     * public clinic-booking checkout payments, which only link via pending_clinic_bookings
+     * or clinic discount — not via invoices.appointment_id (often unset until backfilled).
+     */
+    public function departmentIdsForDoctor(Doctor $doctor): array
+    {
+        $fromPivot = $doctor->departments()->pluck('id')->all();
+        $legacy = $doctor->department_id ? [(int) $doctor->department_id] : [];
+
+        return array_values(array_unique(array_merge($fromPivot, $legacy)));
+    }
+
+    /**
      * All completed patient payments (every row in `payments` is tied to an invoice).
      * Used for admin lists so legacy payments still appear even when the invoice predates
      * booking/discount linkage fields.
@@ -23,16 +36,18 @@ class BookingPaymentsService
 
     /**
      * Same widened logic, scoped to a doctor (appointment, pending booking, billing,
-     * doctor discount code, or clinic discount when visit/billing is theirs).
+     * doctor discount code, clinic discount for their clinic(s), or clinic checkout
+     * pending rows for their department(s)).
      */
     public function completedPaymentsForDoctor(Doctor $doctor): Builder
     {
         $doctorId = $doctor->id;
+        $departmentIds = $this->departmentIdsForDoctor($doctor);
 
         return Payment::query()
             ->completed()
-            ->whereHas('invoice', function ($q) use ($doctorId) {
-                $q->where(function ($q2) use ($doctorId) {
+            ->whereHas('invoice', function ($q) use ($doctorId, $departmentIds) {
+                $q->where(function ($q2) use ($doctorId, $departmentIds) {
                     $q2->where(function ($q3) use ($doctorId) {
                         $q3->whereNotNull('appointment_id')
                             ->whereHas('appointment', fn ($a) => $a->where('doctor_id', $doctorId));
@@ -43,13 +58,20 @@ class BookingPaymentsService
                         })
                         ->orWhereHas('billing', fn ($b) => $b->where('doctor_id', $doctorId))
                         ->orWhereHas('doctorBookingDiscountCode', fn ($c) => $c->where('doctor_id', $doctorId))
-                        ->orWhere(function ($q3) use ($doctorId) {
+                        ->orWhere(function ($q3) use ($doctorId, $departmentIds) {
                             $q3->whereNotNull('clinic_booking_discount_code_id')
-                                ->where(function ($q4) use ($doctorId) {
+                                ->where(function ($q4) use ($doctorId, $departmentIds) {
                                     $q4->whereHas('appointment', fn ($a) => $a->where('doctor_id', $doctorId))
                                         ->orWhereHas('billing', fn ($b) => $b->where('doctor_id', $doctorId));
+                                    if ($departmentIds !== []) {
+                                        $q4->orWhereHas('clinicBookingDiscountCode', fn ($c) => $c->whereIn('department_id', $departmentIds));
+                                    }
                                 });
                         });
+
+                    if ($departmentIds !== []) {
+                        $q2->orWhereHas('pendingClinicBookings', fn ($pcb) => $pcb->whereIn('department_id', $departmentIds));
+                    }
                 });
             });
     }
@@ -110,6 +132,14 @@ class BookingPaymentsService
             }
         } elseif ($inv->pendingBookings()->exists()) {
             return 'Pending booking';
+        }
+
+        if ($inv->relationLoaded('pendingClinicBookings')) {
+            if ($inv->pendingClinicBookings->isNotEmpty()) {
+                return 'Clinic booking checkout';
+            }
+        } elseif ($inv->pendingClinicBookings()->exists()) {
+            return 'Clinic booking checkout';
         }
 
         if ($inv->billing_id) {
@@ -304,6 +334,15 @@ class BookingPaymentsService
             return 'Pending booking';
         }
 
+        if ($inv->relationLoaded('pendingClinicBookings')) {
+            $pcb = $inv->pendingClinicBookings->first();
+        } else {
+            $pcb = $inv->pendingClinicBookings()->first();
+        }
+        if ($pcb) {
+            return $this->formatPendingClinicBookingSlotLabel($pcb);
+        }
+
         return '—';
     }
 
@@ -318,6 +357,22 @@ class BookingPaymentsService
         }
 
         return $d;
+    }
+
+    /**
+     * @param  \App\Models\PendingClinicBooking|object  $pcb
+     */
+    private function formatPendingClinicBookingSlotLabel($pcb): string
+    {
+        if (! $pcb || ! $pcb->appointment_date) {
+            return 'Clinic booking checkout';
+        }
+        $d = formatDateUk($pcb->appointment_date);
+        if (! empty($pcb->appointment_time)) {
+            $d .= ', '.formatTime($pcb->appointment_time, 'g:i A');
+        }
+
+        return $d.' (clinic checkout)';
     }
 
     private function formatDoctorName(?Doctor $doctor): ?string

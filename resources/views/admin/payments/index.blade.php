@@ -117,6 +117,7 @@
                                 $badgeClass = match ($src) {
                                     'Appointment' => 'primary',
                                     'Pending booking' => 'info',
+                                    'Clinic booking checkout' => 'info',
                                     'Visit billing' => 'success',
                                     'Billing' => 'secondary',
                                     'Doctor booking offer' => 'warning text-dark',

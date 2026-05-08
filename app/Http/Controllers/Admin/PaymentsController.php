@@ -17,6 +17,7 @@ class PaymentsController extends Controller
                 'invoice.patient',
                 'invoice.appointment.doctor.user',
                 'invoice.pendingBookings.doctor.user',
+                'invoice.pendingClinicBookings.department',
                 'invoice.billing.doctor.user',
                 'invoice.billing.appointment',
                 'invoice.doctorBookingDiscountCode',

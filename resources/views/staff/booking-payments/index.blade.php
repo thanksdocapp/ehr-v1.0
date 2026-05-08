@@ -108,6 +108,7 @@
                                 $badgeClass = match ($src) {
                                     'Appointment' => 'primary',
                                     'Pending booking' => 'info',
+                                    'Clinic booking checkout' => 'info',
                                     'Visit billing' => 'success',
                                     'Billing' => 'secondary',
                                     'Doctor booking offer' => 'warning text-dark',
@@ -137,6 +138,10 @@
                                         <a href="{{ route('staff.appointments.show', $inv->billing->appointment_id) }}" class="d-block small">{{ $fmtApptSlot($inv->billing->appointment) }}</a>
                                     @elseif($inv && $inv->pendingBookings->isNotEmpty())
                                         <span class="text-muted">Pending booking checkout</span>
+                                    @elseif($inv && $inv->pendingClinicBookings->isNotEmpty())
+                                        @php $pcb = $inv->pendingClinicBookings->first(); @endphp
+                                        <span class="text-muted">Clinic booking checkout</span>
+                                        <span class="d-block small">{{ $fmtApptSlot((object) ['appointment_date' => $pcb->appointment_date, 'appointment_time' => $pcb->appointment_time]) }}</span>
                                     @else
                                         —
                                     @endif
