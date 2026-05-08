@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Patient;
+use App\Services\PatientBookingSourceService;
 use App\Models\User;
 use App\Models\Doctor;
 use App\Models\Department;
@@ -618,8 +619,10 @@ class PatientsController extends Controller
                 'error' => $e->getMessage()
             ]);
         }
+
+        $bookingSource = app(PatientBookingSourceService::class)->adminBookingSourceSummary($patient);
         
-        return view('admin.patients.show', compact('patient', 'documents'));
+        return view('admin.patients.show', compact('patient', 'documents', 'bookingSource'));
     }
 
     /**

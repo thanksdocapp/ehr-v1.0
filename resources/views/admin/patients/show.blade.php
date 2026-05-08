@@ -25,6 +25,27 @@
         ])
     </div>
     @endif
+
+    @if(!empty($bookingSource))
+    <div class="modern-card mb-4 border-start border-4 border-info">
+        <div class="modern-card-header bg-light">
+            <h5 class="modern-card-title mb-0">
+                <i class="fas fa-link me-2 text-info"></i>Public booking source <span class="badge bg-secondary ms-1">Admin only</span>
+            </h5>
+        </div>
+        <div class="modern-card-body">
+            <p class="mb-2 fw-semibold">{{ $bookingSource['primary_label'] ?? '—' }}</p>
+            @if(!empty($bookingSource['evidence_lines']))
+                <ul class="mb-0 small text-muted ps-3">
+                    @foreach($bookingSource['evidence_lines'] as $line)
+                        <li>{{ $line }}</li>
+                    @endforeach
+                </ul>
+            @endif
+            <p class="mt-2 mb-0 small text-muted">Inferred from appointments, clinic requests, and booking invoices. Not shown to patients.</p>
+        </div>
+    </div>
+    @endif
     
     <!-- Modern Page Header -->
     <div class="modern-page-header fade-in-up">
