@@ -318,10 +318,12 @@ class ClinicBookingService
 
     /**
      * Create a clinic booking request (pending doctor acceptance).
+     * When the department has exactly one active doctor, the request is accepted immediately
+     * for that doctor (same emails as a manual accept: patient confirmation + doctor notify).
      */
     public function createFromClinicBooking(array $data): ClinicBookingRequest
     {
-        $request = DB::transaction(function () use ($data) {
+        [$request, $soleDoctor] = DB::transaction(function () use ($data) {
             $departmentId = $data['department_id'];
             $service = BookingService::find($data['service_id'] ?? null);
 
@@ -370,10 +372,37 @@ class ClinicBookingService
                 'created_from' => 'Public Clinic Booking',
             ]);
 
-            $this->notifyDoctorsOfNewRequest($request);
+            $departmentDoctors = Doctor::byDepartment($departmentId)->active()->get();
+            $sole = $departmentDoctors->count() === 1 ? $departmentDoctors->first() : null;
+            if (!$sole) {
+                $this->notifyDoctorsOfNewRequest($request);
+            }
 
-            return $request;
+            return [$request, $sole];
         });
+
+        if ($soleDoctor) {
+            try {
+                $this->acceptRequest($request, $soleDoctor, $soleDoctor->user_id);
+            } catch (\Throwable $e) {
+                Log::error('Clinic booking auto-accept failed; falling back to manual acceptance flow', [
+                    'clinic_booking_request_id' => $request->id,
+                    'doctor_id' => $soleDoctor->id,
+                    'error' => $e->getMessage(),
+                ]);
+                try {
+                    $this->notifyDoctorsOfNewRequest($request);
+                    $this->emailService->notifyClinicDoctorsNewBookingRequest($request);
+                } catch (\Throwable $notifyEx) {
+                    Log::error('Clinic booking fallback doctor notifications failed', [
+                        'clinic_booking_request_id' => $request->id,
+                        'error' => $notifyEx->getMessage(),
+                    ]);
+                }
+            }
+
+            return $request->refresh();
+        }
 
         try {
             $this->emailService->notifyClinicDoctorsNewBookingRequest($request);

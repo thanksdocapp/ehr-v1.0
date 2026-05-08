@@ -19,7 +19,17 @@
         <h3><i class="fas fa-calendar-alt me-2"></i>Booking Details</h3>
     </div>
     <div class="review-row"><span class="review-label">Booking Number</span><span class="review-value">{{ $request->request_number }}</span></div>
-    <div class="review-row"><span class="review-label">Status</span><span class="review-value"><span class="badge bg-info">Awaiting Doctor</span></span></div>
+    <div class="review-row"><span class="review-label">Status</span><span class="review-value">
+        @if($request->status === 'accepted' && $request->appointment)
+            <span class="badge bg-success">Confirmed</span>
+        @else
+            <span class="badge bg-info">Awaiting Doctor</span>
+        @endif
+    </span></div>
+    @if($request->status === 'accepted' && $request->appointment)
+    <div class="review-row"><span class="review-label">Appointment Number</span><span class="review-value">{{ $request->appointment->appointment_number }}</span></div>
+    <div class="review-row"><span class="review-label">Doctor</span><span class="review-value">{{ $request->doctor?->full_name ?? $request->appointment->doctor?->full_name ?? '—' }}</span></div>
+    @endif
     <div class="review-row"><span class="review-label">Clinic</span><span class="review-value">{{ $request->department->name }}</span></div>
     <div class="review-row"><span class="review-label">Service</span><span class="review-value">{{ $request->service->name ?? 'Consultation' }}</span></div>
     <div class="review-row"><span class="review-label">Date</span><span class="review-value">{{ formatDateUkLongWeekday($request->appointment_date) }}</span></div>

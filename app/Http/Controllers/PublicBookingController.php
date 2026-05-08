@@ -914,9 +914,15 @@ class PublicBookingController extends Controller
         session()->forget($this->publicBookingPendingSessionKey());
         session()->forget($this->clinicBookingReviewSessionKey());
 
-        $request = \App\Models\ClinicBookingRequest::where('request_number', $requestNumber)->with(['department', 'service'])->firstOrFail();
+        $request = \App\Models\ClinicBookingRequest::where('request_number', $requestNumber)
+            ->with(['department', 'service', 'doctor', 'appointment.doctor', 'appointment.service'])
+            ->firstOrFail();
         $patientEmail = $request->patient_data['email'] ?? '';
-        $calendarLinks = $this->appointmentCalendarInviteService->calendarLinksForClinicRequest($request);
+        if ($request->status === 'accepted' && $request->appointment) {
+            $calendarLinks = $this->appointmentCalendarInviteService->calendarLinksForAppointment($request->appointment);
+        } else {
+            $calendarLinks = $this->appointmentCalendarInviteService->calendarLinksForClinicRequest($request);
+        }
 
         return view('public-booking.clinic-success', [
             'request' => $request,
