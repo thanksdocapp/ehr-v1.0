@@ -109,7 +109,20 @@
         <div class="form-card" id="schedule-card" style="display: none;">
             <label class="form-label">Select Date & Time <span class="text-danger">*</span></label>
             <div class="date-navigation mb-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="prev-month" aria-label="Previous month">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div id="month-label" class="fw-semibold text-center"></div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="next-month" aria-label="Next month">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="date-navigation mb-2">
                 <div class="date-display" id="date-display"></div>
+            </div>
+            <div class="calendar-legend mb-2">
+                <span class="legend-item"><span class="legend-dot legend-available"></span>Available</span>
+                <span class="legend-item"><span class="legend-dot legend-unavailable"></span>Unavailable</span>
             </div>
             <div id="time-slots-container">
                 <div id="time-slots-picker" class="time-slots-picker" style="display: none;"></div>
@@ -148,10 +161,18 @@
     .summary-row-compact { display: flex; justify-content: space-between; padding: 0.25rem 0; font-size: 0.8125rem; }
     .summary-label-compact { color: #6c757d; }
     .summary-value-compact { font-weight: 600; color: #1a202c; }
+    .date-navigation { display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; }
     .date-display { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
     .date-item { padding: 0.5rem 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; min-width: 90px; text-align: center; }
     .date-item:hover { border-color: var(--booking-primary, #007bff); }
     .date-item.selected { border-color: var(--booking-primary); background: var(--booking-primary); color: #fff; }
+    .date-item.unavailable { background: #eef2f7; border-color: #d6dce5; color: #8a94a6; cursor: not-allowed; }
+    .date-item.unavailable:hover { border-color: #d6dce5; }
+    .calendar-legend { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+    .legend-item { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; color: #6b7280; }
+    .legend-dot { width: 0.75rem; height: 0.75rem; border-radius: 999px; border: 1px solid #cbd5e1; display: inline-block; }
+    .legend-available { background: #ffffff; }
+    .legend-unavailable { background: #eef2f7; }
     .time-slots-picker { margin-top: 0.75rem; max-width: 28rem; margin-left: auto; margin-right: auto; }
     .time-slots-picker .form-label { font-weight: 600; color: #334155; }
     .time-slots-picker select { border-radius: 8px; border-width: 2px; }
@@ -176,29 +197,66 @@ document.addEventListener('DOMContentLoaded', function() {
     const timeInput = document.getElementById('appointment-time');
 
     const departmentId = {{ $department->id }};
-    let currentDates = [];
+    let dateRange = [];
+    let monthKeys = [];
+    let currentMonthIndex = 0;
+    const slotsByDate = {};
+    const RANGE_DAYS = 60;
     let selectedDate = null;
     let selectedTime = null;
+    const prevMonthBtn = document.getElementById('prev-month');
+    const nextMonthBtn = document.getElementById('next-month');
 
-    function buildDates() {
-        currentDates = [];
-        for (let i = 0; i < 14; i++) {
-            const d = new Date();
-            d.setDate(d.getDate() + i);
-            currentDates.push(d.toISOString().slice(0, 10));
+    function buildDateRange() {
+        dateRange = [];
+        monthKeys = [];
+        const seen = {};
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        for (let i = 0; i < RANGE_DAYS; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            const ymd = d.toISOString().slice(0, 10);
+            const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            dateRange.push({ ymd, monthKey });
+            if (!seen[monthKey]) {
+                seen[monthKey] = true;
+                monthKeys.push(monthKey);
+            }
         }
     }
 
+    function getVisibleMonthDates() {
+        const monthKey = monthKeys[currentMonthIndex];
+        return dateRange.filter(d => d.monthKey === monthKey).map(d => d.ymd);
+    }
+
+    function renderMonthNavigation() {
+        const labelEl = document.getElementById('month-label');
+        const monthKey = monthKeys[currentMonthIndex];
+        const [year, month] = monthKey.split('-').map(Number);
+        const dateObj = new Date(year, month - 1, 1);
+        labelEl.textContent = dateObj.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+        prevMonthBtn.disabled = currentMonthIndex === 0;
+        nextMonthBtn.disabled = currentMonthIndex >= monthKeys.length - 1;
+    }
+
     function renderDates() {
-        dateDisplay.innerHTML = currentDates.slice(0, 7).map(d => {
+        const visibleDates = getVisibleMonthDates();
+        dateDisplay.innerHTML = visibleDates.map(d => {
             const dt = new Date(d);
             const day = dt.toLocaleDateString('en-GB', { weekday: 'short' });
             const date = dt.getDate();
             const isSelected = d === selectedDate;
-            return `<div class="date-item ${isSelected ? 'selected' : ''}" data-date="${d}">${day}<br>${date}</div>`;
+            const unavailable = Array.isArray(slotsByDate[d]) && slotsByDate[d].length === 0;
+            const unavailableClass = unavailable ? ' unavailable' : '';
+            return `<div class="date-item ${isSelected ? 'selected' : ''}${unavailableClass}" data-date="${d}">${day}<br>${date}</div>`;
         }).join('');
         dateDisplay.querySelectorAll('.date-item').forEach(el => {
             el.addEventListener('click', () => {
+                if (el.classList.contains('unavailable')) {
+                    return;
+                }
                 selectedDate = el.dataset.date;
                 dateInput.value = selectedDate;
                 renderDates();
@@ -207,18 +265,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function loadSlots() {
-        if (!selectedDate || !serviceSelect.value) return;
+    function fetchSlotsForDate(dateStr) {
+        if (Array.isArray(slotsByDate[dateStr])) {
+            return Promise.resolve(slotsByDate[dateStr]);
+        }
         const serviceId = serviceSelect.value;
         const opt = serviceSelect.options[serviceSelect.selectedIndex];
         const duration = opt?.dataset.duration || 30;
-
-        loadingSlots.style.display = 'block';
-        slotsContainer.innerHTML = '';
-        slotsContainer.style.display = 'none';
-        noSlotsMsg.style.display = 'none';
-
-        fetch(`/api/public/clinics/${departmentId}/slots?service_id=${serviceId}&date=${selectedDate}&duration=${duration}`, {
+        return fetch(`/api/public/clinics/${departmentId}/slots?service_id=${serviceId}&date=${dateStr}&duration=${duration}`, {
             credentials: 'same-origin',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
@@ -228,8 +282,54 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(r => r.json())
         .then(data => {
+            const slots = data && Array.isArray(data.slots) ? data.slots : [];
+            slotsByDate[dateStr] = slots;
+            return slots;
+        })
+        .catch(() => {
+            slotsByDate[dateStr] = [];
+            return [];
+        });
+    }
+
+    function hydrateCurrentMonth() {
+        const visibleDates = getVisibleMonthDates();
+        loadingSlots.style.display = 'block';
+        Promise.all(visibleDates.map(fetchSlotsForDate))
+            .then(() => {
+                loadingSlots.style.display = 'none';
+                renderDates();
+                const firstAvailable = visibleDates.find(d => Array.isArray(slotsByDate[d]) && slotsByDate[d].length > 0);
+                if (firstAvailable) {
+                    selectedDate = firstAvailable;
+                    dateInput.value = firstAvailable;
+                    renderDates();
+                    loadSlots();
+                } else {
+                    slotsContainer.innerHTML = '';
+                    slotsContainer.style.display = 'none';
+                    noSlotsMsg.style.display = 'block';
+                }
+            })
+            .catch(() => {
+                loadingSlots.style.display = 'none';
+            });
+    }
+
+    function loadSlots() {
+        if (!selectedDate || !serviceSelect.value) return;
+        const serviceId = serviceSelect.value; // kept for URL consistency
+        const opt = serviceSelect.options[serviceSelect.selectedIndex];
+        const duration = opt?.dataset.duration || 30;
+
+        loadingSlots.style.display = 'block';
+        slotsContainer.innerHTML = '';
+        slotsContainer.style.display = 'none';
+        noSlotsMsg.style.display = 'none';
+
+        fetchSlotsForDate(selectedDate).then((slots) => {
             loadingSlots.style.display = 'none';
-            if (data.slots && data.slots.length > 0) {
+            if (slots && slots.length > 0) {
                 slotsContainer.innerHTML = '';
                 const lbl = document.createElement('label');
                 lbl.className = 'form-label';
@@ -243,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ph.value = '';
                 ph.textContent = 'Choose a time…';
                 sel.appendChild(ph);
-                data.slots.forEach(s => {
+                slots.forEach(s => {
                     const o = document.createElement('option');
                     o.value = s.start;
                     o.textContent = s.display || s.start;
@@ -270,10 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 noSlotsMsg.style.display = 'block';
             }
-        })
-        .catch(() => {
-            loadingSlots.style.display = 'none';
-            noSlotsMsg.style.display = 'block';
+            renderDates();
         });
     }
 
@@ -311,11 +408,16 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('consultation-type-input').value = ct;
             updateClinicServiceDetails();
             scheduleCard.style.display = 'block';
-            buildDates();
-            selectedDate = currentDates[0];
-            dateInput.value = selectedDate;
+            buildDateRange();
+            currentMonthIndex = 0;
+            selectedDate = null;
+            selectedTime = null;
+            dateInput.value = '';
+            timeInput.value = '';
+            continueBtn.disabled = true;
+            renderMonthNavigation();
             renderDates();
-            loadSlots();
+            hydrateCurrentMonth();
         } else {
             document.getElementById('consultation-type-input').value = 'in_person';
             document.getElementById('clinic-service-details').style.display = 'none';
@@ -330,12 +432,45 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('consultation-type-input').value = ct;
         updateClinicServiceDetails();
         scheduleCard.style.display = 'block';
-        buildDates();
-        selectedDate = currentDates[0];
-        dateInput.value = selectedDate;
+        buildDateRange();
+        currentMonthIndex = 0;
+        selectedDate = null;
+        selectedTime = null;
+        dateInput.value = '';
+        timeInput.value = '';
+        continueBtn.disabled = true;
+        renderMonthNavigation();
         renderDates();
-        loadSlots();
+        hydrateCurrentMonth();
     }
+
+    prevMonthBtn.addEventListener('click', function() {
+        if (currentMonthIndex > 0) {
+            currentMonthIndex--;
+            selectedDate = null;
+            selectedTime = null;
+            dateInput.value = '';
+            timeInput.value = '';
+            continueBtn.disabled = true;
+            renderMonthNavigation();
+            renderDates();
+            hydrateCurrentMonth();
+        }
+    });
+
+    nextMonthBtn.addEventListener('click', function() {
+        if (currentMonthIndex < monthKeys.length - 1) {
+            currentMonthIndex++;
+            selectedDate = null;
+            selectedTime = null;
+            dateInput.value = '';
+            timeInput.value = '';
+            continueBtn.disabled = true;
+            renderMonthNavigation();
+            renderDates();
+            hydrateCurrentMonth();
+        }
+    });
 });
 </script>
 @endif

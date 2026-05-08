@@ -136,16 +136,27 @@
         <div class="form-card" id="schedule-selection-card" style="display: none;">
             <label class="form-label">Select Date & Time <span class="text-danger">*</span></label>
             
-            <!-- Date Display (5 days) -->
+            <div class="date-navigation mb-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="prev-month" aria-label="Previous month">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div id="month-label" class="fw-semibold text-center"></div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="next-month" aria-label="Next month">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
             <div class="date-navigation mb-2">
                 <div class="date-display" id="date-display"></div>
             </div>
+            <div class="calendar-legend mb-2">
+                <span class="legend-item"><span class="legend-dot legend-available"></span>Available</span>
+                <span class="legend-item"><span class="legend-dot legend-unavailable"></span>Unavailable</span>
+            </div>
 
-            <!-- Time Slots Grid - Calendar Style -->
             <div id="time-slots-container">
-                <div id="time-slots-calendar" class="time-slots-calendar"></div>
+                <div id="time-slots-picker" class="time-slots-picker" style="display: none;"></div>
                 <div id="no-slots-message" class="empty-message" style="display: none;">
-                    <i class="fas fa-info-circle me-2"></i>No available slots on these dates. Please try different dates.
+                    <i class="fas fa-info-circle me-2"></i>No available slots on this date. Please select another day.
                 </div>
             </div>
 
@@ -210,6 +221,48 @@
         color: #ffffff;
     }
 
+    .date-item.unavailable {
+        background: #eef2f7;
+        border-color: #d6dce5;
+        color: #8a94a6;
+        cursor: not-allowed;
+    }
+
+    .date-item.unavailable:hover {
+        border-color: #d6dce5;
+    }
+
+    .calendar-legend {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.8125rem;
+        color: #6b7280;
+    }
+
+    .legend-dot {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 999px;
+        border: 1px solid #cbd5e1;
+        display: inline-block;
+    }
+
+    .legend-available {
+        background: #ffffff;
+    }
+
+    .legend-unavailable {
+        background: #eef2f7;
+    }
+
     .date-item .date-day {
         font-size: 0.7rem;
         font-weight: 600;
@@ -221,64 +274,27 @@
         margin-top: 0.2rem;
     }
 
-    /* Calendar-style time slots - Compact */
-    .time-slots-calendar {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 0.75rem;
+    .time-slots-picker {
         margin-top: 0.75rem;
+        max-width: 28rem;
+        margin-left: auto;
+        margin-right: auto;
     }
 
-    .date-column {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        padding: 0.625rem;
-    }
-
-    .date-column-header {
+    .time-slots-picker .form-label {
         font-weight: 600;
-        color: #1a202c;
-        margin-bottom: 0.5rem;
-        padding-bottom: 0.375rem;
-        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+    }
+
+    .time-slots-picker select {
+        border-radius: 8px;
+        border-width: 2px;
+    }
+
+    .time-slot-hint {
         font-size: 0.8125rem;
-    }
-
-    .date-column-slots {
-        display: flex;
-        flex-direction: column;
-        gap: 0.375rem;
-    }
-
-    .date-column .time-slot-btn {
-        width: 100%;
-        margin: 0;
-        padding: 0.375rem 0.5rem;
-        font-size: 0.8125rem;
-    }
-
-    .date-column .more-slots {
-        margin-top: 0.375rem;
-        padding: 0.375rem;
-        text-align: center;
-        color: var(--booking-primary);
-        font-size: 0.75rem;
-        cursor: pointer;
-        border: 1px dashed #e2e8f0;
-        border-radius: 4px;
-        transition: all 0.2s;
-    }
-
-    .date-column .more-slots:hover {
-        border-color: var(--booking-primary);
-        background-color: color-mix(in srgb, var(--booking-primary) 5%, white);
-    }
-
-    @media (max-width: 1200px) {
-        .time-slots-calendar {
-            grid-template-columns: repeat(3, 1fr);
-        }
+        color: #64748b;
+        margin-top: 0.5rem;
     }
 
     @media (max-width: 768px) {
@@ -287,8 +303,6 @@
         .date-item { min-width: 72px; padding: 0.5rem; min-height: 44px; }
         .date-item .date-day { font-size: 0.65rem; }
         .date-item .date-date { font-size: 0.75rem; }
-        .time-slots-calendar { grid-template-columns: 1fr; gap: 1rem; }
-        .date-column .time-slot-btn { min-height: 44px; padding: 0.5rem; }
     }
 
     /* Compact Service Selection Row */
@@ -380,13 +394,19 @@
         const serviceDetails = document.getElementById('service-details');
         const continueBtn = document.getElementById('continue-btn');
         const form = document.getElementById('service-form');
+        const loadingSlots = document.getElementById('loading-slots');
+        const noSlotsMessage = document.getElementById('no-slots-message');
+        const timeSlotsPicker = document.getElementById('time-slots-picker');
 
         let selectedDoctorId = null;
         let selectedServiceId = null;
         let selectedDate = null;
         let selectedTime = null;
-        let currentDates = [];
-        let currentDateIndex = 0;
+        let dateRange = [];
+        let monthKeys = [];
+        let currentMonthIndex = 0;
+        const slotsByDate = {};
+        const RANGE_DAYS = 60;
 
         // If service is pre-selected (from service booking link), set it up first and skip loading services
         @if(isset($service) && isset($doctor))
@@ -439,27 +459,26 @@
             }
         });
 
-        // Date navigation (optional controls — guard if absent from DOM)
-        var prevDatesEl = document.getElementById('prev-dates');
-        if (prevDatesEl) {
-            prevDatesEl.addEventListener('click', function() {
-                if (currentDateIndex > 0) {
-                    currentDateIndex--;
-                    renderDates();
-                    loadTimeSlotsForDate(currentDates[currentDateIndex]);
-                }
-            });
-        }
-        var nextDatesEl = document.getElementById('next-dates');
-        if (nextDatesEl) {
-            nextDatesEl.addEventListener('click', function() {
-                if (currentDateIndex < currentDates.length - 5) {
-                    currentDateIndex++;
-                    renderDates();
-                    loadTimeSlotsForDate(currentDates[currentDateIndex]);
-                }
-            });
-        }
+        const prevMonthBtn = document.getElementById('prev-month');
+        const nextMonthBtn = document.getElementById('next-month');
+        prevMonthBtn.addEventListener('click', function() {
+            if (currentMonthIndex > 0) {
+                currentMonthIndex--;
+                selectedDate = null;
+                renderMonthNavigation();
+                renderDates();
+                hydrateCurrentMonth();
+            }
+        });
+        nextMonthBtn.addEventListener('click', function() {
+            if (currentMonthIndex < monthKeys.length - 1) {
+                currentMonthIndex++;
+                selectedDate = null;
+                renderMonthNavigation();
+                renderDates();
+                hydrateCurrentMonth();
+            }
+        });
 
         // Load doctor services
         function loadDoctorServices(doctorId) {
@@ -610,199 +629,183 @@
             if (!selectedDoctorId || !selectedServiceId) return;
 
             scheduleSelectionCard.style.display = 'block';
-            
-            // Generate next 5 days
-            currentDates = [];
-            const today = new Date();
-            for (let i = 0; i < 5; i++) {
-                const date = new Date(today);
-                date.setDate(today.getDate() + i);
-                currentDates.push(date.toISOString().split('T')[0]);
-            }
-            currentDateIndex = 0;
+
+            buildDateRange();
+            currentMonthIndex = 0;
+            selectedDate = null;
+            selectedTime = null;
+            document.getElementById('appointment-date').value = '';
+            document.getElementById('appointment-time').value = '';
+            continueBtn.disabled = true;
+
+            renderMonthNavigation();
             renderDates();
-            // Load slots for all visible dates (5 days)
-            loadTimeSlotsForDate(currentDates[0]);
+            hydrateCurrentMonth();
         }
 
-        // Render date navigation (5 days)
+        function buildDateRange() {
+            dateRange = [];
+            monthKeys = [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const seen = {};
+            for (let i = 0; i < RANGE_DAYS; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() + i);
+                const ymd = d.toISOString().split('T')[0];
+                const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                dateRange.push({ ymd, monthKey });
+                if (!seen[monthKey]) {
+                    seen[monthKey] = true;
+                    monthKeys.push(monthKey);
+                }
+            }
+        }
+
+        function getVisibleMonthDates() {
+            const monthKey = monthKeys[currentMonthIndex];
+            return dateRange.filter(d => d.monthKey === monthKey).map(d => d.ymd);
+        }
+
+        function renderMonthNavigation() {
+            const labelEl = document.getElementById('month-label');
+            const monthKey = monthKeys[currentMonthIndex];
+            const [year, month] = monthKey.split('-').map(Number);
+            const dateObj = new Date(year, month - 1, 1);
+            labelEl.textContent = dateObj.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+            prevMonthBtn.disabled = currentMonthIndex === 0;
+            nextMonthBtn.disabled = currentMonthIndex >= monthKeys.length - 1;
+        }
+
         function renderDates() {
             const dateDisplay = document.getElementById('date-display');
             dateDisplay.innerHTML = '';
-            
-            // Show all 5 days (no pagination needed since we only have 5 days)
-            currentDates.forEach((dateStr, index) => {
+            const visibleDates = getVisibleMonthDates();
+            visibleDates.forEach((dateStr) => {
                 const date = new Date(dateStr);
                 const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
                 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                
+
+                const unavailable = Array.isArray(slotsByDate[dateStr]) && slotsByDate[dateStr].length === 0;
                 const dateItem = document.createElement('div');
-                dateItem.className = 'date-item' + (index === 0 ? ' selected' : '');
+                dateItem.className = 'date-item' + (dateStr === selectedDate ? ' selected' : '') + (unavailable ? ' unavailable' : '');
                 dateItem.dataset.date = dateStr;
                 dateItem.innerHTML = `
                     <div class="date-day">${dayNames[date.getDay()]}</div>
                     <div class="date-date">${monthNames[date.getMonth()]} ${date.getDate()}</div>
                 `;
                 dateItem.addEventListener('click', function() {
-                    document.querySelectorAll('.date-item').forEach(item => item.classList.remove('selected'));
-                    this.classList.add('selected');
-                    // Reload slots when date is clicked (to highlight selected date)
+                    if (this.classList.contains('unavailable')) {
+                        return;
+                    }
                     loadTimeSlotsForDate(this.dataset.date);
                 });
                 dateDisplay.appendChild(dateItem);
             });
-
-            // Hide navigation buttons since we only show 5 days
-            if (document.getElementById('prev-dates')) {
-                document.getElementById('prev-dates').style.display = 'none';
-            }
-            if (document.getElementById('next-dates')) {
-                document.getElementById('next-dates').style.display = 'none';
-            }
         }
 
-        // Load time slots for all visible dates (5 days)
-        function loadTimeSlotsForDate(date) {
-            if (!selectedDoctorId || !selectedServiceId) return;
-
-            selectedDate = date;
-            document.getElementById('appointment-date').value = date;
-            document.getElementById('appointment-time').value = '';
-            selectedTime = null;
-            continueBtn.disabled = true;
-
-            const timeSlotsCalendar = document.getElementById('time-slots-calendar');
-            const noSlotsMessage = document.getElementById('no-slots-message');
-            const loadingSlots = document.getElementById('loading-slots');
-
-            loadingSlots.style.display = 'block';
-            timeSlotsCalendar.innerHTML = '';
-            noSlotsMessage.style.display = 'none';
-
-            // Load slots for all 5 dates
-            const visibleDates = currentDates;
-            const datePromises = visibleDates.map(dateStr => {
-                return fetch(`{{ url('/api/public/doctors') }}/${selectedDoctorId}/slots?date=${dateStr}&service_id=${selectedServiceId}`, {
-                    credentials: 'same-origin',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    }
-                })
-                .then(response => response.json())
-                .then(data => ({ date: dateStr, slots: data.slots || [] }));
-            });
-
-            Promise.all(datePromises)
-            .then(results => {
-                loadingSlots.style.display = 'none';
-                
-                let hasAnySlots = false;
-                results.forEach(({ date: dateStr, slots }) => {
-                    const date = new Date(dateStr);
-                    const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                    
-                    const dateColumn = document.createElement('div');
-                    dateColumn.className = 'date-column';
-                    dateColumn.dataset.date = dateStr;
-                    
-                    const header = document.createElement('div');
-                    header.className = 'date-column-header';
-                    header.textContent = `${dayNames[date.getDay()]} ${monthNames[date.getMonth()]} ${date.getDate()}`;
-                    dateColumn.appendChild(header);
-                    
-                    const slotsContainer = document.createElement('div');
-                    slotsContainer.className = 'date-column-slots';
-                    
-                    if (slots && slots.length > 0) {
-                        hasAnySlots = true;
-                        // Show first 4 slots, then "more" button
-                        const slotsToShow = slots.slice(0, 4);
-                        slotsToShow.forEach(slot => {
-                            const slotBtn = document.createElement('button');
-                            slotBtn.type = 'button';
-                            slotBtn.className = 'time-slot-btn' + (dateStr === selectedDate && slot.start === selectedTime ? ' selected' : '');
-                            slotBtn.textContent = slot.display || slot.start;
-                            slotBtn.dataset.time = slot.start;
-                            slotBtn.dataset.date = dateStr;
-                            slotBtn.addEventListener('click', function() {
-                                document.querySelectorAll('.time-slot-btn').forEach(btn => {
-                                    btn.classList.remove('selected');
-                                });
-                                this.classList.add('selected');
-                                selectedDate = this.dataset.date;
-                                selectedTime = this.dataset.time;
-                                document.getElementById('appointment-date').value = selectedDate;
-                                document.getElementById('appointment-time').value = selectedTime;
-                                
-                                // Update date selection
-                                document.querySelectorAll('.date-item').forEach(item => {
-                                    item.classList.remove('selected');
-                                    if (item.dataset.date === selectedDate) {
-                                        item.classList.add('selected');
-                                    }
-                                });
-                                
-                                continueBtn.disabled = false;
-                            });
-                            slotsContainer.appendChild(slotBtn);
-                        });
-                        
-                        // Add "more" button if there are more slots
-                        if (slots.length > 4) {
-                            const moreBtn = document.createElement('div');
-                            moreBtn.className = 'more-slots';
-                            moreBtn.textContent = 'more';
-                            moreBtn.addEventListener('click', function() {
-                                // Show all remaining slots
-                                slots.slice(4).forEach(slot => {
-                                    const slotBtn = document.createElement('button');
-                                    slotBtn.type = 'button';
-                                    slotBtn.className = 'time-slot-btn';
-                                    slotBtn.textContent = slot.display || slot.start;
-                                    slotBtn.dataset.time = slot.start;
-                                    slotBtn.dataset.date = dateStr;
-                                    slotBtn.addEventListener('click', function() {
-                                        document.querySelectorAll('.time-slot-btn').forEach(btn => {
-                                            btn.classList.remove('selected');
-                                        });
-                                        this.classList.add('selected');
-                                        selectedDate = this.dataset.date;
-                                        selectedTime = this.dataset.time;
-                                        document.getElementById('appointment-date').value = selectedDate;
-                                        document.getElementById('appointment-time').value = selectedTime;
-                                        continueBtn.disabled = false;
-                                    });
-                                    slotsContainer.insertBefore(slotBtn, moreBtn);
-                                });
-                                moreBtn.style.display = 'none';
-                            });
-                            slotsContainer.appendChild(moreBtn);
-                        }
-                    } else {
-                        // No slots available for this date
-                        const noSlots = document.createElement('div');
-                        noSlots.className = 'time-slot-btn';
-                        noSlots.style.opacity = '0.5';
-                        noSlots.style.cursor = 'not-allowed';
-                        noSlots.textContent = '-';
-                        slotsContainer.appendChild(noSlots);
-                    }
-                    
-                    dateColumn.appendChild(slotsContainer);
-                    timeSlotsCalendar.appendChild(dateColumn);
-                });
-                
-                if (!hasAnySlots) {
-                    noSlotsMessage.style.display = 'block';
+        function fetchSlotsForDate(dateStr) {
+            if (Array.isArray(slotsByDate[dateStr])) {
+                return Promise.resolve(slotsByDate[dateStr]);
+            }
+            return fetch(`{{ url('/api/public/doctors') }}/${selectedDoctorId}/slots?date=${dateStr}&service_id=${selectedServiceId}`, {
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 }
             })
-            .catch(error => {
-                console.error('Error loading slots:', error);
+            .then(response => response.json())
+            .then(data => {
+                const slots = data && Array.isArray(data.slots) ? data.slots : [];
+                slotsByDate[dateStr] = slots;
+                return slots;
+            })
+            .catch(() => {
+                slotsByDate[dateStr] = [];
+                return [];
+            });
+        }
+
+        function hydrateCurrentMonth() {
+            const visibleDates = getVisibleMonthDates();
+            loadingSlots.style.display = 'block';
+            Promise.all(visibleDates.map(fetchSlotsForDate))
+                .then(() => {
+                    loadingSlots.style.display = 'none';
+                    renderDates();
+                    const firstAvailable = visibleDates.find(d => Array.isArray(slotsByDate[d]) && slotsByDate[d].length > 0);
+                    if (firstAvailable) {
+                        loadTimeSlotsForDate(firstAvailable);
+                    } else {
+                        timeSlotsPicker.innerHTML = '';
+                        timeSlotsPicker.style.display = 'none';
+                        noSlotsMessage.style.display = 'block';
+                    }
+                })
+                .catch(() => {
+                    loadingSlots.style.display = 'none';
+                });
+        }
+
+        function loadTimeSlotsForDate(date) {
+            if (!selectedDoctorId || !selectedServiceId) return;
+            loadingSlots.style.display = 'block';
+            timeSlotsPicker.innerHTML = '';
+            timeSlotsPicker.style.display = 'none';
+            noSlotsMessage.style.display = 'none';
+            fetchSlotsForDate(date).then((slots) => {
                 loadingSlots.style.display = 'none';
-                alert('Failed to load available time slots. Please try again.');
+                selectedDate = date;
+                selectedTime = null;
+                document.getElementById('appointment-date').value = selectedDate;
+                document.getElementById('appointment-time').value = '';
+                continueBtn.disabled = true;
+                renderDates();
+
+                if (!slots || slots.length === 0) {
+                    noSlotsMessage.style.display = 'block';
+                    return;
+                }
+
+                const lbl = document.createElement('label');
+                lbl.className = 'form-label';
+                lbl.htmlFor = 'doctor-slot-time-select';
+                lbl.textContent = 'Start time';
+                const sel = document.createElement('select');
+                sel.id = 'doctor-slot-time-select';
+                sel.className = 'form-select form-select-lg';
+                sel.required = true;
+                const ph = document.createElement('option');
+                ph.value = '';
+                ph.textContent = 'Choose a time…';
+                sel.appendChild(ph);
+                slots.forEach(function(slot) {
+                    const o = document.createElement('option');
+                    o.value = slot.start;
+                    o.textContent = slot.display || slot.start;
+                    sel.appendChild(o);
+                });
+                const duration = serviceSelect.options[serviceSelect.selectedIndex]?.dataset.duration || '30';
+                const hint = document.createElement('p');
+                hint.className = 'time-slot-hint mb-0';
+                hint.textContent = 'Each option is one appointment (' + duration + ' minutes).';
+                timeSlotsPicker.appendChild(lbl);
+                timeSlotsPicker.appendChild(sel);
+                timeSlotsPicker.appendChild(hint);
+                timeSlotsPicker.style.display = 'block';
+                sel.addEventListener('change', function() {
+                    if (sel.value) {
+                        selectedTime = sel.value;
+                        document.getElementById('appointment-time').value = selectedTime;
+                        continueBtn.disabled = false;
+                    } else {
+                        selectedTime = null;
+                        document.getElementById('appointment-time').value = '';
+                        continueBtn.disabled = true;
+                    }
+                });
             });
         }
 
