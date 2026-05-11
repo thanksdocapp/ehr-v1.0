@@ -493,6 +493,24 @@
                     </div>
                 </div>
 
+                @if(\Illuminate\Support\Facades\Schema::hasColumn('appointments', 'exclude_from_consultation_report'))
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="exclude_from_consultation_report"
+                                       name="exclude_from_consultation_report" value="1"
+                                       {{ old('exclude_from_consultation_report', $appointment->exclude_from_consultation_report) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="exclude_from_consultation_report">
+                                    Exclude from consultation report <span class="text-muted">(demo / training)</span>
+                                </label>
+                            </div>
+                            <small class="text-muted">These appointments are omitted from Admin → Consultations Report.</small>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
                 <!-- Edit History -->
                 <div class="row">
                     <div class="col-12">

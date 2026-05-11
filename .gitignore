@@ -46,6 +46,7 @@ yarn-error.log
 *.sql.gz
 *.sql
 !database/schema/phpmyadmin_patient_shared_contacts.sql
+!database/schema/phpmyadmin_exclude_from_consultation_report.sql
 /backups/*
 !/backups/.gitkeep
 /database/database.sqlite

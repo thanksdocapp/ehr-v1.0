@@ -642,9 +642,23 @@ textarea.form-control {
                             </div>
                         </div>
                     </div>
-                </div>
+                        </div>
 
-                <!-- Action Buttons -->
+                        @if(\Illuminate\Support\Facades\Schema::hasColumn('appointments', 'exclude_from_consultation_report'))
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="exclude_from_consultation_report"
+                                       name="exclude_from_consultation_report" value="1"
+                                       {{ old('exclude_from_consultation_report', $appointment->exclude_from_consultation_report) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="exclude_from_consultation_report">
+                                    Exclude from consultation report <span class="text-muted">(demo / training)</span>
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">When checked, this appointment is hidden from Admin → Reports → Consultations Report (including Excel/PDF).</small>
+                        </div>
+                        @endif
+
+                        <!-- Action Buttons -->
                 <div class="form-section">
                     <div class="form-section-body text-center">
                         <button type="submit" class="btn btn-doctor-primary btn-lg me-3">

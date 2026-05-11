@@ -482,7 +482,8 @@ class AppointmentsController extends Controller
             'prescription' => 'nullable|string',
             'diagnosis' => 'nullable|string',
             'follow_up_instructions' => 'nullable|string',
-            'next_appointment_date' => 'nullable|date|after:appointment_date'
+            'next_appointment_date' => 'nullable|date|after:appointment_date',
+            'exclude_from_consultation_report' => 'nullable|boolean',
         ]);
 
         $consultationType = in_array($request->consultation_type, ['in_person', 'online', 'telephone'], true)
@@ -505,6 +506,7 @@ class AppointmentsController extends Controller
         $data = $request->except(['consultation_type', 'is_online']);
         $data['consultation_type'] = $consultationType;
         $data['is_online'] = $isOnline;
+        $data['exclude_from_consultation_report'] = $request->boolean('exclude_from_consultation_report');
         if (!$isOnline) {
             $data['meeting_link'] = null;
             $data['meeting_platform'] = null;

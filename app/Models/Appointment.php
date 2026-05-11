@@ -23,6 +23,7 @@ class Appointment extends Model
         'type',
         'status',
         'created_from',
+        'exclude_from_consultation_report',
         'reason',
         'symptoms',
         'notes',
@@ -54,6 +55,7 @@ class Appointment extends Model
         'vital_signs' => 'array',
         'fee' => 'decimal:2',
         'is_online' => 'boolean',
+        'exclude_from_consultation_report' => 'boolean',
         // PHI Encryption (HIPAA Compliance)
         // Use SafeEncrypted to avoid runtime crashes when legacy/plaintext values exist.
         'reason' => SafeEncrypted::class,

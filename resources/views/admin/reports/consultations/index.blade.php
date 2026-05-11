@@ -54,7 +54,7 @@
                         <i class="fas fa-chart-bar me-2"></i>
                         Consultations Report
                     </h1>
-                    <p class="modern-page-subtitle">Monthly appointment consultations (consultation &amp; follow-up) with duration metrics</p>
+                    <p class="modern-page-subtitle">Monthly appointment consultations (consultation &amp; follow-up) with duration metrics. Appointments marked &ldquo;Exclude from consultation report&rdquo; on the appointment edit screen are omitted.</p>
                 </div>
                 <div class="d-flex gap-2">
                     <a href="{{ route('admin.consultations-report.export-excel', request()->all()) }}" class="btn btn-success">

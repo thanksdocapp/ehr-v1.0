@@ -11,6 +11,7 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
@@ -626,7 +627,8 @@ class AppointmentsController extends Controller
             'consultation_type' => 'nullable|in:in_person,online,telephone',
             'is_online' => 'nullable|boolean',
             'meeting_link' => 'nullable|url|max:500',
-            'meeting_platform' => 'nullable|in:zoom,google_meet,teams,whereby,custom'
+            'meeting_platform' => 'nullable|in:zoom,google_meet,teams,whereby,custom',
+            'exclude_from_consultation_report' => 'nullable|boolean',
         ]);
 
         $consultationType = $request->consultation_type ?? ($request->boolean('is_online') ? 'online' : ($appointment->consultation_type ?? 'in_person'));
@@ -666,6 +668,10 @@ class AppointmentsController extends Controller
             $updateData['notes'] = (is_string($incomingNotes) && trim($incomingNotes) !== '')
                 ? $incomingNotes
                 : ($appointment->notes ?? '');
+        }
+
+        if (Schema::hasColumn('appointments', 'exclude_from_consultation_report')) {
+            $updateData['exclude_from_consultation_report'] = $request->boolean('exclude_from_consultation_report');
         }
 
         // Only allow status changes for certain roles/conditions

@@ -8,6 +8,7 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -269,8 +270,11 @@ class ConsultationsReportController extends Controller
             ->leftJoin('booking_services', 'appointments.service_id', '=', 'booking_services.id')
             ->whereBetween('appointments.appointment_date', [$startDate, $endDate])
             ->whereIn('appointments.type', ['consultation', 'followup'])
-            ->whereNotIn('appointments.status', ['pending', 'cancelled'])
-            ->selectRaw("
+            ->whereNotIn('appointments.status', ['pending', 'cancelled']);
+
+        $this->excludeDemoConsultationsFromReport($appointmentRows);
+
+        $appointmentRows->selectRaw("
                 appointments.appointment_date as record_date,
                 appointments.department_id as department_id,
                 departments.name as department_name,
@@ -320,8 +324,11 @@ class ConsultationsReportController extends Controller
             ->whereBetween('appointments.appointment_date', [$startDate, $endDate])
             ->where('appointments.department_id', $departmentId)
             ->whereIn('appointments.type', ['consultation', 'followup'])
-            ->whereNotIn('appointments.status', ['pending', 'cancelled'])
-            ->selectRaw("
+            ->whereNotIn('appointments.status', ['pending', 'cancelled']);
+
+        $this->excludeDemoConsultationsFromReport($appointmentRows);
+
+        $appointmentRows->selectRaw("
                 appointments.id as appointment_id,
                 appointments.appointment_date as record_date,
                 CONCAT(patients.first_name, ' ', patients.last_name) as patient_name,
@@ -332,6 +339,18 @@ class ConsultationsReportController extends Controller
             ");
 
         return DB::query()->fromSub($appointmentRows, 'consultation_details');
+    }
+
+    /**
+     * Omit appointments flagged as demo/training (exclude_from_consultation_report).
+     */
+    private function excludeDemoConsultationsFromReport(\Illuminate\Database\Eloquent\Builder $appointmentRows): void
+    {
+        if (! Schema::hasColumn('appointments', 'exclude_from_consultation_report')) {
+            return;
+        }
+
+        $appointmentRows->where('appointments.exclude_from_consultation_report', false);
     }
 }
 
