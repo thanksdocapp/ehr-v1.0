@@ -8,6 +8,13 @@
 @endsection
 
 @section('content')
+@php
+    $consultationReportExclusionRouteOk = \Illuminate\Support\Facades\Route::has('admin.appointments.consultation-report-exclusion');
+    $consultationReportExclusionBulkRouteOk = \Illuminate\Support\Facades\Route::has('admin.appointments.bulk-consultation-report-exclusion');
+    $consultationReportExclusionBulkUrl = $consultationReportExclusionBulkRouteOk
+        ? route('admin.appointments.bulk-consultation-report-exclusion')
+        : '';
+@endphp
 <div class="fade-in">
     <!-- Modern Page Header -->
     <div class="modern-page-header fade-in-up">
@@ -534,7 +541,7 @@
                                                 <i class="fas fa-undo"></i>
                                             </button>
                                         @endif
-                                        @if(!empty($consultationReportExclusionEnabled) && in_array($appointment->type, ['consultation', 'followup'], true))
+                                        @if(!empty($consultationReportExclusionEnabled) && $consultationReportExclusionRouteOk && in_array($appointment->type, ['consultation', 'followup'], true))
                                             @if($appointment->exclude_from_consultation_report)
                                                 <button type="button" class="btn btn-sm btn-outline-success"
                                                         title="Include in consultation report"
@@ -595,7 +602,7 @@
                         <button class="btn btn-sm btn-danger" onclick="bulkCancel()">
                             <i class="fas fa-times me-1"></i>Cancel Selected
                         </button>
-                        @if(!empty($consultationReportExclusionEnabled))
+                        @if(!empty($consultationReportExclusionEnabled) && $consultationReportExclusionBulkRouteOk)
                         <button type="button" class="btn btn-sm btn-outline-warning text-dark" onclick="bulkConsultationReportExclusion(true)">
                             <i class="fas fa-ban me-1"></i>Exclude selected from report
                         </button>
@@ -982,7 +989,13 @@ $(document).ready(function() {
             : `Include ${selected.length} appointment(s) in the consultation report again?`;
         if (!confirm(msg)) return;
 
-        fetch(@json(route('admin.appointments.bulk-consultation-report-exclusion')), {
+        const bulkUrl = @json($consultationReportExclusionBulkUrl);
+        if (!bulkUrl) {
+            alert('Consultation report bulk action is unavailable. On the server run: php artisan route:clear');
+            return;
+        }
+
+        fetch(bulkUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -24,7 +24,7 @@
                     <a href="{{ route('admin.appointments.edit', $appointment->id) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
                         <i class="fas fa-edit me-2"></i>Edit
                     </a>
-                    @if(!empty($consultationReportExclusionEnabled) && in_array($appointment->type, ['consultation', 'followup'], true))
+                    @if(!empty($consultationReportExclusionEnabled) && \Illuminate\Support\Facades\Route::has('admin.appointments.consultation-report-exclusion') && in_array($appointment->type, ['consultation', 'followup'], true))
                         @if($appointment->exclude_from_consultation_report)
                             <button type="button" class="btn btn-success btn-lg" style="border-radius: 12px; font-weight: 600;"
                                     data-url="{{ route('admin.appointments.consultation-report-exclusion', $appointment) }}"
