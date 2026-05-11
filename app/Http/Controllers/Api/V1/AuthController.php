@@ -20,7 +20,7 @@ class AuthController extends BaseApiController
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:patients,email',
+            'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
             'password' => 'required|string|min:8|confirmed',
             'date_of_birth' => 'required|date',

@@ -52,6 +52,7 @@ class Patient extends Authenticatable
         'is_active',
         'is_guest',
         'department_id',
+        'contact_group_id',
         'created_by_doctor_id',
         'assigned_doctor_id',
         'email_verified_at',
@@ -189,6 +190,11 @@ class Patient extends Authenticatable
     public function createdByDoctor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Doctor::class, 'created_by_doctor_id');
+    }
+
+    public function contactGroup(): BelongsTo
+    {
+        return $this->belongsTo(PatientContactGroup::class, 'contact_group_id');
     }
 
     public function assignedDoctor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
@@ -876,6 +882,36 @@ class Patient extends Authenticatable
     public function hasMedicalCondition($condition)
     {
         return in_array($condition, $this->medical_conditions ?? []);
+    }
+
+    /**
+     * Resolve patient by email for imports / lookups when duplicate emails are allowed.
+     *
+     * @param  string|null  $patientReference  Human-readable patient_id or numeric database id
+     * @throws \RuntimeException when multiple rows share the email and reference is missing
+     */
+    public static function findByEmailOptionalReference(string $email, ?string $patientReference = null): ?self
+    {
+        $q = static::query()->where('email', $email);
+        if ($patientReference !== null && trim($patientReference) !== '') {
+            $ref = trim($patientReference);
+
+            return $q->where(function ($qq) use ($ref) {
+                $qq->where('patient_id', $ref);
+                if (ctype_digit((string) $ref)) {
+                    $qq->orWhere('id', (int) $ref);
+                }
+            })->first();
+        }
+
+        $count = (clone $q)->count();
+        if ($count > 1) {
+            throw new \RuntimeException(
+                'Multiple patient records use this email. Provide patient_reference (Patient ID or numeric id).'
+            );
+        }
+
+        return $q->first();
     }
 
     // Generate unique patient ID

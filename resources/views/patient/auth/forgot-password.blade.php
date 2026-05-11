@@ -17,7 +17,7 @@
                         <div class="text-center mb-4">
                             <i class="fas fa-user-injured fa-3x text-primary mb-3"></i>
                             <h3 class="card-title text-primary">Reset Password</h3>
-                            <p class="text-muted">Enter your email to receive a password reset link</p>
+                            <p class="text-muted">Enter your email and Patient ID (reference on letters or portal)</p>
                         </div>
 
                         <!-- Success Message -->
@@ -59,6 +59,27 @@
                                            placeholder="Enter your registered email">
                                 </div>
                                 @error('email')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="patient_reference" class="form-label">Patient ID</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-id-card"></i>
+                                    </span>
+                                    <input type="text"
+                                           class="form-control @error('patient_reference') is-invalid @enderror"
+                                           id="patient_reference"
+                                           name="patient_reference"
+                                           value="{{ old('patient_reference') }}"
+                                           required
+                                           placeholder="e.g. P2026xxxx"
+                                           autocomplete="off">
+                                </div>
+                                <small class="text-muted">Required when family members share one email — use the ID for the person who owns this login.</small>
+                                @error('patient_reference')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
                             </div>

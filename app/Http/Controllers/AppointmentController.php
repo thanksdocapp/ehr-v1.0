@@ -327,8 +327,12 @@ class AppointmentController extends Controller
             $doctorId = $request->doctor_id ?? null;
             $departmentId = $request->department_id ?? null;
 
-            // Check if patient already exists by email
-            $existingPatient = Patient::where('email', $request->patient_email)->first();
+            // Same email may belong to multiple people — match name + phone too.
+            $existingPatient = Patient::where('email', $request->patient_email)->get()->first(function ($p) use ($firstName, $lastName, $request) {
+                return \App\Support\PatientContactNormalizer::normalizeName($p->first_name) === \App\Support\PatientContactNormalizer::normalizeName($firstName)
+                    && \App\Support\PatientContactNormalizer::normalizeName($p->last_name) === \App\Support\PatientContactNormalizer::normalizeName($lastName)
+                    && \App\Support\PatientContactNormalizer::normalizePhone($p->phone) === \App\Support\PatientContactNormalizer::normalizePhone($request->patient_phone ?? '');
+            });
             
             if ($existingPatient) {
                 // Returning patient - update their information and department/doctor if not set

@@ -321,6 +321,29 @@
                         <!-- Hidden field for backward compatibility with single department_id -->
                         <input type="hidden" id="department_id" name="department_id" value="{{ old('department_id', $patient->department_id) }}">
 
+                        @if(isset($contactGroups) && $contactGroups->isNotEmpty())
+                        <div class="form-group">
+                            <label for="contact_group_id" class="form-label">
+                                <i class="fas fa-users me-1"></i>Contact group (optional)
+                            </label>
+                            <select class="form-control @error('contact_group_id') is-invalid @enderror"
+                                    id="contact_group_id" name="contact_group_id">
+                                <option value="">— None —</option>
+                                @foreach($contactGroups as $group)
+                                    <option value="{{ $group->id }}" {{ (string) old('contact_group_id', $patient->contact_group_id) === (string) $group->id ? 'selected' : '' }}>
+                                        {{ $group->label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">
+                                Use when several patient accounts share an email or phone (family, guardian, or one manager for multiple people). Records stay separate; this label is for staff organization only.
+                            </small>
+                            @error('contact_group_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        @endif
+
                         <div class="form-group">
                             <label for="address" class="form-label">
                                 <i class="fas fa-map-marker-alt me-1"></i>Address

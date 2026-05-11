@@ -241,6 +241,21 @@
                     @enderror
                 </div>
 
+                <div class="form-floating">
+                    <input type="text"
+                           class="form-control @error('patient_reference') is-invalid @enderror"
+                           id="patient_reference"
+                           name="patient_reference"
+                           value="{{ old('patient_reference') }}"
+                           placeholder="Optional"
+                           autocomplete="off">
+                    <label for="patient_reference"><i class="fas fa-id-card me-2"></i>Patient ID <span class="text-muted fw-normal">(if shared email)</span></label>
+                    @error('patient_reference')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <p class="small text-muted mb-3">If several people use the same email, enter the Patient ID for the account you are signing in to.</p>
+
                 <div class="form-check mb-3">
                     <input class="form-check-input" type="checkbox" id="remember" name="remember">
                     <label class="form-check-label" for="remember">

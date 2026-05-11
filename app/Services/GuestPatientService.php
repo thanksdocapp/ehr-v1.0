@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Patient;
+use App\Support\PatientContactNormalizer;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class GuestPatientService
@@ -10,51 +12,52 @@ class GuestPatientService
     /**
      * Find or create a guest patient.
      *
+     * Email and phone are not globally unique: we only reuse a row when the same
+     * individual is booking again (email + normalized phone + name + DOB alignment).
+     * Different people sharing an email or phone always get separate records.
+     *
      * @param array $data
      * @return Patient
      */
     public function findOrCreateGuest(array $data)
     {
-        // Try to find existing patient by email first (email is unique)
-        $patient = Patient::where('email', $data['email'])->first();
+        $patient = $this->tryFindMatchingGuest($data);
 
         if ($patient) {
-            // Update phone if different
-            if ($patient->phone !== $data['phone']) {
+            if ($patient->phone !== ($data['phone'] ?? null)) {
                 $patient->phone = $data['phone'];
             }
-            // Update name if different
             if ($patient->first_name !== $data['first_name']) {
                 $patient->first_name = $data['first_name'];
             }
             if ($patient->last_name !== $data['last_name']) {
                 $patient->last_name = $data['last_name'];
             }
-            if (!empty($data['date_of_birth'])) {
+            if (! empty($data['date_of_birth'])) {
                 $patient->date_of_birth = $data['date_of_birth'];
             }
-            if (!empty($data['gender'])) {
+            if (! empty($data['gender'])) {
                 $patient->gender = $data['gender'];
             }
-            if (!empty($data['address'])) {
+            if (! empty($data['address'])) {
                 $patient->address = $data['address'];
             }
-            if (!empty($data['city'])) {
+            if (! empty($data['city'])) {
                 $patient->city = $data['city'];
             }
             if (array_key_exists('state', $data) && $data['state'] !== null && (string) $data['state'] !== '') {
                 $patient->state = $data['state'];
             }
-            if (!empty($data['postal_code'])) {
+            if (! empty($data['postal_code'])) {
                 $patient->postal_code = $data['postal_code'];
             }
-            if (!empty($data['country'])) {
+            if (! empty($data['country'])) {
                 $patient->country = $data['country'];
             }
-            if (!empty($data['guardian_name'])) {
+            if (! empty($data['guardian_name'])) {
                 $patient->guardian_name = $data['guardian_name'];
             }
-            if (!empty($data['guardian_phone'])) {
+            if (! empty($data['guardian_phone'])) {
                 $patient->guardian_phone = $data['guardian_phone'];
             }
             $patient->save();
@@ -71,74 +74,121 @@ class GuestPatientService
             'is_active' => true,
             'patient_id' => Patient::generatePatientId(),
         ];
-        
-        // Only set is_guest if column exists
+
         if (\Illuminate\Support\Facades\Schema::hasColumn('patients', 'is_guest')) {
             $patientData['is_guest'] = true;
         }
-        
-        // For guest patients, provide placeholder values for required fields if not provided
-        // These will be updated when converting to full patient
-        
-        // Handle date_of_birth - use provided value or placeholder
-        if (isset($data['date_of_birth']) && !empty($data['date_of_birth'])) {
+
+        if (isset($data['date_of_birth']) && ! empty($data['date_of_birth'])) {
             $patientData['date_of_birth'] = $data['date_of_birth'];
         } else {
-            // Use a placeholder date that's clearly a placeholder (will be updated later)
-            // Using a date far in the past that's unlikely to be a real birth date
             $patientData['date_of_birth'] = '1900-01-01';
         }
-        
-        // Handle gender - use provided value or placeholder
-        if (isset($data['gender']) && !empty($data['gender'])) {
+
+        if (isset($data['gender']) && ! empty($data['gender'])) {
             $patientData['gender'] = $data['gender'];
         } else {
-            // Use 'other' as placeholder (will be updated when converting to full patient)
             $patientData['gender'] = 'other';
         }
-        
-        // Optional fields if provided
+
         if (isset($data['address']) && $data['address'] !== null && (string) $data['address'] !== '') {
             $patientData['address'] = $data['address'];
         }
-        if (!empty($data['city'])) {
+        if (! empty($data['city'])) {
             $patientData['city'] = $data['city'];
         }
         if (array_key_exists('state', $data) && $data['state'] !== null && (string) $data['state'] !== '') {
             $patientData['state'] = $data['state'];
         }
-        if (!empty($data['postal_code'])) {
+        if (! empty($data['postal_code'])) {
             $patientData['postal_code'] = $data['postal_code'];
         }
-        if (!empty($data['country'])) {
+        if (! empty($data['country'])) {
             $patientData['country'] = $data['country'];
         }
-        if (!empty($data['guardian_name'])) {
+        if (! empty($data['guardian_name'])) {
             $patientData['guardian_name'] = $data['guardian_name'];
         }
-        if (!empty($data['guardian_phone'])) {
+        if (! empty($data['guardian_phone'])) {
             $patientData['guardian_phone'] = $data['guardian_phone'];
         }
 
-        $patient = Patient::create($patientData);
+        return Patient::create($patientData);
+    }
 
-        return $patient;
+    /**
+     * Match only when this is plausibly the same guest person (not a relative sharing email/phone).
+     */
+    private function tryFindMatchingGuest(array $data): ?Patient
+    {
+        $email = $data['email'] ?? null;
+        if (! $email) {
+            return null;
+        }
+
+        $fn = PatientContactNormalizer::normalizeName($data['first_name'] ?? '');
+        $ln = PatientContactNormalizer::normalizeName($data['last_name'] ?? '');
+        $phoneNorm = PatientContactNormalizer::normalizePhone($data['phone'] ?? '');
+
+        $candidates = Patient::where('email', $email)->get();
+
+        foreach ($candidates as $patient) {
+            if (PatientContactNormalizer::normalizeName($patient->first_name) !== $fn) {
+                continue;
+            }
+            if (PatientContactNormalizer::normalizeName($patient->last_name) !== $ln) {
+                continue;
+            }
+            if (PatientContactNormalizer::normalizePhone($patient->phone) !== $phoneNorm) {
+                continue;
+            }
+            if (! $this->guestDateOfBirthMatches($data['date_of_birth'] ?? null, $patient)) {
+                continue;
+            }
+
+            return $patient;
+        }
+
+        return null;
+    }
+
+    private function guestDateOfBirthMatches(?string $incomingRaw, Patient $patient): bool
+    {
+        $placeholder = '1900-01-01';
+        $storedRaw = $patient->date_of_birth
+            ? $patient->date_of_birth->format('Y-m-d')
+            : null;
+
+        $inc = $incomingRaw ? Carbon::parse($incomingRaw)->format('Y-m-d') : null;
+
+        // Incoming real DOB must not attach to a placeholder-only guest row (e.g. sibling / dependant).
+        if ($inc && $inc !== $placeholder && $storedRaw === $placeholder) {
+            return false;
+        }
+
+        if (! $inc && $storedRaw === $placeholder) {
+            return true;
+        }
+
+        if (! $inc || ! $storedRaw) {
+            return ($inc ?? $placeholder) === ($storedRaw ?? $placeholder);
+        }
+
+        return $inc === $storedRaw;
     }
 
     /**
      * Convert a guest patient to a full patient.
      *
-     * @param Patient $patient
      * @param array $additionalData
      * @return bool
      */
     public function convertToFullPatient(Patient $patient, array $additionalData = [])
     {
-        if (!$patient->is_guest) {
-            return false; // Already a full patient
+        if (! $patient->is_guest) {
+            return false;
         }
 
-        // Validate required fields
         $requiredFields = ['date_of_birth', 'gender'];
         foreach ($requiredFields as $field) {
             if (empty($patient->$field) && empty($additionalData[$field])) {
@@ -146,11 +196,9 @@ class GuestPatientService
             }
         }
 
-        // Merge additional data
         $patient->fill($additionalData);
         $patient->is_guest = false;
-        
+
         return $patient->save();
     }
 }
-

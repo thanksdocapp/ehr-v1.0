@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Patient;
+use App\Models\PatientContactGroup;
 use App\Services\PatientBookingSourceService;
 use App\Models\User;
 use App\Models\Doctor;
@@ -19,6 +20,20 @@ use Carbon\Carbon;
 
 class PatientsController extends Controller
 {
+    /**
+     * Labels for optional household / management grouping when duplicate emails or phones are allowed.
+     *
+     * @return \Illuminate\Support\Collection<int, PatientContactGroup>
+     */
+    private function patientContactGroupsForForms()
+    {
+        if (! Schema::hasTable('patient_contact_groups')) {
+            return collect();
+        }
+
+        return PatientContactGroup::orderBy('label')->get();
+    }
+
     /**
      * Get the current user's department ID for any role
      */
@@ -344,7 +359,9 @@ class PatientsController extends Controller
     public function create()
     {
         $departments = \App\Models\Department::orderBy('name')->get();
-        return view('admin.patients.create', compact('departments'));
+        $contactGroups = $this->patientContactGroupsForForms();
+
+        return view('admin.patients.create', compact('departments', 'contactGroups'));
     }
 
     /**
@@ -361,7 +378,7 @@ class PatientsController extends Controller
         $validationRules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:patients',
+            'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
             'date_of_birth' => 'required|date',
             'gender' => 'required|string|max:10',
@@ -392,7 +409,11 @@ class PatientsController extends Controller
             'gp_phone' => 'nullable|required_if:consent_share_with_gp,1|string|max:20',
             'gp_address' => 'nullable|required_if:consent_share_with_gp,1|string|max:1000',
         ];
-        
+
+        if (Schema::hasColumn('patients', 'contact_group_id')) {
+            $validationRules['contact_group_id'] = 'nullable|exists:patient_contact_groups,id';
+        }
+
         $request->validate($validationRules);
 
         // Handle file uploads - Patient ID Document
@@ -456,7 +477,13 @@ class PatientsController extends Controller
             'gp_phone' => $gpPhone,
             'gp_address' => $gpAddress,
         ];
-        
+
+        if (Schema::hasColumn('patients', 'contact_group_id')) {
+            $patientData['contact_group_id'] = $request->filled('contact_group_id')
+                ? (int) $request->contact_group_id
+                : null;
+        }
+
         // Handle department assignment (support both single and multiple departments)
         $departmentIds = [];
         if ($request->has('department_id') && $request->department_id) {
@@ -631,7 +658,9 @@ class PatientsController extends Controller
     public function edit(Patient $patient)
     {
         $departments = \App\Models\Department::orderBy('name')->get();
-        return view('admin.patients.edit', compact('patient', 'departments'));
+        $contactGroups = $this->patientContactGroupsForForms();
+
+        return view('admin.patients.edit', compact('patient', 'departments', 'contactGroups'));
     }
 
     /**
@@ -648,7 +677,7 @@ class PatientsController extends Controller
         $validationRules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:patients,email,' . $patient->id,
+            'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
             'date_of_birth' => 'required|date',
             'gender' => 'required|string|max:10',
@@ -679,7 +708,11 @@ class PatientsController extends Controller
             'gp_phone' => 'nullable|required_if:consent_share_with_gp,1|string|max:20',
             'gp_address' => 'nullable|required_if:consent_share_with_gp,1|string|max:1000',
         ];
-        
+
+        if (Schema::hasColumn('patients', 'contact_group_id')) {
+            $validationRules['contact_group_id'] = 'nullable|exists:patient_contact_groups,id';
+        }
+
         $request->validate($validationRules);
 
         // Handle file uploads - Patient ID Document (only if new file is provided)
@@ -753,7 +786,13 @@ class PatientsController extends Controller
             'gp_phone' => $gpPhone,
             'gp_address' => $gpAddress,
         ];
-        
+
+        if (Schema::hasColumn('patients', 'contact_group_id')) {
+            $patientData['contact_group_id'] = $request->filled('contact_group_id')
+                ? (int) $request->contact_group_id
+                : null;
+        }
+
         // Handle department assignment (support both single and multiple departments)
         $departmentIds = [];
         $hasDepartmentIds = $request->has('department_ids') && is_array($request->department_ids);
@@ -1301,10 +1340,16 @@ class PatientsController extends Controller
                         unset($data['department_names']);
                     }
 
-                    // Find existing patient
-                    $existingPatient = Patient::where('email', $data['email'])
-                        ->orWhere('patient_id', $data['patient_id'])
-                        ->first();
+                    // Identify existing row by stable patient_id only (email may be shared by dependants)
+                    $existingPatient = null;
+                    if (! empty($data['patient_id'])) {
+                        $existingPatient = Patient::where(function ($q) use ($data) {
+                            $q->where('patient_id', $data['patient_id']);
+                            if (ctype_digit((string) $data['patient_id'])) {
+                                $q->orWhere('id', (int) $data['patient_id']);
+                            }
+                        })->first();
+                    }
 
                     // Handle import modes
                     if ($existingPatient) {

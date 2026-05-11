@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Patient;
 
 use App\Http\Controllers\Controller;
+use App\Models\Patient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PasswordResetLinkController extends Controller
@@ -20,6 +23,7 @@ class PasswordResetLinkController extends Controller
 
     /**
      * Handle an incoming password reset link request for patients.
+     * Email alone is not sufficient when multiple patient accounts share an email.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -27,16 +31,33 @@ class PasswordResetLinkController extends Controller
     {
         $request->validate([
             'email' => ['required', 'email'],
+            'patient_reference' => ['required', 'string', 'max:255'],
         ]);
 
-        // Use the patient password broker to send reset link
-        $status = Password::broker('patients')->sendResetLink(
-            $request->only('email')
+        $patient = Patient::where('email', $request->email)
+            ->where(function ($q) use ($request) {
+                $ref = trim($request->patient_reference);
+                $q->where('patient_id', $ref);
+                if (ctype_digit((string) $ref)) {
+                    $q->orWhere('id', (int) $ref);
+                }
+            })
+            ->first();
+
+        if (! $patient) {
+            return back()->withInput($request->only('email', 'patient_reference'))
+                ->withErrors(['email' => __('No account matches that email and Patient ID.')]);
+        }
+
+        $plain = Str::random(64);
+
+        DB::table('patient_password_reset_tokens')->updateOrInsert(
+            ['patient_id' => $patient->id],
+            ['token' => Hash::make($plain), 'created_at' => now()]
         );
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __('We have emailed your password reset link!'))
-                    : back()->withInput($request->only('email'))
-                            ->withErrors(['email' => __('We can\'t find a patient with that email address.')]);
+        $patient->sendPasswordResetNotification($plain);
+
+        return back()->with('status', __('We have emailed your password reset link!'));
     }
 }

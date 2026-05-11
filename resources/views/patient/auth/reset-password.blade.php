@@ -36,7 +36,7 @@
                             
                             <!-- Hidden Fields -->
                             <input type="hidden" name="token" value="{{ $request->route('token') }}">
-                            <input type="hidden" name="email" value="{{ $request->email }}">
+                            <input type="hidden" name="patient_id" value="{{ $request->route('patient') }}">
                             
                             <!-- Email Display -->
                             <div class="mb-3">
@@ -47,7 +47,7 @@
                                     </span>
                                     <input type="email" 
                                            class="form-control" 
-                                           value="{{ $request->email }}" 
+                                           value="{{ $patientEmail ?? '' }}" 
                                            readonly>
                                 </div>
                             </div>

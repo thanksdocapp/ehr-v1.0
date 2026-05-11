@@ -543,7 +543,7 @@ class PatientsController extends Controller
             $validationRules = [
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
-                'email' => 'required|email|unique:patients',
+                'email' => 'required|email|max:255',
                 'phone' => 'required|string|max:20',
                 'date_of_birth' => 'required|date|before_or_equal:today',
                 'gender' => 'required|in:male,female,other',
@@ -871,7 +871,7 @@ class PatientsController extends Controller
         $validationRules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:patients,email,' . $patient->id,
+            'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
             'date_of_birth' => 'required|date',
             'gender' => 'required|in:male,female,other',

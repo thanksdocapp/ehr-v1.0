@@ -514,20 +514,28 @@ class LabReportsController extends Controller
                         throw new \Exception("Row {$rowNumber}: Missing required field (test_date)");
                     }
 
-                    // Find patient
+                    // Find patient (duplicate emails require patient_reference / internal id)
                     $patient = null;
-                    if (!empty($data['patient_id'])) {
+                    if (! empty($data['patient_id'])) {
                         $patient = Patient::where('id', $data['patient_id'])
                             ->orWhere('patient_id', $data['patient_id'])
                             ->first();
-                    } elseif (!empty($data['patient_email'])) {
-                        $patient = Patient::where('email', $data['patient_email'])->first();
+                    } elseif (! empty($data['patient_email'])) {
+                        try {
+                            $patient = Patient::findByEmailOptionalReference(
+                                $data['patient_email'],
+                                $data['patient_reference'] ?? null
+                            );
+                        } catch (\RuntimeException $e) {
+                            throw new \Exception("Row {$rowNumber}: ".$e->getMessage());
+                        }
                     }
                     
                     if (!$patient) {
                         throw new \Exception("Row {$rowNumber}: Patient not found");
                     }
                     unset($data['patient_id'], $data['patient_email']);
+                    unset($data['patient_reference']);
                     $data['patient_id'] = $patient->id;
 
                     // Find doctor

@@ -107,7 +107,7 @@ class PatientResetPasswordNotification extends Notification
     {
         return url(route('patient.password.reset', [
             'token' => $this->token,
-            'email' => $notifiable->getEmailForPasswordReset(),
+            'patient' => $notifiable->getKey(),
         ], false));
     }
 

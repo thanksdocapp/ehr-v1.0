@@ -1575,13 +1575,21 @@ class MedicalRecordsController extends Controller
                             ->orWhere('patient_id', $data['patient_id'])
                             ->first();
                     } elseif (!empty($data['patient_email'])) {
-                        $patient = Patient::where('email', $data['patient_email'])->first();
+                        try {
+                            $patient = Patient::findByEmailOptionalReference(
+                                $data['patient_email'],
+                                $data['patient_reference'] ?? null
+                            );
+                        } catch (\RuntimeException $e) {
+                            throw new \Exception("Row {$rowNumber}: ".$e->getMessage());
+                        }
                     }
                     
                     if (!$patient) {
                         throw new \Exception("Row {$rowNumber}: Patient not found");
                     }
                     unset($data['patient_id'], $data['patient_email']);
+                    unset($data['patient_reference']);
                     $data['patient_id'] = $patient->id;
 
                     // Find doctor

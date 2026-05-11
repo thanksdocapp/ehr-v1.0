@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Patient;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -44,13 +45,52 @@ class AuthController extends Controller
                 ->with('info', 'Patient login is currently disabled. Please use the staff login portal.');
         }
         
-        $credentials = $request->validate([
+        $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
+            'patient_reference' => ['nullable', 'string', 'max:255'],
         ]);
 
-        if (Auth::guard('patient')->attempt($credentials, $request->boolean('remember'))) {
+        $email = $request->input('email');
+        $password = $request->input('password');
+        $ref = $request->input('patient_reference');
+
+        $baseQuery = Patient::where('email', $email)->whereNotNull('password');
+
+        if ($ref !== null && trim((string) $ref) !== '') {
+            $ref = trim((string) $ref);
+            $patient = (clone $baseQuery)->where(function ($q) use ($ref) {
+                $q->where('patient_id', $ref);
+                if (ctype_digit((string) $ref)) {
+                    $q->orWhere('id', (int) $ref);
+                }
+            })->first();
+
+            if ($patient && Hash::check($password, $patient->password)) {
+                Auth::guard('patient')->login($patient, $request->boolean('remember'));
+                $request->session()->regenerate();
+
+                return redirect()->intended(route('patient.dashboard'));
+            }
+
+            return back()->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ])->onlyInput('email', 'patient_reference');
+        }
+
+        $matches = $baseQuery->get()->filter(fn (Patient $p) => Hash::check($password, $p->password));
+
+        if ($matches->count() > 1) {
+            return back()->withErrors([
+                'patient_reference' => 'Several accounts use this email. Enter your Patient ID (reference) shown on letters or booking confirmations.',
+            ])->onlyInput('email');
+        }
+
+        $patient = $matches->first();
+        if ($patient) {
+            Auth::guard('patient')->login($patient, $request->boolean('remember'));
             $request->session()->regenerate();
+
             return redirect()->intended(route('patient.dashboard'));
         }
 
@@ -91,7 +131,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:patients'],
+            'email' => ['required', 'string', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
             'date_of_birth' => ['required', 'date', 'before:today'],
             'gender' => ['required', 'in:male,female,other'],
