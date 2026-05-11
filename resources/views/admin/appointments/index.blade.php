@@ -534,6 +534,23 @@
                                                 <i class="fas fa-undo"></i>
                                             </button>
                                         @endif
+                                        @if(!empty($consultationReportExclusionEnabled) && in_array($appointment->type, ['consultation', 'followup'], true))
+                                            @if($appointment->exclude_from_consultation_report)
+                                                <button type="button" class="btn btn-sm btn-outline-success"
+                                                        title="Include in consultation report"
+                                                        data-url="{{ route('admin.appointments.consultation-report-exclusion', $appointment) }}"
+                                                        onclick="postConsultationReportExclusionFromList(this, false)">
+                                                    <i class="fas fa-chart-bar"></i>
+                                                </button>
+                                            @else
+                                                <button type="button" class="btn btn-sm btn-outline-warning text-dark"
+                                                        title="Exclude from consultation report (demo)"
+                                                        data-url="{{ route('admin.appointments.consultation-report-exclusion', $appointment) }}"
+                                                        onclick="postConsultationReportExclusionFromList(this, true)">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            @endif
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -567,7 +584,7 @@
     <div class="mt-3" id="bulkActions" style="display: none;">
         <div class="modern-card">
             <div class="modern-card-body">
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
                     <span class="text-muted">
                         <span id="selectedCount">0</span> appointment(s) selected
                     </span>
@@ -578,6 +595,14 @@
                         <button class="btn btn-sm btn-danger" onclick="bulkCancel()">
                             <i class="fas fa-times me-1"></i>Cancel Selected
                         </button>
+                        @if(!empty($consultationReportExclusionEnabled))
+                        <button type="button" class="btn btn-sm btn-outline-warning text-dark" onclick="bulkConsultationReportExclusion(true)">
+                            <i class="fas fa-ban me-1"></i>Exclude selected from report
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" onclick="bulkConsultationReportExclusion(false)">
+                            <i class="fas fa-chart-bar me-1"></i>Include selected in report
+                        </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -917,6 +942,68 @@ $(document).ready(function() {
             // Implement bulk cancel
             alert('Bulk cancel functionality will be implemented');
         }
+    }
+
+    function postConsultationReportExclusionFromList(button, excluded) {
+        const url = button.getAttribute('data-url');
+        if (!url) return;
+        button.disabled = true;
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ excluded: excluded })
+        })
+        .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+        .then(function(res) {
+            if (res.ok && res.data.success) {
+                location.reload();
+            } else {
+                alert(res.data.message || 'Could not update consultation report setting.');
+                button.disabled = false;
+            }
+        })
+        .catch(function() {
+            alert('Could not update consultation report setting.');
+            button.disabled = false;
+        });
+    }
+
+    function bulkConsultationReportExclusion(excluded) {
+        const selected = Array.from(document.querySelectorAll('.appointment-checkbox:checked')).map(cb => cb.value);
+        if (!selected.length) return;
+        const msg = excluded
+            ? `Exclude ${selected.length} appointment(s) from the consultation report?`
+            : `Include ${selected.length} appointment(s) in the consultation report again?`;
+        if (!confirm(msg)) return;
+
+        fetch(@json(route('admin.appointments.bulk-consultation-report-exclusion')), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ appointment_ids: selected.map(function(id) { return parseInt(id, 10); }), excluded: excluded })
+        })
+        .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+        .then(function(res) {
+            if (res.ok && res.data.success) {
+                location.reload();
+            } else {
+                alert(res.data.message || 'Bulk update failed.');
+            }
+        })
+        .catch(function() {
+            alert('Bulk update failed.');
+        });
     }
 </script>
 @endpush

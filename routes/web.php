@@ -333,6 +333,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/appointments/calendar', [\App\Http\Controllers\Staff\AppointmentsController::class, 'calendar'])->name('appointments.calendar');
         Route::get('/appointments/create', [\App\Http\Controllers\Staff\AppointmentsController::class, 'create'])->name('appointments.create');
         Route::post('/appointments', [\App\Http\Controllers\Staff\AppointmentsController::class, 'store'])->name('appointments.store');
+        Route::post('/appointments/bulk/consultation-report-exclusion', [\App\Http\Controllers\Staff\AppointmentsController::class, 'bulkSetConsultationReportExclusion'])->name('appointments.bulk-consultation-report-exclusion');
         Route::get('/appointments/{id}', [\App\Http\Controllers\Staff\AppointmentsController::class, 'show'])->name('appointments.show');
         Route::get('/appointments/{id}/edit', [\App\Http\Controllers\Staff\AppointmentsController::class, 'edit'])->name('appointments.edit');
         Route::put('/appointments/{id}', [\App\Http\Controllers\Staff\AppointmentsController::class, 'update'])->name('appointments.update');
@@ -340,6 +341,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/appointments/{id}/cancel', [\App\Http\Controllers\Staff\AppointmentsController::class, 'cancel'])->name('appointments.cancel');
         Route::post('/appointments/{id}/reschedule', [\App\Http\Controllers\Staff\AppointmentsController::class, 'reschedule'])->name('appointments.reschedule');
         Route::patch('/appointments/{id}/status', [\App\Http\Controllers\Staff\AppointmentsController::class, 'updateStatus'])->name('appointments.update-status');
+        Route::post('/appointments/{id}/consultation-report-exclusion', [\App\Http\Controllers\Staff\AppointmentsController::class, 'setConsultationReportExclusion'])->name('appointments.consultation-report-exclusion');
         
         // Clinic Booking Requests (doctor accepts pending clinic bookings)
         Route::get('/clinic-booking-requests', [\App\Http\Controllers\Staff\ClinicBookingRequestsController::class, 'index'])->name('clinic-booking-requests.index');
@@ -701,6 +703,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/appointments/today', [\App\Http\Controllers\Admin\AppointmentsController::class, 'today'])->name('appointments.today');
         Route::get('/appointments/create', [\App\Http\Controllers\Admin\AppointmentsController::class, 'create'])->name('appointments.create');
         Route::post('/appointments', [\App\Http\Controllers\Admin\AppointmentsController::class, 'store'])->name('appointments.store');
+        Route::post('/appointments/bulk/consultation-report-exclusion', [\App\Http\Controllers\Admin\AppointmentsController::class, 'bulkSetConsultationReportExclusion'])->name('appointments.bulk-consultation-report-exclusion');
         
         // Individual Appointment Management with proper parameter names
         Route::get('/appointments/{appointment}', [\App\Http\Controllers\Admin\AppointmentsController::class, 'show'])->name('appointments.show');
@@ -715,6 +718,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::patch('/appointments/{appointment}/status', [\App\Http\Controllers\Admin\AppointmentsController::class, 'updateStatus'])->name('appointments.update-status');
         Route::post('/appointments/{appointment}/check-in', [\App\Http\Controllers\Admin\AppointmentsController::class, 'checkIn'])->name('appointments.check-in');
         Route::post('/appointments/{appointment}/check-out', [\App\Http\Controllers\Admin\AppointmentsController::class, 'checkOut'])->name('appointments.check-out');
+        Route::post('/appointments/{appointment}/consultation-report-exclusion', [\App\Http\Controllers\Admin\AppointmentsController::class, 'setConsultationReportExclusion'])->name('appointments.consultation-report-exclusion');
 
         // AJAX Routes for Calendar
         Route::get('/api/appointments/calendar-data', [\App\Http\Controllers\Admin\AppointmentsController::class, 'getCalendarData'])->name('api.appointments.calendar-data');

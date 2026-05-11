@@ -552,6 +552,22 @@
                             <i class="fas fa-arrow-left me-1"></i>Back to Appointments
                         </a>
 
+                        @if(!empty($consultationReportExclusionEnabled) && in_array($appointment->type, ['consultation', 'followup'], true))
+                            @if($appointment->exclude_from_consultation_report)
+                                <button type="button" class="btn btn-outline-success"
+                                        data-url="{{ route('staff.appointments.consultation-report-exclusion', $appointment->id) }}"
+                                        onclick="postStaffConsultationReportExclusion(this, false)">
+                                    <i class="fas fa-chart-bar me-1"></i>Include in consultation report
+                                </button>
+                            @else
+                                <button type="button" class="btn btn-outline-secondary"
+                                        data-url="{{ route('staff.appointments.consultation-report-exclusion', $appointment->id) }}"
+                                        onclick="postStaffConsultationReportExclusion(this, true)">
+                                    <i class="fas fa-ban me-1"></i>Exclude from consultation report
+                                </button>
+                            @endif
+                        @endif
+
                         @if($appointment->status === 'pending')
                             <a href="{{ route('staff.appointments.edit', $appointment->id) }}" class="btn btn-outline-warning">
                                 <i class="fas fa-edit me-1"></i>Edit Appointment
@@ -816,6 +832,36 @@ function copyToClipboard(elementId) {
         // Fallback for older browsers
         document.execCommand('copy');
         alert('Link copied to clipboard!');
+    });
+}
+
+function postStaffConsultationReportExclusion(button, excluded) {
+    const url = button.getAttribute('data-url');
+    if (!url) return;
+    button.disabled = true;
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ excluded: excluded })
+    })
+    .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+    .then(function(res) {
+        if (res.ok && res.data.success) {
+            location.reload();
+        } else {
+            alert(res.data.message || 'Could not update consultation report setting.');
+            button.disabled = false;
+        }
+    })
+    .catch(function() {
+        alert('Could not update consultation report setting.');
+        button.disabled = false;
     });
 }
 </script>

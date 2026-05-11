@@ -10,6 +10,7 @@ use App\Models\Department;
 use App\Services\HospitalEmailNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class AppointmentsController extends Controller
@@ -239,7 +240,9 @@ class AppointmentsController extends Controller
         $departments = Department::active()->ordered()->get();
         $doctors = Doctor::ordered()->get();
 
-        return view('admin.appointments.index', compact('appointments', 'departments', 'doctors', 'stats'));
+        $consultationReportExclusionEnabled = Schema::hasColumn('appointments', 'exclude_from_consultation_report');
+
+        return view('admin.appointments.index', compact('appointments', 'departments', 'doctors', 'stats', 'consultationReportExclusionEnabled'));
     }
 
     /**
@@ -431,8 +434,10 @@ class AppointmentsController extends Controller
                 'notes' => $appointment->notes ?? ''
             ]);
         }
-        
-        return view('admin.appointments.show', compact('appointment'));
+
+        $consultationReportExclusionEnabled = Schema::hasColumn('appointments', 'exclude_from_consultation_report');
+
+        return view('admin.appointments.show', compact('appointment', 'consultationReportExclusionEnabled'));
     }
 
     public function edit($id)
@@ -603,6 +608,68 @@ class AppointmentsController extends Controller
             'success' => false,
             'message' => 'Cannot check out this appointment!'
         ], 400);
+    }
+
+    /**
+     * Set whether this appointment is excluded from the Admin Consultations Report (demo / training).
+     */
+    public function setConsultationReportExclusion(Request $request, Appointment $appointment)
+    {
+        if (! Schema::hasColumn('appointments', 'exclude_from_consultation_report')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This feature requires a database migration. Run php artisan migrate.',
+            ], 400);
+        }
+
+        $validated = $request->validate([
+            'excluded' => 'required|boolean',
+        ]);
+
+        $appointment->update([
+            'exclude_from_consultation_report' => $validated['excluded'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'excluded' => (bool) $appointment->exclude_from_consultation_report,
+            'message' => $validated['excluded']
+                ? 'This appointment is excluded from the consultation report.'
+                : 'This appointment is included in the consultation report again.',
+        ]);
+    }
+
+    /**
+     * Bulk set consultation report exclusion for selected appointment IDs.
+     */
+    public function bulkSetConsultationReportExclusion(Request $request)
+    {
+        if (! Schema::hasColumn('appointments', 'exclude_from_consultation_report')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This feature requires a database migration. Run php artisan migrate.',
+            ], 400);
+        }
+
+        $validated = $request->validate([
+            'appointment_ids' => 'required|array|min:1',
+            'appointment_ids.*' => 'integer|exists:appointments,id',
+            'excluded' => 'required|boolean',
+        ]);
+
+        $ids = $validated['appointment_ids'];
+        $excluded = $validated['excluded'];
+
+        Appointment::whereIn('id', $ids)->update(['exclude_from_consultation_report' => $excluded]);
+
+        return response()->json([
+            'success' => true,
+            'excluded' => $excluded,
+            'updated' => count($ids),
+            'message' => $excluded
+                ? count($ids) . ' appointment(s) excluded from the consultation report.'
+                : count($ids) . ' appointment(s) included in the consultation report again.',
+        ]);
     }
 
     public function calendar()

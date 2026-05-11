@@ -258,12 +258,14 @@ class AppointmentsController extends Controller
         // Pending appointments today/future awaiting confirmation (use pre-overdue query)
         $pendingUpcomingCount = $queryForCounts->pendingUpcoming()->count();
 
+        $consultationReportExclusionEnabled = Schema::hasColumn('appointments', 'exclude_from_consultation_report');
+
         // Sort by date and time
         $appointments = $query->orderBy('appointment_date', 'desc')
                               ->orderBy('appointment_time', 'desc')
                               ->paginate(15)->appends($request->query());
 
-        return view('staff.appointments.index', compact('appointments', 'doctors', 'departments', 'pendingPastCount', 'pendingPastAppointments', 'pendingUpcomingCount'));
+        return view('staff.appointments.index', compact('appointments', 'doctors', 'departments', 'pendingPastCount', 'pendingPastAppointments', 'pendingUpcomingCount', 'consultationReportExclusionEnabled'));
     }
 
     public function show($id)
@@ -321,7 +323,9 @@ class AppointmentsController extends Controller
 
         $calendarLinks = $this->appointmentCalendarInviteService->calendarLinksForAppointment($appointment);
 
-        return view('staff.appointments.show', compact('appointment', 'calendarLinks'));
+        $consultationReportExclusionEnabled = Schema::hasColumn('appointments', 'exclude_from_consultation_report');
+
+        return view('staff.appointments.show', compact('appointment', 'calendarLinks', 'consultationReportExclusionEnabled'));
     }
 
     public function create()
@@ -703,6 +707,85 @@ class AppointmentsController extends Controller
 
         return redirect()->route('staff.appointments.index')
             ->with('success', 'Appointment updated successfully.');
+    }
+
+    /**
+     * Set whether this appointment is excluded from the Admin Consultations Report (demo / training).
+     */
+    public function setConsultationReportExclusion(Request $request, $id)
+    {
+        if (! Schema::hasColumn('appointments', 'exclude_from_consultation_report')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This feature requires a database migration. Run php artisan migrate.',
+            ], 400);
+        }
+
+        $validated = $request->validate([
+            'excluded' => 'required|boolean',
+        ]);
+
+        $appointment = Appointment::query()
+            ->visibleTo(Auth::user())
+            ->whereKey($id)
+            ->firstOrFail();
+
+        $appointment->update([
+            'exclude_from_consultation_report' => $validated['excluded'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'excluded' => (bool) $appointment->exclude_from_consultation_report,
+            'message' => $validated['excluded']
+                ? 'This appointment is excluded from the consultation report.'
+                : 'This appointment is included in the consultation report again.',
+        ]);
+    }
+
+    /**
+     * Bulk set consultation report exclusion for appointments the user can see.
+     */
+    public function bulkSetConsultationReportExclusion(Request $request)
+    {
+        if (! Schema::hasColumn('appointments', 'exclude_from_consultation_report')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This feature requires a database migration. Run php artisan migrate.',
+            ], 400);
+        }
+
+        $validated = $request->validate([
+            'appointment_ids' => 'required|array|min:1',
+            'appointment_ids.*' => 'integer|exists:appointments,id',
+            'excluded' => 'required|boolean',
+        ]);
+
+        $ids = $validated['appointment_ids'];
+        $excluded = $validated['excluded'];
+
+        $allowedIds = Appointment::query()
+            ->visibleTo(Auth::user())
+            ->whereIn('id', $ids)
+            ->pluck('id');
+
+        if ($allowedIds->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No matching appointments found for your account.',
+            ], 404);
+        }
+
+        Appointment::whereIn('id', $allowedIds)->update(['exclude_from_consultation_report' => $excluded]);
+
+        return response()->json([
+            'success' => true,
+            'excluded' => $excluded,
+            'updated' => $allowedIds->count(),
+            'message' => $excluded
+                ? $allowedIds->count() . ' appointment(s) excluded from the consultation report.'
+                : $allowedIds->count() . ' appointment(s) included in the consultation report again.',
+        ]);
     }
 
     public function confirm($id)

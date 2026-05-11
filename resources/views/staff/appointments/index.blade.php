@@ -657,6 +657,24 @@
                                                 <i class="fas fa-times"></i>
                                             </button>
                                         @endif
+
+                                        @if(!empty($consultationReportExclusionEnabled) && in_array($appointment->type, ['consultation', 'followup'], true))
+                                            @if($appointment->exclude_from_consultation_report)
+                                                <button type="button" class="btn btn-sm btn-outline-success"
+                                                        title="Include in consultation report"
+                                                        data-url="{{ route('staff.appointments.consultation-report-exclusion', $appointment->id) }}"
+                                                        onclick="postStaffConsultationReportExclusionFromList(this, false)">
+                                                    <i class="fas fa-chart-bar"></i>
+                                                </button>
+                                            @else
+                                                <button type="button" class="btn btn-sm btn-outline-warning text-dark"
+                                                        title="Exclude from consultation report (demo)"
+                                                        data-url="{{ route('staff.appointments.consultation-report-exclusion', $appointment->id) }}"
+                                                        onclick="postStaffConsultationReportExclusionFromList(this, true)">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            @endif
+                                        @endif
                                         
                                         {{-- Create medical record from appointment --}}
                                         @if($appointment->status === 'completed' && in_array(auth()->user()->role, ['doctor', 'nurse']))
@@ -931,5 +949,35 @@ $('#statusForm').on('submit', function(e) {
 $(document).on('change', '#status_select', function() {
     syncStatusModalLabelsForStatus($(this).val());
 });
+
+function postStaffConsultationReportExclusionFromList(button, excluded) {
+    const url = button.getAttribute('data-url');
+    if (!url) return;
+    button.disabled = true;
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ excluded: excluded })
+    })
+    .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+    .then(function(res) {
+        if (res.ok && res.data.success) {
+            location.reload();
+        } else {
+            alert(res.data.message || 'Could not update consultation report setting.');
+            button.disabled = false;
+        }
+    })
+    .catch(function() {
+        alert('Could not update consultation report setting.');
+        button.disabled = false;
+    });
+}
 </script>
 @endpush
