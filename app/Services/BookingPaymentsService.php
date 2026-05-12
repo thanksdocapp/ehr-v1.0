@@ -79,6 +79,20 @@ class BookingPaymentsService
     }
 
     /**
+     * Completed payments for a doctor restricted to a calendar period (inclusive of start/end days).
+     * Uses the same attribution rules as {@see completedPaymentsForDoctor} (appointments, billing,
+     * pending bookings, clinic checkout, discount codes).
+     */
+    public function completedPaymentsForDoctorInPeriod(Doctor $doctor, Carbon $periodStart, Carbon $periodEnd): Builder
+    {
+        return $this->completedPaymentsForDoctor($doctor)
+            ->whereBetween('payment_date', [
+                $periodStart->copy()->startOfDay(),
+                $periodEnd->copy()->endOfDay(),
+            ]);
+    }
+
+    /**
      * Keep payments whose invoice relates to the given department/clinic (matches clinicNameForBookingPayment logic).
      */
     public function restrictPaymentsToDepartment(Builder $query, int $departmentId): Builder

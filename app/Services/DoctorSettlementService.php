@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Billing;
 use App\Models\Doctor;
 use App\Models\DoctorSettlement;
 use App\Models\DoctorSettlementLine;
@@ -12,6 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class DoctorSettlementService
 {
+    public function __construct(
+        private readonly BookingPaymentsService $bookingPayments
+    ) {}
+
     /**
      * @return array{0: Carbon, 1: Carbon}
      */
@@ -31,26 +34,29 @@ class DoctorSettlementService
      */
     public function collectLineDataForPeriod(Doctor $doctor, Carbon $periodStart, Carbon $periodEnd)
     {
-        $payments = Payment::query()
-            ->where('status', 'completed')
-            ->whereBetween('payment_date', [$periodStart->copy()->startOfDay(), $periodEnd->copy()->endOfDay()])
-            ->whereHas('invoice.billing', function ($query) use ($doctor) {
-                $query->where('doctor_id', $doctor->id);
-            })
-            ->with(['invoice.billing'])
+        $payments = $this->bookingPayments
+            ->completedPaymentsForDoctorInPeriod($doctor, $periodStart, $periodEnd)
+            ->with([
+                'invoice.billing',
+                'invoice.appointment',
+                'invoice.pendingBookings',
+                'invoice.pendingClinicBookings',
+                'invoice.doctorBookingDiscountCode',
+                'invoice.clinicBookingDiscountCode',
+            ])
             ->orderBy('payment_date')
             ->get();
 
         return $payments->map(function (Payment $payment) {
-            /** @var Billing|null $billing */
             $billing = $payment->invoice?->billing;
-            $label = $billing->bill_number
+            $billPart = $billing?->bill_number
                 ? 'Bill '.$billing->bill_number
-                : 'Billing #'.($billing?->id ?? '—');
+                : ($billing ? 'Billing #'.$billing->id : 'Invoice #'.($payment->invoice_id ?? '—'));
+            $source = $this->bookingPayments->labelForPayment($payment);
 
             return [
                 'billing_id' => $billing?->id,
-                'description' => $label.' — payment '.($payment->payment_date?->format('Y-m-d') ?? ''),
+                'description' => $billPart.' — '.$source.' — '.($payment->payment_date?->format('Y-m-d') ?? ''),
                 'amount' => (float) $payment->amount,
             ];
         });
