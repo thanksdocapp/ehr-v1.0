@@ -544,9 +544,11 @@
             min-height: 40px;
             line-height: 38px;
         }
+    </style>
 
-        @yield('styles')
+    @yield('styles')
 
+    <style>
         /* Public booking: service cards two columns (after per-page styles; wins over theme/Bootstrap) */
         #service-cards.public-booking-service-grid {
             display: grid !important;
