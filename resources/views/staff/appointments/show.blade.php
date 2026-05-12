@@ -552,7 +552,7 @@
                             <i class="fas fa-arrow-left me-1"></i>Back to Appointments
                         </a>
 
-                        @if(!empty($consultationReportExclusionEnabled) && \Illuminate\Support\Facades\Route::has('staff.appointments.consultation-report-exclusion') && in_array($appointment->type, ['consultation', 'followup'], true))
+                        @if(!empty($consultationReportExclusionEnabled) && !empty($canManageConsultationReportExclusion) && \Illuminate\Support\Facades\Route::has('staff.appointments.consultation-report-exclusion') && in_array($appointment->type, ['consultation', 'followup'], true))
                             @if($appointment->exclude_from_consultation_report)
                                 <button type="button" class="btn btn-outline-success"
                                         data-url="{{ route('staff.appointments.consultation-report-exclusion', $appointment->id) }}"

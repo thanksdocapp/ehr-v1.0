@@ -241,8 +241,9 @@ class AppointmentsController extends Controller
         $doctors = Doctor::ordered()->get();
 
         $consultationReportExclusionEnabled = Schema::hasColumn('appointments', 'exclude_from_consultation_report');
+        $canManageConsultationReportExclusion = $this->userCanManageConsultationReportExclusion();
 
-        return view('admin.appointments.index', compact('appointments', 'departments', 'doctors', 'stats', 'consultationReportExclusionEnabled'));
+        return view('admin.appointments.index', compact('appointments', 'departments', 'doctors', 'stats', 'consultationReportExclusionEnabled', 'canManageConsultationReportExclusion'));
     }
 
     /**
@@ -271,6 +272,18 @@ class AppointmentsController extends Controller
         return $user->department_id;
     }
 
+    /**
+     * Consultation report exclusion (demo/training) is limited to full admin users, not doctors.
+     */
+    private function userCanManageConsultationReportExclusion(): bool
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return false;
+        }
+
+        return ($user->is_admin ?? false) || $user->role === 'admin';
+    }
 
     public function create()
     {
@@ -436,8 +449,9 @@ class AppointmentsController extends Controller
         }
 
         $consultationReportExclusionEnabled = Schema::hasColumn('appointments', 'exclude_from_consultation_report');
+        $canManageConsultationReportExclusion = $this->userCanManageConsultationReportExclusion();
 
-        return view('admin.appointments.show', compact('appointment', 'consultationReportExclusionEnabled'));
+        return view('admin.appointments.show', compact('appointment', 'consultationReportExclusionEnabled', 'canManageConsultationReportExclusion'));
     }
 
     public function edit($id)
@@ -461,7 +475,9 @@ class AppointmentsController extends Controller
         }
         $doctors = $doctorsQuery->ordered()->get();
 
-        return view('admin.appointments.edit', compact('appointment', 'patients', 'departments', 'doctors'));
+        $canManageConsultationReportExclusion = $this->userCanManageConsultationReportExclusion();
+
+        return view('admin.appointments.edit', compact('appointment', 'patients', 'departments', 'doctors', 'canManageConsultationReportExclusion'));
     }
 
     public function update(Request $request, $id, HospitalEmailNotificationService $emailService)
@@ -511,7 +527,11 @@ class AppointmentsController extends Controller
         $data = $request->except(['consultation_type', 'is_online']);
         $data['consultation_type'] = $consultationType;
         $data['is_online'] = $isOnline;
-        $data['exclude_from_consultation_report'] = $request->boolean('exclude_from_consultation_report');
+        if ($this->userCanManageConsultationReportExclusion()) {
+            $data['exclude_from_consultation_report'] = $request->boolean('exclude_from_consultation_report');
+        } else {
+            unset($data['exclude_from_consultation_report']);
+        }
         if (!$isOnline) {
             $data['meeting_link'] = null;
             $data['meeting_platform'] = null;
@@ -615,6 +635,13 @@ class AppointmentsController extends Controller
      */
     public function setConsultationReportExclusion(Request $request, Appointment $appointment)
     {
+        if (! $this->userCanManageConsultationReportExclusion()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only administrators can change consultation report exclusion.',
+            ], 403);
+        }
+
         if (! Schema::hasColumn('appointments', 'exclude_from_consultation_report')) {
             return response()->json([
                 'success' => false,
@@ -644,6 +671,13 @@ class AppointmentsController extends Controller
      */
     public function bulkSetConsultationReportExclusion(Request $request)
     {
+        if (! $this->userCanManageConsultationReportExclusion()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only administrators can change consultation report exclusion.',
+            ], 403);
+        }
+
         if (! Schema::hasColumn('appointments', 'exclude_from_consultation_report')) {
             return response()->json([
                 'success' => false,

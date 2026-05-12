@@ -541,7 +541,7 @@
                                                 <i class="fas fa-undo"></i>
                                             </button>
                                         @endif
-                                        @if(!empty($consultationReportExclusionEnabled) && $consultationReportExclusionRouteOk && in_array($appointment->type, ['consultation', 'followup'], true))
+                                        @if(!empty($consultationReportExclusionEnabled) && !empty($canManageConsultationReportExclusion) && $consultationReportExclusionRouteOk && in_array($appointment->type, ['consultation', 'followup'], true))
                                             @if($appointment->exclude_from_consultation_report)
                                                 <button type="button" class="btn btn-sm btn-outline-success"
                                                         title="Include in consultation report"
@@ -602,7 +602,7 @@
                         <button class="btn btn-sm btn-danger" onclick="bulkCancel()">
                             <i class="fas fa-times me-1"></i>Cancel Selected
                         </button>
-                        @if(!empty($consultationReportExclusionEnabled) && $consultationReportExclusionBulkRouteOk)
+                        @if(!empty($consultationReportExclusionEnabled) && !empty($canManageConsultationReportExclusion) && $consultationReportExclusionBulkRouteOk)
                         <button type="button" class="btn btn-sm btn-outline-warning text-dark" onclick="bulkConsultationReportExclusion(true)">
                             <i class="fas fa-ban me-1"></i>Exclude selected from report
                         </button>

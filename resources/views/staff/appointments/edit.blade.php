@@ -493,7 +493,7 @@
                     </div>
                 </div>
 
-                @if(\Illuminate\Support\Facades\Schema::hasColumn('appointments', 'exclude_from_consultation_report'))
+                @if(\Illuminate\Support\Facades\Schema::hasColumn('appointments', 'exclude_from_consultation_report') && !empty($canManageConsultationReportExclusion))
                 <div class="row">
                     <div class="col-12">
                         <div class="form-group mb-3">

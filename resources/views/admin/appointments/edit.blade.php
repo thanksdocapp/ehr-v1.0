@@ -644,7 +644,7 @@ textarea.form-control {
                     </div>
                         </div>
 
-                        @if(\Illuminate\Support\Facades\Schema::hasColumn('appointments', 'exclude_from_consultation_report'))
+                        @if(\Illuminate\Support\Facades\Schema::hasColumn('appointments', 'exclude_from_consultation_report') && !empty($canManageConsultationReportExclusion))
                         <div class="form-group">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="exclude_from_consultation_report"

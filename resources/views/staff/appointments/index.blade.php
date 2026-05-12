@@ -658,7 +658,7 @@
                                             </button>
                                         @endif
 
-                                        @if(!empty($consultationReportExclusionEnabled) && \Illuminate\Support\Facades\Route::has('staff.appointments.consultation-report-exclusion') && in_array($appointment->type, ['consultation', 'followup'], true))
+                                        @if(!empty($consultationReportExclusionEnabled) && !empty($canManageConsultationReportExclusion) && \Illuminate\Support\Facades\Route::has('staff.appointments.consultation-report-exclusion') && in_array($appointment->type, ['consultation', 'followup'], true))
                                             @if($appointment->exclude_from_consultation_report)
                                                 <button type="button" class="btn btn-sm btn-outline-success"
                                                         title="Include in consultation report"
