@@ -15,6 +15,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Doctor settlement requests</h1>
     </div>
+    <p class="text-muted small mb-3">
+        The total is stored when a settlement is created. If older rows show £0.00 after a fix, open the request and use <strong>Recalculate from payments</strong> (draft or submitted) to rebuild lines and the total.
+    </p>
 
     <form method="get" class="row g-2 mb-3">
         <div class="col-auto">

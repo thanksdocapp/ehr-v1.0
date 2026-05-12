@@ -30,10 +30,16 @@
                     <span class="text-muted ms-2">{{ ucfirst($doctorSettlement->period_type) }}</span>
                 </div>
                 @if($doctorSettlement->isDraft())
-                <form method="post" action="{{ route('staff.doctor-settlements.submit', $doctorSettlement) }}" onsubmit="return confirm('Submit this settlement to administration for review?');">
-                    @csrf
-                    <button type="submit" class="btn btn-primary">Submit for review</button>
-                </form>
+                <div class="d-flex flex-wrap gap-2">
+                    <form method="post" action="{{ route('staff.doctor-settlements.recalculate', $doctorSettlement) }}" class="mb-0" onsubmit="return confirm('Replace line items and total using completed payments in this period?');">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-secondary">Recalculate from payments</button>
+                    </form>
+                    <form method="post" action="{{ route('staff.doctor-settlements.submit', $doctorSettlement) }}" onsubmit="return confirm('Submit this settlement to administration for review?');">
+                        @csrf
+                        <button type="submit" class="btn btn-primary">Submit for review</button>
+                    </form>
+                </div>
                 @endif
             </div>
             <p class="mb-1"><strong>Total:</strong> {{ CurrencyHelper::format((float) $doctorSettlement->total_amount) }}</p>

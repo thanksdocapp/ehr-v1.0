@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DoctorSettlement;
+use App\Services\DoctorSettlementService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,6 +35,18 @@ class DoctorSettlementsController extends Controller
         $doctorSettlement->load(['lines.billing', 'doctor.user', 'reviewedByUser']);
 
         return view('admin.doctor-settlements.show', compact('doctorSettlement'));
+    }
+
+    public function recalculate(DoctorSettlement $doctorSettlement, DoctorSettlementService $service): RedirectResponse
+    {
+        try {
+            $service->recalculateLinesFromPayments($doctorSettlement);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('admin.doctor-settlements.show', $doctorSettlement)
+            ->with('success', 'Line items and total were rebuilt from completed payments for this period.');
     }
 
     public function updateStatus(Request $request, DoctorSettlement $doctorSettlement): RedirectResponse

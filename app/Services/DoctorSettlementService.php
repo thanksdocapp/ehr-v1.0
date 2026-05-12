@@ -120,4 +120,44 @@ class DoctorSettlementService
 
         return $settlement->fresh();
     }
+
+    /**
+     * Rebuild line items and total from completed payments for this settlement's doctor and period.
+     * Use after logic changes or to fix settlements that were saved with incorrect totals.
+     */
+    public function recalculateLinesFromPayments(DoctorSettlement $settlement): DoctorSettlement
+    {
+        if (! in_array($settlement->status, [
+            DoctorSettlement::STATUS_DRAFT,
+            DoctorSettlement::STATUS_SUBMITTED,
+        ], true)) {
+            throw new \InvalidArgumentException(
+                'Only draft or submitted settlements can be recalculated from payments.'
+            );
+        }
+
+        $doctor = $settlement->doctor()->firstOrFail();
+        $periodStart = Carbon::parse($settlement->period_start)->startOfDay();
+        $periodEnd = Carbon::parse($settlement->period_end)->startOfDay();
+
+        $lines = $this->collectLineDataForPeriod($doctor, $periodStart, $periodEnd);
+        $total = round((float) $lines->sum('amount'), 2);
+
+        return DB::transaction(function () use ($settlement, $lines, $total) {
+            $settlement->lines()->delete();
+
+            foreach ($lines as $row) {
+                DoctorSettlementLine::create([
+                    'doctor_settlement_id' => $settlement->id,
+                    'billing_id' => $row['billing_id'],
+                    'description' => $row['description'],
+                    'amount' => $row['amount'],
+                ]);
+            }
+
+            $settlement->update(['total_amount' => $total]);
+
+            return $settlement->fresh(['lines.billing']);
+        });
+    }
 }

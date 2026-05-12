@@ -85,11 +85,10 @@ class BookingPaymentsService
      */
     public function completedPaymentsForDoctorInPeriod(Doctor $doctor, Carbon $periodStart, Carbon $periodEnd): Builder
     {
+        // Match admin booking-payments date filters (calendar days in app timezone).
         return $this->completedPaymentsForDoctor($doctor)
-            ->whereBetween('payment_date', [
-                $periodStart->copy()->startOfDay(),
-                $periodEnd->copy()->endOfDay(),
-            ]);
+            ->whereDate('payment_date', '>=', $periodStart->toDateString())
+            ->whereDate('payment_date', '<=', $periodEnd->toDateString());
     }
 
     /**

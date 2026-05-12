@@ -13,7 +13,22 @@
 @endsection
 
 @section('content')
+@php
+    $recalculateConfirm = $doctorSettlement->status === DoctorSettlement::STATUS_SUBMITTED
+        ? 'This request is already submitted. Recalculate anyway?'
+        : 'Recalculate this settlement from payments?';
+@endphp
 <div class="container-fluid">
+    @if(in_array($doctorSettlement->status, [DoctorSettlement::STATUS_DRAFT, DoctorSettlement::STATUS_SUBMITTED], true))
+    <div class="alert alert-light border mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span class="small mb-0">Rebuild line items and total from completed payments for this doctor and period (overwrites existing lines).</span>
+        <form method="post" action="{{ route('admin.doctor-settlements.recalculate', $doctorSettlement) }}" class="mb-0"
+              onsubmit="return confirm(@json($recalculateConfirm));">
+            @csrf
+            <button type="submit" class="btn btn-sm btn-outline-primary">Recalculate from payments</button>
+        </form>
+    </div>
+    @endif
     <div class="row">
         <div class="col-lg-8">
             <div class="card shadow mb-4">

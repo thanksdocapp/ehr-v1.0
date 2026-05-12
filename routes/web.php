@@ -423,6 +423,7 @@ Route::group(['middleware' => 'installed'], function () {
             Route::get('/', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'index'])->name('index');
             Route::get('/create', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'create'])->name('create');
             Route::post('/', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'store'])->name('store');
+            Route::post('{doctorSettlement}/recalculate', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'recalculate'])->name('recalculate');
             Route::get('{doctorSettlement}', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'show'])->name('show');
             Route::post('{doctorSettlement}/submit', [\App\Http\Controllers\Staff\DoctorSettlementsController::class, 'submit'])->name('submit');
         });
@@ -925,6 +926,7 @@ Route::group(['middleware' => 'installed'], function () {
 
         Route::prefix('doctor-settlements')->name('doctor-settlements.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'index'])->name('index');
+            Route::post('{doctorSettlement}/recalculate', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'recalculate'])->name('recalculate');
             Route::get('{doctorSettlement}', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'show'])->name('show');
             Route::patch('{doctorSettlement}/status', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'updateStatus'])->name('update-status');
         });

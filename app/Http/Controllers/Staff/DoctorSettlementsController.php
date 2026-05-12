@@ -115,4 +115,30 @@ class DoctorSettlementsController extends Controller
         return redirect()->route('staff.doctor-settlements.show', $doctorSettlement)
             ->with('success', 'Settlement submitted to administration for review.');
     }
+
+    public function recalculate(DoctorSettlement $doctorSettlement, DoctorSettlementService $service): RedirectResponse
+    {
+        $user = Auth::user();
+        if ($user->role !== 'doctor') {
+            abort(403);
+        }
+
+        $doctor = Doctor::where('user_id', $user->id)->firstOrFail();
+        if ((int) $doctorSettlement->doctor_id !== (int) $doctor->id) {
+            abort(403);
+        }
+
+        if (! $doctorSettlement->isDraft()) {
+            return redirect()->back()->with('error', 'Only draft settlements can be recalculated.');
+        }
+
+        try {
+            $service->recalculateLinesFromPayments($doctorSettlement);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('staff.doctor-settlements.show', $doctorSettlement)
+            ->with('success', 'Line items and total were updated from completed payments in this period.');
+    }
 }
