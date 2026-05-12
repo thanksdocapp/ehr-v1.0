@@ -85,6 +85,37 @@ class Doctor extends Model
             ?? $this->department; // Fallback to old department_id
     }
 
+    /**
+     * Clinic name(s) for admin lists (pivot departments + legacy department).
+     */
+    public function clinicsDisplayLabel(): string
+    {
+        if ($this->relationLoaded('departments') && $this->departments->isNotEmpty()) {
+            $names = $this->departments->pluck('name')
+                ->map(fn ($n) => trim((string) $n))
+                ->filter()
+                ->unique()
+                ->values();
+
+            if ($names->isNotEmpty()) {
+                return $names->implode(', ');
+            }
+        }
+
+        if ($this->relationLoaded('department') && $this->department) {
+            $n = trim((string) $this->department->name);
+
+            return $n !== '' ? $n : '—';
+        }
+
+        $dept = $this->primaryDepartment();
+        if ($dept && filled($dept->name ?? null)) {
+            return (string) $dept->name;
+        }
+
+        return '—';
+    }
+
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);

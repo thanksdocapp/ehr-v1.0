@@ -15,7 +15,7 @@ class DoctorSettlementsController extends Controller
     public function index(Request $request): View
     {
         $query = DoctorSettlement::query()
-            ->with(['doctor.user'])
+            ->with(['doctor.user', 'doctor.departments', 'doctor.department'])
             ->orderByDesc('updated_at');
 
         if ($request->filled('status')) {
