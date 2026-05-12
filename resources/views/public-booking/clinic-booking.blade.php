@@ -68,39 +68,53 @@
         <input type="hidden" name="consultation_type" id="consultation-type-input" value="in_person">
 
         <div class="form-card">
-            <label class="form-label">Select Service <span class="text-danger">*</span></label>
-            <div class="clinic-service-row">
-                <div class="clinic-service-dropdown-col">
-                    <select name="service_id" id="service-select" class="form-control form-control-sm" required>
-                        <option value="">Select a service...</option>
-                        @foreach($services as $svc)
-                        @php
-                            $price = $svc['price'] ?? 0;
-                            $duration = $svc['duration'] ?? 60;
-                            $ct = $svc['consultation_type'] ?? 'in_person';
-                            $desc = $svc['description'] ?? '';
-                        @endphp
-                        <option value="{{ $svc['id'] }}" data-duration="{{ $duration }}" data-price="{{ $price }}" data-consultation-type="{{ $ct }}" data-description="{{ e($desc) }}">
-                            {{ $svc['name'] }} - £{{ number_format($price, 2) }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="clinic-service-details-col" id="clinic-service-details" style="display: none;">
-                    <div class="summary-card-compact">
-                        <div class="summary-description-compact" id="clinic-service-description"></div>
-                        <div class="summary-row-compact">
-                            <span class="summary-label-compact">Consultation Type:</span>
-                            <span class="summary-value-compact" id="clinic-service-consultation-type">-</span>
-                        </div>
-                        <div class="summary-row-compact">
-                            <span class="summary-label-compact">Duration:</span>
-                            <span class="summary-value-compact" id="clinic-service-duration">-</span>
-                        </div>
-                        <div class="summary-row-compact">
-                            <span class="summary-label-compact">Price:</span>
-                            <span class="summary-value-compact" id="clinic-service-price">-</span>
-                        </div>
+            <label class="form-label" id="service-cards-label">Choose a service <span class="text-danger">*</span></label>
+            <input type="hidden" name="service_id" id="service-id-input" value="" required>
+            <div class="public-booking-service-grid" id="service-cards" role="group" aria-labelledby="service-cards-label">
+                @foreach($services as $svc)
+                @php
+                    $price = $svc['price'] ?? 0;
+                    $duration = $svc['duration'] ?? 60;
+                    $ct = $svc['consultation_type'] ?? 'in_person';
+                    $desc = $svc['description'] ?? '';
+                    $name = $svc['name'] ?? 'Service';
+                @endphp
+                <button type="button"
+                        class="pb-service-card"
+                        data-service-id="{{ $svc['id'] }}"
+                        data-duration="{{ (int) $duration }}"
+                        data-price="{{ $price }}"
+                        data-consultation-type="{{ e($ct) }}"
+                        data-description="{{ e($desc) }}"
+                        data-name="{{ e($name) }}"
+                        aria-pressed="false">
+                    <div class="pb-service-card__title">{{ $name }}</div>
+                    @if($desc)
+                    <div class="pb-service-card__desc">{{ \Illuminate\Support\Str::limit(strip_tags($desc), 120) }}</div>
+                    @endif
+                    <div class="pb-service-card__meta">
+                        @if($duration)
+                        <span><i class="far fa-clock me-1"></i>{{ (int) $duration }} min</span>
+                        @endif
+                    </div>
+                    <div class="pb-service-card__price">£{{ number_format((float) $price, 2) }}</div>
+                </button>
+                @endforeach
+            </div>
+            <div class="clinic-service-details-wrap mt-3" id="clinic-service-details" style="display: none;">
+                <div class="summary-card-compact">
+                    <div class="summary-description-compact" id="clinic-service-description"></div>
+                    <div class="summary-row-compact">
+                        <span class="summary-label-compact">Consultation Type:</span>
+                        <span class="summary-value-compact" id="clinic-service-consultation-type">-</span>
+                    </div>
+                    <div class="summary-row-compact">
+                        <span class="summary-label-compact">Duration:</span>
+                        <span class="summary-value-compact" id="clinic-service-duration">-</span>
+                    </div>
+                    <div class="summary-row-compact">
+                        <span class="summary-label-compact">Price:</span>
+                        <span class="summary-value-compact" id="clinic-service-price">-</span>
                     </div>
                 </div>
             </div>
@@ -153,9 +167,36 @@
 
 @section('styles')
 <style>
-    .clinic-service-row { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
-    .clinic-service-dropdown-col { flex: 1; min-width: 200px; }
-    .clinic-service-details-col { flex: 1; min-width: 200px; }
+    .public-booking-service-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 0.75rem;
+    }
+    .pb-service-card {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 1rem 1.1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        font: inherit;
+        color: inherit;
+        min-height: 44px;
+    }
+    .pb-service-card:hover { border-color: var(--booking-primary, #007bff); }
+    .pb-service-card:focus-visible { outline: 2px solid var(--booking-primary, #007bff); outline-offset: 2px; }
+    .pb-service-card.is-selected {
+        border-color: var(--booking-primary, #007bff);
+        box-shadow: 0 0 0 1px var(--booking-primary, #007bff);
+    }
+    .pb-service-card__title { font-weight: 700; font-size: 1rem; margin-bottom: 0.35rem; color: #1a202c; }
+    .pb-service-card__desc { font-size: 0.8125rem; color: #64748b; line-height: 1.4; margin-bottom: 0.5rem; }
+    .pb-service-card__meta { font-size: 0.8125rem; color: #64748b; }
+    .pb-service-card__price { font-size: 1.05rem; font-weight: 700; color: var(--booking-primary, #007bff); margin-top: 0.5rem; }
+    .clinic-service-details-wrap { max-width: 100%; }
     .summary-card-compact { background: #f8fafc; border-radius: 8px; padding: 1rem; border: 1px solid #e2e8f0; }
     .summary-description-compact { font-size: 0.75rem; color: #6c757d; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; line-height: 1.4; }
     .summary-row-compact { display: flex; justify-content: space-between; padding: 0.25rem 0; font-size: 0.8125rem; }
@@ -177,7 +218,6 @@
     .time-slots-picker .form-label { font-weight: 600; color: #334155; }
     .time-slots-picker select { border-radius: 8px; border-width: 2px; }
     .time-slot-hint { font-size: 0.8125rem; color: #64748b; margin-top: 0.5rem; }
-    @media (max-width: 768px) { .clinic-service-row { flex-direction: column; } }
 </style>
 @endsection
 
@@ -185,8 +225,8 @@
 @if(!empty($services))
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('clinic-booking-form');
-    const serviceSelect = document.getElementById('service-select');
+    const serviceIdInput = document.getElementById('service-id-input');
+    const serviceCardsRoot = document.getElementById('service-cards');
     const scheduleCard = document.getElementById('schedule-card');
     const dateDisplay = document.getElementById('date-display');
     const slotsContainer = document.getElementById('time-slots-picker');
@@ -206,6 +246,105 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedTime = null;
     const prevMonthBtn = document.getElementById('prev-month');
     const nextMonthBtn = document.getElementById('next-month');
+
+    function getSelectedServiceCard() {
+        return serviceCardsRoot ? serviceCardsRoot.querySelector('.pb-service-card.is-selected') : null;
+    }
+
+    function getServiceId() {
+        return serviceIdInput ? serviceIdInput.value : '';
+    }
+
+    function getServiceDuration() {
+        const c = getSelectedServiceCard();
+        return (c && c.dataset.duration) ? String(c.dataset.duration) : '30';
+    }
+
+    function getPbServiceCards(root) {
+        if (!root) return [];
+        return Array.prototype.slice.call(root.querySelectorAll('.pb-service-card'));
+    }
+
+    function syncPbServiceCardTabOrder(root) {
+        if (!root) return;
+        var cards = getPbServiceCards(root);
+        if (cards.length === 0) return;
+        var selected = root.querySelector('.pb-service-card.is-selected');
+        cards.forEach(function(c, i) {
+            if (selected) {
+                c.tabIndex = c.classList.contains('is-selected') ? 0 : -1;
+            } else {
+                c.tabIndex = i === 0 ? 0 : -1;
+            }
+        });
+    }
+
+    function bindPbServiceGroupKeyboard(root, onSelect) {
+        if (!root) return;
+        root.addEventListener('keydown', function(e) {
+            var cards = getPbServiceCards(root);
+            if (cards.length === 0) return;
+            var key = e.key;
+            if (key !== 'ArrowRight' && key !== 'ArrowLeft' && key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'Home' && key !== 'End' && key !== ' ' && key !== 'Enter') {
+                return;
+            }
+            var active = document.activeElement;
+            var idx = cards.indexOf(active);
+            if (key === ' ' || key === 'Enter') {
+                if (idx >= 0) {
+                    e.preventDefault();
+                    onSelect(cards[idx]);
+                }
+                return;
+            }
+            if (idx < 0) {
+                idx = cards.findIndex(function(c) { return c.classList.contains('is-selected'); });
+                if (idx < 0) idx = 0;
+                e.preventDefault();
+                cards[idx].focus();
+                return;
+            }
+            var next = idx;
+            if (key === 'Home') next = 0;
+            else if (key === 'End') next = cards.length - 1;
+            else if (key === 'ArrowRight' || key === 'ArrowDown') next = Math.min(cards.length - 1, idx + 1);
+            else if (key === 'ArrowLeft' || key === 'ArrowUp') next = Math.max(0, idx - 1);
+            if (key === 'Home' || key === 'End' || key.indexOf('Arrow') === 0) {
+                e.preventDefault();
+                if (next !== idx) {
+                    onSelect(cards[next]);
+                    cards[next].focus();
+                }
+            }
+        });
+    }
+
+    function applyClinicServiceFromCard(card) {
+        if (!card || !serviceIdInput || !serviceCardsRoot) return;
+        Object.keys(slotsByDate).forEach(function(k) { delete slotsByDate[k]; });
+        serviceCardsRoot.querySelectorAll('.pb-service-card').forEach(function(btn) {
+            btn.classList.remove('is-selected');
+            btn.setAttribute('aria-pressed', 'false');
+        });
+        card.classList.add('is-selected');
+        card.setAttribute('aria-pressed', 'true');
+        serviceIdInput.value = card.dataset.serviceId || '';
+        var ct = card.dataset.consultationType ? card.dataset.consultationType : 'in_person';
+        document.getElementById('consultation-type-input').value = ct;
+        updateClinicServiceDetails();
+        scheduleCard.style.display = 'block';
+        buildDateRange();
+        currentMonthIndex = 0;
+        selectedDate = null;
+        selectedTime = null;
+        dateInput.value = '';
+        timeInput.value = '';
+        continueBtn.disabled = true;
+        renderMonthNavigation();
+        renderDates();
+        hydrateCurrentMonth();
+        syncPbServiceCardTabOrder(serviceCardsRoot);
+    }
 
     function buildDateRange() {
         dateRange = [];
@@ -269,9 +408,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (Array.isArray(slotsByDate[dateStr])) {
             return Promise.resolve(slotsByDate[dateStr]);
         }
-        const serviceId = serviceSelect.value;
-        const opt = serviceSelect.options[serviceSelect.selectedIndex];
-        const duration = opt?.dataset.duration || 30;
+        const serviceId = getServiceId();
+        const duration = getServiceDuration();
         return fetch(`/api/public/clinics/${departmentId}/slots?service_id=${serviceId}&date=${dateStr}&duration=${duration}`, {
             credentials: 'same-origin',
             headers: {
@@ -317,10 +455,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadSlots() {
-        if (!selectedDate || !serviceSelect.value) return;
-        const serviceId = serviceSelect.value; // kept for URL consistency
-        const opt = serviceSelect.options[serviceSelect.selectedIndex];
-        const duration = opt?.dataset.duration || 30;
+        if (!selectedDate || !getServiceId()) return;
+        const duration = getServiceDuration();
 
         loadingSlots.style.display = 'block';
         slotsContainer.innerHTML = '';
@@ -382,16 +518,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateClinicServiceDetails() {
-        const opt = serviceSelect.options[serviceSelect.selectedIndex];
+        const card = getSelectedServiceCard();
         const detailsEl = document.getElementById('clinic-service-details');
-        if (!opt || !opt.value) {
+        if (!card || !getServiceId()) {
             detailsEl.style.display = 'none';
             return;
         }
-        const desc = opt.dataset.description || '';
-        const duration = opt.dataset.duration || 30;
-        const price = parseFloat(opt.dataset.price || 0).toFixed(2);
-        const ct = opt.dataset.consultationType || 'in_person';
+        const desc = card.dataset.description || '';
+        const duration = card.dataset.duration || 30;
+        const price = parseFloat(card.dataset.price || 0).toFixed(2);
+        const ct = card.dataset.consultationType || 'in_person';
 
         document.getElementById('clinic-service-description').textContent = desc.trim() || '';
         document.getElementById('clinic-service-description').style.display = desc.trim() ? 'block' : 'none';
@@ -401,47 +537,19 @@ document.addEventListener('DOMContentLoaded', function() {
         detailsEl.style.display = 'block';
     }
 
-    serviceSelect.addEventListener('change', function() {
-        if (this.value) {
-            var opt = this.options[this.selectedIndex];
-            var ct = opt && opt.dataset.consultationType ? opt.dataset.consultationType : 'in_person';
-            document.getElementById('consultation-type-input').value = ct;
-            updateClinicServiceDetails();
-            scheduleCard.style.display = 'block';
-            buildDateRange();
-            currentMonthIndex = 0;
-            selectedDate = null;
-            selectedTime = null;
-            dateInput.value = '';
-            timeInput.value = '';
-            continueBtn.disabled = true;
-            renderMonthNavigation();
-            renderDates();
-            hydrateCurrentMonth();
+    if (serviceCardsRoot) {
+        serviceCardsRoot.addEventListener('click', function(e) {
+            var card = e.target.closest('.pb-service-card');
+            if (!card) return;
+            applyClinicServiceFromCard(card);
+        });
+        bindPbServiceGroupKeyboard(serviceCardsRoot, applyClinicServiceFromCard);
+        var cards = serviceCardsRoot.querySelectorAll('.pb-service-card');
+        if (cards.length === 1) {
+            applyClinicServiceFromCard(cards[0]);
         } else {
-            document.getElementById('consultation-type-input').value = 'in_person';
-            document.getElementById('clinic-service-details').style.display = 'none';
-            scheduleCard.style.display = 'none';
-            continueBtn.disabled = true;
+            syncPbServiceCardTabOrder(serviceCardsRoot);
         }
-    });
-
-    if (serviceSelect.value) {
-        var opt = serviceSelect.options[serviceSelect.selectedIndex];
-        var ct = opt && opt.dataset.consultationType ? opt.dataset.consultationType : 'in_person';
-        document.getElementById('consultation-type-input').value = ct;
-        updateClinicServiceDetails();
-        scheduleCard.style.display = 'block';
-        buildDateRange();
-        currentMonthIndex = 0;
-        selectedDate = null;
-        selectedTime = null;
-        dateInput.value = '';
-        timeInput.value = '';
-        continueBtn.disabled = true;
-        renderMonthNavigation();
-        renderDates();
-        hydrateCurrentMonth();
     }
 
     prevMonthBtn.addEventListener('click', function() {

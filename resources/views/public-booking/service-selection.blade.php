@@ -86,46 +86,54 @@
                     @endif
         </div>
 
-        <!-- Service Selection (Dropdown) - Shown when doctor is selected -->
+        <!-- Service selection (cards) -->
         <div class="form-card" id="service-selection-card" style="display: {{ (isset($doctor) && $doctors->count() == 1) ? 'block' : 'none' }};">
-            <label class="form-label">Select Service <span class="text-danger">*</span></label>
-            <div class="service-selection-row">
-                <div class="service-dropdown-col">
-                    <select name="service_id" id="service-select" class="form-control form-control-sm" required {{ (isset($doctor) && $doctors->count() == 1) || isset($service) ? '' : 'disabled' }}>
-                        <option value="">Select a service...</option>
-                        @if(isset($service))
-                        @php
-                            $servicePrice = $service->getPriceForDoctor($doctor->id ?? 0) ?? $service->default_price ?? 0;
-                            $serviceDuration = $service->getDurationForDoctor($doctor->id ?? 0) ?? $service->default_duration_minutes ?? 60;
-                            $serviceDescription = $service->description ?? '';
-                            $serviceConsultationType = $service->getConsultationTypeForDoctor($doctor->id ?? 0);
-                        @endphp
-                        <option value="{{ $service->id }}" 
-                                selected 
-                                data-duration="{{ $serviceDuration }}"
-                                data-price="{{ $servicePrice }}"
-                                data-description="{{ $serviceDescription }}"
-                                data-consultation-type="{{ $serviceConsultationType }}">
-                            {{ $service->name }} - £{{ number_format($servicePrice, 2) }}
-                        </option>
-                        @endif
-                    </select>
-                </div>
-                <div class="service-details-col" id="service-details" style="display: none;">
-                    <div class="summary-card-compact">
-                        <div class="summary-description-compact" id="service-description"></div>
-                        <div class="summary-row-compact">
-                            <span class="summary-label-compact">Consultation Type:</span>
-                            <span class="summary-value-compact" id="service-consultation-type">-</span>
-                        </div>
-                        <div class="summary-row-compact">
-                            <span class="summary-label-compact">Duration:</span>
-                            <span class="summary-value-compact" id="service-duration">-</span>
-                        </div>
-                        <div class="summary-row-compact">
-                            <span class="summary-label-compact">Price:</span>
-                            <span class="summary-value-compact" id="service-price">-</span>
-                        </div>
+            <label class="form-label" id="service-cards-label">Choose a service <span class="text-danger">*</span></label>
+            <p class="text-muted small mb-2" id="service-loading-msg" style="display: none;"><i class="fas fa-spinner fa-spin me-1"></i>Loading services…</p>
+            <input type="hidden" name="service_id" id="service-id-input" value="@if(isset($service)){{ $service->id }}@endif" @if((isset($doctor) && $doctors->count() == 1) || isset($service)) required @endif>
+            <div class="public-booking-service-grid" id="service-cards" role="group" aria-labelledby="service-cards-label">
+                @if(isset($service) && isset($doctor))
+                @php
+                    $servicePrice = $service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0;
+                    $serviceDuration = $service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 60;
+                    $serviceDescription = $service->description ?? '';
+                    $serviceConsultationType = $service->getConsultationTypeForDoctor($doctor->id);
+                    $serviceName = $service->name;
+                @endphp
+                <button type="button"
+                        class="pb-service-card is-selected"
+                        data-service-id="{{ $service->id }}"
+                        data-duration="{{ (int) $serviceDuration }}"
+                        data-price="{{ $servicePrice }}"
+                        data-description="{{ e($serviceDescription) }}"
+                        data-consultation-type="{{ e($serviceConsultationType) }}"
+                        data-name="{{ e($serviceName) }}"
+                        aria-pressed="true">
+                    <div class="pb-service-card__title">{{ $serviceName }}</div>
+                    @if($serviceDescription)
+                    <div class="pb-service-card__desc">{{ \Illuminate\Support\Str::limit(strip_tags($serviceDescription), 120) }}</div>
+                    @endif
+                    <div class="pb-service-card__meta">
+                        <span><i class="far fa-clock me-1"></i>{{ (int) $serviceDuration }} min</span>
+                    </div>
+                    <div class="pb-service-card__price">£{{ number_format((float) $servicePrice, 2) }}</div>
+                </button>
+                @endif
+            </div>
+            <div class="service-details-col mt-2" id="service-details" style="display: {{ (isset($service) && isset($doctor)) ? 'block' : 'none' }};">
+                <div class="summary-card-compact">
+                    <div class="summary-description-compact" id="service-description"></div>
+                    <div class="summary-row-compact">
+                        <span class="summary-label-compact">Consultation Type:</span>
+                        <span class="summary-value-compact" id="service-consultation-type">-</span>
+                    </div>
+                    <div class="summary-row-compact">
+                        <span class="summary-label-compact">Duration:</span>
+                        <span class="summary-value-compact" id="service-duration">-</span>
+                    </div>
+                    <div class="summary-row-compact">
+                        <span class="summary-label-compact">Price:</span>
+                        <span class="summary-value-compact" id="service-price">-</span>
                     </div>
                 </div>
             </div>
@@ -361,6 +369,67 @@
         line-height: 1.4;
     }
 
+    .public-booking-service-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .pb-service-card {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 1rem 1.1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        font: inherit;
+        color: inherit;
+        min-height: 44px;
+    }
+
+    .pb-service-card:hover {
+        border-color: var(--booking-primary);
+    }
+
+    .pb-service-card:focus-visible {
+        outline: 2px solid var(--booking-primary);
+        outline-offset: 2px;
+    }
+
+    .pb-service-card.is-selected {
+        border-color: var(--booking-primary);
+        box-shadow: 0 0 0 1px var(--booking-primary);
+    }
+
+    .pb-service-card__title {
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 0.35rem;
+        color: #1a202c;
+    }
+
+    .pb-service-card__desc {
+        font-size: 0.8125rem;
+        color: #64748b;
+        line-height: 1.4;
+        margin-bottom: 0.5rem;
+    }
+
+    .pb-service-card__meta {
+        font-size: 0.8125rem;
+        color: #64748b;
+    }
+
+    .pb-service-card__price {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--booking-primary);
+        margin-top: 0.5rem;
+    }
+
     @media (max-width: 768px) {
         .service-selection-row {
             flex-direction: column;
@@ -390,7 +459,9 @@
         const doctorSelect = document.getElementById('doctor-select');
         const serviceSelectionCard = document.getElementById('service-selection-card');
         const scheduleSelectionCard = document.getElementById('schedule-selection-card');
-        const serviceSelect = document.getElementById('service-select');
+        const serviceIdInput = document.getElementById('service-id-input');
+        const serviceCardsRoot = document.getElementById('service-cards');
+        const serviceLoadingMsg = document.getElementById('service-loading-msg');
         const serviceDetails = document.getElementById('service-details');
         const continueBtn = document.getElementById('continue-btn');
         const form = document.getElementById('service-form');
@@ -408,17 +479,321 @@
         const slotsByDate = {};
         const RANGE_DAYS = 90;
 
+        function getPbServiceCards(root) {
+            if (!root) return [];
+            return Array.prototype.slice.call(root.querySelectorAll('.pb-service-card'));
+        }
+
+        function syncPbServiceCardTabOrder(root) {
+            if (!root) return;
+            var cards = getPbServiceCards(root);
+            if (cards.length === 0) return;
+            var selected = root.querySelector('.pb-service-card.is-selected');
+            cards.forEach(function(c, i) {
+                if (selected) {
+                    c.tabIndex = c.classList.contains('is-selected') ? 0 : -1;
+                } else {
+                    c.tabIndex = i === 0 ? 0 : -1;
+                }
+            });
+        }
+
+        function bindPbServiceGroupKeyboard(root, onSelect) {
+            if (!root) return;
+            root.addEventListener('keydown', function(e) {
+                var cards = getPbServiceCards(root);
+                if (cards.length === 0) return;
+                var key = e.key;
+                if (key !== 'ArrowRight' && key !== 'ArrowLeft' && key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'Home' && key !== 'End' && key !== ' ' && key !== 'Enter') {
+                    return;
+                }
+                var active = document.activeElement;
+                var idx = cards.indexOf(active);
+                if (key === ' ' || key === 'Enter') {
+                    if (idx >= 0) {
+                        e.preventDefault();
+                        onSelect(cards[idx]);
+                    }
+                    return;
+                }
+                if (idx < 0) {
+                    idx = cards.findIndex(function(c) { return c.classList.contains('is-selected'); });
+                    if (idx < 0) idx = 0;
+                    e.preventDefault();
+                    cards[idx].focus();
+                    return;
+                }
+                var next = idx;
+                if (key === 'Home') next = 0;
+                else if (key === 'End') next = cards.length - 1;
+                else if (key === 'ArrowRight' || key === 'ArrowDown') next = Math.min(cards.length - 1, idx + 1);
+                else if (key === 'ArrowLeft' || key === 'ArrowUp') next = Math.max(0, idx - 1);
+                if (key === 'Home' || key === 'End' || key.indexOf('Arrow') === 0) {
+                    e.preventDefault();
+                    if (next !== idx) {
+                        onSelect(cards[next]);
+                        cards[next].focus();
+                    }
+                }
+            });
+        }
+
+        function clearSlotsCache() {
+            Object.keys(slotsByDate).forEach(function(k) {
+                delete slotsByDate[k];
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = (text === null || text === undefined) ? '' : String(text);
+            return div.innerHTML;
+        }
+
+        function renderDoctorServiceCard(svc, isSelected) {
+            if (!serviceCardsRoot) {
+                return;
+            }
+            const id = String(svc.id);
+            const name = svc.name != null ? svc.name : 'Service';
+            const duration = String(svc.duration != null ? svc.duration : 60);
+            const priceNum = parseFloat(svc.price != null ? svc.price : 0);
+            const descRaw = svc.description || '';
+            const descPlain = String(descRaw).replace(/<[^>]*>/g, '');
+            const ct = svc.consultation_type || svc.consultationType || 'in_person';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'pb-service-card' + (isSelected ? ' is-selected' : '');
+            btn.dataset.serviceId = id;
+            btn.dataset.duration = duration;
+            btn.dataset.price = String(priceNum);
+            btn.dataset.description = descPlain;
+            btn.dataset.consultationType = ct;
+            btn.dataset.name = name;
+            btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+            const descShort = descPlain.length > 120 ? descPlain.slice(0, 117) + '...' : descPlain;
+            var inner = '<div class="pb-service-card__title">' + escapeHtml(name) + '</div>';
+            if (descShort.trim()) {
+                inner += '<div class="pb-service-card__desc">' + escapeHtml(descShort) + '</div>';
+            }
+            inner += '<div class="pb-service-card__meta"><span><i class="far fa-clock me-1"></i>' + escapeHtml(duration) + ' min</span></div>';
+            inner += '<div class="pb-service-card__price">' + escapeHtml('£' + priceNum.toFixed(2)) + '</div>';
+            btn.innerHTML = inner;
+            if (isSelected && serviceIdInput) {
+                serviceIdInput.value = id;
+                selectedServiceId = id;
+            }
+            serviceCardsRoot.appendChild(btn);
+        }
+
+        function getConsultationTypeDisplay(consultationType, serviceName) {
+            const type = (consultationType || 'in_person').toLowerCase();
+            if (type === 'online') return { display: 'Online (Video)', submitValue: 'online' };
+            if (type === 'phone' || type === 'telephone') return { display: 'Telephone', submitValue: 'telephone' };
+            return { display: 'In Person', submitValue: 'in_person' };
+        }
+
+        function updateServiceDetails() {
+            const card = serviceCardsRoot.querySelector('.pb-service-card.is-selected');
+            if (!card || !card.dataset.serviceId) {
+                serviceDetails.style.display = 'none';
+                return;
+            }
+            const description = card.dataset.description || '';
+            const durNum = card.dataset.duration || '30';
+            const duration = durNum + ' minutes';
+            const price = '£' + parseFloat(card.dataset.price || 0).toFixed(2);
+            const consultationType = card.dataset.consultationType || 'in_person';
+            const serviceName = card.dataset.name || '';
+
+            const descriptionEl = document.getElementById('service-description');
+            if (description && description.trim()) {
+                descriptionEl.textContent = description;
+                descriptionEl.style.display = 'block';
+            } else {
+                descriptionEl.style.display = 'none';
+            }
+
+            const ctResult = getConsultationTypeDisplay(consultationType, serviceName);
+            document.getElementById('service-consultation-type').textContent = ctResult.display;
+            document.getElementById('consultation-type-input').value = ctResult.submitValue;
+
+            document.getElementById('service-duration').textContent = duration;
+            document.getElementById('service-price').textContent = price;
+            serviceDetails.style.display = 'block';
+        }
+
+        function loadSchedule() {
+            if (!selectedDoctorId || !selectedServiceId || !serviceIdInput.value) {
+                return;
+            }
+
+            clearSlotsCache();
+            scheduleSelectionCard.style.display = 'block';
+
+            buildDateRange();
+            currentMonthIndex = 0;
+            selectedDate = null;
+            selectedTime = null;
+            document.getElementById('appointment-date').value = '';
+            document.getElementById('appointment-time').value = '';
+            continueBtn.disabled = true;
+
+            renderMonthNavigation();
+            renderDates();
+            hydrateCurrentMonth();
+        }
+
+        function selectServiceCard(card) {
+            if (!card || !serviceIdInput || !serviceCardsRoot) {
+                return;
+            }
+            serviceCardsRoot.querySelectorAll('.pb-service-card').forEach(function(b) {
+                b.classList.remove('is-selected');
+                b.setAttribute('aria-pressed', 'false');
+            });
+            card.classList.add('is-selected');
+            card.setAttribute('aria-pressed', 'true');
+            serviceIdInput.value = card.dataset.serviceId || '';
+            selectedServiceId = serviceIdInput.value || null;
+            clearSlotsCache();
+            updateServiceDetails();
+            loadSchedule();
+            syncPbServiceCardTabOrder(serviceCardsRoot);
+        }
+
+        function loadDoctorServices(doctorId) {
+            const preselectedServiceId = selectedServiceId;
+            var savedMeta = null;
+            if (preselectedServiceId && serviceCardsRoot) {
+                var escPre = (typeof CSS !== 'undefined' && CSS.escape)
+                    ? CSS.escape(String(preselectedServiceId))
+                    : String(preselectedServiceId).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                var preCard = serviceCardsRoot.querySelector('.pb-service-card[data-service-id="' + escPre + '"]');
+                if (preCard && preCard.dataset.duration) {
+                    savedMeta = {
+                        id: preCard.dataset.serviceId,
+                        name: preCard.dataset.name || '',
+                        duration: preCard.dataset.duration,
+                        price: preCard.dataset.price,
+                        description: preCard.dataset.description || '',
+                        consultation_type: preCard.dataset.consultationType || 'in_person'
+                    };
+                }
+            }
+
+            serviceSelectionCard.style.display = 'block';
+            if (serviceLoadingMsg) {
+                serviceLoadingMsg.style.display = 'block';
+            }
+            if (serviceCardsRoot) {
+                serviceCardsRoot.style.opacity = '0.65';
+                serviceCardsRoot.style.pointerEvents = 'none';
+            }
+            if (serviceIdInput) {
+                serviceIdInput.value = '';
+                serviceIdInput.setAttribute('required', 'required');
+            }
+            selectedServiceId = null;
+            if (serviceCardsRoot) {
+                serviceCardsRoot.innerHTML = '';
+            }
+            scheduleSelectionCard.style.display = 'none';
+            continueBtn.disabled = true;
+
+            fetch(`{{ url('/api/public/doctors') }}/${doctorId}/services`, {
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (serviceLoadingMsg) {
+                    serviceLoadingMsg.style.display = 'none';
+                }
+                if (serviceCardsRoot) {
+                    serviceCardsRoot.style.opacity = '';
+                    serviceCardsRoot.style.pointerEvents = '';
+                    serviceCardsRoot.innerHTML = '';
+                }
+
+                var appendedIds = {};
+                if (savedMeta) {
+                    renderDoctorServiceCard(savedMeta, true);
+                    appendedIds[String(savedMeta.id)] = true;
+                }
+
+                if (data.services && data.services.length > 0) {
+                    data.services.forEach(function(service) {
+                        if (appendedIds[String(service.id)]) {
+                            var escId = (typeof CSS !== 'undefined' && CSS.escape)
+                                ? CSS.escape(String(service.id))
+                                : String(service.id);
+                            var existing = serviceCardsRoot.querySelector('.pb-service-card[data-service-id="' + escId + '"]');
+                            if (existing) {
+                                existing.dataset.consultationType = service.consultation_type || 'in_person';
+                            }
+                            return;
+                        }
+                        var isPre = preselectedServiceId && String(service.id) === String(preselectedServiceId) && !savedMeta;
+                        renderDoctorServiceCard(service, isPre);
+                        appendedIds[String(service.id)] = true;
+                    });
+
+                    var cards = serviceCardsRoot.querySelectorAll('.pb-service-card');
+                    if (!serviceIdInput.value && cards.length === 1) {
+                        selectServiceCard(cards[0]);
+                    } else if (serviceIdInput.value) {
+                        updateServiceDetails();
+                        loadSchedule();
+                    }
+                } else {
+                    if (!savedMeta && serviceCardsRoot) {
+                        serviceCardsRoot.innerHTML = '<p class="text-danger small mb-0">No services available for this doctor.</p>';
+                    } else if (savedMeta) {
+                        updateServiceDetails();
+                        loadSchedule();
+                    }
+                }
+                syncPbServiceCardTabOrder(serviceCardsRoot);
+            })
+            .catch(function(error) {
+                console.error('Error loading services:', error);
+                if (serviceLoadingMsg) {
+                    serviceLoadingMsg.style.display = 'none';
+                }
+                if (serviceCardsRoot) {
+                    serviceCardsRoot.style.opacity = '';
+                    serviceCardsRoot.style.pointerEvents = '';
+                }
+                if (!savedMeta && serviceCardsRoot) {
+                    serviceCardsRoot.innerHTML = '<p class="text-danger small mb-0">Error loading services. Please try again.</p>';
+                } else if (savedMeta) {
+                    renderDoctorServiceCard(savedMeta, true);
+                    updateServiceDetails();
+                    loadSchedule();
+                }
+                syncPbServiceCardTabOrder(serviceCardsRoot);
+            });
+        }
+
         // If service is pre-selected (from service booking link), set it up first and skip loading services
         @if(isset($service) && isset($doctor))
         selectedServiceId = {{ $service->id }};
         selectedDoctorId = {{ $doctor->id }};
         doctorSelect.value = {{ $doctor->id }};
-        // Service is already in dropdown with data attributes, just use it
-        serviceSelect.value = {{ $service->id }};
-        serviceSelect.disabled = false;
         serviceSelectionCard.style.display = 'block';
+        if (serviceIdInput) {
+            serviceIdInput.value = {{ $service->id }};
+        }
         updateServiceDetails();
         loadSchedule();
+        syncPbServiceCardTabOrder(serviceCardsRoot);
         @elseif(isset($doctor) && $doctors->count() == 1)
         // If single doctor is pre-selected (from doctor link) or only one doctor available, load services immediately
         selectedDoctorId = {{ $doctor->id }};
@@ -438,26 +813,37 @@
         doctorSelect.addEventListener('change', function() {
             selectedDoctorId = this.value;
             if (selectedDoctorId) {
+                if (serviceIdInput) {
+                    serviceIdInput.setAttribute('required', 'required');
+                }
                 loadDoctorServices(selectedDoctorId);
             } else {
                 serviceSelectionCard.style.display = 'none';
                 scheduleSelectionCard.style.display = 'none';
                 continueBtn.disabled = true;
+                if (serviceCardsRoot) {
+                    serviceCardsRoot.innerHTML = '';
+                }
+                if (serviceIdInput) {
+                    serviceIdInput.value = '';
+                    serviceIdInput.removeAttribute('required');
+                }
+                selectedServiceId = null;
+                clearSlotsCache();
+                serviceDetails.style.display = 'none';
             }
         });
 
-        // Service selection
-        serviceSelect.addEventListener('change', function() {
-            selectedServiceId = this.value;
-            if (selectedServiceId) {
-                updateServiceDetails();
-                loadSchedule();
-            } else {
-                serviceDetails.style.display = 'none';
-                scheduleSelectionCard.style.display = 'none';
-                continueBtn.disabled = true;
-            }
-        });
+        if (serviceCardsRoot) {
+            serviceCardsRoot.addEventListener('click', function(e) {
+                const card = e.target.closest('.pb-service-card');
+                if (!card) {
+                    return;
+                }
+                selectServiceCard(card);
+            });
+            bindPbServiceGroupKeyboard(serviceCardsRoot, selectServiceCard);
+        }
 
         const prevMonthBtn = document.getElementById('prev-month');
         const nextMonthBtn = document.getElementById('next-month');
@@ -479,170 +865,6 @@
                 hydrateCurrentMonth();
             }
         });
-
-        // Load doctor services
-        function loadDoctorServices(doctorId) {
-            // If service is already pre-selected and has data, don't reload
-            if (selectedServiceId && serviceSelect.querySelector(`option[value="${selectedServiceId}"]`) && 
-                serviceSelect.querySelector(`option[value="${selectedServiceId}"]`).dataset.duration) {
-                // Service already loaded, just ensure it's selected
-                serviceSelect.value = selectedServiceId;
-                updateServiceDetails();
-                loadSchedule();
-                return;
-            }
-
-            serviceSelectionCard.style.display = 'block';
-            serviceSelect.disabled = true;
-            const preselectedServiceId = selectedServiceId; // Preserve pre-selected service
-            const preselectedOption = preselectedServiceId ? serviceSelect.querySelector(`option[value="${preselectedServiceId}"]`) : null;
-            
-            // Save the pre-selected option if it exists
-            let savedPreselectedOption = null;
-            if (preselectedOption && preselectedOption.dataset.duration) {
-                savedPreselectedOption = {
-                    value: preselectedOption.value,
-                    text: preselectedOption.textContent,
-                    duration: preselectedOption.dataset.duration,
-                    price: preselectedOption.dataset.price,
-                    description: preselectedOption.dataset.description || '',
-                    consultationType: preselectedOption.dataset.consultationType || 'in_person'
-                };
-            }
-            
-            serviceSelect.innerHTML = '<option value="">Loading services...</option>';
-            scheduleSelectionCard.style.display = 'none';
-            continueBtn.disabled = true;
-
-            fetch(`{{ url('/api/public/doctors') }}/${doctorId}/services`, {
-                credentials: 'same-origin',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                serviceSelect.innerHTML = '<option value="">Select a service...</option>';
-                
-                // If we have a saved pre-selected option, add it first
-                if (savedPreselectedOption) {
-                    const option = document.createElement('option');
-                    option.value = savedPreselectedOption.value;
-                    option.textContent = savedPreselectedOption.text;
-                    option.dataset.duration = savedPreselectedOption.duration;
-                    option.dataset.price = savedPreselectedOption.price;
-                    option.dataset.description = savedPreselectedOption.description || '';
-                    option.dataset.consultationType = savedPreselectedOption.consultationType || 'in_person';
-                    option.selected = true;
-                    selectedServiceId = savedPreselectedOption.value;
-                    serviceSelect.appendChild(option);
-                }
-                
-                if (data.services && data.services.length > 0) {
-                    data.services.forEach(service => {
-                        // If pre-selected service is in API response, update its consultation type from API (for correct doctor)
-                        if (savedPreselectedOption && service.id == savedPreselectedOption.value) {
-                            const opt = serviceSelect.querySelector(`option[value="${service.id}"]`);
-                            if (opt) {
-                                opt.dataset.consultationType = service.consultation_type || 'in_person';
-                            }
-                            return;
-                        }
-                        
-                        const option = document.createElement('option');
-                        option.value = service.id;
-                        option.textContent = `${service.name} - £${parseFloat(service.price).toFixed(2)}`;
-                        option.dataset.duration = service.duration;
-                        option.dataset.price = service.price;
-                        option.dataset.description = service.description || '';
-                        option.dataset.consultationType = service.consultation_type || 'in_person';
-                        // Re-select if this was the pre-selected service
-                        if (preselectedServiceId && service.id == preselectedServiceId && !savedPreselectedOption) {
-                            option.selected = true;
-                            selectedServiceId = preselectedServiceId;
-                        }
-                        serviceSelect.appendChild(option);
-                    });
-                    serviceSelect.disabled = false;
-                    
-                    // If service was pre-selected, trigger update and load schedule
-                    if (preselectedServiceId && selectedServiceId == preselectedServiceId) {
-                        updateServiceDetails();
-                        loadSchedule();
-                    }
-                } else {
-                    // If no services from API but we have pre-selected, keep it
-                    if (!savedPreselectedOption) {
-                        serviceSelect.innerHTML = '<option value="">No services available</option>';
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error loading services:', error);
-                // If we have a pre-selected service, keep it even on error
-                if (!savedPreselectedOption) {
-                    serviceSelect.innerHTML = '<option value="">Error loading services</option>';
-                }
-            });
-        }
-
-        // Map consultation type to display label and submit value
-        function getConsultationTypeDisplay(consultationType, serviceName) {
-            const type = (consultationType || 'in_person').toLowerCase();
-            if (type === 'online') return { display: 'Online (Video)', submitValue: 'online' };
-            if (type === 'phone' || type === 'telephone') return { display: 'Telephone', submitValue: 'telephone' };
-            return { display: 'In Person', submitValue: 'in_person' };
-        }
-
-        // Update service details
-        function updateServiceDetails() {
-            const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
-            if (selectedOption && selectedOption.value) {
-                const description = selectedOption.dataset.description || '';
-                const duration = selectedOption.dataset.duration + ' minutes';
-                const price = '£' + parseFloat(selectedOption.dataset.price).toFixed(2);
-                const consultationType = selectedOption.dataset.consultationType || 'in_person';
-                const serviceName = selectedOption.textContent || '';
-
-                const descriptionEl = document.getElementById('service-description');
-                if (description && description.trim()) {
-                    descriptionEl.textContent = description;
-                    descriptionEl.style.display = 'block';
-                } else {
-                    descriptionEl.style.display = 'none';
-                }
-
-                const { display: consultationTypeDisplay, submitValue } = getConsultationTypeDisplay(consultationType, serviceName);
-                document.getElementById('service-consultation-type').textContent = consultationTypeDisplay;
-                document.getElementById('consultation-type-input').value = submitValue;
-
-                document.getElementById('service-duration').textContent = duration;
-                document.getElementById('service-price').textContent = price;
-                serviceDetails.style.display = 'block';
-            }
-        }
-
-        // Load schedule
-        function loadSchedule() {
-            if (!selectedDoctorId || !selectedServiceId) return;
-
-            scheduleSelectionCard.style.display = 'block';
-
-            buildDateRange();
-            currentMonthIndex = 0;
-            selectedDate = null;
-            selectedTime = null;
-            document.getElementById('appointment-date').value = '';
-            document.getElementById('appointment-time').value = '';
-            continueBtn.disabled = true;
-
-            renderMonthNavigation();
-            renderDates();
-            hydrateCurrentMonth();
-        }
-
         function buildDateRange() {
             dateRange = [];
             monthKeys = [];
@@ -787,7 +1009,8 @@
                     o.textContent = slot.display || slot.start;
                     sel.appendChild(o);
                 });
-                const duration = serviceSelect.options[serviceSelect.selectedIndex]?.dataset.duration || '30';
+                const selectedSvcCard = serviceCardsRoot.querySelector('.pb-service-card.is-selected');
+                const duration = (selectedSvcCard && selectedSvcCard.dataset.duration) ? selectedSvcCard.dataset.duration : '30';
                 const hint = document.createElement('p');
                 hint.className = 'time-slot-hint mb-0';
                 hint.textContent = 'Each option is one appointment (' + duration + ' minutes).';
