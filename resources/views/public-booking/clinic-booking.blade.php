@@ -169,9 +169,15 @@
 <style>
     .public-booking-service-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.75rem;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
         width: 100%;
+    }
+    @media (min-width: 768px) {
+        .public-booking-service-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
     }
     .pb-service-card {
         display: flex;
@@ -216,7 +222,6 @@
     .pb-service-card__meta .fa-clock { font-size: 0.7rem; }
     .pb-service-card__price { font-size: 1rem; font-weight: 700; color: var(--booking-primary, #007bff); margin-top: 0.35rem; }
     @media (max-width: 576px) {
-        .public-booking-service-grid { gap: 0.5rem; }
         .pb-service-card {
             padding: 0.65rem 0.45rem;
             border-radius: 8px;
