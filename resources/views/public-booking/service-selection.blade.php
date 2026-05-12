@@ -371,15 +371,20 @@
 
     .public-booking-service-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.75rem;
+        width: 100%;
     }
 
     .pb-service-card {
-        display: block;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
         width: 100%;
+        min-width: 0;
         text-align: left;
-        padding: 1rem 1.1rem;
+        padding: 1rem 0.9rem;
         border: 2px solid #e2e8f0;
         border-radius: 10px;
         background: #fff;
@@ -387,11 +392,16 @@
         transition: border-color 0.2s, box-shadow 0.2s;
         font: inherit;
         color: inherit;
-        min-height: 44px;
+        min-height: 5.5rem;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .pb-service-card:hover {
         border-color: var(--booking-primary);
+    }
+
+    .pb-service-card:active {
+        transform: scale(0.99);
     }
 
     .pb-service-card:focus-visible {
@@ -406,28 +416,72 @@
 
     .pb-service-card__title {
         font-weight: 700;
-        font-size: 1rem;
+        font-size: 0.9375rem;
+        line-height: 1.25;
         margin-bottom: 0.35rem;
         color: #1a202c;
     }
 
     .pb-service-card__desc {
-        font-size: 0.8125rem;
+        font-size: 0.75rem;
         color: #64748b;
-        line-height: 1.4;
-        margin-bottom: 0.5rem;
+        line-height: 1.35;
+        margin-bottom: 0.35rem;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        flex: 1;
+        min-height: 0;
     }
 
     .pb-service-card__meta {
-        font-size: 0.8125rem;
+        font-size: 0.75rem;
         color: #64748b;
+        margin-top: auto;
+    }
+
+    .pb-service-card__meta .fa-clock {
+        font-size: 0.7rem;
     }
 
     .pb-service-card__price {
-        font-size: 1.05rem;
+        font-size: 1rem;
         font-weight: 700;
         color: var(--booking-primary);
-        margin-top: 0.5rem;
+        margin-top: 0.35rem;
+    }
+
+    @media (max-width: 576px) {
+        .public-booking-service-grid {
+            gap: 0.5rem;
+        }
+
+        .pb-service-card {
+            padding: 0.65rem 0.45rem;
+            border-radius: 8px;
+            min-height: 4.75rem;
+        }
+
+        .pb-service-card__title {
+            font-size: 0.8125rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .pb-service-card__desc {
+            font-size: 0.6875rem;
+            -webkit-line-clamp: 2;
+            margin-bottom: 0.25rem;
+        }
+
+        .pb-service-card__meta {
+            font-size: 0.6875rem;
+        }
+
+        .pb-service-card__price {
+            font-size: 0.9375rem;
+            margin-top: 0.25rem;
+        }
     }
 
     @media (max-width: 768px) {
