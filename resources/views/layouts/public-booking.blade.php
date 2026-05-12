@@ -546,6 +546,30 @@
         }
 
         @yield('styles')
+
+        /* Public booking: service cards — two columns (after @yield so this wins over theme/Bootstrap) */
+        #service-cards.public-booking-service-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            grid-auto-flow: row !important;
+            align-items: stretch !important;
+            gap: 0.75rem !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        #service-cards.public-booking-service-grid > .pb-service-card {
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+        }
+        #service-cards.public-booking-service-grid .pb-service-card__title {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        @media (max-width: 576px) {
+            #service-cards.public-booking-service-grid {
+                gap: 0.5rem !important;
+            }
+        }
     </style>
     
     <!-- Flatpickr CSS -->
