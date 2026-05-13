@@ -62,7 +62,7 @@ class PostBookingRedirectService
             return null;
         }
 
-        $base = $this->validatedDoctorRedirectUrl($doctor->clinic_post_booking_redirect_url);
+        $base = $this->thankYouBaseUrlForDoctor($doctor);
         if ($base === null) {
             return null;
         }
@@ -94,7 +94,8 @@ class PostBookingRedirectService
     }
 
     /**
-     * Doctor for clinic redirect: explicit assignee, single-doctor clinic, or department primary.
+     * Doctor for clinic redirect: assignee; else sole active doctor; else first active doctor
+     * in department (primary first, then by id) who has a valid clinic or doctor thank-you URL.
      */
     public function resolveDoctorForClinicBookingRedirect(ClinicBookingRequest $request): ?Doctor
     {
@@ -115,6 +116,10 @@ class PostBookingRedirectService
             ->orderBy('id')
             ->get();
 
+        if ($active->isEmpty()) {
+            return null;
+        }
+
         if ($active->count() === 1) {
             return $active->first();
         }
@@ -129,7 +134,33 @@ class PostBookingRedirectService
             ->orderBy('id')
             ->first();
 
-        return $primary;
+        $ordered = collect();
+        if ($primary) {
+            $ordered->push($primary);
+        }
+        foreach ($active as $d) {
+            if ($primary && (int) $d->id === (int) $primary->id) {
+                continue;
+            }
+            $ordered->push($d);
+        }
+
+        foreach ($ordered as $candidate) {
+            if ($this->thankYouBaseUrlForDoctor($candidate) !== null) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Clinic thank-you prefers clinic-specific URL, then doctor booking URL.
+     */
+    public function thankYouBaseUrlForDoctor(Doctor $doctor): ?string
+    {
+        return $this->validatedDoctorRedirectUrl($doctor->clinic_post_booking_redirect_url)
+            ?? $this->validatedDoctorRedirectUrl($doctor->post_booking_redirect_url);
     }
 
     public function validatedDoctorRedirectUrl(?string $url): ?string
