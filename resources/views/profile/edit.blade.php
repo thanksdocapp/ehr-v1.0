@@ -98,6 +98,38 @@
                                 <small class="text-muted">Your medical specialisation</small>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="clinic_post_booking_redirect_url" class="form-label fw-semibold">
+                                    <i class="fas fa-hospital me-1"></i>Clinic public booking thank-you URL
+                                </label>
+                                <input type="url" name="clinic_post_booking_redirect_url" id="clinic_post_booking_redirect_url"
+                                       class="form-control @error('clinic_post_booking_redirect_url') is-invalid @enderror"
+                                       value="{{ old('clinic_post_booking_redirect_url', optional($user->doctor)->clinic_post_booking_redirect_url ?? '') }}"
+                                       placeholder="https://yoursite.com/clinic-booking-confirmed"
+                                       autocomplete="off">
+                                @error('clinic_post_booking_redirect_url')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">Optional. Sends patients to a page on your website after booking so you can show a thank-you message, what happens next, contact details, and install your own tags for analytics and ads (for example GA4 gtag, Meta Pixel, Google Ads conversions). {{ app()->environment('production') ? 'Use HTTPS in production.' : '' }}</small>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="post_booking_redirect_url" class="form-label fw-semibold">
+                                    <i class="fas fa-external-link-alt me-1"></i>Doctor public booking thank-you URL <span class="text-muted fw-normal">(optional)</span>
+                                </label>
+                                <input type="url" name="post_booking_redirect_url" id="post_booking_redirect_url"
+                                       class="form-control @error('post_booking_redirect_url') is-invalid @enderror"
+                                       value="{{ old('post_booking_redirect_url', optional($user->doctor)->post_booking_redirect_url ?? '') }}"
+                                       placeholder="https://yoursite.com/booking-thank-you"
+                                       autocomplete="off">
+                                @error('post_booking_redirect_url')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">Optional. Your own thank-you or confirmation page on your domain so you can add next steps, contact details, and tags such as GA4 gtag, Meta Pixel, and Google Ads. {{ app()->environment('production') ? 'Use HTTPS in production.' : '' }}</small>
+                            </div>
+                        </div>
                         @endif
 
                         <div class="row">

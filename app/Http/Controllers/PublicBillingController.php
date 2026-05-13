@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\PaymentGateway;
 use App\Models\Billing;
+use App\Services\PostBookingRedirectService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -490,8 +491,16 @@ class PublicBillingController extends Controller
                     if ($hasPaid) {
                         $clinicRequest = $clinicService->finalizeClinicBookingAfterPayment($pending);
                         session()->forget('pending_clinic_booking_token');
+
+                        $external = app(PostBookingRedirectService::class)->buildRedirectUrlForClinicBookingRequest($clinicRequest);
+                        if ($external !== null) {
+                            session()->forget('booking_utm_params');
+
+                            return redirect()->away($external);
+                        }
+
                         return redirect()->route('public.booking.clinic-success', [
-                            'requestNumber' => $clinicRequest->request_number
+                            'requestNumber' => $clinicRequest->request_number,
                         ])->with('payment_success', true);
                     }
                 }
@@ -511,8 +520,18 @@ class PublicBillingController extends Controller
                 $result = $this->finalizePendingBookingAfterPayment($invoice, $pendingBookingToken);
                 if ($result && isset($result['appointment'])) {
                     session()->forget('pending_booking_token');
+                    $appointment = $result['appointment'];
+                    $appointment->loadMissing('doctor');
+
+                    $external = app(PostBookingRedirectService::class)->buildRedirectUrlForAppointment($appointment);
+                    if ($external !== null) {
+                        session()->forget('booking_utm_params');
+
+                        return redirect()->away($external);
+                    }
+
                     return redirect()->route('public.booking.success', [
-                        'appointmentNumber' => $result['appointment']->appointment_number
+                        'appointmentNumber' => $appointment->appointment_number,
                     ])->with('payment_success', true);
                 }
             } catch (\Exception $e) {
@@ -531,7 +550,7 @@ class PublicBillingController extends Controller
             session()->forget('booking_appointment_number');
             // Redirect to booking success page
             return redirect()->route('public.booking.success', [
-                'appointment_number' => $bookingAppointmentNumber
+                'appointmentNumber' => $bookingAppointmentNumber,
             ])->with('payment_success', true);
         }
 

@@ -41,7 +41,9 @@ class Doctor extends Model
         'sort_order',
         'is_featured',
         'is_active',
-        'status'
+        'status',
+        'post_booking_redirect_url',
+        'clinic_post_booking_redirect_url',
     ];
 
     protected $casts = [

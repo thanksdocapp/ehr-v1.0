@@ -14,8 +14,11 @@ use App\Services\SlotAvailabilityService;
 use App\Services\PublicBookingService;
 use App\Services\AppointmentCalendarInviteService;
 use App\Services\ClinicBookingService;
+use App\Services\PostBookingRedirectService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class PublicBookingController extends Controller
 {
@@ -908,7 +911,7 @@ class PublicBookingController extends Controller
     /**
      * Clinic flow: success page (request received, awaiting doctor).
      */
-    public function clinicSuccess($requestNumber)
+    public function clinicSuccess($requestNumber): View|RedirectResponse
     {
         session()->forget($this->publicBookingDobSessionKey());
         session()->forget($this->publicBookingPendingSessionKey());
@@ -917,6 +920,14 @@ class PublicBookingController extends Controller
         $request = \App\Models\ClinicBookingRequest::where('request_number', $requestNumber)
             ->with(['department', 'service', 'doctor', 'appointment.doctor', 'appointment.service'])
             ->firstOrFail();
+
+        $external = app(PostBookingRedirectService::class)->buildRedirectUrlForClinicBookingRequest($request);
+        if ($external !== null) {
+            session()->forget('booking_utm_params');
+
+            return redirect()->away($external);
+        }
+
         $patientEmail = $request->patient_data['email'] ?? '';
         if ($request->status === 'accepted' && $request->appointment) {
             $calendarLinks = $this->appointmentCalendarInviteService->calendarLinksForAppointment($request->appointment);
@@ -1557,7 +1568,7 @@ class PublicBookingController extends Controller
     /**
      * Success page
      */
-    public function success($appointmentNumber)
+    public function success($appointmentNumber): View|RedirectResponse
     {
         session()->forget($this->publicBookingDobSessionKey());
         session()->forget($this->publicBookingPendingSessionKey());
@@ -1565,6 +1576,14 @@ class PublicBookingController extends Controller
         $appointment = \App\Models\Appointment::where('appointment_number', $appointmentNumber)
             ->with(['patient', 'doctor', 'service'])
             ->firstOrFail();
+
+        $external = app(PostBookingRedirectService::class)->buildRedirectUrlForAppointment($appointment);
+        if ($external !== null) {
+            session()->forget('booking_utm_params');
+
+            return redirect()->away($external);
+        }
+
         $calendarLinks = $this->appointmentCalendarInviteService->calendarLinksForAppointment($appointment);
 
         return view('public-booking.success', [

@@ -35,7 +35,24 @@ class ProfileController extends Controller
         $user = $request->user();
         $validated = $request->validated();
 
-        // Fill user with validated data
+        $postBookingUrlUpdate = false;
+        $postBookingUrl = null;
+        if ($user->role === 'doctor' && array_key_exists('post_booking_redirect_url', $validated)) {
+            $postBookingUrlUpdate = true;
+            $v = $validated['post_booking_redirect_url'];
+            $postBookingUrl = ($v === null || $v === '') ? null : trim((string) $v);
+            unset($validated['post_booking_redirect_url']);
+        }
+
+        $clinicPostBookingUrlUpdate = false;
+        $clinicPostBookingUrl = null;
+        if ($user->role === 'doctor' && array_key_exists('clinic_post_booking_redirect_url', $validated)) {
+            $clinicPostBookingUrlUpdate = true;
+            $v = $validated['clinic_post_booking_redirect_url'];
+            $clinicPostBookingUrl = ($v === null || $v === '') ? null : trim((string) $v);
+            unset($validated['clinic_post_booking_redirect_url']);
+        }
+
         $user->fill($validated);
 
         if ($user->isDirty('email')) {
@@ -44,15 +61,22 @@ class ProfileController extends Controller
 
         $user->save();
 
-        // Sync specialization with doctor record if user is a doctor
         if ($user->role === 'doctor' && $user->doctor) {
             $doctorData = [];
-            
-            if (isset($validated['specialization'])) {
+
+            if (array_key_exists('specialization', $validated)) {
                 $doctorData['specialization'] = $validated['specialization'] ?: 'GP';
             }
-            
-            if (!empty($doctorData)) {
+
+            if ($postBookingUrlUpdate) {
+                $doctorData['post_booking_redirect_url'] = $postBookingUrl;
+            }
+
+            if ($clinicPostBookingUrlUpdate) {
+                $doctorData['clinic_post_booking_redirect_url'] = $clinicPostBookingUrl;
+            }
+
+            if ($doctorData !== []) {
                 $user->doctor->update($doctorData);
             }
         }

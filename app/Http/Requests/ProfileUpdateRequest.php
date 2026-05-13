@@ -22,9 +22,34 @@ class ProfileUpdateRequest extends FormRequest
             'bio' => ['nullable', 'string', 'max:1000'],
         ];
 
-        // Add specialization validation for doctors
         if ($this->user()->role === 'doctor') {
             $rules['specialization'] = ['nullable', 'string', 'max:255'];
+            $httpsBookingUrlRule = function (string $attribute, mixed $value, \Closure $fail): void {
+                if ($value === null || $value === '') {
+                    return;
+                }
+                if (! is_string($value)) {
+                    $fail('The :attribute must be a valid URL.');
+
+                    return;
+                }
+                if (! filter_var($value, FILTER_VALIDATE_URL)) {
+                    $fail('The :attribute must be a valid URL.');
+
+                    return;
+                }
+                $scheme = strtolower((string) parse_url($value, PHP_URL_SCHEME));
+                if (! in_array($scheme, ['http', 'https'], true)) {
+                    $fail('The :attribute must use http or https.');
+
+                    return;
+                }
+                if (app()->environment('production') && $scheme !== 'https') {
+                    $fail('The :attribute must use HTTPS in production.');
+                }
+            };
+            $rules['post_booking_redirect_url'] = ['nullable', 'string', 'max:2048', $httpsBookingUrlRule];
+            $rules['clinic_post_booking_redirect_url'] = ['nullable', 'string', 'max:2048', $httpsBookingUrlRule];
         }
 
         return $rules;
