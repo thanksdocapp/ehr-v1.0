@@ -23,6 +23,18 @@ class StaffMiddleware
 
         $user = Auth::user();
 
+        if (!$user->is_active) {
+            Auth::logout();
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Your account is inactive. Please contact administrator.'], 403);
+            }
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')
+                ->with('error', 'Your account is inactive. Please contact administrator.');
+        }
+
         // Check if user has staff role/permissions
         // Assuming you have a role system or staff flag in your user model
         if (!$this->isStaffMember($user)) {

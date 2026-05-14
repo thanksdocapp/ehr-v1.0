@@ -129,6 +129,8 @@ class AuthController extends BaseApiController
             $user = Auth::user();
             
             if (!$user->is_active) {
+                Auth::logout();
+
                 return $this->sendError('Account is deactivated', [], 403);
             }
 

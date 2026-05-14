@@ -350,6 +350,10 @@ class UsersController extends Controller
     public function toggleStatus(User $user)
     {
         $user->update(['is_active' => !$user->is_active]);
+
+        if (!$user->is_active) {
+            $user->revokeAllApiTokens();
+        }
         
         // If user is a doctor, also sync status with Doctor model
         if ($user->role === 'doctor' && $user->doctor) {

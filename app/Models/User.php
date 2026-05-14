@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -158,6 +159,21 @@ class User extends Authenticatable
     public function isActive()
     {
         return $this->is_active;
+    }
+
+    /**
+     * Revoke all Sanctum personal access tokens (e.g. after account deactivation).
+     */
+    public function revokeAllApiTokens(): void
+    {
+        try {
+            $this->tokens()->delete();
+        } catch (\Throwable $e) {
+            Log::warning('revokeAllApiTokens failed', [
+                'user_id' => $this->id,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

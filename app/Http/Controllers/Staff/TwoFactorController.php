@@ -180,6 +180,14 @@ class TwoFactorController extends Controller
         }
 
         if ($this->twoFactorService->verifyCode($user, $request->code)) {
+            if (!$user->is_active) {
+                $request->session()->forget('2fa_user_id');
+                $request->session()->forget('2fa_remember');
+
+                return redirect()->route('login')
+                    ->with('error', 'Your account is inactive. Please contact administrator.');
+            }
+
             // Clear 2FA session data
             $request->session()->forget('2fa_user_id');
             $request->session()->forget('2fa_remember');
@@ -241,6 +249,14 @@ class TwoFactorController extends Controller
         }
 
         if ($this->twoFactorService->verifyRecoveryCode($user, $request->recovery_code)) {
+            if (!$user->is_active) {
+                $request->session()->forget('2fa_user_id');
+                $request->session()->forget('2fa_remember');
+
+                return redirect()->route('login')
+                    ->with('error', 'Your account is inactive. Please contact administrator.');
+            }
+
             // Clear 2FA session data
             $request->session()->forget('2fa_user_id');
             $request->session()->forget('2fa_remember');

@@ -430,6 +430,19 @@ class DoctorsController extends Controller
     {
         $wasActive = $doctor->is_active;
         $doctor->update(['is_active' => !$doctor->is_active]);
+
+        // EHR login uses users.is_active; keep linked staff account in sync with doctor visibility
+        if ($doctor->user_id) {
+            User::withoutEvents(function () use ($doctor) {
+                User::whereKey($doctor->user_id)->update(['is_active' => (bool) $doctor->is_active]);
+            });
+            if (!$doctor->is_active) {
+                $linkedUser = User::find($doctor->user_id);
+                if ($linkedUser) {
+                    $linkedUser->revokeAllApiTokens();
+                }
+            }
+        }
         
         // Notify patients if doctor becomes unavailable
         if ($wasActive && !$doctor->is_active) {
