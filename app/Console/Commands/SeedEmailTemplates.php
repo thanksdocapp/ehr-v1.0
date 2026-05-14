@@ -209,12 +209,23 @@ class SeedEmailTemplates extends Command
             ],
             [
                 'name' => 'patient_feedback_request',
-                'subject' => 'How was your consultation? (1 minute) - {{hospital_name}}',
+                'subject' => 'We\'d love your feedback (about two minutes) - {{hospital_name}}',
                 'category' => 'feedback',
                 'status' => 'active',
                 'description' => 'Sent to patients 2 days after a completed consultation to request feedback',
-                // Use double quotes so \n becomes real newlines in DB (prevents broken auto-linking in emails)
-                'body' => "Dear {{patient_name}},\n\nThank you for your recent consultation with {{doctor_name}}.\n\nWe would really appreciate your feedback. It takes about 1 minute and helps us improve our service.\n\nPlease complete the feedback form here:\n{{feedback_url}}\n\nYou can choose to submit your feedback anonymously or with your details.\n\nThank you,\n{{hospital_name}} Team",
+                'body' => <<<'HTML'
+<p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a1a1a;">Dear {{patient_name}},</p>
+<p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a1a1a;">We hope you enjoyed your recent consultation with <strong>{{doctor_name}}</strong>.</p>
+<p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a1a1a;">We would love your feedback to help improve your care and our services. Please click the button below. Leaving your feedback only takes about two minutes.</p>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="left" style="margin:8px 0 24px;">
+<tr><td align="center" bgcolor="#2563eb" style="border-radius:8px;">
+<a href="{{feedback_url}}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;">Leave your feedback</a>
+</td></tr>
+</table>
+<p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#444;">You can submit your feedback anonymously if you prefer.</p>
+<p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a1a1a;">Thank you,<br><strong>{{hospital_name}}</strong></p>
+HTML
+                ,
                 'variables' => [
                     'patient_name' => 'Patient\'s full name',
                     'doctor_name' => 'Doctor\'s name',
