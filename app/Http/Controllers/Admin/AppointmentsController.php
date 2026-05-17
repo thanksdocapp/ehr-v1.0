@@ -539,10 +539,7 @@ class AppointmentsController extends Controller
         $appointment->update($data);
         $appointment->load(['patient', 'doctor', 'department']);
         
-        // Send notifications for status changes
-        if ($oldStatus !== $appointment->status) {
-            $this->handleStatusChangeNotifications($appointment, $oldStatus, $emailService);
-        }
+        // Status change patient/doctor emails are sent by AppointmentObserver (avoid duplicate sends).
         
         // Send notifications for rescheduling
         if ($oldDate !== $appointment->appointment_date || $oldTime !== $appointment->appointment_time) {
@@ -574,18 +571,16 @@ class AppointmentsController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, Appointment $appointment, HospitalEmailNotificationService $emailService)
+    public function updateStatus(Request $request, Appointment $appointment)
     {
         $request->validate([
             'status' => 'required|in:pending,confirmed,completed,cancelled,rescheduled'
         ]);
 
-        $oldStatus = $appointment->status;
         $appointment->update(['status' => $request->status]);
         $appointment->load(['patient', 'doctor', 'department']);
         
-        // Send notifications for status changes
-        $this->handleStatusChangeNotifications($appointment, $oldStatus, $emailService);
+        // Status emails: AppointmentObserver handles these (do not duplicate here).
 
         return response()->json([
             'success' => true,
@@ -922,46 +917,6 @@ class AppointmentsController extends Controller
             'message' => 'Appointment completed successfully!',
             'status' => $appointment->status
         ]);
-    }
-    
-    /**
-     * Handle notifications for appointment status changes
-     */
-    private function handleStatusChangeNotifications($appointment, $oldStatus, $emailService)
-    {
-        try {
-            switch ($appointment->status) {
-                case 'cancelled':
-                    if (config('hospital.notifications.appointment_cancellation.enabled', true)) {
-                        $emailService->sendAppointmentCancellation($appointment);
-                        
-                        // Notify doctor about cancellation
-                        if ($appointment->doctor && config('hospital.staff_notifications.appointment_changes.enabled', true)) {
-                            $emailService->notifyDoctorAppointmentCancelled($appointment, $appointment->doctor);
-                        }
-                    }
-                    break;
-                    
-                case 'confirmed':
-                    if (config('hospital.notifications.appointment_confirmation.enabled', true)) {
-                        $emailService->sendAppointmentConfirmation($appointment);
-                    }
-                    break;
-                    
-                case 'completed':
-                    if (config('hospital.notifications.appointment_completion.enabled', true)) {
-                        $emailService->sendAppointmentCompletion($appointment);
-                    }
-                    break;
-            }
-        } catch (\Exception $e) {
-            \Log::error('Failed to send appointment status change notifications', [
-                'appointment_id' => $appointment->id,
-                'old_status' => $oldStatus,
-                'new_status' => $appointment->status,
-                'error' => $e->getMessage()
-            ]);
-        }
     }
     
     /**

@@ -248,4 +248,43 @@ class ClinicBookingRequestsController extends Controller
             return redirect()->back()->with('error', 'Failed to accept booking. Please try again.');
         }
     }
+
+    /**
+     * Cancel a pending clinic booking request (releases the slot; does not refund payment automatically).
+     */
+    public function cancel(Request $request, ClinicBookingRequest $clinicBookingRequest): RedirectResponse
+    {
+        if (! $clinicBookingRequest->isPending()) {
+            return redirect()->back()->with('error', 'Only pending booking requests can be cancelled.');
+        }
+
+        $request->validate([
+            'cancellation_reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $this->clinicBookingService->cancelRequest(
+                $clinicBookingRequest,
+                $request->input('cancellation_reason'),
+                Auth::id()
+            );
+
+            $redirectParams = array_filter([
+                'department_id' => $request->input('department_id'),
+            ]);
+
+            return redirect()
+                ->route('admin.clinic-booking-requests.index', $redirectParams)
+                ->with('success', 'Booking request '.$clinicBookingRequest->request_number.' has been cancelled.');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->back()->with('error', 'This booking request is no longer pending.');
+        } catch (\Exception $e) {
+            \Log::error('Admin clinic booking cancel failed', [
+                'clinic_booking_request_id' => $clinicBookingRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->with('error', 'Failed to cancel booking request. Please try again.');
+        }
+    }
 }

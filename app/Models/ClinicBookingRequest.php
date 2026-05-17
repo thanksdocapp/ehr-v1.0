@@ -90,4 +90,9 @@ class ClinicBookingRequest extends Model
     {
         return $this->status === 'pending_acceptance';
     }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
+    }
 }

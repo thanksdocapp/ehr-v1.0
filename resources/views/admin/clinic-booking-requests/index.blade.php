@@ -23,6 +23,19 @@
         </a>
     </div>
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <form method="get" class="row g-2 align-items-end mb-3">
         <div class="col-md-4">
             <label class="form-label small mb-0">Clinic</label>
@@ -62,7 +75,7 @@
                                 <th>Service</th>
                                 <th>Slot</th>
                                 <th>Contact</th>
-                                <th style="min-width: 220px;">Assign &amp; accept</th>
+                                <th style="min-width: 260px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -96,22 +109,38 @@
                                         {{ $pd['phone'] ?? '—' }}
                                     </td>
                                     <td>
-                                        @if($eligible->isEmpty())
-                                            <span class="text-danger small">No active doctors in this clinic offer this service.</span>
-                                        @else
-                                            <form method="post" action="{{ route('admin.clinic-booking-requests.accept', $req) }}" class="d-flex flex-column gap-1">
+                                        <div class="d-flex flex-column gap-2">
+                                            @if($eligible->isEmpty())
+                                                <span class="text-danger small">No active doctors in this clinic offer this service.</span>
+                                            @else
+                                                <form method="post" action="{{ route('admin.clinic-booking-requests.accept', $req) }}" class="d-flex flex-column gap-1">
+                                                    @csrf
+                                                    <select name="doctor_id" class="form-select form-select-sm" required>
+                                                        <option value="">Choose doctor…</option>
+                                                        @foreach($eligible as $d)
+                                                            <option value="{{ $d->id }}">{{ $d->user->name ?? ($d->first_name.' '.$d->last_name) }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="fas fa-check me-1"></i>Accept for doctor
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            <form method="post"
+                                                  action="{{ route('admin.clinic-booking-requests.cancel', $req) }}"
+                                                  class="d-flex flex-column gap-1 border-top pt-2"
+                                                  onsubmit="return confirm('Cancel booking request {{ $req->request_number }}? The time slot will be released. Payment refunds are not automatic — process separately if needed.');">
                                                 @csrf
-                                                <select name="doctor_id" class="form-select form-select-sm" required>
-                                                    <option value="">Choose doctor…</option>
-                                                    @foreach($eligible as $d)
-                                                        <option value="{{ $d->id }}">{{ $d->user->name ?? ($d->first_name.' '.$d->last_name) }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <button type="submit" class="btn btn-success btn-sm">
-                                                    <i class="fas fa-check me-1"></i>Accept for doctor
+                                                @if(request()->filled('department_id'))
+                                                    <input type="hidden" name="department_id" value="{{ request('department_id') }}">
+                                                @endif
+                                                <label class="form-label small mb-0 text-muted">Cancel (optional note to patient record)</label>
+                                                <textarea name="cancellation_reason" class="form-control form-control-sm" rows="2" maxlength="1000" placeholder="Reason for cancellation (internal)"></textarea>
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    <i class="fas fa-times me-1"></i>Cancel request
                                                 </button>
                                             </form>
-                                        @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -184,6 +213,7 @@
     <div class="alert alert-info mt-3 mb-0">
         <i class="fas fa-info-circle me-2"></i>
         Accepting creates the patient (if new), adds them to the clinic, and places the visit on the selected doctor’s diary. Confirmation emails are sent like a normal doctor acceptance.
+        Cancelling removes a <strong>pending</strong> request from this list and frees the slot; contact the patient separately if a refund is required.
     </div>
 </div>
 @endsection

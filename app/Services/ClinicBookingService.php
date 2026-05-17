@@ -417,6 +417,43 @@ class ClinicBookingService
     }
 
     /**
+     * Cancel a pending clinic booking request (admin). Releases the slot for new bookings.
+     */
+    public function cancelRequest(ClinicBookingRequest $request, ?string $reason = null, ?int $cancelledByUserId = null): ClinicBookingRequest
+    {
+        return DB::transaction(function () use ($request, $reason, $cancelledByUserId) {
+            $request = ClinicBookingRequest::where('id', $request->id)
+                ->where('status', 'pending_acceptance')
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $noteSuffix = "\n\n[Cancelled ".now()->format('Y-m-d H:i').']';
+            if ($cancelledByUserId) {
+                $user = \App\Models\User::find($cancelledByUserId);
+                if ($user) {
+                    $noteSuffix .= ' by '.$user->name;
+                }
+            }
+            if ($reason !== null && trim($reason) !== '') {
+                $noteSuffix .= "\nReason: ".trim($reason);
+            }
+
+            $request->update([
+                'status' => 'cancelled',
+                'notes' => trim(($request->notes ?? '').$noteSuffix),
+            ]);
+
+            Log::info('Clinic booking request cancelled', [
+                'request_id' => $request->id,
+                'request_number' => $request->request_number,
+                'cancelled_by_user_id' => $cancelledByUserId,
+            ]);
+
+            return $request->refresh();
+        });
+    }
+
+    /**
      * Doctor accepts a clinic booking request. Creates patient + appointment, marks request as accepted.
      */
     public function acceptRequest(ClinicBookingRequest $request, Doctor $doctor, ?int $acceptedByUserId = null): Appointment

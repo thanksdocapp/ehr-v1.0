@@ -730,6 +730,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/clinic-booking-requests/accepted', [\App\Http\Controllers\Admin\ClinicBookingRequestsController::class, 'accepted'])->name('clinic-booking-requests.accepted');
         Route::get('/clinic-booking-requests', [\App\Http\Controllers\Admin\ClinicBookingRequestsController::class, 'index'])->name('clinic-booking-requests.index');
         Route::post('/clinic-booking-requests/{clinicBookingRequest}/accept', [\App\Http\Controllers\Admin\ClinicBookingRequestsController::class, 'accept'])->name('clinic-booking-requests.accept');
+        Route::post('/clinic-booking-requests/{clinicBookingRequest}/cancel', [\App\Http\Controllers\Admin\ClinicBookingRequestsController::class, 'cancel'])->name('clinic-booking-requests.cancel');
         
         // Booking Services Management
         Route::resource('booking-services', \App\Http\Controllers\Admin\BookingServicesController::class);

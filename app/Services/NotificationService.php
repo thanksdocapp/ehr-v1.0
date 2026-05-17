@@ -663,6 +663,9 @@ class NotificationService
                     break;
 
                 case 'confirmed':
+                    if (!config('hospital.notifications.appointment_confirmation.enabled', true)) {
+                        break;
+                    }
                     // Send confirmation email to patient when appointment is confirmed
                     $this->hospitalEmailService->sendAppointmentConfirmation($appointment);
                     Log::info('Appointment confirmed email sent to patient', [
@@ -672,15 +675,24 @@ class NotificationService
                     break;
 
                 case 'cancelled':
+                    if (!config('hospital.notifications.appointment_cancellation.enabled', true)) {
+                        break;
+                    }
                     // Send cancellation email to patient
                     $this->hospitalEmailService->sendAppointmentCancellation($appointment);
                     Log::info('Appointment cancellation email sent to patient', [
                         'appointment_id' => $appointment->id,
                         'patient_email' => $appointment->patient->email
                     ]);
+                    if ($appointment->doctor && config('hospital.staff_notifications.appointment_changes.enabled', true)) {
+                        $this->hospitalEmailService->notifyDoctorAppointmentCancelled($appointment, $appointment->doctor);
+                    }
                     break;
 
                 case 'completed':
+                    if (!config('hospital.notifications.appointment_completion.enabled', true)) {
+                        break;
+                    }
                     // Send completion email to patient
                     $this->hospitalEmailService->sendAppointmentCompletion($appointment);
                     Log::info('Appointment completion email sent to patient', [
