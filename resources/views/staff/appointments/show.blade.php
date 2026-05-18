@@ -434,14 +434,7 @@
                     </div>
                     @endif
 
-                    @if($appointment->patient->address)
-                    {{-- 4. Address --}}
-                    <div class="mb-4 pt-3 border-top">
-                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-map-marker-alt me-1"></i>Address</p>
-                        <label class="form-label text-muted small mb-0">Address</label>
-                        <div class="fw-bold">{{ $appointment->patient->address }}</div>
-                    </div>
-                    @endif
+                    @include('staff.partials.patient-address-display', ['patient' => $appointment->patient])
 
                     @php
                         $emergencyContact = null;

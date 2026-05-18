@@ -288,12 +288,34 @@
                         </div>
                     @endif
 
-                    @if($appointment->patient && $appointment->patient->address)
+                    @if($appointment->patient && ($appointment->patient->address || $appointment->patient->city || $appointment->patient->state || $appointment->patient->country || $appointment->patient->postal_code))
                         <div class="row mb-3">
                             <div class="col-12">
                                 <label class="form-label text-muted">Address</label>
-                                <div class="fw-bold">{{ $appointment->patient->address }}</div>
+                                <div class="fw-bold">{{ $appointment->patient->full_address ?: $appointment->patient->address }}</div>
                             </div>
+                            @if($appointment->patient->city || $appointment->patient->state || $appointment->patient->postal_code || $appointment->patient->country)
+                            <div class="col-md-6 mt-2">
+                                @if($appointment->patient->city)
+                                <label class="form-label text-muted small mb-0">City</label>
+                                <div>{{ $appointment->patient->city }}</div>
+                                @endif
+                                @if($appointment->patient->state)
+                                <label class="form-label text-muted small mb-0">County</label>
+                                <div>{{ $appointment->patient->state }}</div>
+                                @endif
+                            </div>
+                            <div class="col-md-6 mt-2">
+                                @if($appointment->patient->postal_code)
+                                <label class="form-label text-muted small mb-0">Postcode</label>
+                                <div>{{ $appointment->patient->postal_code }}</div>
+                                @endif
+                                @if($appointment->patient->country)
+                                <label class="form-label text-muted small mb-0">Country</label>
+                                <div>{{ $appointment->patient->country }}</div>
+                                @endif
+                            </div>
+                            @endif
                         </div>
                     @endif
                 </div>
