@@ -926,18 +926,26 @@ class PatientsController extends Controller
             $guardianIdDocumentPath = $file->storeAs('patients/documents', $filename, 'private');
         }
         
-        // Handle GP consent and details
-        $consentShareWithGp = $request->has('consent_share_with_gp') ? (bool)$request->consent_share_with_gp : false;
-        $gpName = null;
-        $gpEmail = null;
-        $gpPhone = null;
-        $gpAddress = null;
-        
-        if ($consentShareWithGp) {
-            $gpName = $request->gp_name;
-            $gpEmail = $request->gp_email;
-            $gpPhone = $request->gp_phone;
-            $gpAddress = $request->gp_address;
+        // Handle GP consent and details (preserve existing when edit form has no GP section)
+        if ($request->has('gp_section')) {
+            $consentShareWithGp = $request->has('consent_share_with_gp') ? (bool) $request->consent_share_with_gp : false;
+            $gpName = null;
+            $gpEmail = null;
+            $gpPhone = null;
+            $gpAddress = null;
+
+            if ($consentShareWithGp) {
+                $gpName = $request->gp_name;
+                $gpEmail = $request->gp_email;
+                $gpPhone = $request->gp_phone;
+                $gpAddress = $request->gp_address;
+            }
+        } else {
+            $consentShareWithGp = (bool) $patient->consent_share_with_gp;
+            $gpName = $patient->gp_name;
+            $gpEmail = $patient->gp_email;
+            $gpPhone = $patient->gp_phone;
+            $gpAddress = $patient->gp_address;
         }
 
         $addressLine1 = trim((string) $request->address);

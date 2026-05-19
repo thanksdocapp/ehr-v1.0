@@ -347,7 +347,9 @@
                     </div>
                 </div>
                 @endif
-                
+
+                @include('staff.partials.patient-gp-consent-fields', ['patient' => $patient])
+
                 <!-- Medical Information -->
                 <div class="doctor-card mb-4">
                     <div class="doctor-card-header">
