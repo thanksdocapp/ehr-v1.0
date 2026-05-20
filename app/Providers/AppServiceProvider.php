@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Routing\StaleRouteCacheFallbacks;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\URL;
@@ -24,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        StaleRouteCacheFallbacks::register();
+
         // Force HTTPS URL generation only when request is truly HTTPS.
         // This avoids redirect loops in proxy/CDN setups where scheme detection can differ.
         if ($this->app->environment('production') && ! $this->app->runningInConsole()) {
