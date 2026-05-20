@@ -25,7 +25,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        StaleRouteCacheFallbacks::register();
+        // After RouteServiceProvider loads cached routes (AppServiceProvider boots first).
+        $this->app->booted(function () {
+            StaleRouteCacheFallbacks::register();
+        });
 
         // Force HTTPS URL generation only when request is truly HTTPS.
         // This avoids redirect loops in proxy/CDN setups where scheme detection can differ.

@@ -75,7 +75,7 @@ trait HandlesNonConsultationPublicBooking
             return $redirect;
         }
 
-        return redirect()->route('public.booking.non-consultation.patient-details');
+        return redirect(publicBookingNonConsultationUrl('patient-details'));
     }
 
     protected function resolveClinicDoctorForService(int $departmentId, int $serviceId): ?Doctor
@@ -177,7 +177,7 @@ trait HandlesNonConsultationPublicBooking
 
         session([$this->nonConsultationBookingDataKey() => $patientData]);
 
-        return redirect()->route('public.booking.non-consultation.review');
+        return redirect(publicBookingNonConsultationUrl('review'));
     }
 
     public function showNonConsultationReview(Request $request)
@@ -249,7 +249,7 @@ trait HandlesNonConsultationPublicBooking
             return redirect()->route('public.billing.pay', ['token' => $result['invoice']->payment_token]);
         }
 
-        return redirect()->route('public.booking.non-consultation.success', ['orderNumber' => $order->order_number]);
+        return redirect(publicBookingNonConsultationUrl('success', ['orderNumber' => $order->order_number]));
     }
 
     public function nonConsultationSuccess(Request $request, string $orderNumber)
@@ -317,6 +317,6 @@ trait HandlesNonConsultationPublicBooking
             'service_id' => $service->id,
         ]]);
 
-        return redirect()->route('public.booking.non-consultation.patient-details');
+        return redirect(publicBookingNonConsultationUrl('patient-details'));
     }
 }

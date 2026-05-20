@@ -50,7 +50,7 @@
     @php
         $pbSessionDobYmd = !empty($bookingDobYmd ?? null) ? \Carbon\Carbon::parse($bookingDobYmd)->format('Y-m-d') : '';
     @endphp
-    <form id="patient-details-form" method="POST" action="{{ route('public.booking.non-consultation.review.post') }}" data-session-dob-ymd="{{ $pbSessionDobYmd }}">
+    <form id="patient-details-form" method="POST" action="{{ publicBookingNonConsultationUrl('review.post') }}" data-session-dob-ymd="{{ $pbSessionDobYmd }}">
         @csrf
                 @if(isset($department_id))
         <input type="hidden" name="department_id" value="{{ $department_id }}">

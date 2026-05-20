@@ -718,3 +718,30 @@ if (!function_exists('formUkDateOldOrModel')) {
         return '';
     }
 }
+
+if (! function_exists('publicBookingNonConsultationUrl')) {
+    /**
+     * URL for a public non-consultation booking step (works when route cache is stale).
+     *
+     * @param  'patient-details'|'review'|'review.post'|'confirm'|'success'|'preview-doctor-discount'|'preview-clinic-discount'  $action
+     */
+    function publicBookingNonConsultationUrl(string $action, array $parameters = []): string
+    {
+        $routeName = 'public.booking.non-consultation.'.$action;
+
+        if (\Illuminate\Support\Facades\Route::has($routeName)) {
+            return route($routeName, $parameters);
+        }
+
+        return match ($action) {
+            'patient-details' => url('/book/non-consultation/patient-details'),
+            'review' => url('/book/non-consultation/review'),
+            'review.post' => url('/book/non-consultation/patient-details'),
+            'confirm' => url('/book/non-consultation/confirm'),
+            'preview-doctor-discount' => url('/book/non-consultation/preview-doctor-discount'),
+            'preview-clinic-discount' => url('/book/non-consultation/preview-clinic-discount'),
+            'success' => url('/book/service-order-success/'.rawurlencode((string) ($parameters['orderNumber'] ?? $parameters['order_number'] ?? ''))),
+            default => url('/book'),
+        };
+    }
+}

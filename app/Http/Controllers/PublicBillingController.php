@@ -527,9 +527,9 @@ class PublicBillingController extends Controller
                         app(\App\Services\NonConsultationBookingService::class)->finalizeAfterPayment($order);
                         session()->forget('pending_service_order_token');
 
-                        return redirect()->route('public.booking.non-consultation.success', [
+                        return redirect(publicBookingNonConsultationUrl('success', [
                             'orderNumber' => $order->order_number,
-                        ])->with('payment_success', true);
+                        ]))->with('payment_success', true);
                     }
                 }
             } catch (\Exception $e) {

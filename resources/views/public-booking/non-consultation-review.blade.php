@@ -18,7 +18,7 @@
     </div>
     @endif
 
-    <form id="nc-confirm-form" method="POST" action="{{ route('public.booking.non-consultation.confirm') }}">
+    <form id="nc-confirm-form" method="POST" action="{{ publicBookingNonConsultationUrl('confirm') }}">
         @csrf
         <div class="review-card">
             <div class="review-card-header"><h3>Booking summary</h3></div>
@@ -64,7 +64,7 @@
         <p class="text-muted small">After you confirm, @if($price && (float) $price > 0) you will complete payment, then @endif you will receive an email. <strong>{{ $doctor->full_name }}</strong> will contact you regarding <strong>{{ $service->name }}</strong>.</p>
 
         <div class="d-flex justify-content-between mt-4">
-            <a href="{{ route('public.booking.non-consultation.patient-details') }}" class="btn btn-outline-secondary btn-lg">Back</a>
+            <a href="{{ publicBookingNonConsultationUrl('patient-details') }}" class="btn btn-outline-secondary btn-lg">Back</a>
             <button type="submit" class="btn btn-success btn-lg" id="confirm-btn">Confirm booking</button>
         </div>
     </form>
@@ -73,7 +73,7 @@
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const previewUrl = @json($is_clinic_flow ? route('public.booking.non-consultation.preview-clinic-discount') : route('public.booking.non-consultation.preview-doctor-discount'));
+    const previewUrl = @json($is_clinic_flow ? publicBookingNonConsultationUrl('preview-clinic-discount') : publicBookingNonConsultationUrl('preview-doctor-discount'));
     const discountInput = document.getElementById('discount_code');
     const discountApplyBtn = document.getElementById('discount-apply-btn');
     const discountFeedback = document.getElementById('discount-apply-feedback');
