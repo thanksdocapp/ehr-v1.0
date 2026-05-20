@@ -1551,14 +1551,11 @@ class SettingsController extends Controller
     public function optimize(Request $request)
     {
         try {
-            // Run optimization commands
+            // Clear stale caches first, then rebuild from current codebase
+            Artisan::call('optimize:clear');
             Artisan::call('config:cache');
             Artisan::call('route:cache');
             Artisan::call('view:cache');
-            
-            // Clear old optimization files first, then rebuild
-            Artisan::call('optimize:clear');
-            Artisan::call('optimize');
             
             return response()->json([
                 'success' => true,
