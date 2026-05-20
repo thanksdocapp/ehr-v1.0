@@ -15,7 +15,7 @@
 
     <p>You will be contacted by <strong>{{ $doctor_name }}</strong> at {{ $clinic_name }} regarding your booking for <strong>{{ $service_name }}</strong>.</p>
 
-    <p>If you have any questions in the meantime, please contact us{{ $hospital_phone ? ' on ' . $hospital_phone : '' }}.</p>
+    <p>If you have any questions in the meantime, please contact {{ $clinic_name }}.</p>
 
     <p style="color: #666; font-size: 12px; margin-top: 24px;">
         This message relates to a non-consultation service. No appointment time has been scheduled.

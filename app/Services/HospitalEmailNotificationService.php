@@ -19,6 +19,7 @@ use App\Jobs\SendEmail;
 use App\Services\EmailNotificationService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
@@ -151,12 +152,23 @@ class HospitalEmailNotificationService
     /**
      * Confirmation email for paid/free non-consultation service orders (no appointment).
      */
-    public function sendNonConsultationBookingConfirmation(\App\Models\ServiceOrder $order, \App\Models\Patient $patient)
-    {
+    public function sendNonConsultationBookingConfirmation(
+        \App\Models\ServiceOrder $order,
+        \App\Models\Patient $patient,
+        ?string $overrideEmail = null
+    ) {
         $order->loadMissing(['doctor', 'service', 'department']);
         $doctor = $order->doctor;
         $service = $order->service;
-        $recipientEmail = $this->resolvePatientNotificationEmail($patient);
+        $recipientEmail = null;
+
+        if ($overrideEmail && $this->isValidNotificationEmail($overrideEmail)) {
+            $recipientEmail = trim($overrideEmail);
+        }
+
+        if (! $recipientEmail) {
+            $recipientEmail = $this->resolvePatientNotificationEmail($patient);
+        }
 
         if (! $recipientEmail && is_array($order->patient_data) && ! empty($order->patient_data['email'])) {
             $snapshotEmail = trim((string) $order->patient_data['email']);
@@ -203,7 +215,7 @@ class HospitalEmailNotificationService
             'status' => 'pending',
             'patient_id' => $patient->id,
             'event' => 'service_order.confirmation_sent',
-            'email_type' => 'service_order',
+            'email_type' => $this->resolveEmailLogType('service_order'),
             'metadata' => [
                 'service_order_id' => $order->id,
                 'from_email' => $fromEmail,
@@ -211,6 +223,13 @@ class HospitalEmailNotificationService
             ],
         ]);
         $this->emailService->sendImmediateEmail($log);
+
+        Log::info('Non-consultation booking confirmation email queued', [
+            'order_id' => $order->id,
+            'email_log_id' => $log->id,
+            'recipient' => $recipientEmail,
+            'status' => $log->fresh()->status ?? $log->status,
+        ]);
 
         return $log;
     }
@@ -244,11 +263,38 @@ class HospitalEmailNotificationService
             'subject' => $subject,
             'body' => $body,
             'status' => 'pending',
+            'email_type' => $this->resolveEmailLogType('service_order'),
             'metadata' => ['service_order_id' => $order->id, 'event' => 'service_order.doctor_notified'],
         ]);
         $this->emailService->sendImmediateEmail($log);
 
         return $log;
+    }
+
+    /**
+     * Use service_order when the DB enum supports it; otherwise general (avoids silent insert failures).
+     */
+    protected function resolveEmailLogType(string $preferred): string
+    {
+        if ($preferred !== 'service_order') {
+            return $preferred;
+        }
+
+        static $supportsServiceOrder = null;
+        if ($supportsServiceOrder === null) {
+            $supportsServiceOrder = false;
+            if (Schema::hasTable('email_logs') && Schema::hasColumn('email_logs', 'email_type')) {
+                try {
+                    $column = DB::selectOne("SHOW COLUMNS FROM `email_logs` WHERE Field = 'email_type'");
+                    $type = $column->Type ?? '';
+                    $supportsServiceOrder = str_contains($type, 'service_order');
+                } catch (\Throwable $e) {
+                    $supportsServiceOrder = false;
+                }
+            }
+        }
+
+        return $supportsServiceOrder ? 'service_order' : 'general';
     }
 
     /**

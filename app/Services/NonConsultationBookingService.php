@@ -382,10 +382,18 @@ class NonConsultationBookingService
 
     private function sendNotifications(ServiceOrder $order, Patient $patient): void
     {
+        $bookingEmail = is_array($order->patient_data) && ! empty($order->patient_data['email'])
+            ? trim((string) $order->patient_data['email'])
+            : null;
+
         try {
-            $this->emailService->sendNonConsultationBookingConfirmation($order, $patient);
-        } catch (\Exception $e) {
-            Log::error('Failed to send non-consultation booking confirmation', ['error' => $e->getMessage()]);
+            $this->emailService->sendNonConsultationBookingConfirmation($order, $patient, $bookingEmail);
+        } catch (\Throwable $e) {
+            Log::error('Failed to send non-consultation booking confirmation', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'exception' => $e::class,
+            ]);
         }
 
         try {
