@@ -87,6 +87,7 @@
                         data-consultation-type="{{ e($ct) }}"
                         data-description="{{ e($desc) }}"
                         data-name="{{ e($name) }}"
+                        data-is-non-consultation="{{ !empty($svc['is_non_consultation']) ? '1' : '0' }}"
                         aria-pressed="false">
                     <div class="pb-service-card__title">{{ $name }}</div>
                     @if($desc)
@@ -273,6 +274,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const timeInput = document.getElementById('appointment-time');
 
     const departmentId = {{ $department->id }};
+    const clinicForm = document.getElementById('clinic-booking-form');
+    const selectDatetimeUrl = @json(route('public.booking.select-datetime'));
+    const clinicPatientDetailsUrl = @json(route('public.booking.clinic-patient-details'));
     let dateRange = [];
     let monthKeys = [];
     let currentMonthIndex = 0;
@@ -357,6 +361,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function applyClinicServiceFromCard(card) {
         if (!card || !serviceIdInput || !serviceCardsRoot) return;
+        if (card.dataset.isNonConsultation === '1') {
+            if (clinicForm) {
+                clinicForm.action = selectDatetimeUrl;
+            }
+            dateInput.removeAttribute('required');
+            timeInput.removeAttribute('required');
+            scheduleCard.style.display = 'none';
+            continueBtn.disabled = false;
+            serviceCardsRoot.querySelectorAll('.pb-service-card').forEach(function(btn) {
+                btn.classList.remove('is-selected');
+                btn.setAttribute('aria-pressed', 'false');
+            });
+            card.classList.add('is-selected');
+            card.setAttribute('aria-pressed', 'true');
+            serviceIdInput.value = card.dataset.serviceId || '';
+            updateClinicServiceDetails();
+            return;
+        }
+        if (clinicForm) {
+            clinicForm.action = clinicPatientDetailsUrl;
+        }
+        dateInput.setAttribute('required', 'required');
+        timeInput.setAttribute('required', 'required');
         Object.keys(slotsByDate).forEach(function(k) { delete slotsByDate[k]; });
         serviceCardsRoot.querySelectorAll('.pb-service-card').forEach(function(btn) {
             btn.classList.remove('is-selected');

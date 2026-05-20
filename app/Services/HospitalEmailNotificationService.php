@@ -149,6 +149,94 @@ class HospitalEmailNotificationService
     }
 
     /**
+     * Confirmation email for paid/free non-consultation service orders (no appointment).
+     */
+    public function sendNonConsultationBookingConfirmation(\App\Models\ServiceOrder $order, \App\Models\Patient $patient)
+    {
+        $order->loadMissing(['doctor', 'service', 'department']);
+        $doctor = $order->doctor;
+        $service = $order->service;
+        $recipientEmail = $this->resolvePatientNotificationEmail($patient);
+
+        if (! $recipientEmail) {
+            Log::warning('Cannot send non-consultation confirmation: patient email missing', [
+                'order_id' => $order->id,
+            ]);
+
+            return null;
+        }
+
+        $serviceName = $service?->name ?? 'your booking';
+        $doctorName = $doctor?->name ?? 'your doctor';
+        $clinicName = $order->department?->name ?? config('app.name', 'ThanksDoc');
+
+        $variables = [
+            'patient_name' => $patient->full_name,
+            'service_name' => $serviceName,
+            'doctor_name' => $doctorName,
+            'clinic_name' => $clinicName,
+            'order_number' => $order->order_number,
+            'hospital_name' => config('app.name', 'ThanksDoc'),
+            'hospital_phone' => config('hospital.phone', ''),
+            'amount_paid' => $order->fee > 0 ? '£' . number_format((float) $order->fee, 2) : 'No payment required',
+        ];
+
+        $subject = 'Booking confirmation – ' . $serviceName;
+        $body = view('emails.non-consultation-booking-confirmation', $variables)->render();
+
+        $log = EmailLog::create([
+            'recipient_email' => $recipientEmail,
+            'recipient_name' => $patient->full_name,
+            'subject' => $subject,
+            'body' => $body,
+            'status' => 'pending',
+            'patient_id' => $patient->id,
+            'event' => 'service_order.confirmation_sent',
+            'email_type' => 'service_order',
+            'metadata' => ['service_order_id' => $order->id],
+        ]);
+        $this->emailService->sendImmediateEmail($log);
+
+        return $log;
+    }
+
+    public function notifyDoctorNewServiceOrder(\App\Models\ServiceOrder $order, \App\Models\Patient $patient): ?EmailLog
+    {
+        $order->loadMissing(['doctor', 'service']);
+        $doctor = $order->doctor;
+        if (! $doctor) {
+            return null;
+        }
+
+        $doctorEmail = $this->resolveDoctorNotificationEmail($doctor);
+        if (! $doctorEmail) {
+            return null;
+        }
+
+        $serviceName = $order->service?->name ?? 'Service';
+        $patientName = $patient->full_name;
+        $subject = 'New service order – please contact patient';
+        $body = '<p>Dear ' . e($doctor->name) . ',</p>'
+            . '<p>A patient has placed an order for <strong>' . e($serviceName) . '</strong> (order ' . e($order->order_number) . ').</p>'
+            . '<p><strong>Patient:</strong> ' . e($patientName) . '<br>'
+            . '<strong>Email:</strong> ' . e($patient->email ?? '') . '<br>'
+            . '<strong>Phone:</strong> ' . e($patient->phone ?? '') . '</p>'
+            . '<p>Please contact the patient regarding this booking.</p>';
+
+        $log = EmailLog::create([
+            'recipient_email' => $doctorEmail,
+            'recipient_name' => $doctor->name,
+            'subject' => $subject,
+            'body' => $body,
+            'status' => 'pending',
+            'metadata' => ['service_order_id' => $order->id, 'event' => 'service_order.doctor_notified'],
+        ]);
+        $this->emailService->sendImmediateEmail($log);
+
+        return $log;
+    }
+
+    /**
      * Send new appointment notification email to doctor.
      *
      * @param Appointment $appointment
@@ -2565,7 +2653,7 @@ class HospitalEmailNotificationService
      * @param array $selectedMedicalRecords Array of MedicalRecord models (used to generate consultation summary PDF when no file attachments)
      * @return EmailLog|null
      */
-    public function sendGpEmail(Patient $patient, string $subject, string $message, string $emailType = 'general', User $sentBy = null, array $medicalRecordAttachments = [], array $uploadedFiles = [], array $selectedMedicalRecords = [])
+    public function sendGpEmail(Patient $patient, string $subject, string $message, string $emailType = 'general', User $sentBy = null, array $medicalRecordAttachments = [], array $uploadedFiles = [], array $selectedMedicalRecords = [], ?string $doctorReplyEmail = null)
     {
         // Check if patient has GP consent and GP email
         if (!$patient->consent_share_with_gp) {
@@ -2592,6 +2680,8 @@ class HospitalEmailNotificationService
             ? $department->email
             : config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk');
 
+        $doctorReplyEmail = $this->resolveDoctorReplyEmail($sentBy, $doctorReplyEmail, $doctor);
+
         $variables = [
             'gp_name' => $patient->gp_name ?? 'GP',
             'gp_email' => $patient->gp_email,
@@ -2608,6 +2698,8 @@ class HospitalEmailNotificationService
             'hospital_email' => config('hospital.email', ''),
             'gp_reply_to_email' => config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk'),
             'department_email' => $departmentEmail,
+            'doctor_reply_email' => $doctorReplyEmail,
+            'gp_from_email' => config('hospital.gp_from_email', 'noreply@thanksdoc.co.uk'),
             'message' => $message,
             'email_type' => $emailType,
             'date' => formatDateUkLong(now()),
@@ -2615,7 +2707,7 @@ class HospitalEmailNotificationService
         ];
 
         // Always send direct email with custom subject and message
-        return $this->sendDirectGpEmail($patient, $subject, $message, $variables, $sentBy, $emailType, $medicalRecordAttachments, $uploadedFiles, $selectedMedicalRecords);
+        return $this->sendDirectGpEmail($patient, $subject, $message, $variables, $sentBy, $emailType, $medicalRecordAttachments, $uploadedFiles, $selectedMedicalRecords, $doctorReplyEmail);
     }
 
     /**
@@ -2632,7 +2724,27 @@ class HospitalEmailNotificationService
      * @param array $selectedMedicalRecords Array of MedicalRecord models (used to generate consultation summary PDF when no file attachments)
      * @return EmailLog|null
      */
-    private function sendDirectGpEmail(Patient $patient, string $subject, string $message, array $variables, User $sentBy = null, string $emailType = 'general', array $medicalRecordAttachments = [], array $uploadedFiles = [], array $selectedMedicalRecords = [])
+    /**
+     * Resolve the doctor reply-to email for GP communications.
+     */
+    public function resolveDoctorReplyEmail(?User $sentBy, ?string $override = null, ?Doctor $doctor = null): ?string
+    {
+        if (!empty($override) && filter_var($override, FILTER_VALIDATE_EMAIL)) {
+            return $override;
+        }
+
+        if ($doctor && !empty($doctor->email) && filter_var($doctor->email, FILTER_VALIDATE_EMAIL)) {
+            return $doctor->email;
+        }
+
+        if ($sentBy && !empty($sentBy->email) && filter_var($sentBy->email, FILTER_VALIDATE_EMAIL)) {
+            return $sentBy->email;
+        }
+
+        return null;
+    }
+
+    private function sendDirectGpEmail(Patient $patient, string $subject, string $message, array $variables, User $sentBy = null, string $emailType = 'general', array $medicalRecordAttachments = [], array $uploadedFiles = [], array $selectedMedicalRecords = [], ?string $doctorReplyEmail = null)
     {
         try {
             $hospitalName = $variables['hospital_name'];
@@ -2718,6 +2830,13 @@ class HospitalEmailNotificationService
 
             // Create email log entry - check for column existence first
             $clinicCopyEmail = $variables['department_email'] ?? config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk');
+            $gpFromEmail = config('hospital.gp_from_email', 'noreply@thanksdoc.co.uk');
+            $gpFromName = config('hospital.gp_from_name', config('hospital.name', 'ThanksDoc'));
+            $doctorReply = $variables['doctor_reply_email'] ?? null;
+            $replyToRecipients = array_values(array_filter([
+                $doctorReply ? ['address' => $doctorReply, 'name' => $variables['doctor_name'] ?? 'Consultant'] : null,
+                ['address' => $clinicCopyEmail, 'name' => config('hospital.name', 'ThanksDoc Clinic')],
+            ]));
             $emailLogData = [
                 'recipient_email' => $patient->gp_email,
                 'recipient_name' => $patient->gp_name ?? 'GP',
@@ -2732,6 +2851,9 @@ class HospitalEmailNotificationService
                     'gp_email_type' => $emailType,
                     'medical_record_count' => count($medicalRecordAttachments),
                     'uploaded_file_count' => count($uploadedFiles),
+                    'from_email' => $gpFromEmail,
+                    'from_name' => $gpFromName,
+                    'reply_to' => $replyToRecipients,
                 ],
                 'status' => 'pending'
             ];
@@ -2854,10 +2976,12 @@ class HospitalEmailNotificationService
             'patient_id' => $variables['patient_id'],
             'patient_dob' => $variables['patient_dob'],
             'doctor_name' => $variables['doctor_name'],
+            'doctor_reply_email' => $variables['doctor_reply_email'] ?? null,
             'hospital_name' => $hospitalName,
             'hospital_address' => $hospitalAddress,
             'hospital_phone' => $hospitalPhone,
             'hospital_email' => $hospitalEmail,
+            'gp_from_email' => $variables['gp_from_email'] ?? config('hospital.gp_from_email', 'noreply@thanksdoc.co.uk'),
             'gp_reply_to_email' => $variables['gp_reply_to_email'] ?? config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk'),
             'department_email' => $variables['department_email'] ?? config('hospital.gp_reply_to_email', 'gpsurgeryresponses@thanksdoc.co.uk'),
             'message' => nl2br(e($message)),

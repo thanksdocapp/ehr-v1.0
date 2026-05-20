@@ -19,9 +19,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use App\Http\Controllers\Concerns\HandlesNonConsultationPublicBooking;
 
 class PublicBookingController extends Controller
 {
+    use HandlesNonConsultationPublicBooking;
     protected $slotAvailabilityService;
     protected $bookingService;
     protected $clinicBookingService;
@@ -337,6 +339,10 @@ class PublicBookingController extends Controller
         session([$this->publicBookingDobSessionKey() => $ymd]);
         session()->forget($this->publicBookingPendingSessionKey());
 
+        if ($redirect = $this->handleNonConsultationAfterSlotDob($pending)) {
+            return $redirect;
+        }
+
         if ($pending['flow'] === 'clinic') {
             $department = Department::findOrFail($pending['department_id']);
             $slots = $this->slotAvailabilityService->getAvailableSlotsForDepartment(
@@ -474,7 +480,15 @@ class PublicBookingController extends Controller
                 $duration = $svc->getDurationForDoctor($doctor->id) ?? $svc->default_duration_minutes ?? 60;
                 $consultationType = $svc->getConsultationTypeForDoctor($doctor->id) ?? 'in_person';
                 if (!isset($servicesMap[$svc->id])) {
-                    $servicesMap[$svc->id] = ['id' => $svc->id, 'name' => $svc->name, 'description' => $svc->description ?? '', 'price' => $price, 'duration' => $duration, 'consultation_type' => $consultationType];
+                    $servicesMap[$svc->id] = [
+                        'id' => $svc->id,
+                        'name' => $svc->name,
+                        'description' => $svc->description ?? '',
+                        'price' => $price,
+                        'duration' => $duration,
+                        'consultation_type' => $consultationType,
+                        'is_non_consultation' => $svc->isNonConsultation(),
+                    ];
                 } else {
                     $servicesMap[$svc->id]['price'] = min($servicesMap[$svc->id]['price'], $price);
                     if ($consultationType === 'online') {
@@ -998,6 +1012,10 @@ class PublicBookingController extends Controller
 
         if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service)) {
             return $redirect;
+        }
+
+        if ($service->isNonConsultation()) {
+            return $this->redirectToNonConsultationFlow($request, $service);
         }
 
         // If department_id is provided but no doctor_id, show doctor selection
@@ -1636,6 +1654,7 @@ class PublicBookingController extends Controller
                 'duration' => $service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 60,
                 'price' => $service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0,
                 'consultation_type' => $service->getConsultationTypeForDoctor($doctor->id),
+                'is_non_consultation' => $service->isNonConsultation(),
                 'minimum_age' => $service->minimum_age,
                 'maximum_age' => $service->maximum_age,
             ];

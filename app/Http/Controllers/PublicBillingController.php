@@ -513,6 +513,34 @@ class PublicBillingController extends Controller
             }
         }
 
+        $pendingServiceOrderToken = session('pending_service_order_token');
+        if ($pendingServiceOrderToken) {
+            try {
+                $order = \App\Models\ServiceOrder::where('booking_token', $pendingServiceOrderToken)
+                    ->where('invoice_id', $invoice->id)
+                    ->where('status', \App\Models\ServiceOrder::STATUS_PENDING_PAYMENT)
+                    ->first();
+
+                if ($order) {
+                    $hasPaid = $invoice->payments()->where('status', 'completed')->exists() || $invoice->status === 'paid';
+                    if ($hasPaid) {
+                        app(\App\Services\NonConsultationBookingService::class)->finalizeAfterPayment($order);
+                        session()->forget('pending_service_order_token');
+
+                        return redirect()->route('public.booking.non-consultation.success', [
+                            'orderNumber' => $order->order_number,
+                        ])->with('payment_success', true);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to finalize service order after payment', [
+                    'invoice_id' => $invoice->id,
+                    'pending_service_order_token' => $pendingServiceOrderToken,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         // Check if this is a pending booking (doctor-selected) that needs to be finalized after payment
         $pendingBookingToken = session('pending_booking_token');
         if ($pendingBookingToken) {

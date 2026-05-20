@@ -591,6 +591,14 @@ class PublicBookingService
     }
 
     /**
+     * Apply booking form data to an existing patient record (public booking / service orders).
+     */
+    public function applyPatientDataFromBooking(Patient $patient, array $data, ?int $departmentId): void
+    {
+        $this->updatePatientData($patient, $data, $departmentId);
+    }
+
+    /**
      * Update patient with additional data.
      */
     private function updatePatientData(Patient $patient, array $data, ?int $departmentId)

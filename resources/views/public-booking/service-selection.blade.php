@@ -107,6 +107,7 @@
                         data-price="{{ $servicePrice }}"
                         data-description="{{ e($serviceDescription) }}"
                         data-consultation-type="{{ e($serviceConsultationType) }}"
+                        data-is-non-consultation="{{ $service->isNonConsultation() ? '1' : '0' }}"
                         data-name="{{ e($serviceName) }}"
                         aria-pressed="true">
                     <div class="pb-service-card__title">{{ $serviceName }}</div>
@@ -527,6 +528,9 @@
         const timeSlotsPicker = document.getElementById('time-slots-picker');
 
         let selectedDoctorId = null;
+        let selectedNonConsultation = false;
+        const selectDatetimeUrl = @json(route('public.booking.select-datetime'));
+        const patientDetailsUrl = @json(route('public.booking.patient-details'));
         let selectedServiceId = null;
         let selectedDate = null;
         let selectedTime = null;
@@ -626,6 +630,7 @@
             btn.dataset.price = String(priceNum);
             btn.dataset.description = descPlain;
             btn.dataset.consultationType = ct;
+            btn.dataset.isNonConsultation = (svc.is_non_consultation || svc.isNonConsultation) ? '1' : '0';
             btn.dataset.name = name;
             btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
             const descShort = descPlain.length > 120 ? descPlain.slice(0, 117) + '...' : descPlain;
@@ -1091,7 +1096,15 @@
 
         // Form submission
         form.addEventListener('submit', function(e) {
-            if (!selectedDoctorId || !selectedServiceId || !selectedDate || !selectedTime) {
+            if (!selectedDoctorId || !selectedServiceId) {
+                e.preventDefault();
+                alert('Please select a doctor and service.');
+                return false;
+            }
+            if (selectedNonConsultation) {
+                return true;
+            }
+            if (!selectedDate || !selectedTime) {
                 e.preventDefault();
                 alert('Please complete all selections before continuing.');
                 return false;

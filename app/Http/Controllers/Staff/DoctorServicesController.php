@@ -100,7 +100,8 @@ class DoctorServicesController extends Controller
             'description' => 'nullable|string',
             'default_duration_minutes' => 'required|integer|min:5|max:480',
             'default_price' => 'nullable|numeric|min:0',
-            'consultation_type' => 'required|in:in_person,online,telephone',
+            'consultation_type' => ['nullable', Rule::requiredIf(! $request->boolean('is_non_consultation')), 'in:in_person,online,telephone'],
+            'is_non_consultation' => 'boolean',
             'tags_input' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
@@ -133,6 +134,7 @@ class DoctorServicesController extends Controller
                 'created_by' => $user->id,
                 'sort_order' => $nextSortOrder,
                 'is_active' => $request->boolean('is_active', true),
+                'is_non_consultation' => $request->boolean('is_non_consultation'),
             ]);
 
             // Automatically create override for this doctor
@@ -141,7 +143,7 @@ class DoctorServicesController extends Controller
                 'service_id' => $service->id,
                 'custom_price' => $request->default_price,
                 'custom_duration_minutes' => $request->default_duration_minutes,
-                'consultation_type' => $request->consultation_type ?? 'in_person',
+                'consultation_type' => $request->boolean('is_non_consultation') ? 'in_person' : ($request->consultation_type ?? 'in_person'),
                 'is_active' => $request->boolean('is_active', true),
             ]);
 
@@ -196,7 +198,8 @@ class DoctorServicesController extends Controller
             'default_price' => 'required|numeric|min:0',
             'description' => 'nullable|string|max:1000',
             'custom_duration_minutes' => 'required|integer|min:5|max:480',
-            'consultation_type' => 'required|in:in_person,online,telephone',
+            'consultation_type' => ['nullable', Rule::requiredIf(! $request->boolean('is_non_consultation')), 'in:in_person,online,telephone'],
+            'is_non_consultation' => 'boolean',
             'is_active' => 'boolean',
         ]);
         if ($request->boolean('under_18_only') && $request->boolean('adults_only')) {
@@ -220,6 +223,7 @@ class DoctorServicesController extends Controller
                 'description' => $request->description,
                 'minimum_age' => $minimumAge,
                 'maximum_age' => $maximumAge,
+                'is_non_consultation' => $request->boolean('is_non_consultation'),
             ]);
 
             // Update or create doctor service override (duration used by SlotAvailabilityService for scheduling)
@@ -231,7 +235,7 @@ class DoctorServicesController extends Controller
                 [
                     'custom_price' => $newDefaultPrice,
                     'custom_duration_minutes' => $duration,
-                    'consultation_type' => $request->consultation_type ?? 'in_person',
+                    'consultation_type' => $request->boolean('is_non_consultation') ? 'in_person' : ($request->consultation_type ?? 'in_person'),
                     'is_active' => $request->boolean('is_active', true),
                 ]
             );

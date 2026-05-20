@@ -1051,7 +1051,25 @@ class PatientsController extends Controller
                              ->with('error', 'GP email address is not available for this patient.');
         }
 
-        return view('staff.patients.gp-email', compact('patient'));
+        $defaultDoctorReplyEmail = $this->resolveDefaultDoctorReplyEmail();
+
+        return view('staff.patients.gp-email', compact('patient', 'defaultDoctorReplyEmail'));
+    }
+
+    /**
+     * Default reply-to email for GP compose form (doctor profile or user account).
+     */
+    private function resolveDefaultDoctorReplyEmail(): ?string
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'doctor') {
+            return $user?->email;
+        }
+
+        $doctor = Doctor::where('user_id', $user->id)->first();
+
+        return app(HospitalEmailNotificationService::class)
+            ->resolveDoctorReplyEmail($user, null, $doctor);
     }
 
     /**
@@ -1063,6 +1081,7 @@ class PatientsController extends Controller
         $request->validate([
             'subject' => 'required|string|max:255',
             'message' => 'required|string|max:5000',
+            'doctor_reply_email' => 'nullable|email|max:255',
             'email_type' => 'nullable|string|in:general,consultation,referral,update,other',
             'medical_record_ids' => 'nullable|array',
             'medical_record_ids.*' => 'exists:medical_records,id',
@@ -1148,7 +1167,8 @@ class PatientsController extends Controller
                 $sentBy,
                 $medicalRecordAttachments,
                 $uploadedFiles,
-                $selectedMedicalRecords
+                $selectedMedicalRecords,
+                $request->doctor_reply_email
             );
 
             if ($emailLog) {

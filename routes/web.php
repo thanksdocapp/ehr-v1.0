@@ -120,6 +120,13 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/service/{serviceId}/{doctorId}', [\App\Http\Controllers\PublicBookingController::class, 'showServiceBooking'])->name('service');
         Route::get('/success/{appointmentNumber}', [\App\Http\Controllers\PublicBookingController::class, 'success'])->name('success');
         Route::get('/clinic-success/{requestNumber}', [\App\Http\Controllers\PublicBookingController::class, 'clinicSuccess'])->name('clinic-success');
+        Route::get('/service-order-success/{orderNumber}', [\App\Http\Controllers\PublicBookingController::class, 'nonConsultationSuccess'])->name('non-consultation.success');
+        Route::get('/non-consultation/patient-details', [\App\Http\Controllers\PublicBookingController::class, 'showNonConsultationPatientDetails'])->name('non-consultation.patient-details');
+        Route::get('/non-consultation/review', [\App\Http\Controllers\PublicBookingController::class, 'showNonConsultationReview'])->name('non-consultation.review');
+        Route::post('/non-consultation/patient-details', [\App\Http\Controllers\PublicBookingController::class, 'nonConsultationReview'])->name('non-consultation.review.post');
+        Route::post('/non-consultation/confirm', [\App\Http\Controllers\PublicBookingController::class, 'nonConsultationConfirm'])->name('non-consultation.confirm');
+        Route::post('/non-consultation/preview-doctor-discount', [\App\Http\Controllers\PublicBookingController::class, 'previewNonConsultationDoctorDiscount'])->name('non-consultation.preview-doctor-discount');
+        Route::post('/non-consultation/preview-clinic-discount', [\App\Http\Controllers\PublicBookingController::class, 'previewNonConsultationClinicDiscount'])->name('non-consultation.preview-clinic-discount');
         // GET routes for POST-only pages (prevent 404 when accessed directly)
         Route::get('/review', [\App\Http\Controllers\PublicBookingController::class, 'showReview'])->name('review.show');
         Route::get('/clinic-review', [\App\Http\Controllers\PublicBookingController::class, 'showClinicReview'])->name('clinic-review.show');
@@ -346,6 +353,11 @@ Route::group(['middleware' => 'installed'], function () {
         // Clinic Booking Requests (doctor accepts pending clinic bookings)
         Route::get('/clinic-booking-requests', [\App\Http\Controllers\Staff\ClinicBookingRequestsController::class, 'index'])->name('clinic-booking-requests.index');
         Route::post('/clinic-booking-requests/{clinicBookingRequest}/accept', [\App\Http\Controllers\Staff\ClinicBookingRequestsController::class, 'accept'])->name('clinic-booking-requests.accept');
+
+        Route::get('/service-orders', [\App\Http\Controllers\Staff\ServiceOrdersController::class, 'index'])->name('service-orders.index');
+        Route::get('/service-orders/{serviceOrder}', [\App\Http\Controllers\Staff\ServiceOrdersController::class, 'show'])->name('service-orders.show');
+        Route::post('/service-orders/{serviceOrder}/contacted', [\App\Http\Controllers\Staff\ServiceOrdersController::class, 'markContacted'])->name('service-orders.contacted');
+        Route::post('/service-orders/{serviceOrder}/completed', [\App\Http\Controllers\Staff\ServiceOrdersController::class, 'markCompleted'])->name('service-orders.completed');
         
         // AJAX Routes for Calendar
         Route::get('/api/appointments/calendar-data', [\App\Http\Controllers\Staff\AppointmentsController::class, 'getCalendarData'])->name('api.appointments.calendar-data');

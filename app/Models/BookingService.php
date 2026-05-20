@@ -23,12 +23,14 @@ class BookingService extends Model
         'tags',
         'created_by',
         'is_active',
+        'is_non_consultation',
         'sort_order',
     ];
 
     protected $casts = [
         'tags' => 'array',
         'is_active' => 'boolean',
+        'is_non_consultation' => 'boolean',
         'default_price' => 'decimal:2',
         'default_duration_minutes' => 'integer',
         'minimum_age' => 'integer',
@@ -102,6 +104,11 @@ class BookingService extends Model
         $fallback = $this->default_consultation_type ?: 'in_person';
 
         return $doctorPrice?->consultation_type ?? $fallback;
+    }
+
+    public function isNonConsultation(): bool
+    {
+        return (bool) $this->is_non_consultation;
     }
 
     public function isUnder18OnlyService(): bool

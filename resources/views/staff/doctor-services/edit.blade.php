@@ -133,23 +133,10 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="consultation_type" class="form-label">
-                                Consultation Type <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select @error('consultation_type') is-invalid @enderror"
-                                    id="consultation_type"
-                                    name="consultation_type"
-                                    required>
-                                <option value="in_person" {{ old('consultation_type', $override->consultation_type ?? 'in_person') == 'in_person' ? 'selected' : '' }}>In Person</option>
-                                <option value="online" {{ old('consultation_type', $override->consultation_type ?? 'in_person') == 'online' ? 'selected' : '' }}>Online (Video)</option>
-                                <option value="telephone" {{ old('consultation_type', $override->consultation_type ?? 'in_person') == 'telephone' ? 'selected' : '' }}>Telephone</option>
-                            </select>
-                            @error('consultation_type')
-                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                            <small class="text-muted">This determines how patients will book this service. Patients will see this type when booking.</small>
-                        </div>
+                        @include('partials.booking-service-non-consultation-toggle', [
+                            'bookingService' => $bookingService,
+                            'defaultConsultationType' => $override->consultation_type ?? 'in_person',
+                        ])
 
                         <div class="mb-3">
                             <div class="form-check form-switch">

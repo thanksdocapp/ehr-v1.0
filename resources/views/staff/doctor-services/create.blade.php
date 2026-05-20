@@ -101,21 +101,7 @@
 
                                 @include('partials.booking-service-age-restrictions', ['bookingService' => null])
 
-                                <div class="mb-3">
-                                    <label for="consultation_type" class="form-label fw-semibold">Consultation Type <span class="text-danger">*</span></label>
-                                    <select class="form-select @error('consultation_type') is-invalid @enderror"
-                                            id="consultation_type"
-                                            name="consultation_type"
-                                            required>
-                                        <option value="in_person" {{ old('consultation_type', 'in_person') == 'in_person' ? 'selected' : '' }}>In Person</option>
-                                        <option value="online" {{ old('consultation_type') == 'online' ? 'selected' : '' }}>Online (Video)</option>
-                                        <option value="telephone" {{ old('consultation_type') == 'telephone' ? 'selected' : '' }}>Telephone</option>
-                                    </select>
-                                    @error('consultation_type')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="text-muted">This determines how patients will book this service. Patients will see this type when booking.</small>
-                                </div>
+                                @include('partials.booking-service-non-consultation-toggle', ['bookingService' => null, 'defaultConsultationType' => 'in_person'])
 
                                 <div class="mb-3">
                                     <label for="tags_input" class="form-label fw-semibold">Tags</label>

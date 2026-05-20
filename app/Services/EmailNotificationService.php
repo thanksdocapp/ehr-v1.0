@@ -316,12 +316,17 @@ class EmailNotificationService
             $ccEmails = $log->cc_emails;
             $bccEmails = $log->bcc_emails;
             $attachments = $log->attachments;
-            $fromEmail = $log->template && $log->template->sender_email 
-                ? $log->template->sender_email 
-                : null;
-            $fromName = $log->template && $log->template->sender_name 
-                ? $log->template->sender_name 
-                : null;
+            $metadata = is_array($log->metadata) ? $log->metadata : [];
+            $fromEmail = !empty($metadata['from_email'])
+                ? $metadata['from_email']
+                : ($log->template && $log->template->sender_email ? $log->template->sender_email : null);
+            $fromName = !empty($metadata['from_name'])
+                ? $metadata['from_name']
+                : ($log->template && $log->template->sender_name ? $log->template->sender_name : null);
+            $replyToRecipients = $metadata['reply_to'] ?? [];
+            if (!is_array($replyToRecipients)) {
+                $replyToRecipients = [];
+            }
             
             // Build the email - send synchronously to avoid closure serialization
             // Force synchronous sending by temporarily setting queue connection to sync
@@ -341,7 +346,7 @@ class EmailNotificationService
                 
                 // Use Mail::send() but ensure it's not queued
                 // Extract all variables to avoid closure serialization issues
-                Mail::send([], [], function ($message) use ($to, $toName, $subject, $body, $ccEmails, $bccEmails, $attachments, $fromEmail, $fromName) {
+                Mail::send([], [], function ($message) use ($to, $toName, $subject, $body, $ccEmails, $bccEmails, $attachments, $fromEmail, $fromName, $replyToRecipients) {
                     $message->to($to, $toName)
                             ->subject($subject)
                             ->html($body);
@@ -380,9 +385,15 @@ class EmailNotificationService
                         }
                     }
 
-                    // Set from address if specified in template
+                    // Set from address (template or GP metadata override)
                     if ($fromEmail) {
                         $message->from($fromEmail, $fromName);
+                    }
+
+                    foreach ($replyToRecipients as $replyTo) {
+                        if (!empty($replyTo['address']) && filter_var($replyTo['address'], FILTER_VALIDATE_EMAIL)) {
+                            $message->replyTo($replyTo['address'], $replyTo['name'] ?? null);
+                        }
                     }
                 });
                 

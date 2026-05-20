@@ -120,6 +120,26 @@
                             @enderror
                         </div>
 
+                        <!-- Doctor reply-to email -->
+                        <div class="mb-4">
+                            <label for="doctor_reply_email" class="form-label" style="color: #2d3748; font-weight: 500;">
+                                <i class="fas fa-reply me-2"></i>Your email for GP replies
+                            </label>
+                            <input type="email"
+                                   class="form-control @error('doctor_reply_email') is-invalid @enderror"
+                                   id="doctor_reply_email"
+                                   name="doctor_reply_email"
+                                   value="{{ old('doctor_reply_email', $defaultDoctorReplyEmail ?? '') }}"
+                                   placeholder="your.name@clinic.com"
+                                   style="border: 2px solid #e2e8f0; border-radius: 6px;">
+                            <small class="form-text text-muted">
+                                The GP can reply to this address. The clinic inbox is also copied. Email is sent from {{ config('hospital.gp_from_email', 'noreply@thanksdoc.co.uk') }} (do not reply to that address).
+                            </small>
+                            @error('doctor_reply_email')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- Message -->
                         <div class="mb-4">
                             <label for="message" class="form-label" style="color: #2d3748; font-weight: 500;">

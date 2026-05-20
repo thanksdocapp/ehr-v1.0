@@ -19,8 +19,11 @@ return [
     'pharmacy_phone' => env('HOSPITAL_PHARMACY_PHONE', '+1 (555) 123-MEDS'),
     'email' => env('HOSPITAL_EMAIL', 'info@hospital.com'),
     'website' => env('HOSPITAL_WEBSITE', 'https://hospital.com'),
-    /** Email address for GP surgery responses; replies to GP communications should be sent here only. */
+    /** Email address for GP surgery responses; clinic copy and Reply-To fallback. */
     'gp_reply_to_email' => env('HOSPITAL_GP_REPLY_TO_EMAIL', 'gpsurgeryresponses@thanksdoc.co.uk'),
+    /** From address for outbound GP communications (unmonitored). */
+    'gp_from_email' => env('HOSPITAL_GP_FROM_EMAIL', 'noreply@thanksdoc.co.uk'),
+    'gp_from_name' => env('HOSPITAL_GP_FROM_NAME', 'ThanksDoc'),
 
     /*
     |--------------------------------------------------------------------------

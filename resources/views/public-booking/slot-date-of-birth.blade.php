@@ -46,12 +46,14 @@
             <span class="summary-label">Service</span>
             <span class="summary-value">{{ $service->name }}</span>
         </div>
+        @if(($flow ?? '') !== 'non_consultation' && !empty($appointment_date ?? null))
         <div class="summary-row">
             <span class="summary-label">Date &amp; time</span>
             <span class="summary-value">
                 {{ formatDateUkLongWeekday($appointment_date) }} at {{ formatTime($appointment_time, 'g:i A') }}
             </span>
         </div>
+        @endif
     </div>
 
     @php
@@ -85,6 +87,10 @@
             <div class="d-flex flex-wrap justify-content-between gap-2 mt-4">
                 @if($flow === 'clinic' && $department)
                     <a href="{{ route('public.booking.clinic', ['slug' => $department->slug]) }}" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-arrow-left me-2"></i>Back
+                    </a>
+                @elseif($flow === 'non_consultation' && $doctor)
+                    <a href="{{ isset($department) && $department ? route('public.booking.clinic', ['slug' => $department->slug]) : route('public.booking.doctor', ['slug' => $doctor->slug]) }}" class="btn btn-outline-secondary btn-lg">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
                 @elseif($flow === 'doctor' && $doctor)
