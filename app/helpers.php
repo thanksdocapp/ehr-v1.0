@@ -745,3 +745,38 @@ if (! function_exists('publicBookingNonConsultationUrl')) {
         };
     }
 }
+
+if (! function_exists('publicBillingPayUrl')) {
+    function publicBillingPayUrl(string $token): string
+    {
+        if (\Illuminate\Support\Facades\Route::has('public.billing.pay')) {
+            return route('public.billing.pay', ['token' => $token]);
+        }
+
+        return url('/pay/'.$token);
+    }
+}
+
+if (! function_exists('staffServiceOrderUrl')) {
+    /**
+     * @param  'index'|'show'  $action
+     */
+    function staffServiceOrderUrl(string $action, mixed $parameters = []): string
+    {
+        $routeName = 'staff.service-orders.'.$action;
+
+        if (\Illuminate\Support\Facades\Route::has($routeName)) {
+            return route($routeName, $parameters);
+        }
+
+        if ($action === 'show') {
+            $id = $parameters instanceof \Illuminate\Database\Eloquent\Model
+                ? $parameters->getKey()
+                : ($parameters['serviceOrder'] ?? $parameters['id'] ?? $parameters);
+
+            return url('/staff/service-orders/'.$id);
+        }
+
+        return url('/staff/service-orders');
+    }
+}

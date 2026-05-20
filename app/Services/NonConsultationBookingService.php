@@ -31,11 +31,19 @@ class NonConsultationBookingService
      */
     public function createFromPublicBooking(array $data, Doctor $doctor, BookingServiceModel $service, ?int $departmentId, bool $isClinicFlow = false): array
     {
-        if (! $service->isNonConsultation()) {
-            throw new \InvalidArgumentException('Service is not a non-consultation item.');
+        if (! Schema::hasTable('service_orders')) {
+            throw ValidationException::withMessages([
+                'booking' => ['Service orders are not set up on this server yet. Please contact support or run database migrations.'],
+            ]);
         }
 
-        return DB::transaction(function () use ($data, $doctor, $service, $departmentId, $isClinicFlow) {
+        if (! $service->isNonConsultation()) {
+            throw ValidationException::withMessages([
+                'service_id' => ['This service is not configured for non-consultation booking.'],
+            ]);
+        }
+
+        $result = DB::transaction(function () use ($data, $doctor, $service, $departmentId, $isClinicFlow) {
             $data = array_merge($data, normalize_public_booking_address_fields($data));
 
             $listPrice = (float) ($service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0);
@@ -86,6 +94,15 @@ class NonConsultationBookingService
 
             return $this->createPendingOrder($data, $doctor, $service, $departmentId, $listPrice, $discountAmount, $discountCodeId, $clinicDiscountCodeId);
         });
+
+        if ($result['service_order']->status === ServiceOrder::STATUS_PAID) {
+            $patient = Patient::find($result['service_order']->patient_id);
+            if ($patient) {
+                $this->sendNotifications($result['service_order']->fresh(['doctor', 'service', 'department']), $patient);
+            }
+        }
+
+        return $result;
     }
 
     public function previewDoctorDiscount(int $doctorId, int $serviceId, string $discountCodeRaw): array
@@ -159,7 +176,6 @@ class NonConsultationBookingService
         ]);
 
         $this->recordDiscountRedemption($order);
-        $this->sendNotifications($order, $patient);
 
         return ['service_order' => $order, 'invoice' => null];
     }
@@ -315,29 +331,36 @@ class NonConsultationBookingService
 
     private function createStaffNotifications(ServiceOrder $order, Patient $patient): void
     {
-        $patientName = trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? ''));
-        $serviceName = $order->service?->name ?? 'Service';
+        try {
+            $patientName = trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? ''));
+            $serviceName = $order->service?->name ?? 'Service';
 
-        $notificationData = [
-            'type' => UserNotification::TYPE_APPOINTMENT,
-            'category' => UserNotification::CATEGORY_APPOINTMENT,
-            'title' => 'New service order',
-            'message' => "New order for {$serviceName} from {$patientName}. Please contact the patient.",
-            'priority' => 'high',
-            'action_url' => route('staff.service-orders.show', $order),
-            'related_patient_id' => $patient->id,
-            'related_doctor_id' => $order->doctor_id,
-            'data' => [
-                'order_number' => $order->order_number,
-                'source' => 'public_booking_non_consultation',
-            ],
-        ];
+            $notificationData = [
+                'type' => UserNotification::TYPE_APPOINTMENT,
+                'category' => UserNotification::CATEGORY_APPOINTMENT,
+                'title' => 'New service order',
+                'message' => "New order for {$serviceName} from {$patientName}. Please contact the patient.",
+                'priority' => 'high',
+                'action_url' => staffServiceOrderUrl('show', $order),
+                'related_patient_id' => $patient->id,
+                'related_doctor_id' => $order->doctor_id,
+                'data' => [
+                    'order_number' => $order->order_number,
+                    'source' => 'public_booking_non_consultation',
+                ],
+            ];
 
-        if ($order->doctor && $order->doctor->user_id) {
-            $doctorUser = User::find($order->doctor->user_id);
-            if ($doctorUser && $doctorUser->is_active) {
-                UserNotification::create(array_merge($notificationData, ['user_id' => $doctorUser->id]));
+            if ($order->doctor && $order->doctor->user_id) {
+                $doctorUser = User::find($order->doctor->user_id);
+                if ($doctorUser && $doctorUser->is_active) {
+                    UserNotification::create(array_merge($notificationData, ['user_id' => $doctorUser->id]));
+                }
             }
+        } catch (\Throwable $e) {
+            Log::error('Failed to create staff notification for service order', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

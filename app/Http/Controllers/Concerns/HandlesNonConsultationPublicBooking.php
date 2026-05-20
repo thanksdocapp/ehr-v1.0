@@ -235,7 +235,12 @@ trait HandlesNonConsultationPublicBooking
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
-            \Log::error('Non-consultation booking failed', ['error' => $e->getMessage()]);
+            \Log::error('Non-consultation booking failed', [
+                'error' => $e->getMessage(),
+                'exception' => $e::class,
+                'service_id' => $service->id,
+                'doctor_id' => $doctor->id,
+            ]);
 
             return redirect()->back()->with('error', 'Unable to complete booking. Please try again.')->withInput();
         }
@@ -246,7 +251,7 @@ trait HandlesNonConsultationPublicBooking
         if ($result['invoice'] && $result['invoice']->payment_token) {
             session(['pending_service_order_token' => $order->booking_token]);
 
-            return redirect()->route('public.billing.pay', ['token' => $result['invoice']->payment_token]);
+            return redirect(publicBillingPayUrl($result['invoice']->payment_token));
         }
 
         return redirect(publicBookingNonConsultationUrl('success', ['orderNumber' => $order->order_number]));
