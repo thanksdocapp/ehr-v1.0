@@ -223,6 +223,7 @@
         @break
 
     @case('service-orders')
+        @if(\Illuminate\Support\Facades\Route::has('staff.service-orders.index'))
         <div class="nav-item">
             <a href="{{ route('staff.service-orders.index') }}"
                class="nav-link {{ request()->routeIs('staff.service-orders.*') ? 'active' : '' }} {{ $isForced2FASetup ? 'disabled' : '' }}"
@@ -231,6 +232,7 @@
                 <span class="nav-text">{{ $label }}</span>
             </a>
         </div>
+        @endif
         @break
 
     @default

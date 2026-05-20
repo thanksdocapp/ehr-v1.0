@@ -2120,6 +2120,7 @@
                 $userRole = auth()->user()->role ?? 'doctor';
             @endphp
             @foreach($mainMenuItems as $item)
+                @continue(($item['menu_key'] ?? '') === 'service-orders' && ! \Illuminate\Support\Facades\Route::has('staff.service-orders.index'))
                 @php
                     $menuKey = $item['menu_key'] ?? '';
                     $label = $item['label'] ?? '';
@@ -2206,8 +2207,10 @@
                             $isActive = request()->routeIs('staff.doctor-services.*');
                             break;
                         case 'service-orders':
-                            $route = route('staff.service-orders.index');
-                            $isActive = request()->routeIs('staff.service-orders.*');
+                            if (\Illuminate\Support\Facades\Route::has('staff.service-orders.index')) {
+                                $route = route('staff.service-orders.index');
+                                $isActive = request()->routeIs('staff.service-orders.*');
+                            }
                             break;
                         case 'booking-discount-codes':
                             $route = route('staff.booking-discount-codes.index');
@@ -2416,7 +2419,9 @@
                         <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item" href="{{ route('staff.schedule.index') }}"><i class="fas fa-calendar-alt me-2"></i>My Schedule</a></li>
                         <li><a class="dropdown-item" href="{{ route('staff.doctor-services.index') }}"><i class="fas fa-briefcase-medical me-2"></i>Services</a></li>
+                        @if(\Illuminate\Support\Facades\Route::has('staff.service-orders.index'))
                         <li><a class="dropdown-item" href="{{ route('staff.service-orders.index') }}"><i class="fas fa-clipboard-list me-2"></i>Service orders</a></li>
+                        @endif
                         <li><a class="dropdown-item" href="{{ route('staff.booking-discount-codes.index') }}"><i class="fas fa-ticket-alt me-2"></i>Booking discount codes</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
