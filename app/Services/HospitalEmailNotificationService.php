@@ -158,9 +158,17 @@ class HospitalEmailNotificationService
         $service = $order->service;
         $recipientEmail = $this->resolvePatientNotificationEmail($patient);
 
+        if (! $recipientEmail && is_array($order->patient_data) && ! empty($order->patient_data['email'])) {
+            $snapshotEmail = trim((string) $order->patient_data['email']);
+            if ($this->isValidNotificationEmail($snapshotEmail)) {
+                $recipientEmail = $snapshotEmail;
+            }
+        }
+
         if (! $recipientEmail) {
             Log::warning('Cannot send non-consultation confirmation: patient email missing', [
                 'order_id' => $order->id,
+                'patient_id' => $patient->id,
             ]);
 
             return null;
@@ -184,6 +192,9 @@ class HospitalEmailNotificationService
         $subject = 'Booking confirmation – ' . $serviceName;
         $body = view('emails.non-consultation-booking-confirmation', $variables)->render();
 
+        $fromEmail = config('hospital.gp_from_email') ?: config('mail.from.address');
+        $fromName = config('mail.from.name', config('app.name', 'ThanksDoc'));
+
         $log = EmailLog::create([
             'recipient_email' => $recipientEmail,
             'recipient_name' => $patient->full_name,
@@ -193,7 +204,11 @@ class HospitalEmailNotificationService
             'patient_id' => $patient->id,
             'event' => 'service_order.confirmation_sent',
             'email_type' => 'service_order',
-            'metadata' => ['service_order_id' => $order->id],
+            'metadata' => [
+                'service_order_id' => $order->id,
+                'from_email' => $fromEmail,
+                'from_name' => $fromName,
+            ],
         ]);
         $this->emailService->sendImmediateEmail($log);
 

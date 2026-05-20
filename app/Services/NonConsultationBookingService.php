@@ -115,6 +115,48 @@ class NonConsultationBookingService
         return app(ClinicBookingService::class)->previewClinicBookingDiscount($departmentId, $serviceId, $discountCodeRaw);
     }
 
+    /**
+     * Finalize a pending service order when its invoice is paid (e.g. after Stripe redirect without session).
+     */
+    public function finalizeServiceOrderForPaidInvoice(Invoice $invoice): ?ServiceOrder
+    {
+        if (! Schema::hasTable('service_orders')) {
+            return null;
+        }
+
+        $invoice->refresh();
+        $isPaid = $invoice->status === 'paid'
+            || $invoice->payments()->where('status', 'completed')->exists();
+
+        if (! $isPaid) {
+            return null;
+        }
+
+        $order = ServiceOrder::query()
+            ->where('invoice_id', $invoice->id)
+            ->where('status', ServiceOrder::STATUS_PENDING_PAYMENT)
+            ->first();
+
+        if (! $order) {
+            return ServiceOrder::query()
+                ->where('invoice_id', $invoice->id)
+                ->where('status', ServiceOrder::STATUS_PAID)
+                ->first();
+        }
+
+        try {
+            return $this->finalizeAfterPayment($order);
+        } catch (\Exception $e) {
+            Log::error('Failed to finalize service order for paid invoice', [
+                'invoice_id' => $invoice->id,
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     public function finalizeAfterPayment(ServiceOrder $order): ServiceOrder
     {
         if ($order->status !== ServiceOrder::STATUS_PENDING_PAYMENT) {
@@ -165,6 +207,7 @@ class NonConsultationBookingService
             'doctor_id' => $doctor->id,
             'department_id' => $departmentId,
             'service_id' => $service->id,
+            'patient_data' => $this->patientDataSnapshot($data),
             'notes' => $data['notes'] ?? null,
             'list_price' => $listPrice,
             'discount_amount' => $discountAmount,
@@ -203,6 +246,7 @@ class NonConsultationBookingService
             'doctor_id' => $doctor->id,
             'department_id' => $departmentId,
             'service_id' => $service->id,
+            'patient_data' => $this->patientDataSnapshot($data),
             'notes' => $data['notes'] ?? null,
             'list_price' => $listPrice,
             'discount_amount' => $discountAmount,
@@ -271,8 +315,32 @@ class NonConsultationBookingService
         ]);
 
         $this->publicBookingService->applyPatientDataFromBooking($patient, $data, $departmentId);
+        $this->syncPatientEmailFromBooking($patient, $data);
 
-        return $patient;
+        return $patient->fresh();
+    }
+
+    private function patientDataSnapshot(array $data): array
+    {
+        return array_filter([
+            'first_name' => $data['first_name'] ?? null,
+            'last_name' => $data['last_name'] ?? null,
+            'email' => isset($data['email']) ? trim((string) $data['email']) : null,
+            'phone' => $data['phone'] ?? null,
+        ], fn ($v) => $v !== null && $v !== '');
+    }
+
+    private function syncPatientEmailFromBooking(Patient $patient, array $data): void
+    {
+        $email = isset($data['email']) ? trim((string) $data['email']) : '';
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        if ($patient->email !== $email) {
+            $patient->email = $email;
+            $patient->save();
+        }
     }
 
     private function recordDiscountRedemption(ServiceOrder $order): void

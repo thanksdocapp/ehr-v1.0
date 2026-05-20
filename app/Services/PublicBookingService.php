@@ -605,6 +605,9 @@ class PublicBookingService
     {
         $patientUpdateData = [];
 
+        if (! empty($data['email']) && filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $patientUpdateData['email'] = trim((string) $data['email']);
+        }
         if (!empty($data['date_of_birth'])) {
             $patientUpdateData['date_of_birth'] = $data['date_of_birth'];
         }

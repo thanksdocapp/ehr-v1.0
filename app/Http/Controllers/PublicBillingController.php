@@ -513,32 +513,23 @@ class PublicBillingController extends Controller
             }
         }
 
-        $pendingServiceOrderToken = session('pending_service_order_token');
-        if ($pendingServiceOrderToken) {
-            try {
-                $order = \App\Models\ServiceOrder::where('booking_token', $pendingServiceOrderToken)
-                    ->where('invoice_id', $invoice->id)
-                    ->where('status', \App\Models\ServiceOrder::STATUS_PENDING_PAYMENT)
-                    ->first();
+        try {
+            $ncService = app(\App\Services\NonConsultationBookingService::class);
+            $finalizedOrder = $ncService->finalizeServiceOrderForPaidInvoice($invoice);
 
-                if ($order) {
-                    $hasPaid = $invoice->payments()->where('status', 'completed')->exists() || $invoice->status === 'paid';
-                    if ($hasPaid) {
-                        app(\App\Services\NonConsultationBookingService::class)->finalizeAfterPayment($order);
-                        session()->forget('pending_service_order_token');
+            if ($finalizedOrder) {
+                session()->forget('pending_service_order_token');
 
-                        return redirect(publicBookingNonConsultationUrl('success', [
-                            'orderNumber' => $order->order_number,
-                        ]))->with('payment_success', true);
-                    }
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to finalize service order after payment', [
-                    'invoice_id' => $invoice->id,
-                    'pending_service_order_token' => $pendingServiceOrderToken,
-                    'error' => $e->getMessage(),
-                ]);
+                return redirect(publicBookingNonConsultationUrl('success', [
+                    'orderNumber' => $finalizedOrder->order_number,
+                ]))->with('payment_success', true);
             }
+        } catch (\Exception $e) {
+            Log::error('Failed to finalize service order after payment', [
+                'invoice_id' => $invoice->id,
+                'pending_service_order_token' => session('pending_service_order_token'),
+                'error' => $e->getMessage(),
+            ]);
         }
 
         // Check if this is a pending booking (doctor-selected) that needs to be finalized after payment
@@ -703,6 +694,8 @@ class PublicBillingController extends Controller
                             
                             // Update invoice and billing
                             $this->updateInvoiceAndBilling($invoice);
+                            app(\App\Services\NonConsultationBookingService::class)
+                                ->finalizeServiceOrderForPaidInvoice($invoice);
                             
                             \Log::info('Payment verified and updated from Stripe session', [
                                 'payment_id' => $payment->id,
@@ -827,6 +820,11 @@ class PublicBillingController extends Controller
                 \Log::warning('Invoice has no billing_id to update', [
                     'invoice_id' => $invoice->id
                 ]);
+            }
+
+            if ($invoice->fresh()->status === 'paid') {
+                app(\App\Services\NonConsultationBookingService::class)
+                    ->finalizeServiceOrderForPaidInvoice($invoice);
             }
         } catch (\Exception $e) {
             \Log::error('Error updating invoice and billing', [

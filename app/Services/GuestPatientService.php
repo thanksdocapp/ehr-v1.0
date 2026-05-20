@@ -24,6 +24,9 @@ class GuestPatientService
         $patient = $this->tryFindMatchingGuest($data);
 
         if ($patient) {
+            if (! empty($data['email']) && filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                $patient->email = trim((string) $data['email']);
+            }
             if ($patient->phone !== ($data['phone'] ?? null)) {
                 $patient->phone = $data['phone'];
             }
