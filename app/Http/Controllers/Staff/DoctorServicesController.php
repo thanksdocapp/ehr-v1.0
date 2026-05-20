@@ -98,7 +98,7 @@ class DoctorServicesController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'default_duration_minutes' => 'required|integer|min:5|max:480',
+            'default_duration_minutes' => ['nullable', Rule::requiredIf(! $request->boolean('is_non_consultation')), 'integer', 'min:5', 'max:480'],
             'default_price' => 'nullable|numeric|min:0',
             'consultation_type' => ['nullable', Rule::requiredIf(! $request->boolean('is_non_consultation')), 'in:in_person,online,telephone'],
             'is_non_consultation' => 'boolean',
@@ -123,10 +123,13 @@ class DoctorServicesController extends Controller
 
             // Create global service (sort_order = next for this doctor)
             $nextSortOrder = (int) BookingService::where('created_by', $user->id)->max('sort_order') + 1;
+            $durationMinutes = $request->boolean('is_non_consultation')
+                ? 30
+                : (int) $request->default_duration_minutes;
             $service = BookingService::create([
                 'name' => $request->name,
                 'description' => $request->description,
-                'default_duration_minutes' => $request->default_duration_minutes,
+                'default_duration_minutes' => $durationMinutes,
                 'default_price' => $request->default_price,
                 'minimum_age' => $minimumAge,
                 'maximum_age' => $maximumAge,
@@ -142,7 +145,7 @@ class DoctorServicesController extends Controller
                 'doctor_id' => $doctor->id,
                 'service_id' => $service->id,
                 'custom_price' => $request->default_price,
-                'custom_duration_minutes' => $request->default_duration_minutes,
+                'custom_duration_minutes' => $durationMinutes,
                 'consultation_type' => $request->boolean('is_non_consultation') ? 'in_person' : ($request->consultation_type ?? 'in_person'),
                 'is_active' => $request->boolean('is_active', true),
             ]);
@@ -197,7 +200,7 @@ class DoctorServicesController extends Controller
             'name' => 'required|string|max:255',
             'default_price' => 'required|numeric|min:0',
             'description' => 'nullable|string|max:1000',
-            'custom_duration_minutes' => 'required|integer|min:5|max:480',
+            'custom_duration_minutes' => ['nullable', Rule::requiredIf(! $request->boolean('is_non_consultation')), 'integer', 'min:5', 'max:480'],
             'consultation_type' => ['nullable', Rule::requiredIf(! $request->boolean('is_non_consultation')), 'in:in_person,online,telephone'],
             'is_non_consultation' => 'boolean',
             'is_active' => 'boolean',
@@ -213,7 +216,9 @@ class DoctorServicesController extends Controller
 
         try {
             $newDefaultPrice = $request->default_price;
-            $duration = (int) $request->custom_duration_minutes;
+            $duration = $request->boolean('is_non_consultation')
+                ? (int) ($bookingService->default_duration_minutes ?? 30)
+                : (int) $request->custom_duration_minutes;
 
             // Update service (doctor owns this service - can edit name, default price and duration)
             $bookingService->update([

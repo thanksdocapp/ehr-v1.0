@@ -60,8 +60,10 @@
                                     @enderror
                                 </div>
 
+                                @include('partials.booking-service-non-consultation-toggle', ['bookingService' => null, 'defaultConsultationType' => 'in_person'])
+
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-6" id="service-duration-wrap">
                                         <div class="mb-3">
                                             <label for="default_duration_minutes" class="form-label fw-semibold">Duration (minutes) <span class="text-danger">*</span></label>
                                             <input type="number"
@@ -100,8 +102,6 @@
                                 </div>
 
                                 @include('partials.booking-service-age-restrictions', ['bookingService' => null])
-
-                                @include('partials.booking-service-non-consultation-toggle', ['bookingService' => null, 'defaultConsultationType' => 'in_person'])
 
                                 <div class="mb-3">
                                     <label for="tags_input" class="form-label fw-semibold">Tags</label>

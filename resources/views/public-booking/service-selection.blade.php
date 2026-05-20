@@ -114,9 +114,11 @@
                     @if($serviceDescription)
                     <div class="pb-service-card__desc">{{ \Illuminate\Support\Str::limit(strip_tags($serviceDescription), 120) }}</div>
                     @endif
+                    @if(!$service->isNonConsultation())
                     <div class="pb-service-card__meta">
                         <span><i class="far fa-clock me-1"></i>{{ (int) $serviceDuration }} min</span>
                     </div>
+                    @endif
                     <div class="pb-service-card__price">£{{ number_format((float) $servicePrice, 2) }}</div>
                 </button>
                 @endif
@@ -124,11 +126,11 @@
             <div class="service-details-col mt-2" id="service-details" style="display: {{ (isset($service) && isset($doctor)) ? 'block' : 'none' }};">
                 <div class="summary-card-compact">
                     <div class="summary-description-compact" id="service-description"></div>
-                    <div class="summary-row-compact">
+                    <div class="summary-row-compact" id="service-consultation-type-row">
                         <span class="summary-label-compact">Consultation Type:</span>
                         <span class="summary-value-compact" id="service-consultation-type">-</span>
                     </div>
-                    <div class="summary-row-compact">
+                    <div class="summary-row-compact" id="service-duration-row">
                         <span class="summary-label-compact">Duration:</span>
                         <span class="summary-value-compact" id="service-duration">-</span>
                     </div>
@@ -638,7 +640,9 @@
             if (descShort.trim()) {
                 inner += '<div class="pb-service-card__desc">' + escapeHtml(descShort) + '</div>';
             }
-            inner += '<div class="pb-service-card__meta"><span><i class="far fa-clock me-1"></i>' + escapeHtml(duration) + ' min</span></div>';
+            if (btn.dataset.isNonConsultation !== '1') {
+                inner += '<div class="pb-service-card__meta"><span><i class="far fa-clock me-1"></i>' + escapeHtml(duration) + ' min</span></div>';
+            }
             inner += '<div class="pb-service-card__price">' + escapeHtml('£' + priceNum.toFixed(2)) + '</div>';
             btn.innerHTML = inner;
             if (isSelected && serviceIdInput) {
@@ -676,11 +680,21 @@
                 descriptionEl.style.display = 'none';
             }
 
-            const ctResult = getConsultationTypeDisplay(consultationType, serviceName);
-            document.getElementById('service-consultation-type').textContent = ctResult.display;
-            document.getElementById('consultation-type-input').value = ctResult.submitValue;
-
-            document.getElementById('service-duration').textContent = duration;
+            const isNc = card.dataset.isNonConsultation === '1';
+            const ctRow = document.getElementById('service-consultation-type-row');
+            const durRow = document.getElementById('service-duration-row');
+            if (ctRow) {
+                ctRow.style.display = isNc ? 'none' : '';
+            }
+            if (durRow) {
+                durRow.style.display = isNc ? 'none' : '';
+            }
+            if (!isNc) {
+                const ctResult = getConsultationTypeDisplay(consultationType, serviceName);
+                document.getElementById('service-consultation-type').textContent = ctResult.display;
+                document.getElementById('consultation-type-input').value = ctResult.submitValue;
+                document.getElementById('service-duration').textContent = duration;
+            }
             document.getElementById('service-price').textContent = price;
             serviceDetails.style.display = 'block';
         }

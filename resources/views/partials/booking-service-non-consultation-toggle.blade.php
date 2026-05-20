@@ -35,16 +35,31 @@
         var toggle = document.getElementById('is_non_consultation');
         var wrap = document.getElementById('consultation-type-wrap');
         var select = document.getElementById('consultation_type');
-        if (!toggle || !wrap) {
+        var durationWrap = document.getElementById('service-duration-wrap');
+        var durationInput = document.getElementById('default_duration_minutes')
+            || document.getElementById('custom_duration_minutes');
+        if (!toggle) {
             return;
         }
         var hide = toggle.checked;
-        wrap.style.display = hide ? 'none' : '';
+        if (wrap) {
+            wrap.style.display = hide ? 'none' : '';
+        }
         if (select) {
             if (hide) {
                 select.removeAttribute('required');
             } else {
                 select.setAttribute('required', 'required');
+            }
+        }
+        if (durationWrap) {
+            durationWrap.style.display = hide ? 'none' : '';
+        }
+        if (durationInput) {
+            if (hide) {
+                durationInput.removeAttribute('required');
+            } else {
+                durationInput.setAttribute('required', 'required');
             }
         }
     }

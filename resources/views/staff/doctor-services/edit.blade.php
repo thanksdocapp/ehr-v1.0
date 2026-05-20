@@ -25,10 +25,12 @@
                     <div class="mb-4 p-3 bg-light rounded">
                         <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-cog me-1"></i>Service details</p>
                         <div class="row">
+                            @if(!$bookingService->isNonConsultation())
                             <div class="col-md-6 mb-2">
                                 <small class="text-muted d-block">Default Duration</small>
                                 <strong>{{ $bookingService->default_duration_minutes ?? 60 }} minutes</strong>
                             </div>
+                            @endif
                             <div class="col-md-6 mb-2">
                                 <small class="text-muted d-block">Default Price</small>
                                 <strong>£{{ number_format($bookingService->default_price ?? 0, 2) }}</strong>
@@ -110,7 +112,12 @@
 
                         @include('partials.booking-service-age-restrictions', ['bookingService' => $bookingService])
 
-                        <div class="row">
+                        @include('partials.booking-service-non-consultation-toggle', [
+                            'bookingService' => $bookingService,
+                            'defaultConsultationType' => $override->consultation_type ?? 'in_person',
+                        ])
+
+                        <div class="row" id="service-duration-wrap">
                             <div class="col-md-6 mb-3">
                                 <label for="custom_duration_minutes" class="form-label">
                                     Duration <span class="text-danger">*</span>
@@ -132,11 +139,6 @@
                                 @enderror
                             </div>
                         </div>
-
-                        @include('partials.booking-service-non-consultation-toggle', [
-                            'bookingService' => $bookingService,
-                            'defaultConsultationType' => $override->consultation_type ?? 'in_person',
-                        ])
 
                         <div class="mb-3">
                             <div class="form-check form-switch">

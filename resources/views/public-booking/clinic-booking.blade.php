@@ -93,11 +93,13 @@
                     @if($desc)
                     <div class="pb-service-card__desc">{{ \Illuminate\Support\Str::limit(strip_tags($desc), 120) }}</div>
                     @endif
+                    @if(empty($svc['is_non_consultation']))
                     <div class="pb-service-card__meta">
                         @if($duration)
                         <span><i class="far fa-clock me-1"></i>{{ (int) $duration }} min</span>
                         @endif
                     </div>
+                    @endif
                     <div class="pb-service-card__price">£{{ number_format((float) $price, 2) }}</div>
                 </button>
                 @endforeach
@@ -105,11 +107,11 @@
             <div class="clinic-service-details-wrap mt-3" id="clinic-service-details" style="display: none;">
                 <div class="summary-card-compact">
                     <div class="summary-description-compact" id="clinic-service-description"></div>
-                    <div class="summary-row-compact">
+                    <div class="summary-row-compact" id="clinic-service-consultation-type-row">
                         <span class="summary-label-compact">Consultation Type:</span>
                         <span class="summary-value-compact" id="clinic-service-consultation-type">-</span>
                     </div>
-                    <div class="summary-row-compact">
+                    <div class="summary-row-compact" id="clinic-service-duration-row">
                         <span class="summary-label-compact">Duration:</span>
                         <span class="summary-value-compact" id="clinic-service-duration">-</span>
                     </div>
@@ -592,10 +594,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const price = parseFloat(card.dataset.price || 0).toFixed(2);
         const ct = card.dataset.consultationType || 'in_person';
 
+        const isNc = card.dataset.isNonConsultation === '1';
         document.getElementById('clinic-service-description').textContent = desc.trim() || '';
         document.getElementById('clinic-service-description').style.display = desc.trim() ? 'block' : 'none';
-        document.getElementById('clinic-service-consultation-type').textContent = getConsultationTypeDisplay(ct);
-        document.getElementById('clinic-service-duration').textContent = duration + ' minutes';
+        const ctRow = document.getElementById('clinic-service-consultation-type-row');
+        const durRow = document.getElementById('clinic-service-duration-row');
+        if (ctRow) {
+            ctRow.style.display = isNc ? 'none' : '';
+        }
+        if (durRow) {
+            durRow.style.display = isNc ? 'none' : '';
+        }
+        if (!isNc) {
+            document.getElementById('clinic-service-consultation-type').textContent = getConsultationTypeDisplay(ct);
+            document.getElementById('clinic-service-duration').textContent = duration + ' minutes';
+        }
         document.getElementById('clinic-service-price').textContent = '£' + price;
         detailsEl.style.display = 'block';
     }
