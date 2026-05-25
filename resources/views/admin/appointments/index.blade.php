@@ -520,6 +520,13 @@
                                                 <i class="fas fa-check"></i>
                                             </button>
                                         @endif
+                                        @if($appointment->status === 'confirmed')
+                                            <button class="btn btn-sm btn-outline-info"
+                                                    onclick="completeAppointment({{ $appointment->id }})"
+                                                    title="Mark complete">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                        @endif
                                         @if(in_array($appointment->status, ['pending', 'confirmed']))
                                             <button class="btn btn-sm btn-outline-danger" 
                                                     onclick="cancelAppointment({{ $appointment->id }})" 
@@ -761,6 +768,45 @@ $(document).ready(function() {
             confirmChange.then(handleConfirmation).catch(() => handleConfirmation(false));
         } else {
             // If it's a boolean, handle it directly
+            handleConfirmation(confirmChange);
+        }
+    }
+
+    function completeAppointment(appointmentId) {
+        const confirmChange = confirm('Mark this appointment as complete?\n\nStatus will change from "Confirmed" to "Completed".');
+
+        function handleConfirmation(confirmResult) {
+            if (confirmResult !== true) {
+                return;
+            }
+
+            setTimeout(() => {
+                fetch(`/admin/appointments/${appointmentId}/complete`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Error completing appointment: ' + (data.message || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error completing appointment:', error);
+                        alert('An error occurred while completing the appointment. Please try again.');
+                    });
+            }, 100);
+        }
+
+        if (confirmChange && typeof confirmChange.then === 'function') {
+            confirmChange.then(handleConfirmation).catch(() => handleConfirmation(false));
+        } else {
             handleConfirmation(confirmChange);
         }
     }
