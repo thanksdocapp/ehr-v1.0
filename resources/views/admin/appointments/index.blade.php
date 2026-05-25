@@ -520,13 +520,6 @@
                                                 <i class="fas fa-check"></i>
                                             </button>
                                         @endif
-                                        @if($appointment->status === 'confirmed')
-                                            <button class="btn btn-sm btn-outline-info"
-                                                    onclick="completeAppointment({{ $appointment->id }})"
-                                                    title="Mark complete">
-                                                <i class="fas fa-check-circle"></i>
-                                            </button>
-                                        @endif
                                         @if(in_array($appointment->status, ['pending', 'confirmed']))
                                             <button class="btn btn-sm btn-outline-danger" 
                                                     onclick="cancelAppointment({{ $appointment->id }})" 
@@ -564,6 +557,13 @@
                                                     <i class="fas fa-ban"></i>
                                                 </button>
                                             @endif
+                                        @endif
+                                        @if($appointment->status === 'confirmed')
+                                            <button class="btn btn-sm btn-outline-info"
+                                                    onclick="completeAppointment({{ $appointment->id }})"
+                                                    title="Mark complete">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
                                         @endif
                                     </div>
                                 </td>
