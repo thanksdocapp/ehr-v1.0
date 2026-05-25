@@ -5,6 +5,41 @@
 @section('page-title', 'Create New Patient')
 @section('page-subtitle', 'Register a new patient in the system')
 
+@push('styles')
+<style>
+.patient-form-section .form-label {
+    margin-bottom: 0.35rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #374151;
+}
+.patient-form-section .form-control,
+.patient-form-section .form-select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9375rem;
+    min-height: 2.5rem;
+}
+.patient-form-section .form-control:focus,
+.patient-form-section .form-select:focus {
+    border-color: var(--primary-color, #4e73df);
+    box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.12);
+}
+.patient-form-section .section-kicker {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+}
+.patient-form-section .doctor-card-body {
+    padding: 1.25rem 1.5rem;
+}
+</style>
+@endpush
+
 @section('content')
 <div class="fade-in-up">
 
@@ -54,81 +89,71 @@
             <!-- Form Content -->
             <div class="col-lg-8">
                 <!-- Personal Information -->
-                <div class="doctor-card mb-4">
+                <div class="doctor-card mb-4 patient-form-section">
                     <div class="doctor-card-header">
                         <h5 class="doctor-card-title mb-0"><i class="fas fa-user me-2 text-primary"></i>Personal Information</h5>
                     </div>
                     <div class="doctor-card-body">
-                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-id-card me-1"></i>Identity</p>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="first_name" class="form-label fw-semibold">First name <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    <input type="text" name="first_name" id="first_name" 
-                                           class="form-control @error('first_name') is-invalid @enderror" 
-                                           value="{{ old('first_name') }}" 
-                                           placeholder="Enter first name" required>
-                                    @error('first_name')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
+                        <p class="section-kicker mb-3">Personal details</p>
+                        <div class="row g-3 mb-3">
+                            <div class="col-xl-3 col-md-6">
+                                <label for="first_name" class="form-label">First name <span class="text-danger">*</span></label>
+                                <input type="text" name="first_name" id="first_name"
+                                       class="form-control @error('first_name') is-invalid @enderror"
+                                       value="{{ old('first_name') }}"
+                                       placeholder="First name" required>
+                                @error('first_name')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="last_name" class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    <input type="text" name="last_name" id="last_name" 
-                                           class="form-control @error('last_name') is-invalid @enderror" 
-                                           value="{{ old('last_name') }}" 
-                                           placeholder="Enter last name" required>
-                                    @error('last_name')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
+                            <div class="col-xl-3 col-md-6">
+                                <label for="last_name" class="form-label">Last name <span class="text-danger">*</span></label>
+                                <input type="text" name="last_name" id="last_name"
+                                       class="form-control @error('last_name') is-invalid @enderror"
+                                       value="{{ old('last_name') }}"
+                                       placeholder="Last name" required>
+                                @error('last_name')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
                             </div>
-                        </div>
-                        <div class="mb-4 pt-3 border-top">
-                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-venus-mars me-1"></i>Demographics</p>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="gender" class="form-label fw-semibold">Gender <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-venus-mars"></i></span>
-                                    <select name="gender" id="gender" class="form-select @error('gender') is-invalid @enderror" required>
-                                        <option value="">Select Gender</option>
-                                        <option value="male" {{ old('gender') === 'male' ? 'selected' : '' }}>Male</option>
-                                        <option value="female" {{ old('gender') === 'female' ? 'selected' : '' }}>Female</option>
-                                        <option value="other" {{ old('gender') === 'other' ? 'selected' : '' }}>Other</option>
-                                    </select>
-                                    @error('gender')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
+                            <div class="col-xl-3 col-md-6">
+                                <label for="date_of_birth" class="form-label">Date of birth <span class="text-danger">*</span></label>
+                                <input type="text" name="date_of_birth" id="date_of_birth"
+                                       class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror"
+                                       value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : '' }}"
+                                       placeholder="dd/mm/yyyy"
+                                       pattern="\d{2}/\d{2}/\d{4}"
+                                       maxlength="10"
+                                       required>
+                                @error('date_of_birth')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
                             </div>
-                        </div>
-                        </div>
-                        <div class="pt-3 border-top">
-                            <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-barcode me-1"></i>Identifier</p>
-                        <div class="row">
-                            <div class="col-md-12 mb-0">
-                                <label for="patient_id" class="form-label fw-semibold">Patient ID</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-barcode"></i></span>
-                                    <input type="text" name="patient_id" id="patient_id" 
-                                           class="form-control @error('patient_id') is-invalid @enderror" 
-                                           value="{{ old('patient_id', 'PAT-' . strtoupper(\Illuminate\Support\Str::random(6))) }}" 
-                                           placeholder="Auto-generated" readonly>
-                                    @error('patient_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Auto-generated unique patient ID
-                                </small>
+                            <div class="col-xl-3 col-md-6">
+                                <label for="gender" class="form-label">Gender <span class="text-danger">*</span></label>
+                                <select name="gender" id="gender" class="form-select @error('gender') is-invalid @enderror" required>
+                                    <option value="">Select…</option>
+                                    <option value="male" {{ old('gender') === 'male' ? 'selected' : '' }}>Male</option>
+                                    <option value="female" {{ old('gender') === 'female' ? 'selected' : '' }}>Female</option>
+                                    <option value="other" {{ old('gender') === 'other' ? 'selected' : '' }}>Other</option>
+                                </select>
+                                @error('gender')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
+                        <div class="row g-3 pt-2 border-top">
+                            <div class="col-md-12">
+                                <label for="patient_id" class="form-label">Patient ID</label>
+                                <input type="text" name="patient_id" id="patient_id"
+                                       class="form-control bg-light @error('patient_id') is-invalid @enderror"
+                                       value="{{ old('patient_id', 'PAT-' . strtoupper(\Illuminate\Support\Str::random(6))) }}"
+                                       placeholder="Auto-generated" readonly>
+                                @error('patient_id')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted d-block mt-1">Auto-generated unique patient ID</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -138,44 +163,15 @@
                     <div class="doctor-card-header">
                         <h5 class="doctor-card-title mb-0"><i class="fas fa-birthday-cake me-2 text-primary"></i>Age & date of birth</h5>
                     </div>
-                    <div class="doctor-card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="date_of_birth" class="form-label fw-semibold">
-                                    Date of Birth <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
-                                    <input type="text" name="date_of_birth" id="date_of_birth" 
-                                           class="form-control uk-date uk-date-dob @error('date_of_birth') is-invalid @enderror" 
-                                           value="{{ old('date_of_birth') ? (old('date_of_birth') && preg_match('/^\d{4}-\d{2}-\d{2}$/', old('date_of_birth')) ? \Carbon\Carbon::parse(old('date_of_birth'))->format('d/m/Y') : old('date_of_birth')) : '' }}" 
-                                           placeholder="dd/mm/yyyy"
-                                           pattern="\d{2}/\d{2}/\d{4}"
-                                           maxlength="10"
-                                           required>
-                                    @error('date_of_birth')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Format: dd/mm/yyyy (e.g., 15/01/2025). Must be today or earlier.
-                                </small>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold">Calculated Age</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-calculator"></i></span>
-                                    <input type="text" id="calculated_age_display"
-                                           class="form-control bg-light"
-                                           value="Enter date of birth first"
-                                           readonly>
-                                </div>
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Auto-calculated: Years and months
-                                </small>
+                    <div class="doctor-card-body patient-form-section">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Calculated age</label>
+                                <input type="text" id="calculated_age_display"
+                                       class="form-control bg-light"
+                                       value="Enter date of birth first"
+                                       readonly>
+                                <small class="text-muted d-block mt-1">Updates when date of birth changes</small>
                             </div>
                         </div>
 
@@ -437,38 +433,32 @@
                 </div>
 
                 <!-- Contact Information -->
-                <div class="doctor-card mb-4">
+                <div class="doctor-card mb-4 patient-form-section">
                     <div class="doctor-card-header">
                         <h5 class="doctor-card-title mb-0"><i class="fas fa-address-book me-2 text-primary"></i>Contact & address</h5>
                     </div>
                     <div class="doctor-card-body">
-                        <p class="text-uppercase small fw-semibold text-muted mb-2"><i class="fas fa-address-book me-1"></i>Contact</p>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="email" class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                    <input type="email" name="email" id="email" 
-                                           class="form-control @error('email') is-invalid @enderror" 
-                                           value="{{ old('email') }}" 
-                                           placeholder="patient@example.com" required>
-                                    @error('email')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
+                        <p class="section-kicker mb-3">Contact details</p>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" name="email" id="email"
+                                       class="form-control @error('email') is-invalid @enderror"
+                                       value="{{ old('email') }}"
+                                       placeholder="patient@example.com" required>
+                                @error('email')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="phone" class="form-label fw-semibold">Phone Number <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                                    <input type="tel" name="phone" id="phone" 
-                                           class="form-control @error('phone') is-invalid @enderror" 
-                                           value="{{ old('phone') }}" 
-                                           placeholder="+44 123 456 7890" required>
-                                    @error('phone')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone <span class="text-danger">*</span></label>
+                                <input type="tel" name="phone" id="phone"
+                                       class="form-control @error('phone') is-invalid @enderror"
+                                       value="{{ old('phone') }}"
+                                       placeholder="07700 900000" required>
+                                @error('phone')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
                         <div class="mb-4 pt-3 border-top">
