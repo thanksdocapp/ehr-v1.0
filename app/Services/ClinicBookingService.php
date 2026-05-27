@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ClinicBookingRequest;
 use App\Models\ClinicBookingDiscountCode;
+use App\Models\Department;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\PendingClinicBooking;
@@ -264,18 +265,31 @@ class ClinicBookingService
             ->first();
 
         if (! $pending) {
+            $this->assignPatientClinicAndDoctorFromPaidInvoice($invoice, skipFinalize: true);
+
             if ($invoice->appointment_id) {
-                return ClinicBookingRequest::query()
+                $request = ClinicBookingRequest::query()
                     ->where('appointment_id', $invoice->appointment_id)
                     ->where('status', 'accepted')
                     ->first();
+                if ($request) {
+                    $this->ensureClinicAndDoctorAssigned($request);
+                }
+
+                return $request;
             }
 
             return null;
         }
 
         if ($pending->status === 'completed') {
-            return $this->repairPendingClinicBooking($pending);
+            $request = $this->repairPendingClinicBooking($pending);
+            $this->assignPatientClinicAndDoctorFromPaidInvoice($invoice, skipFinalize: true);
+            if ($request) {
+                $this->ensureClinicAndDoctorAssigned($request);
+            }
+
+            return $request;
         }
 
         if (! in_array($pending->status, ['pending_payment', 'expired'], true)) {
@@ -283,7 +297,7 @@ class ClinicBookingService
         }
 
         try {
-            return $this->finalizeClinicBookingAfterPayment($pending, allowExpiredWhenPaid: true);
+            $request = $this->finalizeClinicBookingAfterPayment($pending, allowExpiredWhenPaid: true);
         } catch (\Throwable $e) {
             Log::error('Failed to finalize clinic booking for paid invoice', [
                 'invoice_id' => $invoice->id,
@@ -291,8 +305,219 @@ class ClinicBookingService
                 'error' => $e->getMessage(),
             ]);
 
+            $request = null;
+        }
+
+        $this->assignPatientClinicAndDoctorFromPaidInvoice($invoice, skipFinalize: true);
+
+        if ($request) {
+            $this->ensureClinicAndDoctorAssigned($request);
+        }
+
+        return $request ?? ClinicBookingRequest::query()
+            ->whereHas('patient', fn ($q) => $q->whereKey($invoice->patient_id))
+            ->when($pending->department_id, fn ($q) => $q->where('department_id', $pending->department_id))
+            ->where('status', 'accepted')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /**
+     * Assign patient + booking/appointment to clinic and default doctor from paid clinic checkout.
+     */
+    public function assignPatientClinicAndDoctorFromPaidInvoice(Invoice $invoice, bool $skipFinalize = false): bool
+    {
+        if (! $this->invoiceIsPaid($invoice)) {
+            return false;
+        }
+
+        $invoice->loadMissing(['pendingClinicBookings.department', 'patient', 'appointment']);
+
+        $pcb = $invoice->pendingClinicBookings->sortByDesc('id')->first();
+        if (! $pcb?->department_id) {
+            return false;
+        }
+
+        $departmentId = (int) $pcb->department_id;
+        $doctor = $this->defaultDoctorForDepartment($departmentId);
+        $changed = false;
+
+        $patient = $invoice->patient;
+        if (! $patient) {
+            $pd = $pcb->patient_data ?? [];
+            $email = strtolower(trim((string) ($pd['email'] ?? '')));
+            if ($email !== '') {
+                $patient = Patient::query()
+                    ->whereRaw('LOWER(TRIM(email)) = ?', [$email])
+                    ->first();
+            }
+        }
+
+        if ($patient) {
+            if ($this->syncPatientToClinic($patient, $departmentId, $doctor)) {
+                $changed = true;
+            }
+            if (! $invoice->patient_id) {
+                $invoice->update(['patient_id' => $patient->id]);
+                $changed = true;
+            }
+        }
+
+        $request = $this->findClinicBookingRequestForPaidCheckout($invoice, $pcb, $patient);
+        if (! $request && ! $skipFinalize) {
+            $request = $this->finalizeClinicBookingForPaidInvoice($invoice);
+            if ($request) {
+                $changed = true;
+            }
+        } elseif ($request && $this->ensureClinicAndDoctorAssigned($request)) {
+            $changed = true;
+        }
+
+        if ($invoice->appointment) {
+            $apptUpdates = [];
+            if ($doctor && ! $invoice->appointment->doctor_id) {
+                $apptUpdates['doctor_id'] = $doctor->id;
+            }
+            if (! $invoice->appointment->department_id) {
+                $apptUpdates['department_id'] = $departmentId;
+            }
+            if ($apptUpdates !== []) {
+                $invoice->appointment->update($apptUpdates);
+                $changed = true;
+            }
+            if ($patient && $this->syncPatientToClinic($patient, $departmentId, $doctor)) {
+                $changed = true;
+            }
+        }
+
+        return $changed;
+    }
+
+    protected function findClinicBookingRequestForPaidCheckout(
+        Invoice $invoice,
+        PendingClinicBooking $pcb,
+        ?Patient $patient
+    ): ?ClinicBookingRequest {
+        $departmentId = (int) $pcb->department_id;
+
+        if ($invoice->appointment_id) {
+            $byAppt = ClinicBookingRequest::query()
+                ->where('appointment_id', $invoice->appointment_id)
+                ->first();
+            if ($byAppt) {
+                return $byAppt;
+            }
+        }
+
+        if ($patient) {
+            $byPatient = ClinicBookingRequest::query()
+                ->where('patient_id', $patient->id)
+                ->where('department_id', $departmentId)
+                ->orderByDesc('id')
+                ->first();
+            if ($byPatient) {
+                return $byPatient;
+            }
+        }
+
+        $email = strtolower(trim((string) (($pcb->patient_data ?? [])['email'] ?? '')));
+        if ($email === '') {
             return null;
         }
+
+        return ClinicBookingRequest::query()
+            ->where('department_id', $departmentId)
+            ->where(function ($q) use ($email, $pcb) {
+                $q->where('patient_data->email', ($pcb->patient_data ?? [])['email'] ?? $email)
+                    ->orWhereRaw('LOWER(TRIM(JSON_UNQUOTE(JSON_EXTRACT(patient_data, "$.email")))) = ?', [$email]);
+            })
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    protected function syncPatientToClinic(Patient $patient, int $departmentId, ?Doctor $doctor): bool
+    {
+        $changed = false;
+
+        if (! $patient->departments()->where('departments.id', $departmentId)->exists()) {
+            $patient->departments()->attach($departmentId, [
+                'is_primary' => $patient->departments()->count() === 0,
+            ]);
+            $changed = true;
+        }
+
+        if ((int) $patient->department_id !== $departmentId) {
+            if (! $patient->department_id) {
+                $patient->department_id = $departmentId;
+                $patient->save();
+                $changed = true;
+            }
+        }
+
+        if ($doctor && ! $patient->created_by_doctor_id) {
+            $patient->created_by_doctor_id = $doctor->id;
+            $patient->save();
+            $changed = true;
+        }
+
+        return $changed;
+    }
+
+    protected function resolveDepartmentIdForRequest(ClinicBookingRequest $request): ?int
+    {
+        if ($request->department_id) {
+            return (int) $request->department_id;
+        }
+
+        if ($request->appointment?->department_id) {
+            return (int) $request->appointment->department_id;
+        }
+
+        $capture = app(PatientBookingSourceService::class)->clinicBookingRequestCapture($request);
+        if ($capture['department_id']) {
+            return (int) $capture['department_id'];
+        }
+
+        if ($capture['clinic_name']) {
+            $dept = Department::query()
+                ->where('name', $capture['clinic_name'])
+                ->first();
+            if ($dept) {
+                return (int) $dept->id;
+            }
+        }
+
+        if ($request->patient_id) {
+            $invoice = Invoice::query()
+                ->where('patient_id', $request->patient_id)
+                ->whereHas('pendingClinicBookings')
+                ->with('pendingClinicBookings')
+                ->orderByDesc('created_at')
+                ->first();
+            $deptId = $invoice?->pendingClinicBookings->first()?->department_id;
+            if ($deptId) {
+                return (int) $deptId;
+            }
+        }
+
+        $email = strtolower(trim((string) ($request->patient_data['email'] ?? '')));
+        if ($email !== '') {
+            $pcb = PendingClinicBooking::query()
+                ->whereHas('invoice', fn ($q) => $q->where('status', 'paid')
+                    ->orWhereHas('payments', fn ($p) => $p->where('status', 'completed')))
+                ->where(function ($q) use ($email, $request) {
+                    $q->where('patient_data->email', $request->patient_data['email'] ?? $email)
+                        ->orWhereRaw('LOWER(TRIM(JSON_UNQUOTE(JSON_EXTRACT(patient_data, "$.email")))) = ?', [$email]);
+                })
+                ->orderByDesc('id')
+                ->first();
+
+            if ($pcb?->department_id) {
+                return (int) $pcb->department_id;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -333,6 +558,7 @@ class ClinicBookingService
 
         $assignStats = $this->backfillMissingClinicAndDoctorAssignments();
         $stats['assigned'] = $assignStats['updated'];
+        $stats['patients_assigned'] = $assignStats['patients_assigned'] ?? 0;
 
         return $stats;
     }
@@ -352,25 +578,28 @@ class ClinicBookingService
             ->orderBy('id')
             ->get();
 
-        if ($active->isEmpty()) {
-            return null;
-        }
-
         if ($active->count() === 1) {
             return $active->first();
         }
 
-        $primary = Doctor::query()
+        if ($active->isNotEmpty()) {
+            $primary = Doctor::query()
+                ->byDepartment($departmentId)
+                ->active()
+                ->whereHas('departments', function ($q) use ($departmentId) {
+                    $q->where('departments.id', $departmentId)
+                        ->where('doctor_department.is_primary', true);
+                })
+                ->orderBy('id')
+                ->first();
+
+            return $primary ?? $active->first();
+        }
+
+        return Doctor::query()
             ->byDepartment($departmentId)
-            ->active()
-            ->whereHas('departments', function ($q) use ($departmentId) {
-                $q->where('departments.id', $departmentId)
-                    ->where('doctor_department.is_primary', true);
-            })
             ->orderBy('id')
             ->first();
-
-        return $primary ?? $active->first();
     }
 
     /**
@@ -380,11 +609,35 @@ class ClinicBookingService
      */
     public function backfillMissingClinicAndDoctorAssignments(): array
     {
-        $stats = ['updated' => 0, 'skipped' => 0, 'failed' => 0];
+        $stats = ['updated' => 0, 'skipped' => 0, 'failed' => 0, 'patients_assigned' => 0];
 
         if (! Schema::hasTable('clinic_booking_requests')) {
             return $stats;
         }
+
+        Invoice::query()
+            ->whereHas('pendingClinicBookings')
+            ->where(function ($q) {
+                $q->where('status', 'paid')
+                    ->orWhereHas('payments', fn ($p) => $p->where('status', 'completed'));
+            })
+            ->with(['pendingClinicBookings.department', 'patient', 'appointment'])
+            ->orderBy('id')
+            ->chunkById(50, function ($invoices) use (&$stats) {
+                foreach ($invoices as $invoice) {
+                    try {
+                        if ($this->assignPatientClinicAndDoctorFromPaidInvoice($invoice, skipFinalize: false)) {
+                            $stats['patients_assigned']++;
+                        }
+                    } catch (\Throwable $e) {
+                        $stats['failed']++;
+                        Log::error('Paid clinic invoice patient/clinic assign failed', [
+                            'invoice_id' => $invoice->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            });
 
         ClinicBookingRequest::query()
             ->whereIn('status', ['accepted', 'pending_acceptance'])
@@ -432,14 +685,10 @@ class ClinicBookingService
         $beforeDeptId = $request->department_id;
         $beforeApptDoctorId = $request->appointment?->doctor_id;
 
-        $departmentId = $request->department_id;
-        if (! $departmentId) {
-            $capture = app(PatientBookingSourceService::class)->clinicBookingRequestCapture($request);
-            $departmentId = $capture['department_id'] ? (int) $capture['department_id'] : null;
-            if ($departmentId) {
-                $request->update(['department_id' => $departmentId]);
-                $request->refresh();
-            }
+        $departmentId = $this->resolveDepartmentIdForRequest($request);
+        if ($departmentId && ! $request->department_id) {
+            $request->update(['department_id' => $departmentId]);
+            $request->refresh();
         }
 
         if (! $departmentId) {
@@ -459,7 +708,22 @@ class ClinicBookingService
         if ($request->status === 'pending_acceptance') {
             $invoice = $this->findPaidInvoiceForClinicRequest($request, $departmentId);
             if ($invoice) {
-                $this->acceptRequest($request, $doctor, $doctor->user_id, true);
+                try {
+                    $this->acceptRequest($request, $doctor, $doctor->user_id, true);
+
+                    return true;
+                } catch (\Throwable $e) {
+                    Log::warning('Clinic booking auto-accept during assign failed; setting doctor on request', [
+                        'clinic_booking_request_id' => $request->id,
+                        'doctor_id' => $doctor->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            if (! $request->doctor_id) {
+                $request->update(['doctor_id' => $doctor->id]);
+                $request->refresh();
 
                 return true;
             }
@@ -493,22 +757,11 @@ class ClinicBookingService
         }
 
         $patient = $request->patient;
-        if ($patient) {
-            if (! $patient->departments()->where('departments.id', $departmentId)->exists()) {
-                $isPrimary = $patient->departments()->count() === 0;
-                $patient->departments()->attach($departmentId, ['is_primary' => $isPrimary]);
-                $changed = true;
-            }
-            if (! $patient->department_id) {
-                $patient->department_id = $departmentId;
-                $patient->save();
-                $changed = true;
-            }
-            if (! $patient->created_by_doctor_id) {
-                $patient->created_by_doctor_id = $doctor->id;
-                $patient->save();
-                $changed = true;
-            }
+        if (! $patient && $request->patient_id) {
+            $patient = Patient::find($request->patient_id);
+        }
+        if ($patient && $this->syncPatientToClinic($patient, $departmentId, $doctor)) {
+            $changed = true;
         }
 
         $request->refresh();

@@ -300,10 +300,16 @@ class PatientBookingSourceService
 
     protected function findInvoiceForClinicRequest(ClinicBookingRequest $request): ?Invoice
     {
-        if ($request->patient_id && $request->department_id) {
-            $invoice = Invoice::query()
+        if ($request->patient_id) {
+            $query = Invoice::query()
                 ->where('patient_id', $request->patient_id)
-                ->whereHas('pendingClinicBookings', fn ($q) => $q->where('department_id', $request->department_id))
+                ->whereHas('pendingClinicBookings');
+
+            if ($request->department_id) {
+                $query->whereHas('pendingClinicBookings', fn ($q) => $q->where('department_id', $request->department_id));
+            }
+
+            $invoice = $query
                 ->with(['pendingClinicBookings.department'])
                 ->orderByDesc('created_at')
                 ->first();
@@ -314,18 +320,25 @@ class PatientBookingSourceService
         }
 
         $email = trim((string) ($request->patient_data['email'] ?? ''));
-        if ($email !== '' && $request->department_id) {
-            return Invoice::query()
-                ->whereHas('pendingClinicBookings', function ($q) use ($request, $email) {
-                    $q->where('department_id', $request->department_id)
-                        ->where('patient_data->email', $email);
-                })
-                ->with(['pendingClinicBookings.department'])
-                ->orderByDesc('created_at')
-                ->first();
+        if ($email === '') {
+            return null;
         }
 
-        return null;
+        $emailLower = strtolower($email);
+
+        return Invoice::query()
+            ->whereHas('pendingClinicBookings', function ($q) use ($request, $email, $emailLower) {
+                if ($request->department_id) {
+                    $q->where('department_id', $request->department_id);
+                }
+                $q->where(function ($inner) use ($email, $emailLower) {
+                    $inner->where('patient_data->email', $email)
+                        ->orWhereRaw('LOWER(TRIM(JSON_UNQUOTE(JSON_EXTRACT(patient_data, "$.email")))) = ?', [$emailLower]);
+                });
+            })
+            ->with(['pendingClinicBookings.department'])
+            ->orderByDesc('created_at')
+            ->first();
     }
 
     protected function soleDoctorNameForDepartment(?int $departmentId): ?string
