@@ -2,85 +2,37 @@
 
 namespace App\Console\Commands;
 
-use App\Models\PendingClinicBooking;
 use App\Services\ClinicBookingService;
 use Illuminate\Console\Command;
 
 class FinalizePaidClinicBookings extends Command
 {
     protected $signature = 'clinic-bookings:finalize-paid
-                            {--invoice= : Only finalize for this invoice number (e.g. INV2026060080)}
-                            {--dry-run : List rows that would be finalized without changing data}';
+                            {--dry-run : List how many rows would be processed without changing data}';
 
-    protected $description = 'Finalize clinic bookings that were paid but never completed (e.g. lost session after Stripe redirect)';
+    protected $description = 'Finalize all clinic bookings that were paid but never completed (repair + safety net)';
 
     public function handle(ClinicBookingService $clinicBookingService): int
     {
-        $dryRun = (bool) $this->option('dry-run');
-        $invoiceNumber = $this->option('invoice');
+        if ($this->option('dry-run')) {
+            $count = \App\Models\PendingClinicBooking::query()
+                ->whereNotNull('invoice_id')
+                ->whereIn('status', ['pending_payment', 'expired'])
+                ->whereHas('invoice', function ($q) {
+                    $q->where('status', 'paid')
+                        ->orWhereHas('payments', fn ($p) => $p->where('status', 'completed'));
+                })
+                ->count();
 
-        $query = PendingClinicBooking::query()
-            ->where('status', 'pending_payment')
-            ->whereNotNull('invoice_id')
-            ->with(['invoice.payments', 'department']);
-
-        if ($invoiceNumber) {
-            $query->whereHas('invoice', fn ($q) => $q->where('invoice_number', $invoiceNumber));
-        }
-
-        $pendings = $query->get();
-        if ($pendings->isEmpty()) {
-            $this->info('No pending clinic bookings awaiting finalization.');
+            $this->info("Would attempt to finalize {$count} paid clinic booking(s).");
 
             return self::SUCCESS;
         }
 
-        $finalized = 0;
-        $skipped = 0;
+        $stats = $clinicBookingService->finalizeAllStuckPaidClinicBookings();
 
-        foreach ($pendings as $pending) {
-            $invoice = $pending->invoice;
-            if (! $invoice) {
-                $this->warn("Pending #{$pending->id}: invoice missing, skipped.");
-                $skipped++;
+        $this->info("Finalized: {$stats['finalized']}, skipped: {$stats['skipped']}, failed: {$stats['failed']}");
 
-                continue;
-            }
-
-            $isPaid = $invoice->status === 'paid'
-                || $invoice->payments->contains(fn ($p) => $p->status === 'completed');
-
-            if (! $isPaid) {
-                $this->line("Pending #{$pending->id} ({$invoice->invoice_number}): invoice not paid, skipped.");
-                $skipped++;
-
-                continue;
-            }
-
-            $patientName = trim(
-                ($pending->patient_data['first_name'] ?? '').' '.($pending->patient_data['last_name'] ?? '')
-            );
-
-            if ($dryRun) {
-                $this->info("Would finalize: {$invoice->invoice_number} — {$patientName} @ {$pending->department?->name}");
-                $finalized++;
-
-                continue;
-            }
-
-            try {
-                $request = $clinicBookingService->finalizeClinicBookingAfterPayment($pending);
-                $this->info("Finalized: {$invoice->invoice_number} → request {$request->request_number}");
-                $finalized++;
-            } catch (\Throwable $e) {
-                $this->error("Failed {$invoice->invoice_number}: {$e->getMessage()}");
-                $skipped++;
-            }
-        }
-
-        $this->newLine();
-        $this->info(($dryRun ? 'Would finalize' : 'Finalized').": {$finalized}, skipped: {$skipped}");
-
-        return self::SUCCESS;
+        return $stats['failed'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 }

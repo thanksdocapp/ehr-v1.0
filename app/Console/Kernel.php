@@ -44,6 +44,12 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping()
                  ->runInBackground();
         
+        // Repair clinic checkouts that paid but never finalized (lost session after Stripe, etc.)
+        $schedule->command('clinic-bookings:finalize-paid')
+                 ->everyFifteenMinutes()
+                 ->withoutOverlapping()
+                 ->runInBackground();
+
         // Process email queue (ensure emails are sent)
         $schedule->command('queue:work emails --stop-when-empty --max-time=300')
                  ->everyFifteenMinutes()

@@ -260,7 +260,7 @@ class ClinicBookingService
 
         $pending = PendingClinicBooking::query()
             ->where('invoice_id', $invoice->id)
-            ->where('status', 'pending_payment')
+            ->whereIn('status', ['pending_payment', 'expired'])
             ->first();
 
         if (! $pending) {
@@ -275,7 +275,7 @@ class ClinicBookingService
         }
 
         try {
-            return $this->finalizeClinicBookingAfterPayment($pending);
+            return $this->finalizeClinicBookingAfterPayment($pending, allowExpiredWhenPaid: true);
         } catch (\Throwable $e) {
             Log::error('Failed to finalize clinic booking for paid invoice', [
                 'invoice_id' => $invoice->id,
@@ -288,17 +288,86 @@ class ClinicBookingService
     }
 
     /**
-     * Finalize clinic booking after payment. Creates ClinicBookingRequest.
+     * Finalize every paid clinic checkout that never completed (batch repair).
+     *
+     * @return array{finalized: int, skipped: int, failed: int}
      */
-    public function finalizeClinicBookingAfterPayment(PendingClinicBooking $pending): ClinicBookingRequest
+    public function finalizeAllStuckPaidClinicBookings(): array
     {
-        if ($pending->status !== 'pending_payment') {
-            throw new \Exception('Clinic booking is not in pending payment status');
+        $stats = ['finalized' => 0, 'skipped' => 0, 'failed' => 0];
+
+        if (! Schema::hasTable('pending_clinic_bookings')) {
+            return $stats;
         }
 
-        if ($pending->isExpired()) {
-            $pending->markExpired();
+        PendingClinicBooking::query()
+            ->whereNotNull('invoice_id')
+            ->whereIn('status', ['pending_payment', 'expired'])
+            ->with(['invoice.payments'])
+            ->orderBy('id')
+            ->chunkById(100, function ($pendings) use (&$stats) {
+                foreach ($pendings as $pending) {
+                    $invoice = $pending->invoice;
+                    $isPaid = $invoice
+                        && ($invoice->status === 'paid'
+                            || $invoice->payments->contains(fn ($p) => $p->status === 'completed'));
+
+                    if (! $isPaid) {
+                        $stats['skipped']++;
+
+                        continue;
+                    }
+
+                    try {
+                        $request = $this->finalizeClinicBookingForPaidInvoice($invoice);
+                        if ($request) {
+                            $stats['finalized']++;
+                        } else {
+                            $stats['skipped']++;
+                        }
+                    } catch (\Throwable $e) {
+                        $stats['failed']++;
+                        Log::error('Batch finalize paid clinic booking failed', [
+                            'pending_clinic_booking_id' => $pending->id,
+                            'invoice_id' => $invoice->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            });
+
+        return $stats;
+    }
+
+    public function invoiceIsPaid(Invoice $invoice): bool
+    {
+        $invoice->refresh();
+
+        return $invoice->status === 'paid'
+            || $invoice->payments()->where('status', 'completed')->exists();
+    }
+
+    /**
+     * Finalize clinic booking after payment. Creates ClinicBookingRequest.
+     */
+    public function finalizeClinicBookingAfterPayment(
+        PendingClinicBooking $pending,
+        bool $allowExpiredWhenPaid = false
+    ): ClinicBookingRequest {
+        if (! in_array($pending->status, ['pending_payment', 'expired'], true)) {
+            throw new \Exception('Clinic booking is not awaiting finalization');
+        }
+
+        if ($pending->isExpired() && ! $allowExpiredWhenPaid) {
+            if ($pending->status !== 'expired') {
+                $pending->markExpired();
+            }
             throw new \Exception('Clinic booking has expired');
+        }
+
+        if ($pending->status === 'expired' && $allowExpiredWhenPaid) {
+            $pending->update(['status' => 'pending_payment']);
+            $pending->refresh();
         }
 
         $timeStr = $pending->appointment_time instanceof \DateTimeInterface

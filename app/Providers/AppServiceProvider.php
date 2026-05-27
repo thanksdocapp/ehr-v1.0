@@ -6,7 +6,9 @@ use App\Routing\StaleRouteCacheFallbacks;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\URL;
+use App\Models\Payment;
 use App\Models\User;
+use App\Observers\PaymentObserver;
 use App\Observers\UserObserver;
 use App\View\Composers\PendingAppointmentsComposer;
 
@@ -44,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
         
         // Register model observers
         User::observe(UserObserver::class);
+        Payment::observe(PaymentObserver::class);
         
         // Share site settings with all views
         view()->composer('*', function ($view) {
