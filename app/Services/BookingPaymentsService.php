@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ClinicBookingRequest;
 use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\Payment;
@@ -233,6 +234,24 @@ class BookingPaymentsService
             $doctor = $inv->pendingBookings->first()?->doctor;
         }
 
+        if (! $doctor && $inv->pendingClinicBookings->isNotEmpty()) {
+            $doctor = $this->soleDoctorForDepartment($inv->pendingClinicBookings->first()?->department_id);
+        }
+
+        if (! $doctor && $inv->patient_id) {
+            $pcbDeptId = $inv->pendingClinicBookings->first()?->department_id;
+            $acceptedRequest = ClinicBookingRequest::query()
+                ->where('patient_id', $inv->patient_id)
+                ->where('status', 'accepted')
+                ->when($pcbDeptId, fn ($q) => $q->where('department_id', $pcbDeptId))
+                ->orderByDesc('accepted_at')
+                ->orderByDesc('updated_at')
+                ->first();
+            if ($acceptedRequest) {
+                $doctor = $acceptedRequest->doctor;
+            }
+        }
+
         if (! $doctor && $inv->doctorBookingDiscountCode) {
             $doctor = $inv->doctorBookingDiscountCode->doctor;
         }
@@ -280,6 +299,21 @@ class BookingPaymentsService
             $dept = $inv->pendingClinicBookings->first()?->department;
             if ($dept) {
                 return $dept->name;
+            }
+        }
+
+        if ($inv->patient_id) {
+            $pcbDeptId = $inv->pendingClinicBookings->first()?->department_id;
+            $acceptedRequest = ClinicBookingRequest::query()
+                ->where('patient_id', $inv->patient_id)
+                ->where('status', 'accepted')
+                ->with('department')
+                ->when($pcbDeptId, fn ($q) => $q->where('department_id', $pcbDeptId))
+                ->orderByDesc('accepted_at')
+                ->orderByDesc('updated_at')
+                ->first();
+            if ($acceptedRequest?->department) {
+                return $acceptedRequest->department->name;
             }
         }
 
@@ -399,5 +433,19 @@ class BookingPaymentsService
         $name = $doctor->user?->name ?? trim(($doctor->first_name ?? '').' '.($doctor->last_name ?? ''));
 
         return $name !== '' ? $name : null;
+    }
+
+    private function soleDoctorForDepartment(?int $departmentId): ?Doctor
+    {
+        if (! $departmentId) {
+            return null;
+        }
+
+        $doctors = Doctor::byDepartment($departmentId)->active()->get();
+        if ($doctors->count() !== 1) {
+            return null;
+        }
+
+        return $doctors->first();
     }
 }

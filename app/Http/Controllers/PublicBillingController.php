@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClinicBookingRequest;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\PaymentGateway;
 use App\Models\Billing;
+use App\Services\ClinicBookingService;
 use App\Services\PostBookingRedirectService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -476,6 +478,11 @@ class PublicBillingController extends Controller
         // Always ensure billing is updated when viewing success page (fallback)
         $this->updateInvoiceAndBilling($invoice);
 
+        $clinicRedirect = $this->redirectAfterClinicBookingFinalized($invoice);
+        if ($clinicRedirect) {
+            return $clinicRedirect;
+        }
+
         // Check if this is a pending clinic booking that needs to be finalized after payment
         $pendingClinicToken = session('pending_clinic_booking_token');
         if ($pendingClinicToken) {
@@ -492,16 +499,10 @@ class PublicBillingController extends Controller
                         $clinicRequest = $clinicService->finalizeClinicBookingAfterPayment($pending);
                         session()->forget('pending_clinic_booking_token');
 
-                        $external = app(PostBookingRedirectService::class)->buildRedirectUrlForClinicBookingRequest($clinicRequest);
-                        if ($external !== null) {
-                            session()->forget('booking_utm_params');
-
-                            return redirect()->away($external);
+                        $redirect = $this->redirectAfterClinicBookingFinalized($invoice, $clinicRequest);
+                        if ($redirect) {
+                            return $redirect;
                         }
-
-                        return redirect()->route('public.booking.clinic-success', [
-                            'requestNumber' => $clinicRequest->request_number,
-                        ])->with('payment_success', true);
                     }
                 }
             } catch (\Exception $e) {
@@ -664,6 +665,7 @@ class PublicBillingController extends Controller
                         'payment_date' => now()
                     ]);
                     $this->updateInvoiceAndBilling($invoice);
+                    app(ClinicBookingService::class)->finalizeClinicBookingForPaidInvoice($invoice);
                 }
             } else {
                 // Verify the session with Stripe
@@ -694,6 +696,7 @@ class PublicBillingController extends Controller
                             
                             // Update invoice and billing
                             $this->updateInvoiceAndBilling($invoice);
+                            app(ClinicBookingService::class)->finalizeClinicBookingForPaidInvoice($invoice);
                             app(\App\Services\NonConsultationBookingService::class)
                                 ->finalizeServiceOrderForPaidInvoice($invoice);
                             
@@ -832,6 +835,41 @@ class PublicBillingController extends Controller
                 'error' => $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Finalize paid clinic checkout by invoice and redirect to booking success when applicable.
+     */
+    private function redirectAfterClinicBookingFinalized(Invoice $invoice, ?ClinicBookingRequest $clinicRequest = null): ?RedirectResponse
+    {
+        try {
+            $clinicRequest = $clinicRequest
+                ?? app(ClinicBookingService::class)->finalizeClinicBookingForPaidInvoice($invoice);
+        } catch (\Throwable $e) {
+            Log::error('Failed to finalize clinic booking for paid invoice on success page', [
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        if (! $clinicRequest) {
+            return null;
+        }
+
+        session()->forget('pending_clinic_booking_token');
+
+        $external = app(PostBookingRedirectService::class)->buildRedirectUrlForClinicBookingRequest($clinicRequest);
+        if ($external !== null) {
+            session()->forget('booking_utm_params');
+
+            return redirect()->away($external);
+        }
+
+        return redirect()->route('public.booking.clinic-success', [
+            'requestNumber' => $clinicRequest->request_number,
+        ])->with('payment_success', true);
     }
 
     /**

@@ -245,6 +245,49 @@ class ClinicBookingService
     }
 
     /**
+     * Finalize a paid clinic checkout by invoice (does not rely on browser session after Stripe redirect).
+     */
+    public function finalizeClinicBookingForPaidInvoice(Invoice $invoice): ?ClinicBookingRequest
+    {
+        $invoice->refresh();
+
+        $isPaid = $invoice->status === 'paid'
+            || $invoice->payments()->where('status', 'completed')->exists();
+
+        if (! $isPaid) {
+            return null;
+        }
+
+        $pending = PendingClinicBooking::query()
+            ->where('invoice_id', $invoice->id)
+            ->where('status', 'pending_payment')
+            ->first();
+
+        if (! $pending) {
+            if ($invoice->appointment_id) {
+                return ClinicBookingRequest::query()
+                    ->where('appointment_id', $invoice->appointment_id)
+                    ->where('status', 'accepted')
+                    ->first();
+            }
+
+            return null;
+        }
+
+        try {
+            return $this->finalizeClinicBookingAfterPayment($pending);
+        } catch (\Throwable $e) {
+            Log::error('Failed to finalize clinic booking for paid invoice', [
+                'invoice_id' => $invoice->id,
+                'pending_clinic_booking_id' => $pending->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * Finalize clinic booking after payment. Creates ClinicBookingRequest.
      */
     public function finalizeClinicBookingAfterPayment(PendingClinicBooking $pending): ClinicBookingRequest
@@ -311,6 +354,10 @@ class ClinicBookingService
 
             $clinicRequest = $this->createFromClinicBooking($data);
             $pending->markCompleted();
+
+            if ($invoice && $clinicRequest->appointment_id && ! $invoice->appointment_id) {
+                $invoice->update(['appointment_id' => $clinicRequest->appointment_id]);
+            }
 
             return $clinicRequest;
         });
