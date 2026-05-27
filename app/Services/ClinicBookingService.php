@@ -260,7 +260,7 @@ class ClinicBookingService
 
         $pending = PendingClinicBooking::query()
             ->where('invoice_id', $invoice->id)
-            ->whereIn('status', ['pending_payment', 'expired'])
+            ->orderByDesc('id')
             ->first();
 
         if (! $pending) {
@@ -271,6 +271,14 @@ class ClinicBookingService
                     ->first();
             }
 
+            return null;
+        }
+
+        if ($pending->status === 'completed') {
+            return $this->repairPendingClinicBooking($pending);
+        }
+
+        if (! in_array($pending->status, ['pending_payment', 'expired'], true)) {
             return null;
         }
 
@@ -290,11 +298,11 @@ class ClinicBookingService
     /**
      * Finalize every paid clinic checkout that never completed (batch repair).
      *
-     * @return array{finalized: int, skipped: int, failed: int}
+     * @return array{finalized: int, repaired: int, skipped: int, failed: int}
      */
     public function finalizeAllStuckPaidClinicBookings(): array
     {
-        $stats = ['finalized' => 0, 'skipped' => 0, 'failed' => 0];
+        $stats = ['finalized' => 0, 'repaired' => 0, 'skipped' => 0, 'failed' => 0];
 
         if (! Schema::hasTable('pending_clinic_bookings')) {
             return $stats;
@@ -307,36 +315,215 @@ class ClinicBookingService
             ->orderBy('id')
             ->chunkById(100, function ($pendings) use (&$stats) {
                 foreach ($pendings as $pending) {
-                    $invoice = $pending->invoice;
-                    $isPaid = $invoice
-                        && ($invoice->status === 'paid'
-                            || $invoice->payments->contains(fn ($p) => $p->status === 'completed'));
+                    $this->processStuckPaidPending($pending, $stats, countAsRepair: false);
+                }
+            });
 
-                    if (! $isPaid) {
-                        $stats['skipped']++;
-
-                        continue;
-                    }
-
-                    try {
-                        $request = $this->finalizeClinicBookingForPaidInvoice($invoice);
-                        if ($request) {
-                            $stats['finalized']++;
-                        } else {
-                            $stats['skipped']++;
-                        }
-                    } catch (\Throwable $e) {
-                        $stats['failed']++;
-                        Log::error('Batch finalize paid clinic booking failed', [
-                            'pending_clinic_booking_id' => $pending->id,
-                            'invoice_id' => $invoice->id,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
+        // Paid checkout marked completed but never created accepted clinic request + appointment.
+        PendingClinicBooking::query()
+            ->whereNotNull('invoice_id')
+            ->where('status', 'completed')
+            ->with(['invoice.payments'])
+            ->orderBy('id')
+            ->chunkById(100, function ($pendings) use (&$stats) {
+                foreach ($pendings as $pending) {
+                    $this->processStuckPaidPending($pending, $stats, countAsRepair: true);
                 }
             });
 
         return $stats;
+    }
+
+    /**
+     * Rebuild accepted clinic booking + appointment from a paid pending checkout row.
+     */
+    public function repairPendingClinicBooking(PendingClinicBooking $pending): ?ClinicBookingRequest
+    {
+        $invoice = $pending->invoice;
+        if (! $invoice || ! $this->invoiceIsPaid($invoice)) {
+            return null;
+        }
+
+        $existing = $this->findAcceptedRequestForPending($pending);
+        if ($existing) {
+            $this->backfillInvoiceAndPatientFromRequest($invoice, $existing, $pending);
+
+            return $existing;
+        }
+
+        try {
+            $data = $this->pendingRecordToBookingData($pending);
+            $request = $this->createFromClinicBooking($data);
+
+            if ($pending->status !== 'completed') {
+                $pending->markCompleted();
+            }
+
+            $this->backfillInvoiceAndPatientFromRequest($invoice, $request, $pending);
+
+            Log::info('Repaired paid clinic checkout into accepted booking', [
+                'pending_clinic_booking_id' => $pending->id,
+                'invoice_id' => $invoice->id,
+                'clinic_booking_request_id' => $request->id,
+                'request_number' => $request->request_number,
+            ]);
+
+            return $request;
+        } catch (\Throwable $e) {
+            Log::error('Failed to repair pending clinic booking', [
+                'pending_clinic_booking_id' => $pending->id,
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * @param  array{finalized: int, repaired: int, skipped: int, failed: int}  $stats
+     */
+    protected function processStuckPaidPending(
+        PendingClinicBooking $pending,
+        array &$stats,
+        bool $countAsRepair
+    ): void {
+        $invoice = $pending->invoice;
+        $isPaid = $invoice
+            && ($invoice->status === 'paid'
+                || $invoice->payments->contains(fn ($p) => $p->status === 'completed'));
+
+        if (! $isPaid) {
+            $stats['skipped']++;
+
+            return;
+        }
+
+        try {
+            if ($countAsRepair && $this->findAcceptedRequestForPending($pending)) {
+                $stats['skipped']++;
+
+                return;
+            }
+
+            $request = $this->finalizeClinicBookingForPaidInvoice($invoice);
+            if (! $request) {
+                $stats['skipped']++;
+
+                return;
+            }
+
+            if ($countAsRepair) {
+                $stats['repaired']++;
+            } else {
+                $stats['finalized']++;
+            }
+        } catch (\Throwable $e) {
+            $stats['failed']++;
+            Log::error('Batch finalize paid clinic booking failed', [
+                'pending_clinic_booking_id' => $pending->id,
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    protected function findAcceptedRequestForPending(PendingClinicBooking $pending): ?ClinicBookingRequest
+    {
+        $invoice = $pending->invoice;
+        $pd = $pending->patient_data ?? [];
+        $email = strtolower(trim((string) ($pd['email'] ?? '')));
+
+        $base = ClinicBookingRequest::query()
+            ->where('department_id', $pending->department_id)
+            ->where('status', 'accepted')
+            ->whereDate('appointment_date', $pending->appointment_date);
+
+        if ($invoice?->patient_id) {
+            $match = (clone $base)->where('patient_id', $invoice->patient_id)->first();
+            if ($match) {
+                return $match;
+            }
+        }
+
+        if ($email !== '') {
+            return (clone $base)
+                ->where(function ($q) use ($pd, $email) {
+                    $q->where('patient_data->email', $pd['email'] ?? '')
+                        ->orWhereRaw('LOWER(TRIM(JSON_UNQUOTE(JSON_EXTRACT(patient_data, "$.email")))) = ?', [$email]);
+                })
+                ->first();
+        }
+
+        return null;
+    }
+
+    protected function backfillInvoiceAndPatientFromRequest(
+        Invoice $invoice,
+        ClinicBookingRequest $request,
+        PendingClinicBooking $pending
+    ): void {
+        if ($request->appointment_id && ! $invoice->appointment_id) {
+            $invoice->update(['appointment_id' => $request->appointment_id]);
+        }
+
+        if ($request->patient_id && ! $invoice->patient_id) {
+            $invoice->update(['patient_id' => $request->patient_id]);
+        } elseif ($invoice->patient_id && ! $request->patient_id) {
+            $request->update(['patient_id' => $invoice->patient_id]);
+        }
+
+        $patient = Patient::find($request->patient_id ?? $invoice->patient_id);
+        if ($patient && $pending->department_id) {
+            if (! $patient->departments()->where('departments.id', $pending->department_id)->exists()) {
+                $isPrimary = $patient->departments()->count() === 0;
+                $patient->departments()->attach($pending->department_id, ['is_primary' => $isPrimary]);
+            }
+            if (! $patient->department_id) {
+                $patient->department_id = $pending->department_id;
+                $patient->save();
+            }
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function pendingRecordToBookingData(PendingClinicBooking $pending): array
+    {
+        $timeStr = $pending->appointment_time instanceof \DateTimeInterface
+            ? $pending->appointment_time->format('H:i')
+            : substr((string) $pending->appointment_time, 0, 5);
+
+        $pd = $pending->patient_data ?? [];
+
+        return [
+            'department_id' => $pending->department_id,
+            'service_id' => $pending->service_id,
+            'appointment_date' => $pending->appointment_date->format('Y-m-d'),
+            'appointment_time' => $timeStr,
+            'first_name' => $pd['first_name'] ?? '',
+            'last_name' => $pd['last_name'] ?? '',
+            'email' => $pd['email'] ?? '',
+            'phone' => $pd['phone'] ?? '',
+            'date_of_birth' => $pd['date_of_birth'] ?? null,
+            'gender' => $pd['gender'] ?? null,
+            'address' => $pd['address'] ?? null,
+            'address_line_2' => $pd['address_line_2'] ?? null,
+            'city' => $pd['city'] ?? null,
+            'state' => $pd['state'] ?? null,
+            'postal_code' => $pd['postal_code'] ?? null,
+            'country' => $pd['country'] ?? null,
+            'notes' => $pd['notes'] ?? null,
+            'consultation_type' => $pd['consultation_type'] ?? 'in_person',
+            'consent_share_with_gp' => $pd['consent_share_with_gp'] ?? false,
+            'gp_name' => $pd['gp_name'] ?? null,
+            'gp_email' => $pd['gp_email'] ?? null,
+            'gp_phone' => $pd['gp_phone'] ?? null,
+            'gp_address' => $pd['gp_address'] ?? null,
+            'guardian_name' => $pd['guardian_name'] ?? null,
+            'guardian_phone' => $pd['guardian_phone'] ?? null,
+        ];
     }
 
     public function invoiceIsPaid(Invoice $invoice): bool
@@ -370,38 +557,7 @@ class ClinicBookingService
             $pending->refresh();
         }
 
-        $timeStr = $pending->appointment_time instanceof \DateTimeInterface
-            ? $pending->appointment_time->format('H:i')
-            : substr((string) $pending->appointment_time, 0, 5);
-
-        $pd = $pending->patient_data ?? [];
-        $data = [
-            'department_id' => $pending->department_id,
-            'service_id' => $pending->service_id,
-            'appointment_date' => $pending->appointment_date->format('Y-m-d'),
-            'appointment_time' => $timeStr,
-            'first_name' => $pd['first_name'] ?? '',
-            'last_name' => $pd['last_name'] ?? '',
-            'email' => $pd['email'] ?? '',
-            'phone' => $pd['phone'] ?? '',
-            'date_of_birth' => $pd['date_of_birth'] ?? null,
-            'gender' => $pd['gender'] ?? null,
-            'address' => $pd['address'] ?? null,
-            'address_line_2' => $pd['address_line_2'] ?? null,
-            'city' => $pd['city'] ?? null,
-            'state' => $pd['state'] ?? null,
-            'postal_code' => $pd['postal_code'] ?? null,
-            'country' => $pd['country'] ?? null,
-            'notes' => $pd['notes'] ?? null,
-            'consultation_type' => $pd['consultation_type'] ?? 'in_person',
-            'consent_share_with_gp' => $pd['consent_share_with_gp'] ?? false,
-            'gp_name' => $pd['gp_name'] ?? null,
-            'gp_email' => $pd['gp_email'] ?? null,
-            'gp_phone' => $pd['gp_phone'] ?? null,
-            'gp_address' => $pd['gp_address'] ?? null,
-            'guardian_name' => $pd['guardian_name'] ?? null,
-            'guardian_phone' => $pd['guardian_phone'] ?? null,
-        ];
+        $data = $this->pendingRecordToBookingData($pending);
 
         return DB::transaction(function () use ($pending, $data) {
             $invoice = $pending->invoice;

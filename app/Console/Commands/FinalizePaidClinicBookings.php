@@ -15,23 +15,29 @@ class FinalizePaidClinicBookings extends Command
     public function handle(ClinicBookingService $clinicBookingService): int
     {
         if ($this->option('dry-run')) {
-            $count = \App\Models\PendingClinicBooking::query()
+            $pending = \App\Models\PendingClinicBooking::query()
                 ->whereNotNull('invoice_id')
                 ->whereIn('status', ['pending_payment', 'expired'])
-                ->whereHas('invoice', function ($q) {
-                    $q->where('status', 'paid')
-                        ->orWhereHas('payments', fn ($p) => $p->where('status', 'completed'));
-                })
+                ->whereHas('invoice', fn ($q) => $q->where('status', 'paid')
+                    ->orWhereHas('payments', fn ($p) => $p->where('status', 'completed')))
+                ->count();
+            $repair = \App\Models\PendingClinicBooking::query()
+                ->whereNotNull('invoice_id')
+                ->where('status', 'completed')
+                ->whereHas('invoice', fn ($q) => $q->where('status', 'paid')
+                    ->orWhereHas('payments', fn ($p) => $p->where('status', 'completed')))
                 ->count();
 
-            $this->info("Would attempt to finalize {$count} paid clinic booking(s).");
+            $this->info("Would finalize {$pending} pending checkout(s) and repair up to {$repair} completed checkout(s).");
 
             return self::SUCCESS;
         }
 
         $stats = $clinicBookingService->finalizeAllStuckPaidClinicBookings();
 
-        $this->info("Finalized: {$stats['finalized']}, skipped: {$stats['skipped']}, failed: {$stats['failed']}");
+        $this->info(
+            "Finalized: {$stats['finalized']}, repaired: {$stats['repaired']}, skipped: {$stats['skipped']}, failed: {$stats['failed']}"
+        );
 
         return $stats['failed'] > 0 ? self::FAILURE : self::SUCCESS;
     }

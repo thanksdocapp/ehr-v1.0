@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\ClinicBookingService;
 use App\Services\ResilientMigrationService;
 use App\Helpers\CurrencyHelper;
 use App\Models\User;
@@ -1587,10 +1588,24 @@ class SettingsController extends Controller
         }
 
         try {
-            Artisan::call('clinic-bookings:finalize-paid');
-            $steps[] = 'Paid clinic bookings checked/repaired.';
+            $bookingStats = app(ClinicBookingService::class)->finalizeAllStuckPaidClinicBookings();
+            $parts = [];
+            if ($bookingStats['finalized'] > 0) {
+                $parts[] = $bookingStats['finalized'].' finalized';
+            }
+            if ($bookingStats['repaired'] > 0) {
+                $parts[] = $bookingStats['repaired'].' repaired';
+            }
+            if ($bookingStats['failed'] > 0) {
+                $hadErrors = true;
+                $parts[] = $bookingStats['failed'].' failed';
+            }
+            $steps[] = $parts !== []
+                ? 'Clinic bookings: '.implode(', ', $parts).'.'
+                : 'Clinic bookings: none stuck (already OK).';
         } catch (\Throwable $e) {
-            $steps[] = 'Paid clinic booking repair skipped: '.$e->getMessage();
+            $hadErrors = true;
+            $steps[] = 'Clinic booking repair failed: '.$e->getMessage();
         }
 
         return response()->json([
