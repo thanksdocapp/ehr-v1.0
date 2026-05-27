@@ -120,12 +120,19 @@ class ClinicBookingRequestsController extends Controller
             foreach ($rows as $req) {
                 $pd = $req->patient_data ?? [];
                 $patientName = trim(($pd['first_name'] ?? '').' '.($pd['last_name'] ?? ''));
-                $doctorLabel = $req->doctor
-                    ? ($req->doctor->user->name ?? trim($req->doctor->first_name.' '.$req->doctor->last_name))
-                    : '';
+                $doctorLabel = $req->assignedDoctorName() !== '—' ? $req->assignedDoctorName() : '';
+                $clinicLabel = $req->clinicName() !== '—' ? $req->clinicName() : '';
+                $acceptorDisplay = $req->acceptorDisplay();
                 $acceptor = $hasAcceptedByColumn ? $req->acceptedByUser : null;
-                $acceptorName = $acceptor ? (string) ($acceptor->name ?? '') : '';
+                $acceptorName = $acceptor
+                    ? (string) ($acceptor->name ?? '')
+                    : ($acceptorDisplay['is_auto'] || $acceptorDisplay['name'] !== '—' ? $acceptorDisplay['name'] : '');
                 $acceptorEmail = $acceptor ? (string) ($acceptor->email ?? '') : '';
+                if ($acceptorDisplay['detail'] && ! $acceptor) {
+                    $acceptorName = $acceptorName !== '' && $acceptorName !== '—'
+                        ? $acceptorName.' — '.$acceptorDisplay['detail']
+                        : $acceptorDisplay['detail'];
+                }
                 $acceptedAt = $req->accepted_at ?? $req->updated_at;
                 $paymentAmount = (float) ($req->fee ?? 0);
                 if ($paymentAmount <= 0 && $req->appointment) {
@@ -134,7 +141,7 @@ class ClinicBookingRequestsController extends Controller
 
                 fputcsv($file, [
                     $req->request_number,
-                    $req->department?->name ?? '',
+                    $clinicLabel !== '' ? $clinicLabel : ($req->department?->name ?? ''),
                     $patientName,
                     $pd['email'] ?? '',
                     $pd['phone'] ?? '',
@@ -145,7 +152,7 @@ class ClinicBookingRequestsController extends Controller
                     $req->appointment_time instanceof \DateTimeInterface
                         ? $req->appointment_time->format('H:i')
                         : (string) $req->appointment_time,
-                    $acceptor ? ($acceptorName !== '' ? $acceptorName : '—') : 'Legacy (not recorded)',
+                    $acceptorName !== '' ? $acceptorName : '—',
                     $acceptor ? $acceptorEmail : '',
                     $acceptedAt ? $acceptedAt->format('Y-m-d H:i:s') : '',
                     $req->appointment_id ?? '',
@@ -168,7 +175,7 @@ class ClinicBookingRequestsController extends Controller
         $hasAcceptedAt = Schema::hasColumn($table, 'accepted_at');
         $hasAcceptedBy = Schema::hasColumn($table, 'accepted_by_user_id');
 
-        $with = ['department', 'service', 'doctor.user', 'appointment'];
+        $with = ['department', 'service', 'doctor.user', 'appointment.doctor.user', 'appointment.department'];
         if ($hasAcceptedBy) {
             $with[] = 'acceptedByUser';
         }

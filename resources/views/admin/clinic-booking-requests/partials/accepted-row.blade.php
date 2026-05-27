@@ -1,13 +1,11 @@
 @php
     $pd = $req->patient_data ?? [];
     $patientName = trim(($pd['first_name'] ?? '').' '.($pd['last_name'] ?? '')) ?: '—';
-    $doctorLabel = $req->doctor
-        ? ($req->doctor->user->name ?? trim($req->doctor->first_name.' '.$req->doctor->last_name))
-        : '—';
+    $doctorLabel = $req->assignedDoctorName();
+    $clinicLabel = $req->clinicName();
+    $acceptorDisplay = $req->acceptorDisplay();
+    $acceptorLabel = $acceptorDisplay['name'] !== '—' ? $acceptorDisplay['name'] : null;
     $acceptor = $req->acceptedByUser;
-    $acceptorLabel = $acceptor
-        ? ($acceptor->name ?? $acceptor->email ?? 'User #'.$acceptor->id)
-        : null;
     $acceptedWhen = $req->accepted_at ?? $req->updated_at;
     $paymentAmount = (float) ($req->fee ?? 0);
     if ($paymentAmount <= 0 && $req->appointment) {
@@ -16,7 +14,7 @@
 @endphp
 <tr>
     <td><strong>{{ $req->request_number }}</strong></td>
-    <td>{{ $req->department?->name ?? '—' }}</td>
+    <td>{{ $clinicLabel }}</td>
     <td>{{ $patientName }}</td>
     <td>{{ $doctorLabel }}</td>
     <td>{{ $req->service?->name ?? '—' }}</td>
@@ -36,10 +34,14 @@
             <span class="d-block">{{ $acceptorLabel }}</span>
             @if($acceptor && $acceptor->email && ($acceptor->name ?? '') !== $acceptor->email)
                 <span class="text-muted">{{ $acceptor->email }}</span>
+            @elseif(!empty($acceptorDisplay['detail']))
+                <span class="text-muted" style="font-size: 0.75rem;">{{ $acceptorDisplay['detail'] }}</span>
             @endif
         @else
             <span class="text-muted">—</span>
-            <span class="d-block text-muted" style="font-size: 0.75rem;">Not recorded (legacy)</span>
+            @if(!empty($acceptorDisplay['detail']))
+                <span class="d-block text-muted" style="font-size: 0.75rem;">{{ $acceptorDisplay['detail'] }}</span>
+            @endif
         @endif
     </td>
     <td class="small text-nowrap">

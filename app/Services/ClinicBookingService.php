@@ -318,8 +318,7 @@ class ClinicBookingService
 
     /**
      * Create a clinic booking request (pending doctor acceptance).
-     * When the department has exactly one active doctor, the request is accepted immediately
-     * for that doctor (same emails as a manual accept: patient confirmation + doctor notify).
+     * Single-doctor clinics are auto-assigned to that doctor and appear on the accepted list.
      */
     public function createFromClinicBooking(array $data): ClinicBookingRequest
     {
@@ -374,7 +373,7 @@ class ClinicBookingService
 
             $departmentDoctors = Doctor::byDepartment($departmentId)->active()->get();
             $sole = $departmentDoctors->count() === 1 ? $departmentDoctors->first() : null;
-            if (!$sole) {
+            if (! $sole) {
                 $this->notifyDoctorsOfNewRequest($request);
             }
 
@@ -383,7 +382,7 @@ class ClinicBookingService
 
         if ($soleDoctor) {
             try {
-                $this->acceptRequest($request, $soleDoctor, $soleDoctor->user_id);
+                $this->acceptRequest($request, $soleDoctor, $soleDoctor->user_id, true);
             } catch (\Throwable $e) {
                 Log::error('Clinic booking auto-accept failed; falling back to manual acceptance flow', [
                     'clinic_booking_request_id' => $request->id,
@@ -456,9 +455,13 @@ class ClinicBookingService
     /**
      * Doctor accepts a clinic booking request. Creates patient + appointment, marks request as accepted.
      */
-    public function acceptRequest(ClinicBookingRequest $request, Doctor $doctor, ?int $acceptedByUserId = null): Appointment
-    {
-        return DB::transaction(function () use ($request, $doctor, $acceptedByUserId) {
+    public function acceptRequest(
+        ClinicBookingRequest $request,
+        Doctor $doctor,
+        ?int $acceptedByUserId = null,
+        bool $autoAccepted = false
+    ): Appointment {
+        return DB::transaction(function () use ($request, $doctor, $acceptedByUserId, $autoAccepted) {
             // Lock and verify still pending (use fresh lock)
             $request = ClinicBookingRequest::where('id', $request->id)
                 ->where('status', 'pending_acceptance')
@@ -524,7 +527,7 @@ class ClinicBookingService
                 'is_online' => $isOnline,
                 'consultation_type' => $request->consultation_type ?? 'in_person',
                 'notes' => $request->notes,
-                'created_from' => 'Clinic Booking (Doctor Accepted)',
+                'created_from' => $autoAccepted ? 'Clinic Booking (Auto-assigned)' : 'Clinic Booking (Doctor Accepted)',
                 // Set meeting_platform so Observer skips email until we have the meeting link
                 'meeting_platform' => $useWhereby ? 'whereby' : null,
             ]);
@@ -551,12 +554,16 @@ class ClinicBookingService
                 'doctor_id' => $doctor->id,
                 'patient_id' => $patient->id,
                 'appointment_id' => $appointment->id,
+                'fee' => $fee,
             ];
             if (Schema::hasColumn('clinic_booking_requests', 'accepted_by_user_id')) {
                 $acceptedPayload['accepted_by_user_id'] = $acceptedByUserId;
             }
             if (Schema::hasColumn('clinic_booking_requests', 'accepted_at')) {
                 $acceptedPayload['accepted_at'] = now();
+            }
+            if (Schema::hasColumn('clinic_booking_requests', 'auto_accepted')) {
+                $acceptedPayload['auto_accepted'] = $autoAccepted;
             }
             $request->update($acceptedPayload);
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Schema;
 
 class ClinicBookingRequest extends Model
 {
@@ -19,6 +20,7 @@ class ClinicBookingRequest extends Model
         'appointment_id',
         'accepted_by_user_id',
         'accepted_at',
+        'auto_accepted',
         'appointment_date',
         'appointment_time',
         'consultation_type',
@@ -35,6 +37,7 @@ class ClinicBookingRequest extends Model
         'patient_data' => 'array',
         'fee' => 'decimal:2',
         'accepted_at' => 'datetime',
+        'auto_accepted' => 'boolean',
     ];
 
     public function department(): BelongsTo
@@ -94,5 +97,94 @@ class ClinicBookingRequest extends Model
     public function isCancelled(): bool
     {
         return $this->status === 'cancelled';
+    }
+
+    public function isAutoAccepted(): bool
+    {
+        if (Schema::hasColumn($this->getTable(), 'auto_accepted') && $this->auto_accepted) {
+            return true;
+        }
+
+        return $this->status === 'accepted'
+            && $this->doctor_id
+            && ! $this->accepted_by_user_id;
+    }
+
+    public function resolvedDoctor(): ?Doctor
+    {
+        if ($this->doctor) {
+            return $this->doctor;
+        }
+
+        return $this->appointment?->doctor;
+    }
+
+    public function resolvedDepartment(): ?Department
+    {
+        if ($this->department) {
+            return $this->department;
+        }
+
+        return $this->appointment?->department;
+    }
+
+    public function assignedDoctorName(): string
+    {
+        $doctor = $this->resolvedDoctor();
+        if (! $doctor) {
+            return '—';
+        }
+
+        $name = trim((string) ($doctor->user->name ?? ''));
+        if ($name !== '') {
+            return $name;
+        }
+
+        return trim($doctor->first_name.' '.$doctor->last_name) ?: '—';
+    }
+
+    public function clinicName(): string
+    {
+        return $this->resolvedDepartment()?->name ?? '—';
+    }
+
+    /**
+     * Human-readable acceptor for admin lists and exports.
+     *
+     * @return array{name: string, detail: ?string, is_auto: bool}
+     */
+    public function acceptorDisplay(): array
+    {
+        if ($this->isAutoAccepted()) {
+            $doctorName = $this->assignedDoctorName();
+            $clinicName = $this->clinicName();
+
+            return [
+                'name' => $doctorName !== '—' ? $doctorName.' (auto-assigned)' : 'System (auto-assigned)',
+                'detail' => $clinicName !== '—' ? $clinicName : null,
+                'is_auto' => true,
+            ];
+        }
+
+        $acceptor = $this->acceptedByUser;
+
+        if ($acceptor) {
+            $name = trim((string) ($acceptor->name ?? ''));
+            if ($name === '') {
+                $name = (string) ($acceptor->email ?? 'User #'.$acceptor->id);
+            }
+
+            return ['name' => $name, 'detail' => null, 'is_auto' => false];
+        }
+
+        if ($this->status === 'accepted' && $this->resolvedDoctor()) {
+            return [
+                'name' => $this->assignedDoctorName(),
+                'detail' => 'Acceptor not recorded',
+                'is_auto' => false,
+            ];
+        }
+
+        return ['name' => '—', 'detail' => 'Not recorded (legacy)', 'is_auto' => false];
     }
 }

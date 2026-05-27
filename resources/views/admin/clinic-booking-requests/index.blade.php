@@ -213,6 +213,7 @@
     <div class="alert alert-info mt-3 mb-0">
         <i class="fas fa-info-circle me-2"></i>
         Accepting creates the patient (if new), adds them to the clinic, and places the visit on the selected doctor’s diary. Confirmation emails are sent like a normal doctor acceptance.
+        Clinics with <strong>one active doctor</strong> are auto-assigned to that doctor and appear under <strong>Accepted clinic bookings</strong> below (not in the pending list).
         Cancelling removes a <strong>pending</strong> request from this list and frees the slot; contact the patient separately if a refund is required.
     </div>
 </div>
