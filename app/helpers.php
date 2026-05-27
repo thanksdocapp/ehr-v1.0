@@ -780,3 +780,14 @@ if (! function_exists('staffServiceOrderUrl')) {
         return url('/staff/service-orders');
     }
 }
+
+if (! function_exists('adminSettingsApplyDeploymentUpdatesUrl')) {
+    function adminSettingsApplyDeploymentUpdatesUrl(): string
+    {
+        if (\Illuminate\Support\Facades\Route::has('admin.settings.apply-deployment-updates')) {
+            return route('admin.settings.apply-deployment-updates');
+        }
+
+        return url('/admin/settings/apply-deployment-updates');
+    }
+}

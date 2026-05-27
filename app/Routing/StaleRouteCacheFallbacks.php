@@ -2,6 +2,7 @@
 
 namespace App\Routing;
 
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\Staff\ServiceOrdersController;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,22 @@ class StaleRouteCacheFallbacks
     {
         static::registerPublicNonConsultationBookingRoutes();
         static::registerStaffServiceOrderRoutes();
+        static::registerAdminSettingsDeploymentRoute();
+    }
+
+    private static function registerAdminSettingsDeploymentRoute(): void
+    {
+        if (Route::has('admin.settings.apply-deployment-updates')) {
+            return;
+        }
+
+        Route::middleware(['web', 'installed', 'auth:admin', 'admin', 'require.2fa', 'log.activity'])
+            ->prefix('admin')
+            ->name('admin.')
+            ->group(function () {
+                Route::post('/settings/apply-deployment-updates', [SettingsController::class, 'applyDeploymentUpdates'])
+                    ->name('settings.apply-deployment-updates');
+            });
     }
 
     private static function registerPublicNonConsultationBookingRoutes(): void

@@ -435,7 +435,7 @@
                 didOpen: () => Swal.showLoading()
             });
 
-            const response = await fetch('{{ route('admin.settings.apply-deployment-updates') }}', {
+            const response = await fetch('{{ adminSettingsApplyDeploymentUpdatesUrl() }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
