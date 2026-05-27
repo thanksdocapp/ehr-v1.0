@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\Invoice;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class BookingPaymentsService
@@ -239,14 +240,7 @@ class BookingPaymentsService
         }
 
         if (! $doctor && $inv->patient_id) {
-            $pcbDeptId = $inv->pendingClinicBookings->first()?->department_id;
-            $acceptedRequest = ClinicBookingRequest::query()
-                ->where('patient_id', $inv->patient_id)
-                ->where('status', 'accepted')
-                ->when($pcbDeptId, fn ($q) => $q->where('department_id', $pcbDeptId))
-                ->orderByDesc('accepted_at')
-                ->orderByDesc('updated_at')
-                ->first();
+            $acceptedRequest = $this->latestAcceptedClinicRequestForInvoice($inv);
             if ($acceptedRequest) {
                 $doctor = $acceptedRequest->doctor;
             }
@@ -303,15 +297,7 @@ class BookingPaymentsService
         }
 
         if ($inv->patient_id) {
-            $pcbDeptId = $inv->pendingClinicBookings->first()?->department_id;
-            $acceptedRequest = ClinicBookingRequest::query()
-                ->where('patient_id', $inv->patient_id)
-                ->where('status', 'accepted')
-                ->with('department')
-                ->when($pcbDeptId, fn ($q) => $q->where('department_id', $pcbDeptId))
-                ->orderByDesc('accepted_at')
-                ->orderByDesc('updated_at')
-                ->first();
+            $acceptedRequest = $this->latestAcceptedClinicRequestForInvoice($inv, withDepartment: true);
             if ($acceptedRequest?->department) {
                 return $acceptedRequest->department->name;
             }
@@ -433,6 +419,30 @@ class BookingPaymentsService
         $name = $doctor->user?->name ?? trim(($doctor->first_name ?? '').' '.($doctor->last_name ?? ''));
 
         return $name !== '' ? $name : null;
+    }
+
+    private function latestAcceptedClinicRequestForInvoice(
+        Invoice $inv,
+        bool $withDepartment = false
+    ): ?ClinicBookingRequest {
+        if (! $inv->patient_id) {
+            return null;
+        }
+
+        $pcbDeptId = $inv->pendingClinicBookings->first()?->department_id;
+        $query = ClinicBookingRequest::query()
+            ->where('patient_id', $inv->patient_id)
+            ->where('status', 'accepted')
+            ->when($pcbDeptId, fn ($q) => $q->where('department_id', $pcbDeptId));
+
+        $query->with($withDepartment ? ['department', 'doctor.user'] : ['doctor.user']);
+
+        $table = (new ClinicBookingRequest)->getTable();
+        if (Schema::hasColumn($table, 'accepted_at')) {
+            $query->orderByDesc('accepted_at');
+        }
+
+        return $query->orderByDesc('updated_at')->first();
     }
 
     private function soleDoctorForDepartment(?int $departmentId): ?Doctor

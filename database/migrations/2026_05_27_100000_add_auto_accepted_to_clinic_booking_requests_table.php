@@ -14,9 +14,15 @@ return new class extends Migration
         }
 
         if (! Schema::hasColumn('clinic_booking_requests', 'auto_accepted')) {
-            Schema::table('clinic_booking_requests', function (Blueprint $table) {
-                $table->boolean('auto_accepted')->default(false)->after('accepted_at');
-            });
+            if (Schema::hasColumn('clinic_booking_requests', 'accepted_at')) {
+                Schema::table('clinic_booking_requests', function (Blueprint $table) {
+                    $table->boolean('auto_accepted')->default(false)->after('accepted_at');
+                });
+            } else {
+                Schema::table('clinic_booking_requests', function (Blueprint $table) {
+                    $table->boolean('auto_accepted')->default(false);
+                });
+            }
         }
 
         if (! Schema::hasTable('appointments')) {
