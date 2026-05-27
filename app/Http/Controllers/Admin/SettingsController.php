@@ -1596,6 +1596,9 @@ class SettingsController extends Controller
             if ($bookingStats['repaired'] > 0) {
                 $parts[] = $bookingStats['repaired'].' repaired';
             }
+            if (($bookingStats['assigned'] ?? 0) > 0) {
+                $parts[] = $bookingStats['assigned'].' clinic/doctor assigned';
+            }
             if ($bookingStats['failed'] > 0) {
                 $hadErrors = true;
                 $parts[] = $bookingStats['failed'].' failed';

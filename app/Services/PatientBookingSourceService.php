@@ -334,12 +334,9 @@ class PatientBookingSourceService
             return null;
         }
 
-        $doctors = \App\Models\Doctor::byDepartment($departmentId)->active()->get();
-        if ($doctors->count() !== 1) {
-            return null;
-        }
+        $doctor = app(\App\Services\ClinicBookingService::class)->defaultDoctorForDepartment($departmentId);
 
-        return $this->formatDoctorName($doctors->first());
+        return $this->formatDoctorName($doctor);
     }
 
     protected function formatDoctorName(?\App\Models\Doctor $doctor): ?string

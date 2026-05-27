@@ -494,11 +494,6 @@ class BookingPaymentsService
             return null;
         }
 
-        $doctors = Doctor::byDepartment($departmentId)->active()->get();
-        if ($doctors->count() !== 1) {
-            return null;
-        }
-
-        return $doctors->first();
+        return app(ClinicBookingService::class)->defaultDoctorForDepartment($departmentId);
     }
 }
