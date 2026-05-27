@@ -1546,33 +1546,39 @@ class SettingsController extends Controller
      */
     public function applyDeploymentUpdates(Request $request)
     {
+        $steps = [];
+        $hadErrors = false;
+
         try {
-            $steps = [];
-
             Artisan::call('migrate', ['--force' => true]);
-            $steps[] = 'Database migrations applied.';
+            $migrateOutput = trim(Artisan::output());
+            $steps[] = $migrateOutput !== '' ? 'Migrations: '.$migrateOutput : 'Database migrations applied.';
+        } catch (\Throwable $e) {
+            $hadErrors = true;
+            Log::warning('applyDeploymentUpdates: migrate failed', ['error' => $e->getMessage()]);
+            $steps[] = 'Migrations warning: '.$e->getMessage();
+        }
 
+        try {
             Artisan::call('optimize:clear');
             $steps[] = 'Application caches cleared.';
-
-            try {
-                Artisan::call('clinic-bookings:finalize-paid');
-                $steps[] = 'Paid clinic bookings checked/repaired.';
-            } catch (\Throwable $e) {
-                $steps[] = 'Paid clinic booking repair skipped: '.$e->getMessage();
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => implode(' ', $steps),
-                'steps' => $steps,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Deployment update failed: '.$e->getMessage(),
-            ], 500);
+        } catch (\Throwable $e) {
+            $hadErrors = true;
+            $steps[] = 'Cache clear failed: '.$e->getMessage();
         }
+
+        try {
+            Artisan::call('clinic-bookings:finalize-paid');
+            $steps[] = 'Paid clinic bookings checked/repaired.';
+        } catch (\Throwable $e) {
+            $steps[] = 'Paid clinic booking repair skipped: '.$e->getMessage();
+        }
+
+        return response()->json([
+            'success' => ! $hadErrors,
+            'message' => implode(' ', $steps),
+            'steps' => $steps,
+        ], $hadErrors ? 500 : 200);
     }
     
     /**
