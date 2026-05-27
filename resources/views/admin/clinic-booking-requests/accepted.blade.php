@@ -71,6 +71,7 @@
                                 <th>Patient</th>
                                 <th>Assigned doctor</th>
                                 <th>Service</th>
+                                <th class="text-end">Payment amount</th>
                                 <th>Slot</th>
                                 <th>Accepted by</th>
                                 <th>Accepted</th>

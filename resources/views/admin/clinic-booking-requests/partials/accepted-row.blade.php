@@ -9,6 +9,10 @@
         ? ($acceptor->name ?? $acceptor->email ?? 'User #'.$acceptor->id)
         : null;
     $acceptedWhen = $req->accepted_at ?? $req->updated_at;
+    $paymentAmount = (float) ($req->fee ?? 0);
+    if ($paymentAmount <= 0 && $req->appointment) {
+        $paymentAmount = (float) ($req->appointment->fee ?? 0);
+    }
 @endphp
 <tr>
     <td><strong>{{ $req->request_number }}</strong></td>
@@ -16,6 +20,13 @@
     <td>{{ $patientName }}</td>
     <td>{{ $doctorLabel }}</td>
     <td>{{ $req->service?->name ?? '—' }}</td>
+    <td class="text-end text-nowrap">
+        @if($paymentAmount > 0)
+            <strong>£{{ number_format($paymentAmount, 2) }}</strong>
+        @else
+            <span class="text-muted">Free</span>
+        @endif
+    </td>
     <td>
         <span class="small">{{ $req->appointment_date->format('D j M Y') }}</span><br>
         <span class="small text-muted">{{ $req->appointment_time instanceof \DateTimeInterface ? $req->appointment_time->format('g:i A') : $req->appointment_time }}</span>

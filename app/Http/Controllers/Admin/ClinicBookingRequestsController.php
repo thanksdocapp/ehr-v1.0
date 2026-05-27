@@ -108,6 +108,7 @@ class ClinicBookingRequestsController extends Controller
                 'Patient phone',
                 'Assigned doctor',
                 'Service',
+                'Payment amount',
                 'Appointment date',
                 'Appointment time',
                 'Accepted by (name)',
@@ -126,6 +127,10 @@ class ClinicBookingRequestsController extends Controller
                 $acceptorName = $acceptor ? (string) ($acceptor->name ?? '') : '';
                 $acceptorEmail = $acceptor ? (string) ($acceptor->email ?? '') : '';
                 $acceptedAt = $req->accepted_at ?? $req->updated_at;
+                $paymentAmount = (float) ($req->fee ?? 0);
+                if ($paymentAmount <= 0 && $req->appointment) {
+                    $paymentAmount = (float) ($req->appointment->fee ?? 0);
+                }
 
                 fputcsv($file, [
                     $req->request_number,
@@ -135,6 +140,7 @@ class ClinicBookingRequestsController extends Controller
                     $pd['phone'] ?? '',
                     $doctorLabel,
                     $req->service?->name ?? '',
+                    $paymentAmount > 0 ? number_format($paymentAmount, 2, '.', '') : '0.00',
                     $req->appointment_date?->format('Y-m-d') ?? '',
                     $req->appointment_time instanceof \DateTimeInterface
                         ? $req->appointment_time->format('H:i')
