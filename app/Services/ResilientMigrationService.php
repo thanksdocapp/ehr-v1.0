@@ -12,22 +12,19 @@ use Illuminate\Support\Facades\Log;
  */
 class ResilientMigrationService
 {
-    public function __construct(
-        protected Migrator $migrator
-    ) {}
-
     /**
      * @return array{applied: list<string>, skipped: list<string>, failed: list<array{name: string, error: string}>}
      */
     public function runPending(): array
     {
-        $repository = $this->migrator->getRepository();
+        $migrator = $this->migrator();
+        $repository = $migrator->getRepository();
 
         if (! $repository->repositoryExists()) {
             $repository->createRepository();
         }
 
-        $files = collect($this->migrator->getMigrationFiles($this->migrator->paths()))->sortKeys();
+        $files = collect($migrator->getMigrationFiles($migrator->paths()))->sortKeys();
         $pending = $files->keys()->diff($repository->getRan())->values();
 
         $results = [
@@ -40,7 +37,7 @@ class ResilientMigrationService
             $path = $files[$migrationName];
 
             try {
-                $this->migrator->run([$migrationName => $path]);
+                $migrator->run([$migrationName => $path]);
                 $results['applied'][] = $migrationName;
             } catch (QueryException $e) {
                 if ($this->isAlreadyAppliedSchemaError($e)) {
@@ -90,7 +87,7 @@ class ResilientMigrationService
 
     protected function logMigrationAsRun(string $migrationName): void
     {
-        $repository = $this->migrator->getRepository();
+        $repository = $this->migrator()->getRepository();
 
         if ($repository->migrationExists($migrationName)) {
             return;
@@ -98,5 +95,10 @@ class ResilientMigrationService
 
         $batch = $repository->getNextBatchNumber();
         $repository->log($migrationName, $batch);
+    }
+
+    protected function migrator(): Migrator
+    {
+        return app('migrator');
     }
 }
