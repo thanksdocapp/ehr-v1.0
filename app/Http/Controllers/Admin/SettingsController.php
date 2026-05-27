@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\ResilientMigrationService;
 use App\Helpers\CurrencyHelper;
 use App\Models\User;
 use App\Models\Appointment;
@@ -1550,9 +1551,27 @@ class SettingsController extends Controller
         $hadErrors = false;
 
         try {
-            Artisan::call('migrate', ['--force' => true]);
-            $migrateOutput = trim(Artisan::output());
-            $steps[] = $migrateOutput !== '' ? 'Migrations: '.$migrateOutput : 'Database migrations applied.';
+            $migrationResults = app(ResilientMigrationService::class)->runPending();
+            $applied = count($migrationResults['applied']);
+            $skipped = count($migrationResults['skipped']);
+            $failed = $migrationResults['failed'];
+
+            if ($failed !== []) {
+                $hadErrors = true;
+                $first = $failed[0];
+                $steps[] = 'Migrations failed on '.$first['name'].': '.$first['error'];
+            } else {
+                $summary = [];
+                if ($applied > 0) {
+                    $summary[] = "{$applied} applied";
+                }
+                if ($skipped > 0) {
+                    $summary[] = "{$skipped} already present (skipped)";
+                }
+                $steps[] = $summary !== []
+                    ? 'Migrations: '.implode(', ', $summary).'.'
+                    : 'Migrations: database already up to date.';
+            }
         } catch (\Throwable $e) {
             $hadErrors = true;
             Log::warning('applyDeploymentUpdates: migrate failed', ['error' => $e->getMessage()]);

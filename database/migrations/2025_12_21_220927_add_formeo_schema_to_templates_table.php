@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('templates') || Schema::hasColumn('templates', 'formeo_schema')) {
+            return;
+        }
+
         Schema::table('templates', function (Blueprint $table) {
             $table->longText('formeo_schema')->nullable()->after('content');
         });

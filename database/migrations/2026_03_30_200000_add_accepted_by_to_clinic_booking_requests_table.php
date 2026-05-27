@@ -11,12 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('clinic_booking_requests')) {
+            return;
+        }
+
         Schema::table('clinic_booking_requests', function (Blueprint $table) {
-            $table->foreignId('accepted_by_user_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-            $table->timestamp('accepted_at')->nullable();
+            if (! Schema::hasColumn('clinic_booking_requests', 'accepted_by_user_id')) {
+                $table->foreignId('accepted_by_user_id')
+                    ->nullable()
+                    ->constrained('users')
+                    ->nullOnDelete();
+            }
+            if (! Schema::hasColumn('clinic_booking_requests', 'accepted_at')) {
+                $table->timestamp('accepted_at')->nullable();
+            }
         });
     }
 
