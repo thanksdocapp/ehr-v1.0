@@ -104,7 +104,7 @@
                 <th>Source</th>
                 <th>Invoice</th>
                 <th>Doctor</th>
-                <th>Clinic</th>
+                <th>Booking capture</th>
                 <th>Patient</th>
                 <th>Appointment</th>
                 <th>Comments</th>
@@ -115,7 +115,13 @@
                 @php
                     $inv = $payment->invoice;
                     $src = $bookingPaymentsService->labelForPayment($payment);
+                    $capture = $bookingPaymentsService->bookingCaptureForPayment($payment);
                     $comments = $bookingPaymentsService->commentsForBookingPayment($payment);
+                    $captureText = collect([
+                        $capture['clinic_name'] ?? null,
+                        ($capture['primary_label'] ?? null) !== '—' ? ($capture['primary_label'] ?? null) : null,
+                        $capture['evidence_line'] ?? null,
+                    ])->filter()->implode(' · ');
                 @endphp
                 <tr>
                     <td>{{ $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—' }}</td>
@@ -124,7 +130,7 @@
                     <td>{{ $src }}</td>
                     <td>{{ $inv?->invoice_number ?? ('#'.$inv?->id) }}</td>
                     <td>{{ $bookingPaymentsService->doctorNameForBookingPayment($payment) ?? '—' }}</td>
-                    <td>{{ $bookingPaymentsService->clinicNameForBookingPayment($payment) ?? '—' }}</td>
+                    <td>{{ $captureText !== '' ? $captureText : '—' }}</td>
                     <td>{{ $bookingPaymentsService->patientNameForBookingPayment($payment) }}</td>
                     <td>{{ $bookingPaymentsService->appointmentSlotLabelForBookingPayment($payment) }}</td>
                     <td class="comments">{{ $comments !== '' ? $comments : '—' }}</td>

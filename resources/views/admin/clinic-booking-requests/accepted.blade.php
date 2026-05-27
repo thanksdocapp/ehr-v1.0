@@ -67,7 +67,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Request</th>
-                                <th>Clinic</th>
+                                <th>Booking capture</th>
                                 <th>Patient</th>
                                 <th>Assigned doctor</th>
                                 <th>Service</th>

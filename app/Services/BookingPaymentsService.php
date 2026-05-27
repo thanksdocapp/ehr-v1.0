@@ -14,6 +14,39 @@ use Illuminate\Support\Str;
 
 class BookingPaymentsService
 {
+    public function __construct(
+        protected PatientBookingSourceService $bookingSourceService
+    ) {}
+
+    /**
+     * Same inference as patient profile “Public booking source” (invoice + checkout clinic name).
+     *
+     * @return array{
+     *     primary_label: string,
+     *     clinic_name: ?string,
+     *     doctor_name: ?string,
+     *     department_id: ?int,
+     *     evidence_line: ?string,
+     *     invoice_number: ?string
+     * }
+     */
+    public function bookingCaptureForPayment(Payment $payment): array
+    {
+        $inv = $payment->invoice;
+        if (! $inv instanceof Invoice) {
+            return [
+                'primary_label' => '—',
+                'clinic_name' => null,
+                'doctor_name' => null,
+                'department_id' => null,
+                'evidence_line' => null,
+                'invoice_number' => null,
+            ];
+        }
+
+        return $this->bookingSourceService->invoiceBookingCapture($inv);
+    }
+
     /**
      * Department IDs for a doctor (pivot + legacy department_id). Used to attribute
      * public clinic-booking checkout payments, which only link via pending_clinic_bookings
@@ -215,6 +248,11 @@ class BookingPaymentsService
      */
     public function doctorNameForBookingPayment(Payment $payment): ?string
     {
+        $capture = $this->bookingCaptureForPayment($payment);
+        if ($capture['doctor_name']) {
+            return $capture['doctor_name'];
+        }
+
         $inv = $payment->invoice;
         if (! $inv instanceof Invoice) {
             return null;
@@ -258,6 +296,11 @@ class BookingPaymentsService
      */
     public function clinicNameForBookingPayment(Payment $payment): ?string
     {
+        $capture = $this->bookingCaptureForPayment($payment);
+        if ($capture['clinic_name']) {
+            return $capture['clinic_name'];
+        }
+
         $inv = $payment->invoice;
         if (! $inv instanceof Invoice) {
             return null;

@@ -1,8 +1,11 @@
 @php
     $pd = $req->patient_data ?? [];
     $patientName = trim(($pd['first_name'] ?? '').' '.($pd['last_name'] ?? '')) ?: '—';
+    $capture = $req->bookingCapture();
     $doctorLabel = $req->assignedDoctorName();
-    $clinicLabel = $req->clinicName();
+    if ($doctorLabel === '—' && ! empty($capture['doctor_name'])) {
+        $doctorLabel = $capture['doctor_name'];
+    }
     $acceptorDisplay = $req->acceptorDisplay();
     $acceptorLabel = $acceptorDisplay['name'] !== '—' ? $acceptorDisplay['name'] : null;
     $acceptor = $req->acceptedByUser;
@@ -14,7 +17,7 @@
 @endphp
 <tr>
     <td><strong>{{ $req->request_number }}</strong></td>
-    <td>{{ $clinicLabel }}</td>
+    <td class="small">@include('admin.partials.booking-capture-cell', ['capture' => $capture])</td>
     <td>{{ $patientName }}</td>
     <td>{{ $doctorLabel }}</td>
     <td>{{ $req->service?->name ?? '—' }}</td>

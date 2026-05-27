@@ -102,7 +102,9 @@ class ClinicBookingRequestsController extends Controller
 
             fputcsv($file, [
                 'Request number',
-                'Clinic',
+                'Clinic (capture)',
+                'Booking capture label',
+                'Booking capture evidence',
                 'Patient name',
                 'Patient email',
                 'Patient phone',
@@ -142,6 +144,8 @@ class ClinicBookingRequestsController extends Controller
                 fputcsv($file, [
                     $req->request_number,
                     $clinicLabel !== '' ? $clinicLabel : ($req->department?->name ?? ''),
+                    $capture['primary_label'] ?? '',
+                    $capture['evidence_line'] ?? '',
                     $patientName,
                     $pd['email'] ?? '',
                     $pd['phone'] ?? '',

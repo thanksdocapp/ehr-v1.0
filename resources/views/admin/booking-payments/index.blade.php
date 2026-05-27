@@ -78,7 +78,7 @@
                             <th>Source</th>
                             <th>Invoice</th>
                             <th>Doctor</th>
-                            <th>Clinic</th>
+                            <th>Booking capture</th>
                             <th>Patient</th>
                             <th>Appointment</th>
                             <th>Comments</th>
@@ -101,8 +101,8 @@
                                     'Invoice' => 'secondary',
                                     default => 'light text-dark',
                                 };
+                                $capture = $bookingPaymentsService->bookingCaptureForPayment($payment);
                                 $doctorName = $bookingPaymentsService->doctorNameForBookingPayment($payment);
-                                $clinicName = $bookingPaymentsService->clinicNameForBookingPayment($payment);
                                 $comments = $bookingPaymentsService->commentsForBookingPayment($payment);
                             @endphp
                             <tr>
@@ -112,7 +112,7 @@
                                 <td><span class="badge bg-{{ $badgeClass }}">{{ $src }}</span></td>
                                 <td>{{ $inv?->invoice_number ?? ('#'.$inv?->id) }}</td>
                                 <td>{{ $doctorName ?? '—' }}</td>
-                                <td>{{ $clinicName ?? '—' }}</td>
+                                <td class="small">@include('admin.partials.booking-capture-cell', ['capture' => $capture])</td>
                                 <td>
                                     @if($patient)
                                         {{ trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')) ?: '—' }}

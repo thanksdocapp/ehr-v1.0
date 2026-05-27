@@ -95,7 +95,9 @@ class BookingPaymentsController extends Controller
                 'Source',
                 'Invoice',
                 'Doctor',
-                'Clinic',
+                'Clinic (capture)',
+                'Booking capture label',
+                'Booking capture evidence',
                 'Patient',
                 'Appointment',
                 'Comments',
@@ -103,6 +105,7 @@ class BookingPaymentsController extends Controller
 
             foreach ($payments as $payment) {
                 $comments = $service->commentsForBookingPayment($payment);
+                $capture = $service->bookingCaptureForPayment($payment);
 
                 fputcsv($file, [
                     $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—',
@@ -111,7 +114,9 @@ class BookingPaymentsController extends Controller
                     $service->labelForPayment($payment),
                     $payment->invoice?->invoice_number ?? ('#'.$payment->invoice?->id),
                     $service->doctorNameForBookingPayment($payment) ?? '—',
-                    $service->clinicNameForBookingPayment($payment) ?? '—',
+                    $capture['clinic_name'] ?? '—',
+                    $capture['primary_label'] ?? '—',
+                    $capture['evidence_line'] ?? '—',
                     $service->patientNameForBookingPayment($payment),
                     $service->appointmentSlotLabelForBookingPayment($payment),
                     $comments !== '' ? $comments : '—',

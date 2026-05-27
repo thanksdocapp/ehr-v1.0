@@ -149,6 +149,21 @@ class ClinicBookingRequest extends Model
     }
 
     /**
+     * @return array{
+     *     primary_label: string,
+     *     clinic_name: ?string,
+     *     doctor_name: ?string,
+     *     department_id: ?int,
+     *     evidence_line: ?string,
+     *     invoice_number: ?string
+     * }
+     */
+    public function bookingCapture(): array
+    {
+        return app(\App\Services\PatientBookingSourceService::class)->clinicBookingRequestCapture($this);
+    }
+
+    /**
      * Human-readable acceptor for admin lists and exports.
      *
      * @return array{name: string, detail: ?string, is_auto: bool}
