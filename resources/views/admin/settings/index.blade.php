@@ -291,14 +291,22 @@
         </div>
         <div class="modern-card-body">
             <div class="row g-3">
+                <div class="col-12">
+                    <button class="btn-modern btn-modern-primary w-100" onclick="applyDeploymentUpdates()">
+                        <i class="fas fa-cloud-upload-alt"></i>Apply deployment updates
+                    </button>
+                    <p class="text-muted small mb-0 mt-2">
+                        Runs database migrations and clears caches after you deploy new code — no server terminal needed.
+                    </p>
+                </div>
                 <div class="col-md-6">
                     <button class="btn-modern btn-modern-outline w-100" onclick="clearCache()">
-                        <i class="fas fa-broom"></i>Clear Application Cache
+                        <i class="fas fa-broom"></i>Clear application cache
                     </button>
                 </div>
                 <div class="col-md-6">
                     <button class="btn-modern btn-modern-outline w-100" onclick="optimizeApp()">
-                        <i class="fas fa-rocket"></i>Optimize Application
+                        <i class="fas fa-rocket"></i>Optimize application (rebuild caches)
                     </button>
                 </div>
                 <div class="col-md-6">
@@ -395,6 +403,65 @@
                 icon: 'error',
                 confirmButtonColor: '#ef4444',
                 confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    async function applyDeploymentUpdates() {
+        try {
+            const result = await Swal.fire({
+                title: 'Apply deployment updates?',
+                html: '<p class="mb-2">This will:</p><ul class="text-start small mb-0"><li>Run pending database migrations</li><li>Clear application caches</li><li>Repair any stuck paid clinic bookings</li></ul>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#e94560',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: '<i class="fas fa-cloud-upload-alt me-2"></i>Apply updates',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            Swal.fire({
+                title: 'Applying updates…',
+                text: 'This may take a minute. Please wait.',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const response = await fetch('{{ route('admin.settings.apply-deployment-updates') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire({
+                    title: 'Done',
+                    html: (data.steps || [data.message]).map(s => `<div class="small text-start">✓ ${s}</div>`).join(''),
+                    icon: 'success',
+                    confirmButtonColor: '#10b981'
+                });
+            } else {
+                throw new Error(data.message || 'Deployment update failed');
+            }
+        } catch (error) {
+            Swal.fire({
+                title: 'Error',
+                text: error.message || 'Deployment update failed. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#ef4444'
             });
         }
     }

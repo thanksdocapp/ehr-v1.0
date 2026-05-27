@@ -1103,6 +1103,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/settings/test-sms', [\App\Http\Controllers\Admin\SettingsController::class, 'testSms'])->name('settings.test-sms');
         Route::post('/settings/test-security', [\App\Http\Controllers\Admin\SettingsController::class, 'testSecurity'])->name('settings.test-security');
         Route::post('/settings/clear-cache', [\App\Http\Controllers\Admin\SettingsController::class, 'clearCache'])->name('settings.clear-cache');
+        Route::post('/settings/apply-deployment-updates', [\App\Http\Controllers\Admin\SettingsController::class, 'applyDeploymentUpdates'])->name('settings.apply-deployment-updates');
         Route::post('/settings/optimize', [\App\Http\Controllers\Admin\SettingsController::class, 'optimize'])->name('settings.optimize');
         Route::get('/settings/download-logs', [\App\Http\Controllers\Admin\SettingsController::class, 'downloadLogs'])->name('settings.download-logs');
         Route::post('/settings/create-backup', [\App\Http\Controllers\Admin\SettingsController::class, 'createBackup'])->name('settings.create-backup');

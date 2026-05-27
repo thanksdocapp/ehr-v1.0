@@ -1527,20 +1527,50 @@ class SettingsController extends Controller
     public function clearCache(Request $request)
     {
         try {
-            // Clear various Laravel caches
-            Artisan::call('cache:clear');
-            Artisan::call('route:clear');
-            Artisan::call('config:clear');
-            Artisan::call('view:clear');
-            
+            Artisan::call('optimize:clear');
+
             return response()->json([
                 'success' => true,
-                'message' => 'Cache cleared successfully!'
+                'message' => 'Application caches cleared successfully (same as optimize:clear).',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to clear cache: ' . $e->getMessage()
+                'message' => 'Failed to clear cache: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Post-deploy: run pending migrations and clear caches (no terminal required).
+     */
+    public function applyDeploymentUpdates(Request $request)
+    {
+        try {
+            $steps = [];
+
+            Artisan::call('migrate', ['--force' => true]);
+            $steps[] = 'Database migrations applied.';
+
+            Artisan::call('optimize:clear');
+            $steps[] = 'Application caches cleared.';
+
+            try {
+                Artisan::call('clinic-bookings:finalize-paid');
+                $steps[] = 'Paid clinic bookings checked/repaired.';
+            } catch (\Throwable $e) {
+                $steps[] = 'Paid clinic booking repair skipped: '.$e->getMessage();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => implode(' ', $steps),
+                'steps' => $steps,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Deployment update failed: '.$e->getMessage(),
             ], 500);
         }
     }
