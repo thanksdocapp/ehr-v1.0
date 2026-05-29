@@ -529,13 +529,16 @@
             </div>
 
             <!-- File Attachments -->
-            @if($medicalRecord->attachments && $medicalRecord->attachments->count() > 0)
+            @php
+                $attachments = $attachments ?? \App\Models\MedicalRecordAttachment::forPatientMedicalRecordView($medicalRecord, auth()->user());
+            @endphp
             <div class="record-section">
                 <div class="record-section-header">
                     <h4 class="mb-0"><i class="fas fa-paperclip me-2"></i>Documents or Attachments</h4>
-                    <small class="opacity-75">Files attached to this medical record</small>
+                    <small class="opacity-75">Files for this patient (including earlier medical records)</small>
                 </div>
                 <div class="record-section-body">
+                    @if($attachments->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-light">
@@ -551,10 +554,13 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($medicalRecord->attachments as $attachment)
+                                @foreach($attachments as $attachment)
                                 <tr>
                                     <td>
                                         <span class="text-muted">{{ $attachment->description ?? '-' }}</span>
+                                        @if((int) $attachment->medical_record_id !== (int) $medicalRecord->id)
+                                            <br><small class="text-muted">From earlier record{{ $attachment->medicalRecord?->record_date ? ' ('.formatDate($attachment->medicalRecord->record_date).')' : '' }}</small>
+                                        @endif
                                     </td>
                                     <td>
                                         <i class="fas fa-{{ $attachment->file_icon }} me-2 text-primary"></i>
@@ -586,7 +592,11 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($attachment->canAccess(auth()->user()) && $attachment->virus_scan_status !== 'infected')
+                                        @php
+                                            $canAccessFile = $attachment->canAccess(auth()->user());
+                                            $fileOnDisk = $attachment->storageFileExists();
+                                        @endphp
+                                        @if($canAccessFile && $attachment->virus_scan_status !== 'infected' && $fileOnDisk)
                                             @if($attachment->isViewable())
                                                 <a href="{{ route('admin.medical-record-attachments.view', $attachment) }}" 
                                                    target="_blank"
@@ -600,6 +610,8 @@
                                                title="Download">
                                                 <i class="fas fa-download"></i>
                                             </a>
+                                        @elseif(!$fileOnDisk && $canAccessFile)
+                                            <span class="text-warning small">File missing on server</span>
                                         @else
                                             <span class="text-muted">Access restricted</span>
                                         @endif
@@ -621,9 +633,11 @@
                             </tbody>
                         </table>
                     </div>
+                    @else
+                        <p class="text-muted mb-0">No attachments found for this patient.</p>
+                    @endif
                 </div>
             </div>
-            @endif
 
             <!-- Vital Signs -->
             @if($medicalRecord->vital_signs && array_filter($medicalRecord->vital_signs))

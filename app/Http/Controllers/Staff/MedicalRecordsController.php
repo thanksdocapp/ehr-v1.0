@@ -690,7 +690,15 @@ class MedicalRecordsController extends Controller
         
         $amendmentHistory = $this->amendmentHistoryForDoctor($user, $medicalRecord);
 
-        return view('staff.medical-records.show', compact('medicalRecord', 'documents', 'totalDocumentsCount', 'amendmentHistory'));
+        $attachments = MedicalRecordAttachment::forPatientMedicalRecordView($medicalRecord, $user);
+
+        return view('staff.medical-records.show', compact(
+            'medicalRecord',
+            'documents',
+            'totalDocumentsCount',
+            'amendmentHistory',
+            'attachments'
+        ));
     }
 
     public function edit(MedicalRecord $medicalRecord)

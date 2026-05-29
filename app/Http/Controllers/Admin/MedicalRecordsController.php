@@ -263,7 +263,7 @@ class MedicalRecordsController extends Controller
      */
     public function show(MedicalRecord $medicalRecord): View
     {
-        $user = Auth::user();
+        $user = Auth::guard('admin')->user() ?? Auth::user();
 
         if (! $medicalRecord->isVisibleTo($user)) {
             abort(403, 'You do not have permission to view this medical record.');
@@ -278,7 +278,9 @@ class MedicalRecordsController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         
-        return view('admin.medical-records.show', compact('medicalRecord', 'auditActivities'));
+        $attachments = \App\Models\MedicalRecordAttachment::forPatientMedicalRecordView($medicalRecord, $user);
+
+        return view('admin.medical-records.show', compact('medicalRecord', 'auditActivities', 'attachments'));
     }
 
     /**

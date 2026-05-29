@@ -266,42 +266,11 @@
                 </div>
             </div>
 
-            <!-- File Attachments -->
+            <!-- File Attachments (this record + other visible records for same patient) -->
             @php
-                // Always query attachments directly to ensure we get the latest data
-                // This is important after uploading new attachments
-                // Use DB::table for raw query to bypass any model scopes
-                $attachmentIds = \DB::table('medical_record_attachments')
-                    ->where('medical_record_id', $medicalRecord->id)
-                    ->pluck('id')
-                    ->toArray();
-                
-                // Then load the full models with relationships
-                if (!empty($attachmentIds)) {
-                    $attachments = \App\Models\MedicalRecordAttachment::whereIn('id', $attachmentIds)
-                        ->with('uploader')
-                        ->orderBy('created_at', 'desc')
-                        ->get();
-                } else {
-                    $attachments = collect([]);
-                }
-                
+                $attachments = $attachments ?? \App\Models\MedicalRecordAttachment::forPatientMedicalRecordView($medicalRecord, auth()->user());
                 $hasAttachments = $attachments->count() > 0;
-                
-                // Debug: Log attachment query results
-                \Log::info('Medical record attachments query in view', [
-                    'medical_record_id' => $medicalRecord->id,
-                    'raw_query_count' => count($attachmentIds),
-                    'attachments_found' => $attachments->count(),
-                    'attachment_ids' => $attachmentIds
-                ]);
-                
-                // Also update the relationship on the model for consistency
-                if ($hasAttachments) {
-                    $medicalRecord->setRelation('attachments', $attachments);
-                } else {
-                    $medicalRecord->setRelation('attachments', collect([]));
-                }
+                $medicalRecord->setRelation('attachments', $attachments);
             @endphp
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
@@ -320,18 +289,6 @@
                     </div>
                 </div>
                 <div class="doctor-card-body">
-                    {{-- Temporary debug output - remove after fixing --}}
-                    @if(config('app.debug'))
-                        @php
-                            $debugCount = \App\Models\MedicalRecordAttachment::where('medical_record_id', $medicalRecord->id)->count();
-                        @endphp
-                        @if($debugCount > 0 && !$hasAttachments)
-                            <div class="alert alert-warning mb-3">
-                                <strong>Debug:</strong> Found {{ $debugCount }} attachment(s) in database but query returned {{ $attachments->count() }}. 
-                                Medical Record ID: {{ $medicalRecord->id }}
-                            </div>
-                        @endif
-                    @endif
                     @if($hasAttachments)
                         <div class="table-responsive">
                             <table class="table table-hover">
@@ -351,6 +308,9 @@
                                     <tr>
                                         <td>
                                             <span class="text-muted">{{ $attachment->description ?? '-' }}</span>
+                                            @if((int) $attachment->medical_record_id !== (int) $medicalRecord->id)
+                                                <br><small class="text-muted">From earlier record{{ $attachment->medicalRecord?->record_date ? ' ('.formatDate($attachment->medicalRecord->record_date).')' : '' }}</small>
+                                            @endif
                                         </td>
                                         <td>
                                             <i class="fas fa-{{ $attachment->file_icon }} me-2 text-primary"></i>
@@ -387,13 +347,14 @@
                                             @php
                                                 $viewer = auth()->user();
                                                 $canAccess = $attachment->canAccess($viewer);
+                                                $fileExists = $attachment->storageFileExists();
                                                 $isSafe = $attachment->virus_scan_status !== 'infected';
                                                 $viewerRole = strtolower((string) ($viewer->role ?? ''));
                                                 $canDelete = ($viewer->is_admin ?? false)
                                                     || $viewerRole === 'admin'
                                                     || ($attachment->uploaded_by === $viewer->id);
                                             @endphp
-                                            @if($canAccess && $isSafe)
+                                            @if($canAccess && $isSafe && $fileExists)
                                                 @if($attachment->isViewable())
                                                     <a href="{{ route('staff.medical-record-attachments.view', $attachment) }}" 
                                                        target="_blank"
@@ -423,6 +384,10 @@
                                                 @if(!$canAccess)
                                                     <span class="text-muted small" title="You don't have permission to access this file">
                                                         <i class="fas fa-lock me-1"></i>No access
+                                                    </span>
+                                                @elseif(!$fileExists)
+                                                    <span class="text-warning small" title="File metadata exists but the file is missing on the server">
+                                                        <i class="fas fa-unlink me-1"></i>File missing
                                                     </span>
                                                 @elseif(!$isSafe)
                                                     <span class="text-danger small" title="File failed virus scan">

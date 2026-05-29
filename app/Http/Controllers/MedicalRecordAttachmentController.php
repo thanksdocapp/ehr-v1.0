@@ -36,22 +36,19 @@ class MedicalRecordAttachmentController extends Controller
             abort(403, 'You do not have permission to access this file.');
         }
 
-        // Check if file exists
-        if (!Storage::disk($attachment->storage_disk)->exists($attachment->file_path)) {
+        $location = $attachment->resolveStorageLocation();
+        if (! $location) {
             abort(404, 'File not found.');
         }
 
-        // Check if file has expired
         if ($attachment->isExpired()) {
             abort(410, 'This file has expired and is no longer available.');
         }
 
-        // Check if file is infected
         if ($attachment->virus_scan_status === 'infected') {
             abort(403, 'This file has been flagged as infected and cannot be viewed.');
         }
 
-        // Log file access
         \App\Models\UserActivity::log([
             'user_id' => $user->id,
             'action' => 'file_view',
@@ -61,8 +58,14 @@ class MedicalRecordAttachmentController extends Controller
             'severity' => 'low',
         ]);
 
-        $file = Storage::disk($attachment->storage_disk)->get($attachment->file_path);
-        $mimeType = Storage::disk($attachment->storage_disk)->mimeType($attachment->file_path);
+        if ($location['disk'] === '_absolute') {
+            $file = file_get_contents($location['path']);
+            $mimeType = mime_content_type($location['path']) ?: ($attachment->file_type ?: 'application/octet-stream');
+        } else {
+            $disk = Storage::disk($location['disk']);
+            $file = $disk->get($location['path']);
+            $mimeType = $disk->mimeType($location['path']) ?: ($attachment->file_type ?: 'application/octet-stream');
+        }
 
         return response($file, 200)
             ->header('Content-Type', $mimeType)
@@ -84,17 +87,15 @@ class MedicalRecordAttachmentController extends Controller
             abort(403, 'You do not have permission to access this file.');
         }
 
-        // Check if file exists
-        if (!Storage::disk($attachment->storage_disk)->exists($attachment->file_path)) {
+        $location = $attachment->resolveStorageLocation();
+        if (! $location) {
             abort(404, 'File not found.');
         }
 
-        // Check if file has expired
         if ($attachment->isExpired()) {
             abort(410, 'This file has expired and is no longer available.');
         }
 
-        // Log file access
         \App\Models\UserActivity::log([
             'user_id' => $user->id,
             'action' => 'file_download',
@@ -104,8 +105,12 @@ class MedicalRecordAttachmentController extends Controller
             'severity' => 'low',
         ]);
 
-        return Storage::disk($attachment->storage_disk)->download(
-            $attachment->file_path,
+        if ($location['disk'] === '_absolute') {
+            return response()->download($location['path'], $attachment->file_name);
+        }
+
+        return Storage::disk($location['disk'])->download(
+            $location['path'],
             $attachment->file_name
         );
     }

@@ -166,6 +166,122 @@ class MedicalRecordAttachment extends Model
     }
 
     /**
+     * All attachments on visible records for this patient (includes older records for the same patient).
+     */
+    public static function forPatientMedicalRecordView(MedicalRecord $record, $user = null): \Illuminate\Support\Collection
+    {
+        $user = $user ?? \Illuminate\Support\Facades\Auth::guard('admin')->user()
+            ?? \Illuminate\Support\Facades\Auth::user();
+
+        if (! $record->patient_id) {
+            return $record->attachments()
+                ->with(['uploader', 'medicalRecord'])
+                ->orderByDesc('created_at')
+                ->get();
+        }
+
+        $record->loadMissing('patient');
+
+        $useAllPatientRecords = false;
+        if ($user) {
+            if (method_exists($user, 'canViewMedicalRecordAttachments') && $user->canViewMedicalRecordAttachments()) {
+                $useAllPatientRecords = true;
+            } elseif ($record->isVisibleTo($user) && $record->patient && $record->patient->isVisibleTo($user)) {
+                // Clinical continuity: show uploads from earlier visits for the same patient.
+                $useAllPatientRecords = true;
+            }
+        }
+
+        if ($useAllPatientRecords) {
+            $recordIds = MedicalRecord::query()
+                ->where('patient_id', $record->patient_id)
+                ->pluck('id');
+        } elseif ($user) {
+            $recordIds = MedicalRecord::query()
+                ->where('patient_id', $record->patient_id)
+                ->visibleTo($user)
+                ->pluck('id');
+
+            if ($recordIds->isEmpty()) {
+                $recordIds = collect([$record->id]);
+            }
+        } else {
+            return $record->attachments()
+                ->with(['uploader', 'medicalRecord'])
+                ->orderByDesc('created_at')
+                ->get();
+        }
+
+        return static::query()
+            ->whereIn('medical_record_id', $recordIds)
+            ->with(['uploader', 'medicalRecord'])
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * Resolve disk + path for legacy uploads (private/public, path variants).
+     *
+     * @return array{disk: string, path: string}|null
+     */
+    public function resolveStorageLocation(): ?array
+    {
+        $candidates = [];
+        $disk = $this->storage_disk ?: 'private';
+        $path = ltrim((string) $this->file_path, '/');
+
+        $candidates[] = [$disk, $path];
+
+        if ($disk !== 'private') {
+            $candidates[] = ['private', $path];
+        }
+        if ($disk !== 'public') {
+            $candidates[] = ['public', $path];
+        }
+        if ($disk !== 'local') {
+            $candidates[] = ['local', $path];
+            $candidates[] = ['local', 'private/'.$path];
+        }
+
+        if (str_starts_with($path, 'private/')) {
+            $candidates[] = ['private', substr($path, 8)];
+        }
+        if (str_starts_with($path, 'public/')) {
+            $candidates[] = ['public', substr($path, 7)];
+        }
+
+        $basename = basename($path);
+        if ($this->medical_record_id) {
+            $candidates[] = ['private', 'medical-records/'.$this->medical_record_id.'/'.$basename];
+            $candidates[] = ['public', 'medical-records/'.$this->medical_record_id.'/'.$basename];
+            $candidates[] = ['public', 'uploads/medical-records/'.$this->medical_record_id.'/'.$basename];
+        }
+
+        foreach ($candidates as [$tryDisk, $tryPath]) {
+            if ($tryPath !== '' && Storage::disk($tryDisk)->exists($tryPath)) {
+                return ['disk' => $tryDisk, 'path' => $tryPath];
+            }
+        }
+
+        $absolute = storage_path('app/'.$path);
+        if (is_file($absolute)) {
+            return ['disk' => '_absolute', 'path' => $absolute];
+        }
+
+        $absolutePrivate = storage_path('app/private/'.$path);
+        if (is_file($absolutePrivate)) {
+            return ['disk' => '_absolute', 'path' => $absolutePrivate];
+        }
+
+        return null;
+    }
+
+    public function storageFileExists(): bool
+    {
+        return $this->resolveStorageLocation() !== null;
+    }
+
+    /**
      * Check if user has permission to access this file.
      */
     public function canAccess($user = null): bool
@@ -181,10 +297,13 @@ class MedicalRecordAttachment extends Model
             return true;
         }
 
-        $this->loadMissing('medicalRecord.doctor');
+        $this->loadMissing(['medicalRecord.doctor', 'medicalRecord.patient']);
 
-        // Same rule as opening the record: if they can view the medical record, they can view its files
         if ($this->medicalRecord && $this->medicalRecord->isVisibleTo($user)) {
+            return true;
+        }
+
+        if ($this->medicalRecord?->patient && $this->medicalRecord->patient->isVisibleTo($user)) {
             return true;
         }
 
