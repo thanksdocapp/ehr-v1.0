@@ -168,23 +168,36 @@ class MedicalRecordAttachment extends Model
     /**
      * Check if user has permission to access this file.
      */
-    public function canAccess($user): bool
+    public function canAccess($user = null): bool
     {
-        // Admin can always access (both is_admin flag and role-based admin)
-        if (($user->is_admin ?? false) || ($user->role === 'admin')) {
+        $user = $user ?? \Illuminate\Support\Facades\Auth::guard('admin')->user()
+            ?? \Illuminate\Support\Facades\Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        // Admin panel users and clinical roles with record access
+        if (method_exists($user, 'canViewMedicalRecordAttachments') && $user->canViewMedicalRecordAttachments()) {
             return true;
         }
 
         // If file is private, only uploader and medical record creator can access
         if ($this->is_private) {
             $medicalRecord = $this->medicalRecord;
-            return $this->uploaded_by === $user->id 
+            if (! $medicalRecord) {
+                return false;
+            }
+
+            $doctorUserId = $medicalRecord->doctor?->user_id;
+
+            return $this->uploaded_by === $user->id
                 || $medicalRecord->created_by === $user->id
-                || $medicalRecord->doctor_id === $user->id;
+                || ($doctorUserId && (int) $doctorUserId === (int) $user->id);
         }
 
         // Public files can be accessed by staff/doctors
-        return in_array($user->role ?? '', ['doctor', 'nurse', 'staff', 'receptionist']);
+        return in_array($user->role ?? '', ['doctor', 'nurse', 'staff', 'receptionist', 'pharmacist', 'technician']);
     }
 
     /**

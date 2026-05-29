@@ -154,6 +154,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether this user may view/download medical record file uploads (admin panel or clinical staff).
+     */
+    public function canViewMedicalRecordAttachments(): bool
+    {
+        if ($this->is_admin || $this->role === 'admin') {
+            return true;
+        }
+
+        return $this->hasAnyPermission([
+            'admin.access',
+            'medical_records.view',
+            'medical_records.view_all',
+        ]);
+    }
+
+    /**
      * Check if user is active.
      */
     public function isActive()

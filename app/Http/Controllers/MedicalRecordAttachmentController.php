@@ -3,12 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\MedicalRecordAttachment;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 
 class MedicalRecordAttachmentController extends Controller
 {
+    /**
+     * Authenticated user (admin guard takes precedence on admin routes).
+     */
+    protected function authUser(): ?User
+    {
+        /** @var User|null $user */
+        $user = Auth::guard('admin')->user() ?? Auth::user();
+
+        return $user;
+    }
+
     /**
      * View a medical record attachment (inline for images/PDFs).
      * 
@@ -17,7 +29,7 @@ class MedicalRecordAttachmentController extends Controller
      */
     public function view(MedicalRecordAttachment $attachment)
     {
-        $user = Auth::user();
+        $user = $this->authUser();
         
         // Check if user has permission to access this file
         if (!$attachment->canAccess($user)) {
@@ -65,7 +77,7 @@ class MedicalRecordAttachmentController extends Controller
      */
     public function download(MedicalRecordAttachment $attachment)
     {
-        $user = Auth::user();
+        $user = $this->authUser();
         
         // Check if user has permission to access this file
         if (!$attachment->canAccess($user)) {
@@ -106,7 +118,7 @@ class MedicalRecordAttachmentController extends Controller
      */
     public function getSignedUrl(MedicalRecordAttachment $attachment)
     {
-        $user = Auth::user();
+        $user = $this->authUser();
         
         // Check if user has permission to access this file
         if (!$attachment->canAccess($user)) {
@@ -138,11 +150,16 @@ class MedicalRecordAttachmentController extends Controller
      */
     public function destroy(MedicalRecordAttachment $attachment)
     {
-        $user = Auth::user();
-        
-        // Admin (is_admin or role admin) or the uploader can delete
-        $isAdmin = ($user->is_admin ?? false) || ($user->role === 'admin');
-        if (!$isAdmin && $attachment->uploaded_by !== $user->id) {
+        $user = $this->authUser();
+
+        if (! $user) {
+            abort(403, 'You do not have permission to delete this file.');
+        }
+
+        // Admin panel users or the uploader can delete
+        $canDelete = $user->canViewMedicalRecordAttachments()
+            || $attachment->uploaded_by === $user->id;
+        if (! $canDelete) {
             abort(403, 'You do not have permission to delete this file.');
         }
 
@@ -166,8 +183,9 @@ class MedicalRecordAttachmentController extends Controller
         $routeName = request()->route()->getName();
         
         // Check if we're in admin context
-        $isAdmin = str_contains($routePrefix, 'admin') || 
-                   (auth()->check() && (auth()->user()->is_admin ?? false));
+        $authUser = $this->authUser();
+        $isAdmin = str_contains($routePrefix, 'admin')
+            || ($authUser && $authUser->canViewMedicalRecordAttachments());
         
         if ($isAdmin) {
             return redirect()->route('admin.medical-records.show', $medicalRecordId)
