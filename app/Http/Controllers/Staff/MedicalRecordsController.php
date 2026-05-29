@@ -81,6 +81,26 @@ class MedicalRecordsController extends Controller
     }
 
     /**
+     * Limit appointment queries to doctors at the user's clinic(s).
+     */
+    private function scopeAppointmentsForUserClinics($query)
+    {
+        $departmentIds = $this->getUserDepartmentIds();
+        if (empty($departmentIds)) {
+            return $query;
+        }
+
+        return $query->whereHas('doctor', function ($q) use ($departmentIds) {
+            $q->where(function ($deptQuery) use ($departmentIds) {
+                $deptQuery->whereIn('department_id', $departmentIds)
+                    ->orWhereHas('departments', function ($pivotQuery) use ($departmentIds) {
+                        $pivotQuery->whereIn('departments.id', $departmentIds);
+                    });
+            });
+        });
+    }
+
+    /**
      * Doctors may view UserActivity for a medical record only when they are the responsible clinician
      * (attributed doctor_id) or, if unset, when they created the record (created_by).
      */
@@ -377,17 +397,23 @@ class MedicalRecordsController extends Controller
                 ->with('error', 'You do not have permission to create medical records.');
         }
         
-        // Filter patients by department for all roles
-        $query = Patient::active()->visibleTo(Auth::user());
-        $departmentId = $this->getUserDepartmentId();
-        if ($departmentId) {
-            $query->byDepartment($departmentId);
-        }
-        $patients = $query->orderBy('first_name')->get();
+        // Same visibility rules as the patient list — do not apply the narrower byDepartment filter here.
+        $patients = Patient::active()
+            ->visibleTo(Auth::user())
+            ->orderBy('first_name')
+            ->get();
         
         // Get selected patient_id and appointment_id from query parameters
         $selectedPatientId = $request->get('patient_id');
         $selectedAppointmentId = $request->get('appointment_id');
+
+        if ($selectedPatientId) {
+            $selectedPatient = Patient::active()->find($selectedPatientId);
+            if ($selectedPatient && $selectedPatient->isVisibleTo($user) && ! $patients->contains('id', (int) $selectedPatientId)) {
+                $patients->push($selectedPatient);
+                $patients = $patients->sortBy('first_name')->values();
+            }
+        }
         
         // Get previous medical record for copy-forward if source_record_id is provided
         $previousRecord = null;
@@ -412,13 +438,8 @@ class MedicalRecordsController extends Controller
         $appointmentsQuery = Appointment::with(['patient', 'doctor'])
             ->whereIn('status', ['confirmed', 'completed'])
             ->whereDoesntHave('medicalRecord');
-        
-        // Filter appointments by department for doctors
-        if ($departmentId) {
-            $appointmentsQuery->whereHas('doctor', function($q) use ($departmentId) {
-                $q->where('department_id', $departmentId);
-            });
-        }
+
+        $this->scopeAppointmentsForUserClinics($appointmentsQuery);
         
         // If patient_id is provided, filter appointments for that patient
         if ($selectedPatientId) {
@@ -468,6 +489,12 @@ class MedicalRecordsController extends Controller
         if (!in_array($user->role, ['doctor', 'nurse'])) {
             return redirect()->route('staff.medical-records.index')
                 ->with('error', 'You do not have permission to create medical records.');
+        }
+
+        if (! $patient || ! $patient->isVisibleTo($user)) {
+            return redirect()->back()
+                ->with('error', 'You do not have permission to create medical records for this patient.')
+                ->withInput();
         }
         
         // Convert UK date format (dd/mm/yyyy) to Y-m-d if needed
@@ -720,25 +747,26 @@ class MedicalRecordsController extends Controller
             }
         }
         
-        // Filter patients by department for all roles
-        $query = Patient::active()->visibleTo(Auth::user());
-        $departmentId = $this->getUserDepartmentId();
-        if ($departmentId) {
-            $query->byDepartment($departmentId);
+        // Same visibility rules as the patient list — do not apply the narrower byDepartment filter here.
+        $patients = Patient::active()
+            ->visibleTo(Auth::user())
+            ->orderBy('first_name')
+            ->get();
+
+        if ($medicalRecord->patient_id && ! $patients->contains('id', (int) $medicalRecord->patient_id)) {
+            $recordPatient = Patient::active()->find($medicalRecord->patient_id);
+            if ($recordPatient && $recordPatient->isVisibleTo($user)) {
+                $patients->push($recordPatient);
+                $patients = $patients->sortBy('first_name')->values();
+            }
         }
-        $patients = $query->orderBy('first_name')->get();
         
         // For editing, include both confirmed and completed appointments
         // Also include the currently linked appointment regardless of status
         $appointmentsQuery = Appointment::with(['patient', 'doctor'])
             ->where('patient_id', $medicalRecord->patient_id); // Only appointments for this patient
         
-        // Filter appointments by department for doctors
-        if ($departmentId) {
-            $appointmentsQuery->whereHas('doctor', function($q) use ($departmentId) {
-                $q->where('department_id', $departmentId);
-            });
-        }
+        $this->scopeAppointmentsForUserClinics($appointmentsQuery);
         
         $appointments = $appointmentsQuery->where(function($q) use ($medicalRecord) {
                 // Show appointments that don't have medical records OR the current one

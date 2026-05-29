@@ -407,6 +407,14 @@ class Patient extends Authenticatable
                                  });
                     });
                 });
+            })
+            // OR patients directly assigned to this clinic/department
+            ->orWhere(function ($subQuery) use ($departmentId) {
+                $subQuery->where('department_id', $departmentId)
+                    ->whereDoesntHave('departments');
+            })
+            ->orWhereHas('departments', function ($deptQuery) use ($departmentId) {
+                $deptQuery->where('departments.id', $departmentId);
             });
         });
     }
@@ -468,6 +476,14 @@ class Patient extends Authenticatable
                                  });
                     });
                 });
+            })
+            // OR patients directly assigned to any of these clinics/departments
+            ->orWhere(function ($subQuery) use ($departmentIds) {
+                $subQuery->whereIn('department_id', $departmentIds)
+                    ->whereDoesntHave('departments');
+            })
+            ->orWhereHas('departments', function ($deptQuery) use ($departmentIds) {
+                $deptQuery->whereIn('departments.id', $departmentIds);
             });
         });
     }
