@@ -304,7 +304,13 @@ class PatientsController extends Controller
         });
         $departments = \App\Models\Department::where('is_active', true)->orderBy('name')->get();
         
-        $patients = $query->with(['departments', 'department', 'appointments', 'assignedDoctor', 'createdByDoctor', 'activeAlerts.creator'])
+        $patients = $query
+            ->withCount([
+                'medicalRecords as medical_records_count' => function ($q) use ($user) {
+                    $q->visibleTo($user);
+                },
+            ])
+            ->with(['departments', 'department', 'appointments', 'assignedDoctor', 'createdByDoctor', 'activeAlerts.creator'])
             ->latest()
             ->paginate(15)->appends($request->query());
 

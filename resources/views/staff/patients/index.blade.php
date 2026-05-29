@@ -624,8 +624,8 @@
                                 </td>
                                 <td>
                                     <div class="fw-bold text-info">{{ $patient->appointments->count() }} appointments</div>
-                                    @if($patient->medical_records_count ?? 0 > 0)
-                                        <small class="text-muted">{{ $patient->medical_records_count }} records</small>
+                                    @if(($patient->medical_records_count ?? 0) > 0)
+                                        <small class="text-muted">{{ $patient->medical_records_count }} {{ Str::plural('record', $patient->medical_records_count) }}</small>
                                     @else
                                         <small class="text-muted">No medical records</small>
                                     @endif
