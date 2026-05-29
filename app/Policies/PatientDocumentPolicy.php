@@ -44,17 +44,23 @@ class PatientDocumentPolicy
     public function view(User $user, PatientDocument $patientDocument): bool
     {
         // Admin has full access
-        if ($user->is_admin || $user->role === 'admin') {
+        if ($user->is_admin || strtolower((string) ($user->role ?? '')) === 'admin') {
             return true;
         }
 
-        // Doctor can only view documents they created
-        if ($user->role === 'doctor') {
+        $patient = $patientDocument->patient;
+
+        // Doctors may view letters/forms for patients they can access clinically
+        if (strtolower((string) ($user->role ?? '')) === 'doctor') {
+            if ($patient && $patient->isVisibleTo($user)) {
+                return true;
+            }
+
             return $patientDocument->created_by === $user->id;
         }
 
         // Nurse/Staff can only view documents they created
-        if (in_array($user->role, ['nurse', 'staff'])) {
+        if (in_array(strtolower((string) ($user->role ?? '')), ['nurse', 'staff'], true)) {
             return $patientDocument->created_by === $user->id;
         }
 

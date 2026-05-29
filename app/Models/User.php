@@ -158,7 +158,12 @@ class User extends Authenticatable
      */
     public function canViewMedicalRecordAttachments(): bool
     {
-        if ($this->is_admin || $this->role === 'admin') {
+        if ($this->is_admin || strtolower((string) ($this->role ?? '')) === 'admin') {
+            return true;
+        }
+
+        $role = strtolower((string) ($this->role ?? ''));
+        if (in_array($role, ['doctor', 'nurse', 'staff', 'receptionist', 'pharmacist', 'technician'], true)) {
             return true;
         }
 

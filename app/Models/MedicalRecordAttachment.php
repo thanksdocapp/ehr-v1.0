@@ -177,12 +177,19 @@ class MedicalRecordAttachment extends Model
             return false;
         }
 
-        // Admin panel users and clinical roles with record access
         if (method_exists($user, 'canViewMedicalRecordAttachments') && $user->canViewMedicalRecordAttachments()) {
             return true;
         }
 
-        // If file is private, only uploader and medical record creator can access
+        $this->loadMissing('medicalRecord.doctor');
+
+        // Same rule as opening the record: if they can view the medical record, they can view its files
+        if ($this->medicalRecord && $this->medicalRecord->isVisibleTo($user)) {
+            return true;
+        }
+
+        $role = strtolower((string) ($user->role ?? ''));
+
         if ($this->is_private) {
             $medicalRecord = $this->medicalRecord;
             if (! $medicalRecord) {
@@ -196,8 +203,7 @@ class MedicalRecordAttachment extends Model
                 || ($doctorUserId && (int) $doctorUserId === (int) $user->id);
         }
 
-        // Public files can be accessed by staff/doctors
-        return in_array($user->role ?? '', ['doctor', 'nurse', 'staff', 'receptionist', 'pharmacist', 'technician']);
+        return in_array($role, ['doctor', 'nurse', 'staff', 'receptionist', 'pharmacist', 'technician'], true);
     }
 
     /**

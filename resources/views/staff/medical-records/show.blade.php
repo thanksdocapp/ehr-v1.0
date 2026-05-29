@@ -385,9 +385,13 @@
                                         </td>
                                         <td>
                                             @php
-                                                $canAccess = $attachment->canAccess(auth()->user());
+                                                $viewer = auth()->user();
+                                                $canAccess = $attachment->canAccess($viewer);
                                                 $isSafe = $attachment->virus_scan_status !== 'infected';
-                                                $canDelete = (auth()->user()->is_admin ?? false) || (auth()->user()->role === 'admin') || ($attachment->uploaded_by === auth()->id());
+                                                $viewerRole = strtolower((string) ($viewer->role ?? ''));
+                                                $canDelete = ($viewer->is_admin ?? false)
+                                                    || $viewerRole === 'admin'
+                                                    || ($attachment->uploaded_by === $viewer->id);
                                             @endphp
                                             @if($canAccess && $isSafe)
                                                 @if($attachment->isViewable())
@@ -787,14 +791,8 @@
             </div>
             @endif
 
-            <!-- Patient Documents (same visibility as sidebar My Documents) -->
-            @if($medicalRecord->patient)
-            @php
-                $userRoleForMenu = strtolower(trim(auth()->user()->role ?? 'staff'));
-                $staffSidebarItems = \App\Models\RoleMenuVisibility::getOrderedMenuItemsForRole($userRoleForMenu, 'staff');
-                $myDocumentsMenuVisible = collect($staffSidebarItems)->contains(fn ($item) => ($item['menu_key'] ?? '') === 'my-documents');
-            @endphp
-            @if($myDocumentsMenuVisible)
+            <!-- Patient documents (letters/forms) when viewing a record the user may access -->
+            @if($medicalRecord->patient && $medicalRecord->patient->isVisibleTo(auth()->user()))
             @can('viewAny', [\App\Models\PatientDocument::class, $medicalRecord->patient])
             <div class="doctor-card mb-4">
                 <div class="doctor-card-header">
@@ -878,7 +876,6 @@
                 </div>
             </div>
             @endcan
-            @endif
             @endif
 
             <!-- Record Metadata -->
