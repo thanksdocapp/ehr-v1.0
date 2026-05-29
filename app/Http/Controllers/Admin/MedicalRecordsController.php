@@ -264,13 +264,11 @@ class MedicalRecordsController extends Controller
     public function show(MedicalRecord $medicalRecord): View
     {
         $user = Auth::user();
-        
-        // Check department-based access
-        $departmentId = $this->getUserDepartmentId();
-        if ($departmentId && $medicalRecord->doctor && $medicalRecord->doctor->department_id !== $departmentId) {
+
+        if (! $medicalRecord->isVisibleTo($user)) {
             abort(403, 'You do not have permission to view this medical record.');
         }
-        
+
         $medicalRecord->load(['patient', 'doctor', 'appointment', 'prescriptions', 'labReports', 'attachments.uploader']);
         
         // Load audit activities for this medical record
@@ -288,12 +286,12 @@ class MedicalRecordsController extends Controller
      */
     public function edit(MedicalRecord $medicalRecord): View
     {
-        // Check department-based access
-        $departmentId = $this->getUserDepartmentId();
-        if ($departmentId && $medicalRecord->doctor && $medicalRecord->doctor->department_id !== $departmentId) {
+        if (! $medicalRecord->isVisibleTo(Auth::user())) {
             abort(403, 'You do not have permission to edit this medical record.');
         }
-        
+
+        $departmentId = $this->getUserDepartmentId();
+
         // Filter patients and doctors by department
         $patientsQuery = Patient::query();
         if ($departmentId) {

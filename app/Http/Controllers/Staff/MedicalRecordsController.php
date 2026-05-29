@@ -611,19 +611,12 @@ class MedicalRecordsController extends Controller
     public function show(MedicalRecord $medicalRecord)
     {
         $user = Auth::user();
-        
-        // Check if user can view this record
-        $departmentId = $this->getUserDepartmentId();
-        if ($departmentId && $medicalRecord->doctor && $medicalRecord->doctor->department_id !== $departmentId) {
-            // Department-based access check
-            return redirect()->route('staff.medical-records.index')
-                ->with('error', 'You do not have permission to view this medical record.');
-        } elseif (!$departmentId && $medicalRecord->created_by !== $user->id && 
-            (!$medicalRecord->appointment || $medicalRecord->appointment->staff_id !== $user->id)) {
+
+        if (! $medicalRecord->isVisibleTo($user)) {
             return redirect()->route('staff.medical-records.index')
                 ->with('error', 'You do not have permission to view this medical record.');
         }
-        
+
         $medicalRecord->load(['patient', 'doctor', 'appointment', 'prescriptions', 'labReports', 'attachments.uploader']);
         
         // Ensure attachments are always loaded - refresh the relationship to get latest
@@ -1179,23 +1172,15 @@ class MedicalRecordsController extends Controller
                 ->with('error', 'You do not have permission to add attachments.');
         }
         
-        // Check if user can access this medical record
-        $departmentId = $this->getUserDepartmentId();
-        if ($departmentId && $medicalRecord->doctor && $medicalRecord->doctor->department_id !== $departmentId) {
+        if (! $medicalRecord->isVisibleTo($user)) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'You do not have permission to add attachments to this record.'], 403);
             }
-            return redirect()->route('staff.medical-records.index')
-                ->with('error', 'You do not have permission to add attachments to this medical record.');
-        } elseif (!$departmentId && $medicalRecord->created_by !== $user->id && 
-            (!$medicalRecord->appointment || $medicalRecord->appointment->staff_id !== $user->id)) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'You do not have permission to add attachments to this record.'], 403);
-            }
+
             return redirect()->route('staff.medical-records.index')
                 ->with('error', 'You do not have permission to add attachments to this medical record.');
         }
-        
+
         // Check if files exist in request before processing
         if (!$request->hasFile('attachments')) {
             // Check if files were actually selected but failed to upload (PHP limits)

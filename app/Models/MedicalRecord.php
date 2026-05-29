@@ -369,112 +369,26 @@ class MedicalRecord extends Model
      * @param \App\Models\User|int|null $user User model, user ID, or null (uses Auth::user())
      * @return bool
      */
-    public function isVisibleTo($user = null)
+    public function isVisibleTo($user = null): bool
     {
-        // If no user provided, try to get from auth
         if ($user === null) {
             $user = \Illuminate\Support\Facades\Auth::user();
         }
-        
-        // If still no user, medical record is not visible
-        if (!$user) {
+
+        if (! $user) {
             return false;
         }
-        
-        // Convert user ID to User model if needed
+
         if (is_int($user) || is_string($user)) {
             $user = \App\Models\User::find($user);
-            if (!$user) {
+            if (! $user) {
                 return false;
             }
         }
-        
-        // Admins can see all medical records
-        if ($user->is_admin || strtolower($user->role ?? '') === 'admin') {
-            return true;
-        }
-        
-        // For doctors, check doctor relationship and department intersection
-        if (strtolower($user->role ?? '') === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
-            
-            if (!$doctor) {
-                return false;
-            }
-            
-            // Check if medical record was created by this doctor
-            if ($this->doctor_id === $doctor->id) {
-                return true;
-            }
-            
-            // Check if medical record is for a patient created by this doctor
-            if ($this->patient && $this->patient->created_by_doctor_id === $doctor->id) {
-                return true;
-            }
-            
-            // Get doctor's department IDs
-            $doctorDepartmentIds = [];
-            if ($doctor->departments->isNotEmpty()) {
-                $doctorDepartmentIds = $doctor->departments->pluck('id')->toArray();
-            } elseif ($doctor->department_id) {
-                $doctorDepartmentIds = [$doctor->department_id];
-            }
-            
-            if (empty($doctorDepartmentIds)) {
-                return false;
-            }
-            
-            // Check if patient's departments intersect with doctor's departments
-            if ($this->patient) {
-                $patientDepartmentIds = $this->patient->getDepartmentIds();
-                $intersection = array_intersect($doctorDepartmentIds, $patientDepartmentIds);
-                return !empty($intersection);
-            }
-            
-            return false;
-        }
-        
-        // For other staff roles, check department intersection
-        $user->load('departments');
-        $userDepartmentIds = [];
-        if ($user->departments->isNotEmpty()) {
-            $userDepartmentIds = $user->departments->pluck('id')->toArray();
-        } elseif ($user->department_id) {
-            $userDepartmentIds = [$user->department_id];
-        }
-        
-        if (empty($userDepartmentIds)) {
-            return false;
-        }
-        
-        // Check if doctor's departments intersect with user's departments
-        if ($this->doctor) {
-            $doctorDepartmentIds = [];
-            if ($this->doctor->departments->isNotEmpty()) {
-                $doctorDepartmentIds = $this->doctor->departments->pluck('id')->toArray();
-            } elseif ($this->doctor->department_id) {
-                $doctorDepartmentIds = [$this->doctor->department_id];
-            }
-            
-            if (!empty($doctorDepartmentIds)) {
-                $intersection = array_intersect($userDepartmentIds, $doctorDepartmentIds);
-                if (!empty($intersection)) {
-                    return true;
-                }
-            }
-        }
-        
-        // Check if patient's departments intersect with user's departments
-        if ($this->patient) {
-            $patientDepartmentIds = $this->patient->getDepartmentIds();
-            if (!empty($patientDepartmentIds)) {
-                $intersection = array_intersect($userDepartmentIds, $patientDepartmentIds);
-                if (!empty($intersection)) {
-                    return true;
-                }
-            }
-        }
-        
-        return false;
+
+        return static::query()
+            ->whereKey($this->id)
+            ->visibleTo($user)
+            ->exists();
     }
 }
