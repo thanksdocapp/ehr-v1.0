@@ -100,29 +100,28 @@ class DoctorsController extends Controller
             $data['photo'] = $filename;
         }
 
-        // Handle multiple departments
-        $departmentIds = $request->input('department_ids', []);
-        $primaryDepartmentId = $request->input('department_id');
-        
-        // Ensure primary department is in the list
-        if (!in_array($primaryDepartmentId, $departmentIds)) {
-            $departmentIds[] = $primaryDepartmentId;
-        }
-        
+        $primaryDepartmentId = (int) $request->input('department_id');
+        $departmentIds = array_values(array_unique(array_filter(array_map(
+            'intval',
+            array_merge(
+                (array) $request->input('department_ids', []),
+                [$primaryDepartmentId]
+            )
+        ))));
+
+        $data['department_id'] = $primaryDepartmentId;
+
         $doctor = Doctor::create($data);
-        
-        // Sync departments to pivot table
-        if (!empty($departmentIds)) {
-            $syncData = [];
-            foreach ($departmentIds as $deptId) {
-                $syncData[$deptId] = [
-                    'is_primary' => ($deptId == $primaryDepartmentId),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-            $doctor->departments()->sync($syncData);
+
+        $syncData = [];
+        foreach ($departmentIds as $deptId) {
+            $syncData[$deptId] = [
+                'is_primary' => ($deptId === $primaryDepartmentId),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
         }
+        $doctor->departments()->sync($syncData);
         
         // Sync with user model if user_id is provided and user exists
         if (isset($data['user_id']) && $data['user_id']) {
@@ -330,29 +329,30 @@ class DoctorsController extends Controller
             $data['availability'] = $normalizedAvailability;
         }
         
-        // Handle multiple departments
-        $departmentIds = $request->input('department_ids', []);
-        $primaryDepartmentId = $request->input('department_id');
-        
-        // Ensure primary department is in the list
-        if (!in_array($primaryDepartmentId, $departmentIds)) {
-            $departmentIds[] = $primaryDepartmentId;
-        }
-        
+        // Handle multiple departments — always include primary clinic (legacy column + pivot)
+        $primaryDepartmentId = (int) $request->input('department_id');
+        $departmentIds = array_values(array_unique(array_filter(array_map(
+            'intval',
+            array_merge(
+                (array) $request->input('department_ids', []),
+                [$primaryDepartmentId]
+            )
+        ))));
+
+        $data['department_id'] = $primaryDepartmentId;
+
         $doctor->update($data);
-        
-        // Sync departments to pivot table
-        if (!empty($departmentIds)) {
-            $syncData = [];
-            foreach ($departmentIds as $deptId) {
-                $syncData[$deptId] = [
-                    'is_primary' => ($deptId == $primaryDepartmentId),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-            $doctor->departments()->sync($syncData);
+
+        $syncData = [];
+        foreach ($departmentIds as $deptId) {
+            $syncData[$deptId] = [
+                'is_primary' => ($deptId === $primaryDepartmentId),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
         }
+        $doctor->departments()->sync($syncData);
+        $doctor->unsetRelation('departments');
         
         // Check if critical information changed and notify patients
         $this->handleDoctorUpdateNotifications($doctor, $oldAvailability, $oldPhone, $oldDepartmentId, $emailService);

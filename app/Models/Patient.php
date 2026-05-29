@@ -525,17 +525,16 @@ class Patient extends Authenticatable
                 return $query->whereRaw('1 = 0'); // No results if doctor not found
             }
             
-            // Get doctor's department IDs (support both pivot table and legacy department_id)
-            $doctorDepartmentIds = [];
-            if ($doctor->departments->isNotEmpty()) {
-                $doctorDepartmentIds = $doctor->departments->pluck('id')->toArray();
-            } elseif ($doctor->department_id) {
-                $doctorDepartmentIds = [$doctor->department_id];
-            }
-            
+            $doctorDepartmentIds = $doctor->accessibleDepartmentIds();
+
             return $query->where(function($q) use ($doctor, $doctorDepartmentIds) {
                 // Patients that were created by this doctor (regardless of department)
                 $q->where('created_by_doctor_id', $doctor->id);
+
+                // Patients assigned to or with appointments/records with this doctor (clinic moves)
+                $q->orWhere('assigned_doctor_id', $doctor->id)
+                    ->orWhereHas('appointments', fn ($aq) => $aq->where('doctor_id', $doctor->id))
+                    ->orWhereHas('medicalRecords', fn ($rq) => $rq->where('doctor_id', $doctor->id));
                 
                 // OR patients whose departments intersect with the doctor's departments
                 // This includes patients added by other doctors IF they share at least one department
@@ -664,16 +663,21 @@ class Patient extends Authenticatable
                 return true;
             }
             
-            // Get doctor's department IDs
-            $doctorDepartmentIds = [];
-            if ($doctor->departments->isNotEmpty()) {
-                $doctorDepartmentIds = $doctor->departments->pluck('id')->toArray();
-            } elseif ($doctor->department_id) {
-                $doctorDepartmentIds = [$doctor->department_id];
+            if ($this->assigned_doctor_id === $doctor->id) {
+                return true;
             }
-            
+
+            if ($this->appointments()->where('doctor_id', $doctor->id)->exists()) {
+                return true;
+            }
+
+            if ($this->medicalRecords()->where('doctor_id', $doctor->id)->exists()) {
+                return true;
+            }
+
+            $doctorDepartmentIds = $doctor->accessibleDepartmentIds();
+
             if (empty($doctorDepartmentIds)) {
-                // If doctor has no departments, only show patients they created
                 return false;
             }
             

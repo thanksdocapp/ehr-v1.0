@@ -60,11 +60,7 @@ class PatientsController extends Controller
         if ($user->role === 'doctor') {
             $doctor = Doctor::where('user_id', $user->id)->with('departments')->first();
             if ($doctor) {
-                if ($doctor->departments->isNotEmpty()) {
-                    $departmentIds = $doctor->departments->pluck('id')->toArray();
-                } elseif ($doctor->department_id) {
-                    $departmentIds = [$doctor->department_id];
-                }
+                $departmentIds = $doctor->accessibleDepartmentIds();
             }
         } else {
             // For other roles, get all departments from users pivot table or department_id

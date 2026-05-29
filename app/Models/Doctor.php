@@ -88,6 +88,23 @@ class Doctor extends Model
     }
 
     /**
+     * All clinic/department IDs used for patient and record visibility (pivot + legacy column).
+     *
+     * @return list<int>
+     */
+    public function accessibleDepartmentIds(): array
+    {
+        $this->loadMissing('departments');
+
+        $ids = $this->departments->pluck('id')->map(fn ($id) => (int) $id)->all();
+        if ($this->department_id) {
+            $ids[] = (int) $this->department_id;
+        }
+
+        return array_values(array_unique(array_filter($ids)));
+    }
+
+    /**
      * Clinic name(s) for admin lists (pivot departments + legacy department).
      */
     public function clinicsDisplayLabel(): string

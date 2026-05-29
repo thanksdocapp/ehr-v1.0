@@ -291,21 +291,20 @@ class MedicalRecord extends Model
                 return $query->whereRaw('1 = 0'); // No results if doctor not found
             }
             
-            // Get doctor's department IDs (support both pivot table and legacy department_id)
-            $doctorDepartmentIds = [];
-            if ($doctor->departments->isNotEmpty()) {
-                $doctorDepartmentIds = $doctor->departments->pluck('id')->toArray();
-            } elseif ($doctor->department_id) {
-                $doctorDepartmentIds = [$doctor->department_id];
-            }
-            
+            $doctorDepartmentIds = $doctor->accessibleDepartmentIds();
+
             return $query->where(function($q) use ($doctor, $doctorDepartmentIds) {
                 // Medical records created by this doctor
                 $q->where('doctor_id', $doctor->id);
+
+                // Records for appointments with this doctor
+                $q->orWhereHas('appointment', fn ($aq) => $aq->where('doctor_id', $doctor->id));
                 
                 // OR medical records for patients created by this doctor (regardless of department)
                 $q->orWhereHas('patient', function($patientQuery) use ($doctor) {
-                    $patientQuery->where('created_by_doctor_id', $doctor->id);
+                    $patientQuery->where('created_by_doctor_id', $doctor->id)
+                        ->orWhere('assigned_doctor_id', $doctor->id)
+                        ->orWhereHas('appointments', fn ($aq) => $aq->where('doctor_id', $doctor->id));
                 });
                 
                 // OR medical records for patients in doctor's department(s)
