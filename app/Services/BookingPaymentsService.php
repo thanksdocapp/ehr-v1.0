@@ -47,6 +47,11 @@ class BookingPaymentsService
         return $this->bookingSourceService->invoiceBookingCapture($inv);
     }
 
+    public function formatCaptureForDisplay(array $capture, string $separator = ' · '): string
+    {
+        return $this->bookingSourceService->formatCaptureForDisplay($capture, $separator);
+    }
+
     /**
      * Department IDs for a doctor (pivot + legacy department_id). Used to attribute
      * public clinic-booking checkout payments, which only link via pending_clinic_bookings
@@ -68,7 +73,7 @@ class BookingPaymentsService
      */
     public function completedBookingPaymentsBase(): Builder
     {
-        return Payment::query()->completed();
+        return Payment::query()->completed()->withoutDuplicateBillingSync();
     }
 
     /**
@@ -83,6 +88,7 @@ class BookingPaymentsService
 
         return Payment::query()
             ->completed()
+            ->withoutDuplicateBillingSync()
             ->whereHas('invoice', function ($q) use ($doctorId, $departmentIds) {
                 $q->where(function ($q2) use ($doctorId, $departmentIds) {
                     $q2->where(function ($q3) use ($doctorId) {

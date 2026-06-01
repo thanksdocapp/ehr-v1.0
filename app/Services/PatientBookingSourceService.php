@@ -395,4 +395,47 @@ class PatientBookingSourceService
             'invoice_number' => $invoiceNumber,
         ];
     }
+
+    /**
+     * Single-line booking capture text without repeating clinic/invoice details.
+     */
+    public function formatCaptureForDisplay(array $capture, string $separator = ' · '): string
+    {
+        $clinic = trim((string) ($capture['clinic_name'] ?? ''));
+        $primary = $capture['primary_label'] ?? null;
+        $evidence = trim((string) ($capture['evidence_line'] ?? ''));
+
+        $parts = [];
+
+        if ($clinic !== '' && ! $this->captureTextContains($evidence, $clinic)) {
+            $parts[] = $clinic;
+        }
+
+        if ($primary && $primary !== '—' && $primary !== 'Invoice' && ! $this->captureTextContains($evidence, $primary)) {
+            $parts[] = $primary;
+        }
+
+        if ($evidence !== '') {
+            $parts[] = $evidence;
+        }
+
+        if ($parts === [] && $clinic !== '') {
+            $parts[] = $clinic;
+        }
+
+        if ($parts === [] && $primary && $primary !== '—') {
+            $parts[] = $primary;
+        }
+
+        return $parts !== [] ? implode($separator, $parts) : '—';
+    }
+
+    public function captureTextContains(string $haystack, ?string $needle): bool
+    {
+        if ($needle === null || trim($needle) === '' || $haystack === '') {
+            return false;
+        }
+
+        return str_contains(strtolower($haystack), strtolower(trim($needle)));
+    }
 }

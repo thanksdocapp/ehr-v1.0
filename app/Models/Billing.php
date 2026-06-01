@@ -612,9 +612,11 @@ class Billing extends Model
      */
     private function syncPaymentRecord($invoice)
     {
+        $billingReference = 'BILLING_'.$this->id;
+
         // Check if payment record already exists
         $existingPayment = Payment::where('invoice_id', $invoice->id)
-            ->where('transaction_reference', 'BILLING_' . $this->id)
+            ->where('transaction_reference', $billingReference)
             ->first();
             
         if ($existingPayment) {
@@ -625,19 +627,33 @@ class Billing extends Model
                 'status' => 'completed',
                 'notes' => 'Payment processed via admin panel' . ($this->payment_reference ? ' - Ref: ' . $this->payment_reference : ''),
             ]);
-        } else {
-            // Create new payment record
-            Payment::create([
+
+            return;
+        }
+
+        $otherCompletedTotal = (float) Payment::query()
+            ->where('invoice_id', $invoice->id)
+            ->where('status', 'completed')
+            ->where(function ($q) use ($billingReference) {
+                $q->whereNull('transaction_reference')
+                    ->orWhere('transaction_reference', '!=', $billingReference);
+            })
+            ->sum('amount');
+
+        if ($otherCompletedTotal >= (float) $this->paid_amount - 0.009) {
+            return;
+        }
+
+        Payment::create([
                 'invoice_id' => $invoice->id,
                 'payment_date' => $this->paid_at ?: now(),
                 'amount' => $this->paid_amount,
                 'payment_method' => $this->mapPaymentMethod($this->payment_method),
                 'transaction_id' => $this->generateTransactionId(),
-                'transaction_reference' => 'BILLING_' . $this->id, // Reference to original billing
+                'transaction_reference' => $billingReference, // Reference to original billing
                 'status' => 'completed',
                 'notes' => 'Payment processed via admin panel' . ($this->payment_reference ? ' - Ref: ' . $this->payment_reference : ''),
             ]);
-        }
     }
 
     /**

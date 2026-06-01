@@ -117,11 +117,7 @@
                     $src = $bookingPaymentsService->labelForPayment($payment);
                     $capture = $bookingPaymentsService->bookingCaptureForPayment($payment);
                     $comments = $bookingPaymentsService->commentsForBookingPayment($payment);
-                    $captureText = collect([
-                        $capture['clinic_name'] ?? null,
-                        ($capture['primary_label'] ?? null) !== '—' ? ($capture['primary_label'] ?? null) : null,
-                        $capture['evidence_line'] ?? null,
-                    ])->filter()->implode(' · ');
+                    $captureText = $bookingPaymentsService->formatCaptureForDisplay($capture);
                 @endphp
                 <tr>
                     <td>{{ $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—' }}</td>
