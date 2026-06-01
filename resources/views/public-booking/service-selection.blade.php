@@ -528,6 +528,8 @@
         const loadingSlots = document.getElementById('loading-slots');
         const noSlotsMessage = document.getElementById('no-slots-message');
         const timeSlotsPicker = document.getElementById('time-slots-picker');
+        const appointmentDateInput = document.getElementById('appointment-date');
+        const appointmentTimeInput = document.getElementById('appointment-time');
 
         let selectedDoctorId = null;
         let selectedNonConsultation = false;
@@ -699,8 +701,42 @@
             serviceDetails.style.display = 'block';
         }
 
+        function applyNonConsultationService() {
+            selectedNonConsultation = true;
+            if (form) {
+                form.action = selectDatetimeUrl;
+            }
+            if (appointmentDateInput) {
+                appointmentDateInput.removeAttribute('required');
+                appointmentDateInput.value = '';
+            }
+            if (appointmentTimeInput) {
+                appointmentTimeInput.removeAttribute('required');
+                appointmentTimeInput.value = '';
+            }
+            scheduleSelectionCard.style.display = 'none';
+            continueBtn.disabled = false;
+        }
+
+        function applyConsultationService() {
+            selectedNonConsultation = false;
+            if (form) {
+                form.action = patientDetailsUrl;
+            }
+            if (appointmentDateInput) {
+                appointmentDateInput.setAttribute('required', 'required');
+            }
+            if (appointmentTimeInput) {
+                appointmentTimeInput.setAttribute('required', 'required');
+            }
+            loadSchedule();
+        }
+
         function loadSchedule() {
             if (!selectedDoctorId || !selectedServiceId || !serviceIdInput.value) {
+                return;
+            }
+            if (selectedNonConsultation) {
                 return;
             }
 
@@ -734,7 +770,11 @@
             selectedServiceId = serviceIdInput.value || null;
             clearSlotsCache();
             updateServiceDetails();
-            loadSchedule();
+            if (card.dataset.isNonConsultation === '1') {
+                applyNonConsultationService();
+            } else {
+                applyConsultationService();
+            }
             syncPbServiceCardTabOrder(serviceCardsRoot);
         }
 
@@ -753,7 +793,8 @@
                         duration: preCard.dataset.duration,
                         price: preCard.dataset.price,
                         description: preCard.dataset.description || '',
-                        consultation_type: preCard.dataset.consultationType || 'in_person'
+                        consultation_type: preCard.dataset.consultationType || 'in_person',
+                        is_non_consultation: preCard.dataset.isNonConsultation === '1',
                     };
                 }
             }
@@ -826,14 +867,23 @@
                         selectServiceCard(cards[0]);
                     } else if (serviceIdInput.value) {
                         updateServiceDetails();
-                        loadSchedule();
+                        const activeCard = serviceCardsRoot.querySelector('.pb-service-card.is-selected');
+                        if (activeCard && activeCard.dataset.isNonConsultation === '1') {
+                            applyNonConsultationService();
+                        } else {
+                            applyConsultationService();
+                        }
                     }
                 } else {
                     if (!savedMeta && serviceCardsRoot) {
                         serviceCardsRoot.innerHTML = '<p class="text-danger small mb-0">No services available for this doctor.</p>';
                     } else if (savedMeta) {
                         updateServiceDetails();
-                        loadSchedule();
+                        if (savedMeta.is_non_consultation) {
+                            applyNonConsultationService();
+                        } else {
+                            applyConsultationService();
+                        }
                     }
                 }
                 syncPbServiceCardTabOrder(serviceCardsRoot);
@@ -852,7 +902,11 @@
                 } else if (savedMeta) {
                     renderDoctorServiceCard(savedMeta, true);
                     updateServiceDetails();
-                    loadSchedule();
+                    if (savedMeta.is_non_consultation) {
+                        applyNonConsultationService();
+                    } else {
+                        applyConsultationService();
+                    }
                 }
                 syncPbServiceCardTabOrder(serviceCardsRoot);
             });
@@ -868,7 +922,11 @@
             serviceIdInput.value = {{ $service->id }};
         }
         updateServiceDetails();
-        loadSchedule();
+        @if($service->isNonConsultation())
+        applyNonConsultationService();
+        @else
+        applyConsultationService();
+        @endif
         syncPbServiceCardTabOrder(serviceCardsRoot);
         @elseif(isset($doctor) && $doctors->count() == 1)
         // If single doctor is pre-selected (from doctor link) or only one doctor available, load services immediately

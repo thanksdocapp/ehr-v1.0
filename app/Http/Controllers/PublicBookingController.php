@@ -1059,6 +1059,24 @@ class PublicBookingController extends Controller
     {
         $this->checkBookingEnabled();
 
+        $service = $request->filled('service_id')
+            ? BookingService::find($request->service_id)
+            : null;
+
+        if ($service && $service->isNonConsultation()) {
+            $validator = Validator::make($request->all(), [
+                'doctor_id' => 'required|exists:doctors,id',
+                'service_id' => 'required|exists:booking_services,id',
+                'department_id' => 'nullable|exists:departments,id',
+            ]);
+
+            if ($validator->fails()) {
+                return redirect()->back()->withErrors($validator)->withInput();
+            }
+
+            return $this->redirectToNonConsultationFlow($request, $service);
+        }
+
         $validator = Validator::make($request->all(), [
             'doctor_id' => 'required|exists:doctors,id',
             'service_id' => 'required|exists:booking_services,id',
