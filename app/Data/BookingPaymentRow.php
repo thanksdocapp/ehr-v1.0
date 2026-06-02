@@ -30,7 +30,9 @@ class BookingPaymentRow
 
     public function isFreeServiceOrder(): bool
     {
-        return $this->payment === null && $this->serviceOrder !== null;
+        return $this->payment === null
+            && $this->serviceOrder !== null
+            && (float) ($this->serviceOrder->fee ?? 0) === 0.0;
     }
 
     public function sortAt(): ?CarbonInterface

@@ -238,15 +238,30 @@ class BookingPaymentsService
         return $query;
     }
 
-    public function freeServiceOrdersForReport(Request $request): Builder
+    /**
+     * Paid / fulfilled service orders for the booking-payments report (includes
+     * pending_payment rows whose invoice is already paid — common after redirect).
+     */
+    public function serviceOrdersForReport(Request $request): Builder
     {
         if (! Schema::hasTable('service_orders')) {
             return ServiceOrder::query()->whereRaw('1 = 0');
         }
 
-        $query = ServiceOrder::query()
-            ->where('status', ServiceOrder::STATUS_PAID)
-            ->whereNull('invoice_id');
+        $query = ServiceOrder::query()->where(function ($outer) {
+            $outer->whereIn('status', [
+                ServiceOrder::STATUS_PAID,
+                ServiceOrder::STATUS_CONTACTED,
+                ServiceOrder::STATUS_COMPLETED,
+            ])->orWhere(function ($sub) {
+                $sub->where('status', ServiceOrder::STATUS_PENDING_PAYMENT)
+                    ->whereNotNull('invoice_id')
+                    ->where(function ($paid) {
+                        $paid->whereHas('invoice', fn ($inv) => $inv->where('status', 'paid'))
+                            ->orWhereHas('invoice.payments', fn ($p) => $p->where('status', 'completed'));
+                    });
+            });
+        });
 
         if ($request->filled('doctor_id')) {
             $query->where('doctor_id', $request->integer('doctor_id'));
@@ -254,21 +269,57 @@ class BookingPaymentsService
         if ($request->filled('department_id')) {
             $query->where('department_id', $request->integer('department_id'));
         }
-        if ($request->filled('from')) {
-            $query->where(function ($q) use ($request) {
-                $q->whereDate('paid_at', '>=', $request->string('from'))
-                    ->orWhere(function ($q2) use ($request) {
-                        $q2->whereNull('paid_at')->whereDate('created_at', '>=', $request->string('from'));
-                    });
+
+        $this->applyServiceOrderReportDateFilters($query, $request);
+
+        return $query;
+    }
+
+    /**
+     * Pre–service_orders non-consultation checkouts: lab_test invoice lines without a service_orders row.
+     */
+    public function legacyNonConsultationPaymentsForReport(Request $request): Builder
+    {
+        if (! Schema::hasTable('service_orders')) {
+            return Payment::query()->whereRaw('1 = 0');
+        }
+
+        $query = Payment::query()
+            ->completed()
+            ->withoutDuplicateBillingSync()
+            ->whereHas('invoice', function ($inv) {
+                $inv->whereNull('appointment_id')
+                    ->whereDoesntHave('serviceOrder')
+                    ->whereDoesntHave('pendingBookings')
+                    ->whereDoesntHave('pendingClinicBookings')
+                    ->whereHas('invoiceItems', fn ($item) => $item->where('item_type', 'lab_test'));
+            });
+
+        if ($request->filled('doctor_id')) {
+            $doctorId = $request->integer('doctor_id');
+            $departmentIds = $this->departmentIdsForDoctor(Doctor::findOrFail($doctorId));
+            $query->whereHas('invoice', function ($inv) use ($doctorId, $departmentIds) {
+                $inv->where(function ($q) use ($doctorId, $departmentIds) {
+                    $q->whereHas('doctorBookingDiscountCode', fn ($c) => $c->where('doctor_id', $doctorId));
+                    if ($departmentIds !== []) {
+                        $q->orWhereHas('clinicBookingDiscountCode', fn ($c) => $c->whereIn('department_id', $departmentIds));
+                    }
+                });
             });
         }
-        if ($request->filled('to')) {
-            $query->where(function ($q) use ($request) {
-                $q->whereDate('paid_at', '<=', $request->string('to'))
-                    ->orWhere(function ($q2) use ($request) {
-                        $q2->whereNull('paid_at')->whereDate('created_at', '<=', $request->string('to'));
-                    });
+
+        if ($request->filled('department_id')) {
+            $departmentId = $request->integer('department_id');
+            $query->whereHas('invoice', function ($inv) use ($departmentId) {
+                $inv->whereHas('clinicBookingDiscountCode', fn ($c) => $c->where('department_id', $departmentId));
             });
+        }
+
+        if ($request->filled('from')) {
+            $query->whereDate('payment_date', '>=', $request->string('from'));
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('payment_date', '<=', $request->string('to'));
         }
 
         return $query;
@@ -279,21 +330,75 @@ class BookingPaymentsService
      */
     public function collectBookingPaymentRows(Request $request): Collection
     {
-        $payments = $this->buildFilteredPaymentsQuery($request)
+        $seenPaymentIds = [];
+        $seenOrderOnlyIds = [];
+        $rows = collect();
+
+        foreach ($this->buildFilteredPaymentsQuery($request)
             ->with($this->bookingPaymentsEagerLoads())
             ->orderByDesc('payment_date')
-            ->get();
+            ->get() as $payment) {
+            $seenPaymentIds[$payment->id] = true;
+            $rows->push(BookingPaymentRow::fromPayment($payment));
+        }
 
-        $rows = $payments->map(fn (Payment $payment) => BookingPaymentRow::fromPayment($payment));
+        if (Schema::hasTable('service_orders')) {
+            $orders = $this->serviceOrdersForReport($request)
+                ->with($this->freeServiceOrderEagerLoads())
+                ->with(['invoice.payments'])
+                ->orderByDesc('paid_at')
+                ->orderByDesc('created_at')
+                ->get();
 
-        $freeOrders = $this->freeServiceOrdersForReport($request)
-            ->with($this->freeServiceOrderEagerLoads())
-            ->orderByDesc('paid_at')
-            ->orderByDesc('created_at')
-            ->get();
+            foreach ($orders as $order) {
+                if ($order->invoice_id) {
+                    $payment = $this->primaryCompletedPaymentForInvoice((int) $order->invoice_id);
+                    if ($payment && ! $this->paymentMatchesReportDateFilter($payment, $request)) {
+                        continue;
+                    }
+                    if ($payment) {
+                        if (! isset($seenPaymentIds[$payment->id])) {
+                            $payment->load($this->bookingPaymentsEagerLoads());
+                            $seenPaymentIds[$payment->id] = true;
+                            $rows->push(BookingPaymentRow::fromPayment($payment));
+                        }
 
-        foreach ($freeOrders as $order) {
-            $rows->push(BookingPaymentRow::fromFreeServiceOrder($order));
+                        continue;
+                    }
+                }
+
+                if ($order->invoice_id) {
+                    continue;
+                }
+
+                if (! in_array($order->status, [
+                    ServiceOrder::STATUS_PAID,
+                    ServiceOrder::STATUS_CONTACTED,
+                    ServiceOrder::STATUS_COMPLETED,
+                ], true)) {
+                    continue;
+                }
+
+                if (isset($seenOrderOnlyIds[$order->id])) {
+                    continue;
+                }
+                if (! $this->serviceOrderMatchesReportDateFilter($order, null, $request)) {
+                    continue;
+                }
+
+                $seenOrderOnlyIds[$order->id] = true;
+                $rows->push(BookingPaymentRow::fromFreeServiceOrder($order));
+            }
+
+            foreach ($this->legacyNonConsultationPaymentsForReport($request)
+                ->with($this->bookingPaymentsEagerLoads())
+                ->orderByDesc('payment_date')
+                ->get() as $payment) {
+                if (! isset($seenPaymentIds[$payment->id])) {
+                    $seenPaymentIds[$payment->id] = true;
+                    $rows->push(BookingPaymentRow::fromPayment($payment));
+                }
+            }
         }
 
         return $rows->sortByDesc(fn (BookingPaymentRow $row) => $row->sortAt()?->timestamp ?? 0)->values();
@@ -406,6 +511,8 @@ class BookingPaymentsService
         }
         if ($row->isFreeServiceOrder()) {
             $parts[] = 'Complimentary service order (no payment collected)';
+        } elseif ($row->serviceOrder && ! $row->payment) {
+            $parts[] = 'Service order (no payment row on file)';
         }
 
         return $parts !== [] ? implode(' | ', $parts) : '';
@@ -417,7 +524,15 @@ class BookingPaymentsService
             return $row->payment->payment_method_label;
         }
 
-        return $row->isFreeServiceOrder() ? 'No charge' : '—';
+        if ($row->isFreeServiceOrder()) {
+            return 'No charge';
+        }
+
+        if ($row->serviceOrder) {
+            return 'Service order';
+        }
+
+        return '—';
     }
 
     public function invoiceLabelForRow(BookingPaymentRow $row): string
@@ -728,6 +843,111 @@ class BookingPaymentsService
         }
 
         return $inv->serviceOrder()->first();
+    }
+
+    private function primaryCompletedPaymentForInvoice(int $invoiceId): ?Payment
+    {
+        $portal = Payment::query()
+            ->where('invoice_id', $invoiceId)
+            ->where('status', 'completed')
+            ->where(function ($q) {
+                $q->whereNull('transaction_reference')
+                    ->orWhere('transaction_reference', 'not like', 'BILLING_%');
+            })
+            ->orderByDesc('payment_date')
+            ->first();
+
+        if ($portal) {
+            return $portal;
+        }
+
+        return Payment::query()
+            ->where('invoice_id', $invoiceId)
+            ->where('status', 'completed')
+            ->orderByDesc('payment_date')
+            ->first();
+    }
+
+    private function applyServiceOrderReportDateFilters(Builder $query, Request $request): void
+    {
+        if ($request->filled('from')) {
+            $from = $request->string('from');
+            $query->where(function ($q) use ($from) {
+                $q->whereDate('paid_at', '>=', $from)
+                    ->orWhere(function ($q2) use ($from) {
+                        $q2->whereNull('paid_at')->whereDate('created_at', '>=', $from);
+                    })
+                    ->orWhereHas('invoice.payments', function ($p) use ($from) {
+                        $p->where('status', 'completed')->whereDate('payment_date', '>=', $from);
+                    });
+            });
+        }
+
+        if ($request->filled('to')) {
+            $to = $request->string('to');
+            $query->where(function ($q) use ($to) {
+                $q->where(function ($q1) use ($to) {
+                    $q1->whereNotNull('paid_at')->whereDate('paid_at', '<=', $to);
+                })
+                    ->orWhere(function ($q2) use ($to) {
+                        $q2->whereNull('paid_at')->whereDate('created_at', '<=', $to);
+                    })
+                    ->orWhereHas('invoice.payments', function ($p) use ($to) {
+                        $p->where('status', 'completed')->whereDate('payment_date', '<=', $to);
+                    });
+            });
+        }
+    }
+
+    private function paymentMatchesReportDateFilter(Payment $payment, Request $request): bool
+    {
+        if (! $request->filled('from') && ! $request->filled('to')) {
+            return true;
+        }
+
+        $date = $payment->payment_date;
+        if (! $date) {
+            return false;
+        }
+
+        if ($request->filled('from') && $date->toDateString() < $request->string('from')) {
+            return false;
+        }
+
+        if ($request->filled('to') && $date->toDateString() > $request->string('to')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function serviceOrderMatchesReportDateFilter(
+        ServiceOrder $order,
+        ?Payment $payment,
+        Request $request
+    ): bool {
+        if ($payment) {
+            return $this->paymentMatchesReportDateFilter($payment, $request);
+        }
+
+        if (! $request->filled('from') && ! $request->filled('to')) {
+            return true;
+        }
+
+        $date = $order->paid_at ?? $order->created_at;
+        if (! $date) {
+            return false;
+        }
+
+        if ($request->filled('from') && $date->toDateString() < $request->string('from')) {
+            return false;
+        }
+
+        if ($request->filled('to') && $date->toDateString() > $request->string('to')) {
+            return false;
+        }
+
+        return true;
     }
 
     private function formatAppointmentSlotForExport($appt): string
