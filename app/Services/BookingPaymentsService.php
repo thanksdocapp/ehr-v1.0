@@ -2,13 +2,18 @@
 
 namespace App\Services;
 
+use App\Data\BookingPaymentRow;
 use App\Models\ClinicBookingRequest;
 use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\Payment;
 use App\Models\Invoice;
+use App\Models\ServiceOrder;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -115,6 +120,8 @@ class BookingPaymentsService
                     if ($departmentIds !== []) {
                         $q2->orWhereHas('pendingClinicBookings', fn ($pcb) => $pcb->whereIn('department_id', $departmentIds));
                     }
+
+                    $q2->orWhereHas('serviceOrder', fn ($so) => $so->where('doctor_id', $doctorId));
                 });
             });
     }
@@ -163,9 +170,269 @@ class BookingPaymentsService
                                     $dep->where('departments.id', $departmentId);
                                 });
                         });
-                    });
+                    })
+                    ->orWhereHas('serviceOrder', fn ($so) => $so->where('department_id', $departmentId));
             });
         });
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function bookingPaymentsEagerLoads(): array
+    {
+        return [
+            'invoice.patient',
+            'invoice.appointment.doctor.user',
+            'invoice.appointment.department',
+            'invoice.pendingBookings.doctor.user',
+            'invoice.pendingBookings.department',
+            'invoice.pendingClinicBookings.department',
+            'invoice.billing.doctor.user',
+            'invoice.billing.doctor.department',
+            'invoice.billing.doctor.departments',
+            'invoice.billing.appointment.doctor.user',
+            'invoice.billing.appointment.department',
+            'invoice.doctorBookingDiscountCode.doctor.user',
+            'invoice.doctorBookingDiscountCode.doctor.department',
+            'invoice.doctorBookingDiscountCode.doctor.departments',
+            'invoice.clinicBookingDiscountCode.department',
+            'invoice.serviceOrder.doctor.user',
+            'invoice.serviceOrder.department',
+            'invoice.serviceOrder.service',
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function freeServiceOrderEagerLoads(): array
+    {
+        return [
+            'patient',
+            'doctor.user',
+            'department',
+            'service',
+        ];
+    }
+
+    public function buildFilteredPaymentsQuery(Request $request): Builder
+    {
+        $query = $request->filled('doctor_id')
+            ? $this->completedPaymentsForDoctor(Doctor::findOrFail($request->integer('doctor_id')))
+            : $this->completedBookingPaymentsBase();
+
+        if ($request->filled('department_id')) {
+            $departmentId = $request->integer('department_id');
+            Department::query()->where('is_active', true)->whereKey($departmentId)->firstOrFail();
+            $query = $this->restrictPaymentsToDepartment($query, $departmentId);
+        }
+
+        if ($request->filled('from')) {
+            $query->whereDate('payment_date', '>=', $request->string('from'));
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('payment_date', '<=', $request->string('to'));
+        }
+
+        return $query;
+    }
+
+    public function freeServiceOrdersForReport(Request $request): Builder
+    {
+        if (! Schema::hasTable('service_orders')) {
+            return ServiceOrder::query()->whereRaw('1 = 0');
+        }
+
+        $query = ServiceOrder::query()
+            ->where('status', ServiceOrder::STATUS_PAID)
+            ->whereNull('invoice_id');
+
+        if ($request->filled('doctor_id')) {
+            $query->where('doctor_id', $request->integer('doctor_id'));
+        }
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->integer('department_id'));
+        }
+        if ($request->filled('from')) {
+            $query->where(function ($q) use ($request) {
+                $q->whereDate('paid_at', '>=', $request->string('from'))
+                    ->orWhere(function ($q2) use ($request) {
+                        $q2->whereNull('paid_at')->whereDate('created_at', '>=', $request->string('from'));
+                    });
+            });
+        }
+        if ($request->filled('to')) {
+            $query->where(function ($q) use ($request) {
+                $q->whereDate('paid_at', '<=', $request->string('to'))
+                    ->orWhere(function ($q2) use ($request) {
+                        $q2->whereNull('paid_at')->whereDate('created_at', '<=', $request->string('to'));
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * @return Collection<int, BookingPaymentRow>
+     */
+    public function collectBookingPaymentRows(Request $request): Collection
+    {
+        $payments = $this->buildFilteredPaymentsQuery($request)
+            ->with($this->bookingPaymentsEagerLoads())
+            ->orderByDesc('payment_date')
+            ->get();
+
+        $rows = $payments->map(fn (Payment $payment) => BookingPaymentRow::fromPayment($payment));
+
+        $freeOrders = $this->freeServiceOrdersForReport($request)
+            ->with($this->freeServiceOrderEagerLoads())
+            ->orderByDesc('paid_at')
+            ->orderByDesc('created_at')
+            ->get();
+
+        foreach ($freeOrders as $order) {
+            $rows->push(BookingPaymentRow::fromFreeServiceOrder($order));
+        }
+
+        return $rows->sortByDesc(fn (BookingPaymentRow $row) => $row->sortAt()?->timestamp ?? 0)->values();
+    }
+
+    public function paginateBookingPaymentRows(Request $request, int $perPage = 30): LengthAwarePaginator
+    {
+        $rows = $this->collectBookingPaymentRows($request);
+        $page = max(1, (int) $request->input('page', 1));
+        $total = $rows->count();
+        $slice = $rows->slice(($page - 1) * $perPage, $perPage)->values();
+
+        return new LengthAwarePaginator(
+            $slice,
+            $total,
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+    }
+
+    public function totalAmountForBookingPaymentRows(Request $request): float
+    {
+        return (float) $this->collectBookingPaymentRows($request)->sum(fn (BookingPaymentRow $row) => $row->amount());
+    }
+
+    public function labelForRow(BookingPaymentRow $row): string
+    {
+        if ($row->payment) {
+            return $this->labelForPayment($row->payment);
+        }
+
+        return 'Service order';
+    }
+
+    /**
+     * @return array{primary_label: string, clinic_name: ?string, doctor_name: ?string, department_id: ?int, evidence_line: ?string, invoice_number: ?string}
+     */
+    public function bookingCaptureForRow(BookingPaymentRow $row): array
+    {
+        if ($row->payment) {
+            return $this->bookingCaptureForPayment($row->payment);
+        }
+
+        if ($row->serviceOrder) {
+            return $this->bookingSourceService->serviceOrderBookingCapture($row->serviceOrder);
+        }
+
+        return [
+            'primary_label' => '—',
+            'clinic_name' => null,
+            'doctor_name' => null,
+            'department_id' => null,
+            'evidence_line' => null,
+            'invoice_number' => null,
+        ];
+    }
+
+    public function doctorNameForRow(BookingPaymentRow $row): ?string
+    {
+        $capture = $this->bookingCaptureForRow($row);
+        if ($capture['doctor_name']) {
+            return $capture['doctor_name'];
+        }
+
+        if ($row->payment) {
+            return $this->doctorNameForBookingPayment($row->payment);
+        }
+
+        return $this->formatDoctorName($row->serviceOrder?->doctor);
+    }
+
+    public function patientNameForRow(BookingPaymentRow $row): string
+    {
+        if ($row->payment) {
+            return $this->patientNameForBookingPayment($row->payment);
+        }
+
+        $patient = $row->serviceOrder?->patient;
+        if ($patient) {
+            $n = trim(($patient->first_name ?? '').' '.($patient->last_name ?? ''));
+
+            return $n !== '' ? $n : '—';
+        }
+
+        $data = $row->serviceOrder?->patient_data ?? [];
+        $n = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
+
+        return $n !== '' ? $n : '—';
+    }
+
+    public function appointmentSlotLabelForRow(BookingPaymentRow $row): string
+    {
+        if ($row->payment) {
+            return $this->appointmentSlotLabelForBookingPayment($row->payment);
+        }
+
+        return 'No appointment (service order)';
+    }
+
+    public function commentsForRow(BookingPaymentRow $row): string
+    {
+        if ($row->payment) {
+            return $this->commentsForBookingPayment($row->payment);
+        }
+
+        $parts = [];
+        if ($row->serviceOrder && filled($row->serviceOrder->notes)) {
+            $parts[] = Str::limit(trim(strip_tags((string) $row->serviceOrder->notes)), 800);
+        }
+        if ($row->isFreeServiceOrder()) {
+            $parts[] = 'Complimentary service order (no payment collected)';
+        }
+
+        return $parts !== [] ? implode(' | ', $parts) : '';
+    }
+
+    public function methodLabelForRow(BookingPaymentRow $row): string
+    {
+        if ($row->payment) {
+            return $row->payment->payment_method_label;
+        }
+
+        return $row->isFreeServiceOrder() ? 'No charge' : '—';
+    }
+
+    public function invoiceLabelForRow(BookingPaymentRow $row): string
+    {
+        if ($row->payment?->invoice) {
+            $inv = $row->payment->invoice;
+
+            return $inv->invoice_number ?? ('#'.$inv->id);
+        }
+
+        if ($row->serviceOrder) {
+            return $row->serviceOrder->order_number;
+        }
+
+        return '—';
     }
 
     /**
@@ -176,6 +443,10 @@ class BookingPaymentsService
         $inv = $payment->invoice;
         if (! $inv) {
             return '—';
+        }
+
+        if ($this->invoiceServiceOrder($inv)) {
+            return 'Service order';
         }
 
         if ($inv->appointment_id) {
@@ -194,8 +465,12 @@ class BookingPaymentsService
             if ($inv->pendingClinicBookings->isNotEmpty()) {
                 return 'Clinic booking checkout';
             }
-        } elseif ($inv->pendingClinicBookings()->exists()) {
+        } else        if ($inv->pendingClinicBookings()->exists()) {
             return 'Clinic booking checkout';
+        }
+
+        if ($this->invoiceServiceOrder($inv)) {
+            return 'Service order';
         }
 
         if ($inv->billing_id) {
@@ -240,6 +515,14 @@ class BookingPaymentsService
 
         $totalAll = (float) (clone $base)->sum('amount');
         $count = (clone $base)->count();
+
+        if (Schema::hasTable('service_orders')) {
+            $freeBase = ServiceOrder::query()
+                ->where('status', ServiceOrder::STATUS_PAID)
+                ->whereNull('invoice_id')
+                ->where('doctor_id', $doctor->id);
+            $count += (clone $freeBase)->count();
+        }
 
         return [
             'total_this_month' => round($totalMonth, 2),
@@ -427,7 +710,24 @@ class BookingPaymentsService
             return $this->formatPendingClinicBookingSlotLabel($pcb);
         }
 
+        if ($this->invoiceServiceOrder($inv)) {
+            return 'No appointment (service order)';
+        }
+
         return '—';
+    }
+
+    private function invoiceServiceOrder(Invoice $inv): ?ServiceOrder
+    {
+        if ($inv->relationLoaded('serviceOrder')) {
+            return $inv->serviceOrder;
+        }
+
+        if (! Schema::hasTable('service_orders')) {
+            return null;
+        }
+
+        return $inv->serviceOrder()->first();
     }
 
     private function formatAppointmentSlotForExport($appt): string

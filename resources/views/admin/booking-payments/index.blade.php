@@ -14,7 +14,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h1 class="h3 mb-1">Booking payments</h1>
-            <p class="text-muted mb-0">All completed patient payments (including legacy invoices that only have a patient or generic invoice link). Use <strong>Source</strong> to see how each row is tied—older rows may show as <strong>Invoice</strong>. Filter by doctor and/or clinic (department).</p>
+            <p class="text-muted mb-0">Completed payments for consultation bookings plus <strong>non-consultation service orders</strong> (screenings, kits, etc.). Free service orders appear as <strong>£0.00</strong> with source <strong>Service order</strong>. Filter by doctor and/or clinic.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
             <span class="fw-semibold">Filtered total: {{ CurrencyHelper::format((float) $totalAmount) }}</span>
@@ -85,44 +85,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($payments as $payment)
-                            @php
-                                $inv = $payment->invoice;
-                                $patient = $inv?->patient;
-                                $src = $bookingPaymentsService->labelForPayment($payment);
-                                $badgeClass = match ($src) {
-                                    'Appointment' => 'primary',
-                                    'Pending booking' => 'info',
-                                    'Clinic booking checkout' => 'info',
-                                    'Visit billing' => 'success',
-                                    'Billing' => 'secondary',
-                                    'Doctor booking offer' => 'warning text-dark',
-                                    'Clinic booking offer' => 'warning text-dark',
-                                    'Invoice' => 'secondary',
-                                    default => 'light text-dark',
-                                };
-                                $capture = $bookingPaymentsService->bookingCaptureForPayment($payment);
-                                $doctorName = $bookingPaymentsService->doctorNameForBookingPayment($payment);
-                                $comments = $bookingPaymentsService->commentsForBookingPayment($payment);
-                            @endphp
-                            <tr>
-                                <td>{{ $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—' }}</td>
-                                <td class="text-end">{{ CurrencyHelper::format((float) $payment->amount) }}</td>
-                                <td>{{ $payment->payment_method_label }}</td>
-                                <td><span class="badge bg-{{ $badgeClass }}">{{ $src }}</span></td>
-                                <td>{{ $inv?->invoice_number ?? ('#'.$inv?->id) }}</td>
-                                <td>{{ $doctorName ?? '—' }}</td>
-                                <td class="small">@include('admin.partials.booking-capture-cell', ['capture' => $capture])</td>
-                                <td>
-                                    @if($patient)
-                                        {{ trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')) ?: '—' }}
-                                    @else
-                                        —
-                                    @endif
-                                </td>
-                                <td>{{ $bookingPaymentsService->appointmentSlotLabelForBookingPayment($payment) }}</td>
-                                <td class="small text-break" style="max-width: 220px;">{{ $comments !== '' ? $comments : '—' }}</td>
-                            </tr>
+                        @forelse($rows as $row)
+                            @include('admin.partials.booking-payment-row', ['row' => $row, 'bookingPaymentsService' => $bookingPaymentsService])
                         @empty
                             <tr>
                                 <td colspan="10" class="text-center text-muted py-4">No payments match.</td>
@@ -132,8 +96,8 @@
                 </table>
             </div>
         </div>
-        @if($payments->hasPages())
-            <div class="card-footer">{{ $payments->links() }}</div>
+        @if($rows->hasPages())
+            <div class="card-footer">{{ $rows->links() }}</div>
         @endif
     </div>
 </div>

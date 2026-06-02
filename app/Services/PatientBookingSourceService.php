@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ClinicBookingRequest;
 use App\Models\Invoice;
 use App\Models\Patient;
+use App\Models\ServiceOrder;
 use Illuminate\Support\Facades\Schema;
 
 class PatientBookingSourceService
@@ -140,8 +141,18 @@ class PatientBookingSourceService
             'billing.appointment.department',
             'clinicBookingDiscountCode.department',
             'doctorBookingDiscountCode.doctor.user',
+            'serviceOrder.doctor.user',
+            'serviceOrder.department',
+            'serviceOrder.service',
             'patient',
         ]);
+
+        $serviceOrder = $invoice->serviceOrder;
+        if ($serviceOrder) {
+            $capture = $this->serviceOrderBookingCapture($serviceOrder, $invoice->invoice_number);
+
+            return $capture;
+        }
 
         $primaryLabel = 'Invoice';
         $clinicName = null;
@@ -250,6 +261,40 @@ class PatientBookingSourceService
         }
 
         return $this->captureResult($primaryLabel, $clinicName, $doctorName, $departmentId, $evidenceLine, $invoice->invoice_number);
+    }
+
+    /**
+     * Booking capture for a non-consultation service order (with or without invoice).
+     *
+     * @return array{
+     *     primary_label: string,
+     *     clinic_name: ?string,
+     *     doctor_name: ?string,
+     *     department_id: ?int,
+     *     evidence_line: ?string,
+     *     invoice_number: ?string
+     * }
+     */
+    public function serviceOrderBookingCapture(ServiceOrder $order, ?string $invoiceNumber = null): array
+    {
+        $order->loadMissing(['doctor.user', 'department', 'service']);
+
+        $serviceName = $order->service?->name ?? 'Service';
+        $clinicName = $order->department?->name;
+        $doctorName = $this->formatDoctorName($order->doctor);
+        $evidence = 'Service order '.$order->order_number.' — '.$serviceName;
+        if ($invoiceNumber) {
+            $evidence .= ' (Invoice '.$invoiceNumber.')';
+        }
+
+        return $this->captureResult(
+            'Non-consultation service',
+            $clinicName,
+            $doctorName,
+            $order->department_id,
+            $evidence,
+            $invoiceNumber
+        );
     }
 
     /**

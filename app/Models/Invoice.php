@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Schema;
 
 class Invoice extends Model
@@ -101,6 +102,14 @@ class Invoice extends Model
     public function pendingClinicBookings(): HasMany
     {
         return $this->hasMany(PendingClinicBooking::class, 'invoice_id');
+    }
+
+    /**
+     * Non-consultation service order paid via this invoice (when applicable).
+     */
+    public function serviceOrder(): HasOne
+    {
+        return $this->hasOne(ServiceOrder::class, 'invoice_id');
     }
 
     // Scopes

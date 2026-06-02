@@ -20,31 +20,13 @@ class BookingPaymentsController extends Controller
 
         $doctor = Doctor::where('user_id', $user->id)->firstOrFail();
 
-        $query = $service->completedPaymentsForDoctor($doctor)
-            ->with([
-                'invoice.patient',
-                'invoice.appointment',
-                'invoice.pendingBookings',
-                'invoice.pendingClinicBookings.department',
-                'invoice.billing.doctor.user',
-                'invoice.billing.appointment',
-                'invoice.doctorBookingDiscountCode',
-                'invoice.clinicBookingDiscountCode',
-            ])
-            ->orderByDesc('payment_date');
+        $request->merge(['doctor_id' => $doctor->id]);
 
-        if ($request->filled('from')) {
-            $query->whereDate('payment_date', '>=', $request->string('from'));
-        }
-        if ($request->filled('to')) {
-            $query->whereDate('payment_date', '<=', $request->string('to'));
-        }
-
-        $payments = $query->paginate(25)->withQueryString();
+        $rows = $service->paginateBookingPaymentRows($request, 25);
         $stats = $service->doctorBookingPaymentStats($doctor);
 
         $bookingPaymentsService = $service;
 
-        return view('staff.booking-payments.index', compact('payments', 'doctor', 'stats', 'bookingPaymentsService'));
+        return view('staff.booking-payments.index', compact('rows', 'doctor', 'stats', 'bookingPaymentsService'));
     }
 }

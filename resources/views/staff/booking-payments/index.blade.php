@@ -99,12 +99,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($payments as $payment)
+                        @forelse($rows as $row)
                             @php
-                                $inv = $payment->invoice;
-                                $patient = $inv?->patient;
-                                $appt = $inv?->appointment;
-                                $src = $bookingPaymentsService->labelForPayment($payment);
+                                $src = $bookingPaymentsService->labelForRow($row);
                                 $badgeClass = match ($src) {
                                     'Appointment' => 'primary',
                                     'Pending booking' => 'info',
@@ -113,29 +110,29 @@
                                     'Billing' => 'secondary',
                                     'Doctor booking offer' => 'warning text-dark',
                                     'Clinic booking offer' => 'warning text-dark',
+                                    'Service order' => 'dark',
                                     'Invoice' => 'secondary',
                                     default => 'light text-dark',
                                 };
+                                $sortAt = $row->sortAt();
+                                $inv = $row->payment?->invoice;
+                                $appt = $inv?->appointment;
                             @endphp
                             <tr>
-                                <td>{{ $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—' }}</td>
-                                <td class="text-end fw-semibold">{{ CurrencyHelper::format((float) $payment->amount) }}</td>
-                                <td>{{ $payment->payment_method_label ?? $payment->payment_method }}</td>
+                                <td>{{ $sortAt ? formatDateTimeUkAmPm($sortAt) : '—' }}</td>
+                                <td class="text-end fw-semibold">{{ CurrencyHelper::format($row->amount()) }}</td>
+                                <td>{{ $bookingPaymentsService->methodLabelForRow($row) }}</td>
                                 <td><span class="badge bg-{{ $badgeClass }}">{{ $src }}</span></td>
-                                <td>{{ $inv?->invoice_number ?? ('#'.$inv?->id) }}</td>
-                                <td>
-                                    @if($patient)
-                                        {{ trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')) ?: '—' }}
-                                    @else
-                                        —
-                                    @endif
-                                </td>
+                                <td>{{ $bookingPaymentsService->invoiceLabelForRow($row) }}</td>
+                                <td>{{ $bookingPaymentsService->patientNameForRow($row) }}</td>
                                 <td>
                                     @if($appt)
                                         <a href="{{ route('staff.appointments.show', $appt->id) }}">{{ $fmtApptSlot($appt) }}</a>
                                     @elseif($inv?->billing?->appointment_id && $inv->billing->appointment)
                                         <span class="text-muted">Via billing</span>
                                         <a href="{{ route('staff.appointments.show', $inv->billing->appointment_id) }}" class="d-block small">{{ $fmtApptSlot($inv->billing->appointment) }}</a>
+                                    @elseif($src === 'Service order')
+                                        <span class="text-muted">{{ $bookingPaymentsService->appointmentSlotLabelForRow($row) }}</span>
                                     @elseif($inv && $inv->pendingBookings->isNotEmpty())
                                         <span class="text-muted">Pending booking checkout</span>
                                     @elseif($inv && $inv->pendingClinicBookings->isNotEmpty())
@@ -143,7 +140,7 @@
                                         <span class="text-muted">Clinic booking checkout</span>
                                         <span class="d-block small">{{ $fmtApptSlot((object) ['appointment_date' => $pcb->appointment_date, 'appointment_time' => $pcb->appointment_time]) }}</span>
                                     @else
-                                        —
+                                        {{ $bookingPaymentsService->appointmentSlotLabelForRow($row) }}
                                     @endif
                                 </td>
                             </tr>
@@ -156,8 +153,8 @@
                 </table>
             </div>
         </div>
-        @if($payments->hasPages())
-            <div class="card-footer">{{ $payments->links() }}</div>
+        @if($rows->hasPages())
+            <div class="card-footer">{{ $rows->links() }}</div>
         @endif
     </div>
 </div>

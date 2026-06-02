@@ -92,7 +92,7 @@
     <div class="summary">
         <strong>Filtered total:</strong> {{ CurrencyHelper::format((float) $totalAmount) }}
         &nbsp;|&nbsp;
-        <strong>Rows:</strong> {{ $payments->count() }}
+        <strong>Rows:</strong> {{ $rows->count() }}
     </div>
 
     <table>
@@ -111,31 +111,31 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($payments as $payment)
+            @foreach($rows as $row)
                 @php
-                    $inv = $payment->invoice;
-                    $src = $bookingPaymentsService->labelForPayment($payment);
-                    $capture = $bookingPaymentsService->bookingCaptureForPayment($payment);
-                    $comments = $bookingPaymentsService->commentsForBookingPayment($payment);
+                    $src = $bookingPaymentsService->labelForRow($row);
+                    $capture = $bookingPaymentsService->bookingCaptureForRow($row);
+                    $comments = $bookingPaymentsService->commentsForRow($row);
                     $captureText = $bookingPaymentsService->formatCaptureForDisplay($capture);
+                    $sortAt = $row->sortAt();
                 @endphp
                 <tr>
-                    <td>{{ $payment->payment_date ? formatDateTimeUkAmPm($payment->payment_date) : '—' }}</td>
-                    <td class="text-end">{{ CurrencyHelper::format((float) $payment->amount) }}</td>
-                    <td>{{ $payment->payment_method_label }}</td>
+                    <td>{{ $sortAt ? formatDateTimeUkAmPm($sortAt) : '—' }}</td>
+                    <td class="text-end">{{ CurrencyHelper::format($row->amount()) }}</td>
+                    <td>{{ $bookingPaymentsService->methodLabelForRow($row) }}</td>
                     <td>{{ $src }}</td>
-                    <td>{{ $inv?->invoice_number ?? ('#'.$inv?->id) }}</td>
-                    <td>{{ $bookingPaymentsService->doctorNameForBookingPayment($payment) ?? '—' }}</td>
+                    <td>{{ $bookingPaymentsService->invoiceLabelForRow($row) }}</td>
+                    <td>{{ $bookingPaymentsService->doctorNameForRow($row) ?? '—' }}</td>
                     <td>{{ $captureText !== '' ? $captureText : '—' }}</td>
-                    <td>{{ $bookingPaymentsService->patientNameForBookingPayment($payment) }}</td>
-                    <td>{{ $bookingPaymentsService->appointmentSlotLabelForBookingPayment($payment) }}</td>
+                    <td>{{ $bookingPaymentsService->patientNameForRow($row) }}</td>
+                    <td>{{ $bookingPaymentsService->appointmentSlotLabelForRow($row) }}</td>
                     <td class="comments">{{ $comments !== '' ? $comments : '—' }}</td>
                 </tr>
             @endforeach
         </tbody>
     </table>
 
-    @if($payments->isEmpty())
+    @if($rows->isEmpty())
         <p style="margin-top: 12px; text-align: center; color: #7f8c8d;">No payments match the current filters.</p>
     @endif
 
