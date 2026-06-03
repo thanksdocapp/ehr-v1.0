@@ -753,6 +753,7 @@ Route::group(['middleware' => 'installed'], function () {
         // Patients Management
         Route::get('/patients/search', [\App\Http\Controllers\Admin\PatientsController::class, 'search'])->name('patients.search');
         Route::get('/patients/export/csv', [\App\Http\Controllers\Admin\PatientsController::class, 'exportCsv'])->name('patients.export.csv');
+        Route::get('/patients/export/pdf', [\App\Http\Controllers\Admin\PatientsController::class, 'exportPdf'])->name('patients.export.pdf');
         Route::get('/patients/import', [\App\Http\Controllers\Admin\PatientsController::class, 'showImport'])->name('patients.import');
         Route::post('/patients/import/csv', [\App\Http\Controllers\Admin\PatientsController::class, 'importCsv'])->name('patients.import.csv');
         Route::resource('patients', \App\Http\Controllers\Admin\PatientsController::class);

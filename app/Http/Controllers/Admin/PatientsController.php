@@ -15,8 +15,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
 use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class PatientsController extends Controller
 {
@@ -1036,56 +1039,262 @@ class PatientsController extends Controller
     }
 
     /**
+     * Apply the patient-list filters to a query.
+     *
+     * Shared by the index listing and the CSV export so that "what you see is what you export",
+     * including the clinic/department filter.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     */
+    private function applyPatientListFilters($query, Request $request): void
+    {
+        // Scope to the current user's own department (admins without a department see all).
+        $departmentId = $this->getUserDepartmentId();
+        if ($departmentId) {
+            $query->byDepartment($departmentId);
+        }
+
+        // Multi-field quick search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere(DB::raw("CONCAT(first_name, ' ', last_name)"), 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('patient_id', 'like', "%{$search}%")
+                  ->orWhere('insurance_number', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('first_name')) {
+            $query->where('first_name', 'like', "%{$request->first_name}%");
+        }
+        if ($request->filled('last_name')) {
+            $query->where('last_name', 'like', "%{$request->last_name}%");
+        }
+
+        // Date of birth range
+        if ($request->filled('dob_from')) {
+            $query->whereDate('date_of_birth', '>=', Carbon::parse($request->dob_from)->format('Y-m-d'));
+        }
+        if ($request->filled('dob_to')) {
+            $query->whereDate('date_of_birth', '<=', Carbon::parse($request->dob_to)->format('Y-m-d'));
+        }
+
+        // Age range (calculated from DOB)
+        if ($request->filled('age_min')) {
+            $query->whereDate('date_of_birth', '<=', now()->subYears($request->age_min)->format('Y-m-d'));
+        }
+        if ($request->filled('age_max')) {
+            $query->whereDate('date_of_birth', '>=', now()->subYears($request->age_max + 1)->addDay()->format('Y-m-d'));
+        }
+
+        // Legacy age_range bucket support (used by older export links)
+        if ($request->filled('age_range')) {
+            $now = now();
+            switch ($request->age_range) {
+                case 'child':
+                    $query->whereDate('date_of_birth', '>=', $now->copy()->subYears(17)->format('Y-m-d'));
+                    break;
+                case 'adult':
+                    $query->whereDate('date_of_birth', '>=', $now->copy()->subYears(64)->format('Y-m-d'))
+                          ->whereDate('date_of_birth', '<=', $now->copy()->subYears(18)->format('Y-m-d'));
+                    break;
+                case 'senior':
+                    $query->whereDate('date_of_birth', '<=', $now->copy()->subYears(65)->format('Y-m-d'));
+                    break;
+            }
+        }
+
+        if ($request->filled('is_guest')) {
+            $query->where('is_guest', $request->is_guest == '1');
+        }
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
+        }
+        if ($request->filled('city')) {
+            $query->where('city', 'like', "%{$request->city}%");
+        }
+        if ($request->filled('country')) {
+            $query->where('country', 'like', "%{$request->country}%");
+        }
+        if ($request->filled('postal_code')) {
+            $query->where('postal_code', 'like', "%{$request->postal_code}%");
+        }
+
+        // Patient status
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif (in_array($request->status, ['inactive', 'archived'], true)) {
+                $query->where('is_active', false);
+            }
+        }
+
+        // Registration date range (accepts reg_from/reg_to from the list, date_from/date_to for legacy links)
+        $regFrom = $request->input('reg_from', $request->input('date_from'));
+        $regTo = $request->input('reg_to', $request->input('date_to'));
+        if (filled($regFrom)) {
+            $query->where('created_at', '>=', parseDateInput($regFrom) . ' 00:00:00');
+        }
+        if (filled($regTo)) {
+            $query->where('created_at', '<=', parseDateInput($regTo) . ' 23:59:59');
+        }
+
+        // Patient type (insurance vs private)
+        if ($request->filled('patient_type')) {
+            if ($request->patient_type === 'insurance') {
+                $query->whereNotNull('insurance_provider');
+            } elseif ($request->patient_type === 'private') {
+                $query->whereNull('insurance_provider');
+            }
+        }
+        if ($request->filled('insurance_provider')) {
+            $query->where('insurance_provider', 'like', "%{$request->insurance_provider}%");
+        }
+
+        if ($request->filled('assigned_doctor_id')) {
+            $query->where('assigned_doctor_id', $request->assigned_doctor_id);
+        }
+
+        // Department / Clinic — the key filter that makes "export per clinic" work.
+        if ($request->filled('department_id')) {
+            $query->byDepartment($request->department_id);
+        }
+
+        // Alerts
+        if ($request->filled('has_alert')) {
+            if (in_array($request->has_alert, ['true', '1'], true)) {
+                $query->whereHas('alerts', fn ($q) => $q->where('active', true));
+            } elseif (in_array($request->has_alert, ['false', '0'], true)) {
+                $query->whereDoesntHave('alerts', fn ($q) => $q->where('active', true));
+            }
+        }
+        if ($request->filled('alert_severity')) {
+            $query->whereHas('alerts', fn ($q) => $q->where('active', true)->where('severity', $request->alert_severity));
+        }
+        if ($request->filled('alert_type')) {
+            $query->whereHas('alerts', fn ($q) => $q->where('active', true)->where('type', $request->alert_type));
+        }
+
+        // Appointment date ranges
+        if ($request->filled('last_appt_from')) {
+            $from = Carbon::parse($request->last_appt_from)->format('Y-m-d');
+            $query->whereHas('appointments', fn ($q) => $q->whereDate('appointment_date', '>=', $from));
+        }
+        if ($request->filled('last_appt_to')) {
+            $to = Carbon::parse($request->last_appt_to)->format('Y-m-d');
+            $query->whereHas('appointments', fn ($q) => $q->whereDate('appointment_date', '<=', $to));
+        }
+        if ($request->filled('next_appt_from')) {
+            $from = Carbon::parse($request->next_appt_from)->format('Y-m-d');
+            $query->whereHas('appointments', fn ($q) => $q->whereDate('appointment_date', '>=', $from)->where('status', '!=', 'cancelled'));
+        }
+        if ($request->filled('next_appt_to')) {
+            $to = Carbon::parse($request->next_appt_to)->format('Y-m-d');
+            $query->whereHas('appointments', fn ($q) => $q->whereDate('appointment_date', '<=', $to)->where('status', '!=', 'cancelled'));
+        }
+
+        if ($request->filled('appointment_type')) {
+            if ($request->appointment_type === 'online') {
+                $query->whereHas('appointments', fn ($q) => $q->where('is_online', true));
+            } elseif ($request->appointment_type === 'in_person') {
+                $query->whereHas('appointments', fn ($q) => $q->where('is_online', false));
+            } elseif ($request->appointment_type === 'phone') {
+                $query->whereHas('appointments', fn ($q) => $q->where('type', 'phone'));
+            }
+        }
+
+        // Booking source (matches appointments.created_from when the column exists)
+        if ($request->filled('source') && Schema::hasColumn('appointments', 'created_from')) {
+            $source = $request->source;
+            $query->whereHas('appointments', fn ($q) => $q->where('created_from', 'like', "%{$source}%"));
+        }
+
+        // Visit frequency / counts
+        if ($request->filled('visits_in_last')) {
+            $cutoff = now()->subMonths((int) $request->visits_in_last);
+            $query->whereHas('appointments', fn ($q) => $q->where('appointment_date', '>=', $cutoff));
+        }
+        if ($request->filled('visit_count_min')) {
+            $query->withCount('appointments')->having('appointments_count', '>=', (int) $request->visit_count_min);
+        }
+        if ($request->filled('visit_count_max')) {
+            $query->withCount('appointments')->having('appointments_count', '<=', (int) $request->visit_count_max);
+        }
+
+        // Documentation / completeness
+        if ($request->filled('has_id_document')) {
+            if (in_array($request->has_id_document, ['true', '1'], true)) {
+                $query->whereNotNull('patient_id_document_path');
+            } else {
+                $query->whereNull('patient_id_document_path');
+            }
+        }
+        if ($request->filled('has_consent')) {
+            if (in_array($request->has_consent, ['true', '1'], true)) {
+                $query->where('consent_share_with_gp', true);
+            } else {
+                $query->where(fn ($q) => $q->where('consent_share_with_gp', false)->orWhereNull('consent_share_with_gp'));
+            }
+        }
+        if ($request->filled('has_gp_details')) {
+            if (in_array($request->has_gp_details, ['true', '1'], true)) {
+                $query->whereNotNull('gp_name')->whereNotNull('gp_email');
+            } else {
+                $query->where(fn ($q) => $q->whereNull('gp_name')->orWhereNull('gp_email'));
+            }
+        }
+        if ($request->filled('missing_phone')) {
+            $query->where(fn ($q) => $q->whereNull('phone')->orWhere('phone', ''));
+        }
+        if ($request->filled('missing_email')) {
+            $query->where(fn ($q) => $q->whereNull('email')->orWhere('email', ''));
+        }
+        if ($request->filled('missing_address')) {
+            $query->where(fn ($q) => $q->whereNull('address')->orWhere('address', ''));
+        }
+        if ($request->filled('email_verified')) {
+            if (in_array($request->email_verified, ['true', '1'], true)) {
+                $query->whereNotNull('email_verified_at');
+            } else {
+                $query->whereNull('email_verified_at');
+            }
+        }
+    }
+
+    /**
      * Export patients to CSV
      */
     public function exportCsv(Request $request)
     {
         try {
             $query = Patient::query();
-            
-            // Apply same filters as index method
-            $departmentId = $this->getUserDepartmentId();
-            if ($departmentId) {
-                $query->byDepartment($departmentId);
-            }
 
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
-                    $q->where('first_name', 'like', "%{$search}%")
-                      ->orWhere('last_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%")
-                      ->orWhere('patient_id', 'like', "%{$search}%");
-                });
-            }
+            // Apply the same filters as the index method so the export matches the on-screen list.
+            $this->applyPatientListFilters($query, $request);
 
-            if ($request->filled('gender')) {
-                $query->where('gender', $request->gender);
-            }
+            $hasCreatedFrom = Schema::hasColumn('appointments', 'created_from');
 
-            if ($request->filled('age_range')) {
-                $now = now();
-                switch ($request->age_range) {
-                    case 'child':
-                        $query->whereDate('date_of_birth', '>=', $now->copy()->subYears(17)->format('Y-m-d'));
-                        break;
-                    case 'adult':
-                        $query->whereDate('date_of_birth', '>=', $now->copy()->subYears(64)->format('Y-m-d'))
-                              ->whereDate('date_of_birth', '<=', $now->copy()->subYears(18)->format('Y-m-d'));
-                        break;
-                    case 'senior':
-                        $query->whereDate('date_of_birth', '<=', $now->copy()->subYears(65)->format('Y-m-d'));
-                        break;
-                }
-            }
-
-            if ($request->filled('date_from')) {
-                $dateFrom = parseDateInput($request->date_from) . ' 00:00:00';
-                $query->where('created_at', '>=', $dateFrom);
-            }
-
-            $patients = $query->with(['departments', 'department', 'createdByDoctor'])
+            $patients = $query->with([
+                    'departments',
+                    'department',
+                    'createdByDoctor',
+                    'assignedDoctor.user',
+                    'appointments' => function ($q) use ($hasCreatedFrom) {
+                        $columns = ['id', 'patient_id', 'appointment_date', 'status'];
+                        if ($hasCreatedFrom) {
+                            $columns[] = 'created_from';
+                        }
+                        $q->select($columns)->orderByDesc('appointment_date');
+                    },
+                    'invoices' => function ($q) {
+                        $q->select('id', 'patient_id', 'invoice_number', 'total_amount', 'created_at')
+                          ->orderByDesc('created_at');
+                    },
+                ])
                 ->orderBy('created_at', 'desc')
                 ->get();
 
@@ -1130,6 +1339,13 @@ class PatientsController extends Controller
                     'Medical Conditions',
                     'Assigned Clinics',
                     'Created By Doctor',
+                    'Assigned Doctor',
+                    'Last Appointment',
+                    'Booking Source',
+                    'Notes / Comment',
+                    'Invoice Count',
+                    'Total Invoiced',
+                    'Latest Invoice No',
                     'Status',
                     'Registration Date',
                     'Last Updated'
@@ -1140,9 +1356,25 @@ class PatientsController extends Controller
                     $departments = $patient->departments->pluck('name')->join(', ') ?: ($patient->department ? $patient->department->name : '');
                     $allergies = is_array($patient->allergies) ? implode(', ', $patient->allergies) : ($patient->allergies ?? '');
                     $conditions = is_array($patient->medical_conditions) ? implode(', ', $patient->medical_conditions) : ($patient->medical_conditions ?? '');
-                    
+
                     $age = $patient->date_of_birth ? Carbon::parse($patient->date_of_birth)->age : '';
-                    
+
+                    // Latest appointment drives both the "Last Appointment" date and the booking "Source".
+                    $latestAppointment = $patient->appointments->first();
+                    $lastAppointment = $latestAppointment && $latestAppointment->appointment_date
+                        ? $latestAppointment->appointment_date->format('Y-m-d')
+                        : '';
+                    $bookingSource = $latestAppointment ? ($latestAppointment->created_from ?? '') : '';
+
+                    // Invoice rollup (count, total billed, most recent invoice number).
+                    $invoiceCount = $patient->invoices->count();
+                    $totalInvoiced = $invoiceCount ? number_format((float) $patient->invoices->sum('total_amount'), 2, '.', '') : '';
+                    $latestInvoiceNo = $invoiceCount ? ($patient->invoices->first()->invoice_number ?? '') : '';
+
+                    $assignedDoctor = $patient->assignedDoctor
+                        ? ($patient->assignedDoctor->user->name ?? $patient->assignedDoctor->full_name ?? '')
+                        : '';
+
                     fputcsv($file, [
                         $patient->patient_id,
                         $patient->first_name,
@@ -1167,6 +1399,13 @@ class PatientsController extends Controller
                         $conditions,
                         $departments,
                         $patient->createdByDoctor ? $patient->createdByDoctor->full_name : '',
+                        $assignedDoctor,
+                        $lastAppointment,
+                        $bookingSource,
+                        $patient->notes ?? '',
+                        $invoiceCount,
+                        $totalInvoiced,
+                        $latestInvoiceNo,
                         $patient->is_active ? 'Active' : 'Inactive',
                         $patient->created_at->format('Y-m-d H:i:s'),
                         $patient->updated_at->format('Y-m-d H:i:s')
@@ -1186,6 +1425,108 @@ class PatientsController extends Controller
             return redirect()->back()
                 ->with('error', 'Failed to export patients: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Export patients to PDF (landscape summary that honors the same filters as the list).
+     */
+    public function exportPdf(Request $request)
+    {
+        try {
+            $query = Patient::query();
+
+            $this->applyPatientListFilters($query, $request);
+
+            $hasCreatedFrom = Schema::hasColumn('appointments', 'created_from');
+
+            $patients = $query->with([
+                    'departments',
+                    'department',
+                    'createdByDoctor',
+                    'assignedDoctor.user',
+                    'appointments' => function ($q) use ($hasCreatedFrom) {
+                        $columns = ['id', 'patient_id', 'appointment_date', 'status'];
+                        if ($hasCreatedFrom) {
+                            $columns[] = 'created_from';
+                        }
+                        $q->select($columns)->orderByDesc('appointment_date');
+                    },
+                    'invoices' => function ($q) {
+                        $q->select('id', 'patient_id', 'invoice_number', 'total_amount', 'created_at')
+                          ->orderByDesc('created_at');
+                    },
+                ])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $html = view('admin.patients.pdf', [
+                'patients' => $patients,
+                'filterSummary' => $this->filterSummaryForExport($request),
+            ])->render();
+
+            $options = new Options();
+            $options->set('isRemoteEnabled', true);
+            $options->set('chroot', base_path());
+
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'landscape');
+            $dompdf->render();
+
+            $filename = 'patients_' . now()->format('Y-m-d_H-i-s') . '.pdf';
+
+            return response()->streamDownload(function () use ($dompdf) {
+                echo $dompdf->output();
+            }, $filename);
+        } catch (\Exception $e) {
+            \Log::error('Patients PDF Export Error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request' => $request->all(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to export patients to PDF: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Human-readable description of the active filters, shown in the export header.
+     */
+    private function filterSummaryForExport(Request $request): string
+    {
+        $parts = [];
+
+        if ($request->filled('department_id')) {
+            $dept = Department::find($request->integer('department_id'));
+            $parts[] = 'Clinic: ' . ($dept?->name ?? '—');
+        }
+        if ($request->filled('assigned_doctor_id')) {
+            $doctor = Doctor::with('user')->find($request->integer('assigned_doctor_id'));
+            $label = $doctor
+                ? (string) ($doctor->user->name ?? trim(($doctor->first_name ?? '') . ' ' . ($doctor->last_name ?? '')))
+                : '—';
+            $parts[] = 'Doctor: ' . ($label !== '' ? $label : '—');
+        }
+        if ($request->filled('status')) {
+            $parts[] = 'Status: ' . ucfirst($request->status);
+        }
+        if ($request->filled('gender')) {
+            $parts[] = 'Gender: ' . ucfirst($request->gender);
+        }
+        if ($request->filled('search')) {
+            $parts[] = 'Search: "' . $request->search . '"';
+        }
+
+        $regFrom = $request->input('reg_from', $request->input('date_from'));
+        $regTo = $request->input('reg_to', $request->input('date_to'));
+        if (filled($regFrom)) {
+            $parts[] = 'Registered from: ' . $regFrom;
+        }
+        if (filled($regTo)) {
+            $parts[] = 'Registered to: ' . $regTo;
+        }
+
+        return $parts !== [] ? implode(' · ', $parts) : 'All patients (no filters)';
     }
 
     /**

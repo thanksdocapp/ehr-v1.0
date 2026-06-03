@@ -129,6 +129,11 @@ class Patient extends Authenticatable
         return $this->hasMany(LabReport::class);
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'email', 'email');

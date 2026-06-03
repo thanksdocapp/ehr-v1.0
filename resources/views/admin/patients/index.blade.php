@@ -21,6 +21,9 @@
                     <a href="{{ route('admin.patients.export.csv', request()->all()) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
                         <i class="fas fa-file-export me-2"></i>Export CSV
                     </a>
+                    <a href="{{ route('admin.patients.export.pdf', request()->all()) }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-file-pdf me-2"></i>Export PDF
+                    </a>
                     <a href="{{ route('admin.patients.import') }}" class="btn btn-light btn-lg" style="border-radius: 12px; font-weight: 600;">
                         <i class="fas fa-file-import me-2"></i>Import CSV
                     </a>
