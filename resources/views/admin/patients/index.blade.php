@@ -92,40 +92,51 @@
     </div>
 
     <!-- Modern Search Bar -->
+    @php
+        $activeFiltersCount = count(array_filter(request()->except(['page', 'search']), fn ($v) => $v !== null && $v !== ''));
+    @endphp
     <div class="modern-card mb-3">
         <div class="card-body">
-            <div class="d-flex gap-2 align-items-end">
-                <div class="flex-grow-1">
-                    <label class="form-label fw-semibold">Quick Search</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" 
-                               id="quickSearch" 
-                               name="search" 
-                               class="form-control form-control-lg" 
-                               placeholder="Search by name, ID, phone, or email..." 
-                               value="{{ request('search') }}">
+            <form method="GET" action="{{ contextRoute('patients.index') }}" id="quickSearchForm">
+                {{-- Preserve any active advanced filters when running a quick search --}}
+                @foreach(request()->except(['search', 'page']) as $key => $val)
+                    @if(!is_array($val))
+                        <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+                    @endif
+                @endforeach
+                <div class="d-flex gap-2 align-items-end">
+                    <div class="flex-grow-1">
+                        <label class="form-label fw-semibold">Quick Search</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text"
+                                   id="quickSearch"
+                                   name="search"
+                                   class="form-control form-control-lg"
+                                   placeholder="Search by name, ID, phone, or email..."
+                                   value="{{ request('search') }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Search
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <button type="button" class="btn btn-outline-primary" onclick="toggleFilters()">
-                        <i class="fas fa-filter me-1"></i>Filters
-                        @php
-                            $activeFiltersCount = count(array_filter(request()->except(['page', 'search'])));
-                        @endphp
-                        @if($activeFiltersCount > 0)
-                            <span class="badge bg-primary ms-1">{{ $activeFiltersCount }}</span>
-                        @endif
-                    </button>
-                </div>
-                <div>
+                    <div>
+                        <button type="button" class="btn btn-outline-primary" onclick="toggleFilters()">
+                            <i class="fas fa-filter me-1"></i>Filters
+                            @if($activeFiltersCount > 0)
+                                <span class="badge bg-primary ms-1">{{ $activeFiltersCount }}</span>
+                            @endif
+                        </button>
+                    </div>
                     @if(request()->hasAny(['search', 'first_name', 'last_name', 'gender', 'age_min', 'age_max', 'status', 'has_alert', 'department_id', 'assigned_doctor_id']))
-                        <a href="{{ contextRoute('patients.index') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-times me-1"></i>Clear All
-                        </a>
+                        <div>
+                            <a href="{{ contextRoute('patients.index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Clear All
+                            </a>
+                        </div>
                     @endif
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -163,13 +174,19 @@
         </div>
     @endif
 
-    <!-- Modern Filter Panel -->
-    <div class="modern-card mb-4" id="filterPanel" style="display: none;">
-        <div class="modern-card-header">
-            <h5 class="modern-card-title">
+    <!-- Modern Filter Panel (native <details> so it works without JS) -->
+    <style>
+        #filterPanel > summary { display: flex; align-items: center; justify-content: space-between; }
+        #filterPanel > summary::-webkit-details-marker { display: none; }
+        #filterPanel > summary::after { content: "\f078"; font-family: "Font Awesome 5 Free"; font-weight: 900; color: #6c757d; transition: transform .2s ease; }
+        #filterPanel[open] > summary::after { transform: rotate(180deg); }
+    </style>
+    <details class="modern-card mb-4" id="filterPanel" {{ $activeFiltersCount > 0 ? 'open' : '' }}>
+        <summary class="modern-card-header" style="cursor: pointer; list-style: none;">
+            <h5 class="modern-card-title mb-0">
                 <i class="fas fa-filter"></i>Advanced Filters
             </h5>
-        </div>
+        </summary>
         <div class="modern-card-body">
             <form method="GET" action="{{ contextRoute('patients.index') }}" id="filterForm">
                 @if(request('search'))
@@ -449,7 +466,7 @@
                 </div>
             </form>
         </div>
-    </div>
+    </details>
 
     <!-- Modern Patients Table -->
     <div class="modern-card">
@@ -731,64 +748,39 @@
 
 @push('scripts')
 <script>
-// Debounced Quick Search
-let searchTimeout;
+// Toggle the native <details> filter panel (works without JS too)
+window.toggleFilters = function() {
+    const panel = document.getElementById('filterPanel');
+    if (panel) {
+        panel.open = !panel.open;
+    }
+};
+
+// Remove individual filter chip
+window.removeFilter = function(filterKey) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete(filterKey);
+    url.searchParams.delete('page'); // Reset to first page
+    window.location.href = url.toString();
+};
+
 $(document).ready(function() {
-    $('#quickSearch').on('input', function() {
-        clearTimeout(searchTimeout);
-        const searchValue = $(this).val();
-        
-        searchTimeout = setTimeout(function() {
-            const url = new URL(window.location.href);
-            if (searchValue) {
-                url.searchParams.set('search', searchValue);
-            } else {
-                url.searchParams.delete('search');
-            }
-            url.searchParams.delete('page'); // Reset to first page
-            window.location.href = url.toString();
-        }, 400); // 400ms debounce
-    });
-
-    // Toggle filter panel
-    window.toggleFilters = function() {
-        const panel = document.getElementById('filterPanel');
-        if (panel.style.display === 'none' || !panel.style.display) {
-            panel.style.display = 'block';
-        } else {
-            panel.style.display = 'none';
-        }
-    };
-
-    // Remove individual filter
-    window.removeFilter = function(filterKey) {
-        const url = new URL(window.location.href);
-        url.searchParams.delete(filterKey);
-        url.searchParams.delete('page'); // Reset to first page
-        window.location.href = url.toString();
-    };
-
-    // Auto-submit filter form on change (optional - for live filtering)
-    // Uncomment if you want filters to auto-apply without clicking "Apply Filters"
-    /*
-    $('#filterForm select, #filterForm input[type="date"], #filterForm input[type="number"]').on('change', function() {
-        $('#filterForm').submit();
-    });
-    */
-});
-    // Select all functionality
-    document.getElementById('selectAll').addEventListener('change', function() {
-        const checkboxes = document.querySelectorAll('.patient-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
+    // Select all functionality (the checkbox only exists when the list is non-empty)
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('.patient-checkbox').forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateBulkActions();
         });
-        updateBulkActions();
-    });
+    }
 
     // Individual checkbox functionality
     document.querySelectorAll('.patient-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', updateBulkActions);
     });
+});
 
     function updateBulkActions() {
         const selectedCheckboxes = document.querySelectorAll('.patient-checkbox:checked');
