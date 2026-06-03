@@ -351,7 +351,7 @@ class PatientsController extends Controller
         
         $patients = $query->with(['departments', 'department', 'assignedDoctor', 'createdByDoctor', 'activeAlerts.creator'])
             ->orderBy('created_at', 'desc')
-            ->paginate(20)->appends($request->query());
+            ->paginate(60)->appends($request->query());
             
         return view('admin.patients.index', compact('patients', 'doctors', 'departments'));
     }
