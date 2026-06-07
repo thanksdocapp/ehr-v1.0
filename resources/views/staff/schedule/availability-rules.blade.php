@@ -33,6 +33,44 @@
         </div>
     @endif
 
+    <div class="doctor-card mb-4">
+        <div class="doctor-card-header d-flex justify-content-between align-items-center"
+             role="button" data-bs-toggle="collapse" data-bs-target="#gettingStartedHelp"
+             aria-expanded="false" aria-controls="gettingStartedHelp" style="cursor: pointer;">
+            <h5 class="doctor-card-title mb-0">
+                <i class="fas fa-circle-info text-info me-2"></i>Getting started — 3 quick steps
+            </h5>
+            <i class="fas fa-chevron-down text-muted"></i>
+        </div>
+        <div class="collapse" id="gettingStartedHelp">
+            <div class="doctor-card-body">
+                <ol class="mb-3 ps-3">
+                    <li class="mb-2">
+                        <strong>Set a window for each consultation type.</strong>
+                        Use the <em>Add availability window</em> form to say when a type is bookable —
+                        e.g. <em>Mon 09:00–12:00 In-person</em> and <em>Mon 14:00–17:00 Online</em>.
+                        Pick <strong>All types</strong> if your hours are the same for every type.
+                    </li>
+                    <li class="mb-2">
+                        <strong>Match your services to a type.</strong>
+                        A service’s consultation type (set under <a href="{{ route('staff.doctor-services.index') }}">My Services</a>)
+                        decides which windows a patient sees. An <em>online</em> service only shows your online / all-type windows.
+                    </li>
+                    <li class="mb-2">
+                        <strong>That’s it — patients book by service.</strong>
+                        They never choose a type directly; the service decides it, and they only see matching times.
+                    </li>
+                </ol>
+                <div class="alert alert-light border mb-0">
+                    <i class="fas fa-lock text-success me-2"></i>
+                    <strong>You can’t be double-booked.</strong> Booking <em>any</em> type fills that physical time for
+                    <em>all</em> types — so a 10:00 online booking also removes 10:00 from your in-person and telephone slots.
+                    Times being paid for right now are held until checkout finishes or expires.
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-lg-8">
             <div class="doctor-card mb-4">
