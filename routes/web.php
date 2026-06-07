@@ -473,6 +473,14 @@ Route::group(['middleware' => 'installed'], function () {
             Route::delete('/blocked-date/{id}', [\App\Http\Controllers\Staff\ScheduleController::class, 'removeBlockedDate'])->name('remove-blocked-date');
             Route::get('/slots', [\App\Http\Controllers\Staff\ScheduleController::class, 'getAvailableSlotsForDate'])->name('slots');
             Route::get('/blocked-dates', [\App\Http\Controllers\Staff\ScheduleController::class, 'getBlockedDates'])->name('blocked-dates');
+
+            // Per-modality availability rules (in-person / online / telephone)
+            Route::prefix('availability-rules')->name('availability-rules.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Staff\AvailabilityRuleController::class, 'index'])->name('index');
+                Route::post('/', [\App\Http\Controllers\Staff\AvailabilityRuleController::class, 'store'])->name('store');
+                Route::put('/{availabilityRule}', [\App\Http\Controllers\Staff\AvailabilityRuleController::class, 'update'])->name('update');
+                Route::delete('/{availabilityRule}', [\App\Http\Controllers\Staff\AvailabilityRuleController::class, 'destroy'])->name('destroy');
+            });
         });
 
         // Staff Notifications

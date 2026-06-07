@@ -15,6 +15,7 @@ class PendingBooking extends Model
         'doctor_id',
         'service_id',
         'department_id',
+        'availability_rule_id',
         'appointment_date',
         'appointment_time',
         'is_online',

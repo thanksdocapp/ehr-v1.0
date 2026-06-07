@@ -26,6 +26,17 @@
                         <strong>How it works:</strong> For each day you can add one or more <strong>time windows</strong> (e.g. morning 09:00–12:00, afternoon 14:00–17:00, evening 18:00–21:00). Patients can only book during these windows. Block specific dates for time off in the section on the right.
                     </div>
 
+                    <div class="alert alert-info d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <i class="fas fa-video me-2"></i>
+                            <strong>Different hours for online / telephone / in-person?</strong>
+                            Set availability per consultation type so patients only see slots that match the service.
+                        </div>
+                        <a href="{{ route('staff.schedule.availability-rules.index') }}" class="btn btn-sm btn-info text-white ms-3 flex-shrink-0">
+                            Manage by type
+                        </a>
+                    </div>
+
                     <form action="{{ route('staff.schedule.update-availability') }}" method="POST" id="availabilityForm">
                         @csrf
                         @method('PUT')

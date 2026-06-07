@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Doctor;
+use App\Models\DoctorAvailabilityRule;
 use App\Models\Billing;
 use App\Models\DoctorBookingDiscountCode;
 use App\Models\Invoice;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 
 class PublicBookingService
 {
@@ -54,6 +56,21 @@ class PublicBookingService
 
             // Determine the department/clinic for this booking
             $departmentId = $data['department_id'] ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
+
+            // Enforce modality server-side: a consultation service's modality (for this doctor) is
+            // authoritative — never trust a client-supplied consultation_type.
+            if (config('booking.modality_rules_enabled', true)
+                && $service
+                && !(method_exists($service, 'isNonConsultation') && $service->isNonConsultation())) {
+                $data['consultation_type'] = DoctorAvailabilityRule::normalizeModality(
+                    $service->getConsultationTypeForDoctor($doctor->id)
+                );
+            }
+
+            // Serialize on the practitioner (single physical resource), re-validate the slot is still
+            // free across all modalities, confirm the chosen modality is actually possible, and capture
+            // the availability rule consumed. Runs inside the surrounding transaction.
+            $data['availability_rule_id'] = $this->lockAndValidateSlot($doctor, $service, $data);
 
             // List price (before discount)
             $listPrice = 0;
@@ -220,6 +237,9 @@ class PublicBookingService
         if (Schema::hasColumn('appointments', 'service_id')) {
             $appointmentData['service_id'] = $service?->id;
         }
+        if (Schema::hasColumn('appointments', 'availability_rule_id') && !empty($data['availability_rule_id'])) {
+            $appointmentData['availability_rule_id'] = $data['availability_rule_id'];
+        }
         if (Schema::hasColumn('appointments', 'created_from')) {
             $appointmentData['created_from'] = 'Public Booking Link';
         }
@@ -342,6 +362,7 @@ class PublicBookingService
             'doctor_id' => $doctor->id,
             'service_id' => $service?->id,
             'department_id' => $departmentId,
+            'availability_rule_id' => $data['availability_rule_id'] ?? null,
             'appointment_date' => $data['appointment_date'],
             'appointment_time' => $data['appointment_time'],
             'is_online' => isset($data['consultation_type']) && $data['consultation_type'] === 'online',
@@ -434,6 +455,17 @@ class PublicBookingService
             $service = $pendingBooking->service;
             $invoice = $pendingBooking->invoice;
 
+            // Re-check the physical slot is still free before materializing the appointment: a
+            // confirmed booking could have landed since this pending was created. Serialize on the doctor.
+            if ($doctor) {
+                $this->assertSlotFreeOfAppointments(
+                    $doctor,
+                    $service,
+                    $pendingBooking->appointment_date,
+                    $pendingBooking->appointment_time
+                );
+            }
+
             if ($invoice
                 && $invoice->doctor_booking_discount_code_id
                 && Schema::hasColumn('invoices', 'discount_code_redemption_recorded_at')
@@ -501,6 +533,9 @@ class PublicBookingService
 
             if (Schema::hasColumn('appointments', 'service_id')) {
                 $appointmentData['service_id'] = $service?->id;
+            }
+            if (Schema::hasColumn('appointments', 'availability_rule_id') && !empty($pendingBooking->availability_rule_id)) {
+                $appointmentData['availability_rule_id'] = $pendingBooking->availability_rule_id;
             }
             if (Schema::hasColumn('appointments', 'created_from')) {
                 $appointmentData['created_from'] = 'Public Booking Link';
@@ -588,6 +623,61 @@ class PublicBookingService
         return PendingBooking::where('invoice_id', $invoice->id)
             ->where('status', 'pending_payment')
             ->first();
+    }
+
+    /**
+     * Finalize a doctor-link pending booking when its invoice is paid (e.g. Stripe redirect without session).
+     *
+     * @return array{appointment: Appointment, patient: Patient, billing: Billing, invoice: ?Invoice}|null
+     */
+    public function finalizeDoctorBookingForPaidInvoice(Invoice $invoice): ?array
+    {
+        $invoice->refresh();
+
+        $isPaid = $invoice->status === 'paid'
+            || $invoice->payments()->where('status', 'completed')->exists();
+
+        if (! $isPaid) {
+            return null;
+        }
+
+        if ($invoice->appointment_id) {
+            return null;
+        }
+
+        $pending = PendingBooking::query()
+            ->where('invoice_id', $invoice->id)
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $pending) {
+            return null;
+        }
+
+        if ($pending->status === 'completed') {
+            return null;
+        }
+
+        if (! in_array($pending->status, ['pending_payment', 'expired'], true)) {
+            return null;
+        }
+
+        if ($pending->status === 'expired') {
+            $pending->update(['status' => 'pending_payment']);
+            $pending->refresh();
+        }
+
+        try {
+            return $this->finalizeBookingAfterPayment($pending);
+        } catch (\Exception $e) {
+            Log::error('Failed to finalize doctor booking for paid invoice', [
+                'invoice_id' => $invoice->id,
+                'pending_booking_id' => $pending->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
@@ -716,6 +806,223 @@ class PublicBookingService
         } catch (\Exception $e) {
             Log::error('Failed to create public booking notifications', ['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Serialize on the practitioner, re-validate the slot is free across all modalities and the chosen
+     * modality is possible, then return the availability rule consumed (or null).
+     *
+     * Locks the doctor row (the single physical resource) so concurrent bookings for the same
+     * practitioner cannot both pass the overlap check — closing the cross-modality double-booking race.
+     *
+     * @throws ValidationException when the slot is taken or the modality is not available.
+     */
+    private function lockAndValidateSlot(Doctor $doctor, ?BookingServiceModel $service, array $data): ?int
+    {
+        $date = $data['appointment_date'] ?? null;
+        $time = $data['appointment_time'] ?? null;
+        if (!$date || !$time) {
+            return null;
+        }
+
+        // Serialize all bookings for this practitioner.
+        Doctor::whereKey($doctor->id)->lockForUpdate()->first();
+
+        $duration = $service ? (int) ($service->getDurationForDoctor($doctor->id) ?? 30) : 30;
+        if ($duration <= 0) {
+            $duration = 30;
+        }
+
+        $slotStart = Carbon::parse($date . ' ' . $time);
+        $slotEnd = $slotStart->copy()->addMinutes($duration);
+
+        $this->throwIfSlotTaken($doctor, $slotStart, $slotEnd, $date);
+
+        if (!config('booking.modality_rules_enabled', true)) {
+            return null;
+        }
+
+        $modality = DoctorAvailabilityRule::normalizeModality(
+            $service
+                ? $service->getConsultationTypeForDoctor($doctor->id)
+                : ($data['consultation_type'] ?? null)
+        );
+
+        $rule = $this->findCoveringRule($doctor, $slotStart, $slotEnd, $modality);
+
+        // If the doctor has narrowed their availability with rules for this weekday but none cover this
+        // slot for the requested modality, the booking is not possible.
+        if ($rule === null) {
+            $dayName = strtolower($slotStart->format('l'));
+            $hasRulesForDay = $doctor->availabilityRules()->active()->forDay($dayName)->exists();
+            if ($hasRulesForDay) {
+                throw ValidationException::withMessages([
+                    'appointment_time' => ['This time is not available for the selected consultation type.'],
+                ]);
+            }
+        }
+
+        return $rule?->id;
+    }
+
+    /**
+     * Re-check (under a doctor row lock) that no confirmed/pending appointment overlaps the slot.
+     * Used at payment-finalisation time where the pending booking already held the slot.
+     *
+     * @throws ValidationException
+     */
+    private function assertSlotFreeOfAppointments(Doctor $doctor, ?BookingServiceModel $service, $date, $time): void
+    {
+        $dateStr = $date instanceof \DateTimeInterface ? $date->format('Y-m-d') : (string) $date;
+        $timeStr = $time instanceof \DateTimeInterface ? $time->format('H:i:s') : (string) $time;
+
+        Doctor::whereKey($doctor->id)->lockForUpdate()->first();
+
+        $duration = $service ? (int) ($service->getDurationForDoctor($doctor->id) ?? 30) : 30;
+        if ($duration <= 0) {
+            $duration = 30;
+        }
+
+        $slotStart = Carbon::parse($dateStr . ' ' . $timeStr);
+        $slotEnd = $slotStart->copy()->addMinutes($duration);
+
+        $this->throwIfSlotTaken($doctor, $slotStart, $slotEnd, $dateStr, includePending: false);
+    }
+
+    /**
+     * Throw if any existing appointment (or, when enabled, in-progress pending booking) for the
+     * practitioner's clinic overlaps the slot — regardless of modality (shared physical resource).
+     *
+     * @throws ValidationException
+     */
+    private function throwIfSlotTaken(Doctor $doctor, Carbon $slotStart, Carbon $slotEnd, string $date, bool $includePending = true): void
+    {
+        $doctorIds = $this->clinicDoctorIds($doctor);
+
+        $appointments = Appointment::with('service')
+            ->whereIn('doctor_id', $doctorIds)
+            ->whereDate('appointment_date', $date)
+            ->whereIn('status', ['pending', 'confirmed', 'rescheduled'])
+            ->get();
+
+        foreach ($appointments as $appointment) {
+            if ($this->overlapsAppointment($slotStart, $slotEnd, $appointment)) {
+                throw ValidationException::withMessages([
+                    'appointment_time' => ['This time slot has just been booked. Please choose another.'],
+                ]);
+            }
+        }
+
+        if ($includePending && config('booking.modality_rules_enabled', true) && config('booking.lock_pending_bookings', true)) {
+            $pendings = PendingBooking::pendingPayment()
+                ->with('service')
+                ->whereIn('doctor_id', $doctorIds)
+                ->whereDate('appointment_date', $date)
+                ->get();
+
+            foreach ($pendings as $pending) {
+                $pStart = Carbon::parse(
+                    ($pending->appointment_date instanceof \DateTimeInterface ? $pending->appointment_date->format('Y-m-d') : (string) $pending->appointment_date)
+                    . ' '
+                    . ($pending->appointment_time instanceof \DateTimeInterface ? $pending->appointment_time->format('H:i:s') : substr((string) $pending->appointment_time, 0, 8))
+                );
+                $pDuration = ($pending->service_id && $pending->service)
+                    ? (int) ($pending->service->getDurationForDoctor($pending->doctor_id) ?? 30)
+                    : 30;
+                if ($pDuration <= 0) {
+                    $pDuration = 30;
+                }
+                $pEnd = $pStart->copy()->addMinutes($pDuration);
+
+                if ($slotStart->lt($pEnd) && $slotEnd->gt($pStart)) {
+                    throw ValidationException::withMessages([
+                        'appointment_time' => ['This time slot is being held by another booking in progress. Please choose another.'],
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Whether a slot overlaps a given appointment (duration from estimated_duration, else service, else 30).
+     */
+    private function overlapsAppointment(Carbon $slotStart, Carbon $slotEnd, Appointment $appointment): bool
+    {
+        $apptStart = Carbon::parse(
+            $appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s')
+        );
+        $apptDuration = (int) ($appointment->estimated_duration ?? 0);
+        if ($apptDuration <= 0 && $appointment->service_id && $appointment->doctor_id) {
+            $apptDuration = (int) ($appointment->service->getDurationForDoctor($appointment->doctor_id) ?? 30);
+        }
+        if ($apptDuration <= 0) {
+            $apptDuration = 30;
+        }
+        $apptEnd = $apptStart->copy()->addMinutes($apptDuration);
+
+        return $slotStart->lt($apptEnd) && $slotEnd->gt($apptStart);
+    }
+
+    /**
+     * The set of doctor ids sharing this practitioner's clinic/department (for clinic-wide slot blocking).
+     *
+     * @return list<int>
+     */
+    private function clinicDoctorIds(Doctor $doctor): array
+    {
+        $departmentIds = [];
+        if ($doctor->department_id) {
+            $departmentIds[] = $doctor->department_id;
+        }
+        foreach ($doctor->departments as $dept) {
+            $departmentIds[] = $dept->id;
+        }
+        $departmentIds = array_values(array_unique($departmentIds));
+
+        if (empty($departmentIds)) {
+            return [$doctor->id];
+        }
+
+        $ids = Doctor::byDepartments($departmentIds)->pluck('id')->all();
+
+        return !empty($ids) ? $ids : [$doctor->id];
+    }
+
+    /**
+     * Find an active availability rule whose window covers the slot and supports the modality.
+     */
+    private function findCoveringRule(Doctor $doctor, Carbon $slotStart, Carbon $slotEnd, string $modality): ?DoctorAvailabilityRule
+    {
+        $dayName = strtolower($slotStart->format('l'));
+        $rules = $doctor->availabilityRules()->active()->forDay($dayName)->get();
+        if ($rules->isEmpty()) {
+            return null;
+        }
+
+        $slotStartMinutes = (int) $slotStart->format('H') * 60 + (int) $slotStart->format('i');
+        $slotEndMinutes = (int) $slotEnd->format('H') * 60 + (int) $slotEnd->format('i');
+
+        foreach ($rules as $rule) {
+            if (!$rule->supportsModality($modality)) {
+                continue;
+            }
+            $ruleStart = $this->timeStringToMinutes((string) $rule->start_time);
+            $ruleEnd = $this->timeStringToMinutes((string) $rule->end_time);
+            if ($ruleStart <= $slotStartMinutes && $ruleEnd >= $slotEndMinutes) {
+                return $rule;
+            }
+        }
+
+        return null;
+    }
+
+    private function timeStringToMinutes(string $time): int
+    {
+        $parts = explode(':', $time);
+        $hours = (int) ($parts[0] ?? 0);
+        $minutes = (int) ($parts[1] ?? 0);
+
+        return $hours * 60 + $minutes;
     }
 
     /**

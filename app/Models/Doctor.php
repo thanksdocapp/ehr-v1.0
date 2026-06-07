@@ -150,6 +150,19 @@ class Doctor extends Model
         return $this->hasMany(DoctorServicePrice::class);
     }
 
+    public function availabilityRules(): HasMany
+    {
+        return $this->hasMany(DoctorAvailabilityRule::class);
+    }
+
+    /**
+     * Whether this doctor has any active modality-aware availability rules.
+     */
+    public function hasAvailabilityRules(): bool
+    {
+        return $this->availabilityRules()->where('is_active', true)->exists();
+    }
+
     public function bookingDiscountCodes(): HasMany
     {
         return $this->hasMany(DoctorBookingDiscountCode::class);

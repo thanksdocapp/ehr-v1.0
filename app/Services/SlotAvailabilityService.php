@@ -7,6 +7,8 @@ use App\Models\Doctor;
 use App\Models\Department;
 use App\Models\BookingService;
 use App\Models\DoctorAvailabilityException;
+use App\Models\DoctorAvailabilityRule;
+use App\Models\PendingBooking;
 use Carbon\Carbon;
 
 class SlotAvailabilityService
@@ -14,13 +16,21 @@ class SlotAvailabilityService
     /**
      * Get available time slots for a doctor on a specific date.
      *
+     * Each returned slot carries a `modalities` set (the consultation types valid at that time,
+     * derived from the doctor's availability rules). When a $modality is requested — directly or
+     * inferred from the service — only slots whose set includes it are returned. The physical time
+     * block is treated as a single resource: any existing appointment or in-progress pending booking
+     * removes the slot for every modality, so cross-modality double-booking is impossible.
+     *
      * @param int $doctorId
      * @param string $date (YYYY-MM-DD)
      * @param int|null $serviceId
      * @param int|null $durationMinutes Override duration (minutes) if provided
+     * @param string|null $modality Requested modality (in_person|online|telephone). When null and a
+     *                              service is given, it is inferred from the service for this doctor.
      * @return array
      */
-    public function getAvailableSlots($doctorId, $date, $serviceId = null, $durationMinutes = null)
+    public function getAvailableSlots($doctorId, $date, $serviceId = null, $durationMinutes = null, $modality = null)
     {
         $doctor = Doctor::findOrFail($doctorId);
         $dateObj = Carbon::parse($date);
@@ -29,6 +39,8 @@ class SlotAvailabilityService
         if ($this->isDateBlocked($doctorId, $dateObj)) {
             return []; // Doctor has blocked this date
         }
+
+        $modalityEnabled = (bool) config('booking.modality_rules_enabled', true);
 
         // Get duration (default 30 minutes). Priority:
         // 1) explicit override (durationMinutes)
@@ -44,13 +56,18 @@ class SlotAvailabilityService
             }
         }
 
+        // Resolve the requested modality (service determines it unless explicitly passed).
+        $requestedModality = $modalityEnabled
+            ? $this->resolveRequestedModality($modality, $serviceId, $doctorId)
+            : null;
+
         // Offer start times on the same step as visit length (e.g. 30 min duration → 9:00, 9:30, 10:00…)
         $slotStartIncrementMinutes = max(5, min(120, $duration));
         $slotStartIncrementMinutes = (int) (round($slotStartIncrementMinutes / 5) * 5);
 
-        // Get doctor's working sessions (one or more time windows) for this day
+        // Get doctor's working sessions (one or more time windows) for this day, each tagged with modalities.
         $dayName = strtolower($dateObj->format('l')); // monday, tuesday, etc.
-        $sessions = $this->getWorkingSessions($doctor, $dayName);
+        $sessions = $this->getSessionsWithModality($doctor, $dayName, $modalityEnabled);
 
         if (empty($sessions)) {
             return []; // Doctor not available on this day
@@ -73,11 +90,22 @@ class SlotAvailabilityService
             ->whereIn('status', ['pending', 'confirmed', 'rescheduled'])
             ->get();
 
+        // In-progress pending bookings hold a physical block for the doctor across every modality.
+        $pendingBookings = collect();
+        if ($modalityEnabled && config('booking.lock_pending_bookings', true)) {
+            $pendingBookings = PendingBooking::pendingPayment()
+                ->with('service')
+                ->whereIn('doctor_id', $doctorIdsInClinic)
+                ->whereDate('appointment_date', $date)
+                ->get();
+        }
+
         // Get blocked times (breaks within a session + partial day blocks)
         $blockedTimes = $this->getBlockedTimes($doctor, $dateObj);
 
-        // Generate time slots for each session
-        $slots = [];
+        // Generate time slots for each session, keyed by start time so overlapping modality windows
+        // union into a single slot carrying all valid modalities.
+        $slotMap = [];
         foreach ($sessions as $session) {
             $startTime = Carbon::parse($session['start']);
             $endTime = Carbon::parse($session['end']);
@@ -87,20 +115,146 @@ class SlotAvailabilityService
             while ($currentTime->copy()->addMinutes($duration)->lte($dayEnd)) {
                 $slotStart = $currentTime->copy();
                 $slotEnd = $currentTime->copy()->addMinutes($duration);
+                $key = $slotStart->format('H:i');
 
-                if ($this->isSlotAvailable($slotStart, $slotEnd, $existingAppointments, $blockedTimes)) {
-                    $slots[] = [
-                        'start' => $slotStart->format('H:i'),
-                        'end' => $slotEnd->format('H:i'),
-                        'display' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A')
-                    ];
+                if (!isset($slotMap[$key])) {
+                    $free = $this->isSlotAvailable($slotStart, $slotEnd, $existingAppointments, $blockedTimes)
+                        && ($pendingBookings->isEmpty() || $this->isSlotFreeOfPending($slotStart, $slotEnd, $pendingBookings));
+
+                    if ($free) {
+                        $slotMap[$key] = [
+                            'start' => $slotStart->format('H:i'),
+                            'end' => $slotEnd->format('H:i'),
+                            'display' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                            'modalities' => [],
+                        ];
+                    }
+                }
+
+                if (isset($slotMap[$key])) {
+                    $slotMap[$key]['modalities'] = array_values(array_unique(
+                        array_merge($slotMap[$key]['modalities'], $session['modalities'])
+                    ));
                 }
 
                 $currentTime->addMinutes($slotStartIncrementMinutes);
             }
         }
 
+        $slots = array_values($slotMap);
+
+        // Keep only slots that support the requested modality.
+        if ($requestedModality !== null) {
+            $slots = array_values(array_filter(
+                $slots,
+                fn($slot) => in_array($requestedModality, $slot['modalities'], true)
+            ));
+        }
+
+        usort($slots, fn($a, $b) => strcmp($a['start'], $b['start']));
+
         return $slots;
+    }
+
+    /**
+     * Resolve the concrete modality a request targets. Explicit value wins; otherwise it is inferred
+     * from the chosen service for this doctor. Non-consultation services impose no modality filter.
+     */
+    private function resolveRequestedModality(?string $modality, $serviceId, $doctorId): ?string
+    {
+        if (is_string($modality) && trim($modality) !== '') {
+            return DoctorAvailabilityRule::normalizeModality($modality);
+        }
+
+        if ($serviceId) {
+            $service = BookingService::find($serviceId);
+            if ($service) {
+                if (method_exists($service, 'isNonConsultation') && $service->isNonConsultation()) {
+                    return null;
+                }
+
+                return DoctorAvailabilityRule::normalizeModality($service->getConsultationTypeForDoctor($doctorId));
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Working windows for a day, each tagged with the modalities it serves.
+     * Uses doctor_availability_rules when modality is enabled and the doctor has active rules;
+     * otherwise falls back to the legacy JSON schedule (tagged as serving every modality).
+     *
+     * @return array<int, array{start: string, end: string, modalities: list<string>}>
+     */
+    private function getSessionsWithModality($doctor, string $dayName, bool $modalityEnabled): array
+    {
+        if ($modalityEnabled) {
+            $rules = $doctor->relationLoaded('availabilityRules')
+                ? $doctor->availabilityRules->where('is_active', true)->where('day_of_week', $dayName)
+                : $doctor->availabilityRules()->active()->forDay($dayName)->get();
+
+            if ($rules->isNotEmpty()) {
+                $sessions = [];
+                foreach ($rules as $rule) {
+                    $start = substr((string) $rule->start_time, 0, 5);
+                    $end = substr((string) $rule->end_time, 0, 5);
+                    if ($start !== '' && $end !== '' && $start < $end) {
+                        $sessions[] = [
+                            'start' => $start,
+                            'end' => $end,
+                            'modalities' => $rule->modalitySet(),
+                        ];
+                    }
+                }
+
+                return $sessions;
+            }
+        }
+
+        // Legacy JSON path: every window serves every modality (pre-feature behaviour).
+        return array_map(
+            fn($session) => [
+                'start' => $session['start'],
+                'end' => $session['end'],
+                'modalities' => DoctorAvailabilityRule::CONCRETE_MODALITIES,
+            ],
+            $this->getWorkingSessions($doctor, $dayName)
+        );
+    }
+
+    /**
+     * Whether a candidate slot is clear of all in-progress pending bookings (any modality).
+     *
+     * @param \Illuminate\Support\Collection $pendingBookings
+     */
+    private function isSlotFreeOfPending(Carbon $slotStart, Carbon $slotEnd, $pendingBookings): bool
+    {
+        foreach ($pendingBookings as $pending) {
+            $dateStr = $pending->appointment_date instanceof \DateTimeInterface
+                ? $pending->appointment_date->format('Y-m-d')
+                : (string) $pending->appointment_date;
+            $timeStr = $pending->appointment_time instanceof \DateTimeInterface
+                ? $pending->appointment_time->format('H:i:s')
+                : substr((string) $pending->appointment_time, 0, 8);
+
+            $pendingStart = Carbon::parse($dateStr . ' ' . $timeStr);
+
+            $pendingDuration = 30;
+            if ($pending->service_id && $pending->service) {
+                $pendingDuration = (int) ($pending->service->getDurationForDoctor($pending->doctor_id) ?? 30);
+            }
+            if ($pendingDuration <= 0) {
+                $pendingDuration = 30;
+            }
+            $pendingEnd = $pendingStart->copy()->addMinutes($pendingDuration);
+
+            if ($slotStart->lt($pendingEnd) && $slotEnd->gt($pendingStart)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -114,7 +268,7 @@ class SlotAvailabilityService
      * @param int|null $durationMinutes
      * @return array
      */
-    public function getAvailableSlotsForDepartment($departmentId, $date, $serviceId = null, $durationMinutes = null)
+    public function getAvailableSlotsForDepartment($departmentId, $date, $serviceId = null, $durationMinutes = null, $modality = null)
     {
         $department = Department::findOrFail($departmentId);
         $doctors = Doctor::byDepartment($departmentId)->active()->get();
@@ -136,15 +290,23 @@ class SlotAvailabilityService
             }
         }
 
-        // Collect all slots from all doctors (union)
+        // Collect all slots from all doctors (union). Each doctor already filters by the requested
+        // modality (or the service's modality for that doctor), so the union shows a slot whenever
+        // ANY doctor can serve it — acceptance later re-validates against the accepting doctor.
         $allSlots = [];
         foreach ($doctors as $doctor) {
             if (!$serviceId || \App\Models\BookingService::find($serviceId)?->isAvailableForDoctor($doctor->id)) {
-                $doctorSlots = $this->getAvailableSlots($doctor->id, $date, $serviceId, $duration);
+                $doctorSlots = $this->getAvailableSlots($doctor->id, $date, $serviceId, $duration, $modality);
                 foreach ($doctorSlots as $slot) {
                     $key = $slot['start'];
                     if (!isset($allSlots[$key])) {
                         $allSlots[$key] = $slot;
+                    } else {
+                        // Merge the modality sets across doctors for accurate display.
+                        $allSlots[$key]['modalities'] = array_values(array_unique(array_merge(
+                            $allSlots[$key]['modalities'] ?? [],
+                            $slot['modalities'] ?? []
+                        )));
                     }
                 }
             }
@@ -173,6 +335,26 @@ class SlotAvailabilityService
         foreach ($allSlots as $slotKey => $slot) {
             if ($this->slotOverlapsAppointments($slot['start'], $duration, $date, $departmentAppointments)) {
                 unset($allSlots[$slotKey]);
+            }
+        }
+
+        // Exclude slots held by in-progress pending bookings for any department doctor (resource lock).
+        if (config('booking.modality_rules_enabled', true) && config('booking.lock_pending_bookings', true)) {
+            $departmentDoctorIds = $doctors->pluck('id')->all();
+            $pendingBookings = PendingBooking::pendingPayment()
+                ->with('service')
+                ->whereIn('doctor_id', $departmentDoctorIds)
+                ->whereDate('appointment_date', $date)
+                ->get();
+
+            if ($pendingBookings->isNotEmpty()) {
+                foreach ($allSlots as $slotKey => $slot) {
+                    $slotStart = Carbon::parse($date . ' ' . $slot['start']);
+                    $slotEnd = $slotStart->copy()->addMinutes($duration);
+                    if (!$this->isSlotFreeOfPending($slotStart, $slotEnd, $pendingBookings)) {
+                        unset($allSlots[$slotKey]);
+                    }
+                }
             }
         }
 

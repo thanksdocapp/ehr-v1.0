@@ -18,6 +18,7 @@ class Appointment extends Model
         'doctor_id',
         'department_id',
         'service_id',
+        'availability_rule_id',
         'appointment_date',
         'appointment_time',
         'type',
@@ -85,6 +86,11 @@ class Appointment extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(BookingService::class, 'service_id');
+    }
+
+    public function availabilityRule(): BelongsTo
+    {
+        return $this->belongsTo(DoctorAvailabilityRule::class, 'availability_rule_id');
     }
 
     public function medicalRecord()

@@ -18,6 +18,7 @@ class ClinicBookingRequest extends Model
         'patient_id',
         'doctor_id',
         'appointment_id',
+        'availability_rule_id',
         'accepted_by_user_id',
         'accepted_at',
         'auto_accepted',

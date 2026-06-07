@@ -10,6 +10,8 @@ use App\Models\InvoiceItem;
 use App\Models\PendingClinicBooking;
 use App\Models\Patient;
 use App\Models\Doctor;
+use App\Models\DoctorAvailabilityRule;
+use App\Models\PendingBooking;
 use App\Models\Appointment;
 use App\Models\BookingService;
 use App\Services\GuestPatientService;
@@ -19,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 
 class ClinicBookingService
 {
@@ -1229,6 +1232,11 @@ class ClinicBookingService
             );
             $service = $request->service;
 
+            // Re-validate the physical slot against THIS accepting doctor: lock the doctor (single
+            // resource), ensure the time is free across all modalities, and confirm the requested
+            // modality is actually possible for this doctor. Capture the availability rule consumed.
+            $availabilityRuleId = $this->validateClinicSlotForDoctor($request, $doctor, $service);
+
             // Find or create patient
             $patient = $this->guestPatientService->findOrCreateGuest([
                 'first_name' => $patientData['first_name'],
@@ -1262,10 +1270,19 @@ class ClinicBookingService
 
             $fee = $service ? $service->getPriceForDoctor($doctor->id) : 0;
 
-            $isOnline = ($request->consultation_type ?? 'in_person') === 'online';
+            // Server-side modality: the service's modality for the accepting doctor is authoritative.
+            $resolvedConsultationType = $request->consultation_type ?? 'in_person';
+            if (config('booking.modality_rules_enabled', true)
+                && $service
+                && !(method_exists($service, 'isNonConsultation') && $service->isNonConsultation())) {
+                $resolvedConsultationType = DoctorAvailabilityRule::normalizeModality(
+                    $service->getConsultationTypeForDoctor($doctor->id)
+                );
+            }
+            $isOnline = $resolvedConsultationType === 'online';
             $useWhereby = $isOnline && $this->wherebyService->isEnabled();
 
-            $appointment = Appointment::create([
+            $appointmentPayload = [
                 'appointment_number' => Appointment::generateAppointmentNumber(),
                 'patient_id' => $patient->id,
                 'doctor_id' => $doctor->id,
@@ -1277,12 +1294,17 @@ class ClinicBookingService
                 'status' => 'pending',
                 'fee' => $fee,
                 'is_online' => $isOnline,
-                'consultation_type' => $request->consultation_type ?? 'in_person',
+                'consultation_type' => $resolvedConsultationType,
                 'notes' => $request->notes,
                 'created_from' => $autoAccepted ? 'Clinic Booking (Auto-assigned)' : 'Clinic Booking (Doctor Accepted)',
                 // Set meeting_platform so Observer skips email until we have the meeting link
                 'meeting_platform' => $useWhereby ? 'whereby' : null,
-            ]);
+            ];
+            if ($availabilityRuleId && Schema::hasColumn('appointments', 'availability_rule_id')) {
+                $appointmentPayload['availability_rule_id'] = $availabilityRuleId;
+            }
+
+            $appointment = Appointment::create($appointmentPayload);
 
             // Create Whereby meeting for online consultations so video link is in confirmation email
             if ($useWhereby) {
@@ -1317,6 +1339,9 @@ class ClinicBookingService
             if (Schema::hasColumn('clinic_booking_requests', 'auto_accepted')) {
                 $acceptedPayload['auto_accepted'] = $autoAccepted;
             }
+            if ($availabilityRuleId && Schema::hasColumn('clinic_booking_requests', 'availability_rule_id')) {
+                $acceptedPayload['availability_rule_id'] = $availabilityRuleId;
+            }
             $request->update($acceptedPayload);
 
             $this->emailService->sendAppointmentConfirmation($appointment);
@@ -1340,6 +1365,124 @@ class ClinicBookingService
 
             return $appointment;
         });
+    }
+
+    /**
+     * Validate a clinic request's slot against the accepting doctor and return the availability rule
+     * consumed (or null). Locks the doctor row to serialize bookings for that practitioner.
+     *
+     * @throws ValidationException when the slot is taken or the modality is not possible for the doctor.
+     */
+    protected function validateClinicSlotForDoctor(ClinicBookingRequest $request, Doctor $doctor, ?BookingService $service): ?int
+    {
+        $dateStr = $request->appointment_date instanceof \DateTimeInterface
+            ? $request->appointment_date->format('Y-m-d')
+            : (string) $request->appointment_date;
+        $timeStr = $request->appointment_time instanceof \DateTimeInterface
+            ? $request->appointment_time->format('H:i:s')
+            : (string) $request->appointment_time;
+
+        // Serialize all bookings for this practitioner.
+        Doctor::whereKey($doctor->id)->lockForUpdate()->first();
+
+        $duration = $service ? (int) ($service->getDurationForDoctor($doctor->id) ?? 30) : 30;
+        if ($duration <= 0) {
+            $duration = 30;
+        }
+
+        $slotStart = Carbon::parse($dateStr . ' ' . $timeStr);
+        $slotEnd = $slotStart->copy()->addMinutes($duration);
+
+        // Block if an existing appointment for this doctor overlaps (any modality — shared resource).
+        $appointments = Appointment::with('service')
+            ->where('doctor_id', $doctor->id)
+            ->whereDate('appointment_date', $dateStr)
+            ->whereIn('status', ['pending', 'confirmed', 'rescheduled'])
+            ->get();
+        foreach ($appointments as $appointment) {
+            $apptStart = Carbon::parse(
+                $appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s')
+            );
+            $apptDuration = (int) ($appointment->estimated_duration ?? 0);
+            if ($apptDuration <= 0 && $appointment->service_id) {
+                $apptDuration = (int) ($appointment->service->getDurationForDoctor($doctor->id) ?? 30);
+            }
+            if ($apptDuration <= 0) {
+                $apptDuration = 30;
+            }
+            $apptEnd = $apptStart->copy()->addMinutes($apptDuration);
+            if ($slotStart->lt($apptEnd) && $slotEnd->gt($apptStart)) {
+                throw ValidationException::withMessages([
+                    'appointment_time' => ['This time slot is no longer available for the selected doctor.'],
+                ]);
+            }
+        }
+
+        // Block if an in-progress pending booking holds the slot for this doctor.
+        if (config('booking.modality_rules_enabled', true) && config('booking.lock_pending_bookings', true)) {
+            $pendings = PendingBooking::pendingPayment()
+                ->with('service')
+                ->where('doctor_id', $doctor->id)
+                ->whereDate('appointment_date', $dateStr)
+                ->get();
+            foreach ($pendings as $pending) {
+                $pStart = Carbon::parse(
+                    ($pending->appointment_date instanceof \DateTimeInterface ? $pending->appointment_date->format('Y-m-d') : (string) $pending->appointment_date)
+                    . ' '
+                    . ($pending->appointment_time instanceof \DateTimeInterface ? $pending->appointment_time->format('H:i:s') : substr((string) $pending->appointment_time, 0, 8))
+                );
+                $pDuration = ($pending->service_id && $pending->service)
+                    ? (int) ($pending->service->getDurationForDoctor($pending->doctor_id) ?? 30)
+                    : 30;
+                if ($pDuration <= 0) {
+                    $pDuration = 30;
+                }
+                $pEnd = $pStart->copy()->addMinutes($pDuration);
+                if ($slotStart->lt($pEnd) && $slotEnd->gt($pStart)) {
+                    throw ValidationException::withMessages([
+                        'appointment_time' => ['This time slot is being held by another booking in progress.'],
+                    ]);
+                }
+            }
+        }
+
+        if (!config('booking.modality_rules_enabled', true)) {
+            return null;
+        }
+
+        // Confirm the requested modality is possible for this doctor and capture the rule.
+        $modality = DoctorAvailabilityRule::normalizeModality(
+            $service
+                ? $service->getConsultationTypeForDoctor($doctor->id)
+                : ($request->consultation_type ?? null)
+        );
+
+        $dayName = strtolower($slotStart->format('l'));
+        $rules = $doctor->availabilityRules()->active()->forDay($dayName)->get();
+        if ($rules->isEmpty()) {
+            // Doctor has no modality rules yet (not backfilled/narrowed): keep legacy behaviour.
+            return null;
+        }
+
+        $slotStartMinutes = (int) $slotStart->format('H') * 60 + (int) $slotStart->format('i');
+        $slotEndMinutes = (int) $slotEnd->format('H') * 60 + (int) $slotEnd->format('i');
+
+        foreach ($rules as $rule) {
+            if (!$rule->supportsModality($modality)) {
+                continue;
+            }
+            $parts = explode(':', (string) $rule->start_time);
+            $ruleStart = (int) ($parts[0] ?? 0) * 60 + (int) ($parts[1] ?? 0);
+            $parts = explode(':', (string) $rule->end_time);
+            $ruleEnd = (int) ($parts[0] ?? 0) * 60 + (int) ($parts[1] ?? 0);
+            if ($ruleStart <= $slotStartMinutes && $ruleEnd >= $slotEndMinutes) {
+                return $rule->id;
+            }
+        }
+
+        throw ValidationException::withMessages([
+            'appointment_time' => ['The selected doctor is not available for this consultation type at this time.'],
+        ]);
     }
 
     protected function notifyDoctorsOfNewRequest(ClinicBookingRequest $request): void
