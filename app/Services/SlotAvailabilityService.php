@@ -561,20 +561,25 @@ class SlotAvailabilityService
             }
         }
 
-        // Check for partial day blocks from exceptions
+        // Check for partial day blocks from exceptions.
+        // A single date can hold multiple non-overlapping blocked intervals
+        // (e.g. 09:00-12:00 and 16:00-17:00), so collect every partial-day row.
         $dateStr = $this->exceptionDateString($date);
-        $exception = DoctorAvailabilityException::where('doctor_id', $doctor->id)
+        $exceptions = DoctorAvailabilityException::where('doctor_id', $doctor->id)
             ->where('exception_date', $dateStr)
+            ->where('type', 'blocked')
             ->where('is_all_day', false)
             ->whereNotNull('start_time')
             ->whereNotNull('end_time')
-            ->first();
+            ->get();
 
-        if ($exception && $exception->start_time && $exception->end_time) {
-            $blocked[] = [
-                'start' => $exception->start_time->format('H:i'),
-                'end' => $exception->end_time->format('H:i')
-            ];
+        foreach ($exceptions as $exception) {
+            if ($exception->start_time && $exception->end_time) {
+                $blocked[] = [
+                    'start' => $exception->start_time->format('H:i'),
+                    'end' => $exception->end_time->format('H:i')
+                ];
+            }
         }
 
         return $blocked;

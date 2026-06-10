@@ -153,63 +153,277 @@ class ScheduleController extends Controller
             'exception_date' => 'required|date|after_or_equal:today',
             'reason' => 'nullable|string|max:255',
             'is_all_day' => 'sometimes|boolean',
-            'start_time' => 'nullable|required_if:is_all_day,false',
-            'end_time' => 'nullable|required_if:is_all_day,false'
+            // Times come either as a single start_time/end_time pair (legacy) or an
+            // intervals[] array. Presence is enforced in the controller (empty-intervals
+            // check) so a missing pair does not block the intervals[] path.
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
+            'intervals' => 'sometimes|array',
+            'intervals.*.start' => 'required_with:intervals|date_format:H:i',
+            'intervals.*.end' => 'required_with:intervals|date_format:H:i',
         ]);
 
         $exceptionDate = Carbon::parse($request->exception_date);
-
-        // Full-day blocks from the staff form: always treat as all-day (never trust raw "" / "0" from inputs)
+        $dateStr = $exceptionDate->toDateString();
         $isAllDay = $request->boolean('is_all_day', true);
 
-        // Check if date already blocked
-        $existing = DoctorAvailabilityException::where('doctor_id', $doctor->id)
-            ->where('exception_date', $exceptionDate->toDateString())
-            ->first();
+        // Existing blocks for this doctor + date.
+        $existingBlocks = DoctorAvailabilityException::where('doctor_id', $doctor->id)
+            ->where('exception_date', $dateStr)
+            ->where('type', 'blocked')
+            ->get();
 
-        if ($existing) {
+        $existingAllDay = $existingBlocks->firstWhere('is_all_day', true);
+
+        // ---- Whole-day block ----
+        if ($isAllDay) {
+            if ($existingBlocks->isNotEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $existingAllDay
+                        ? 'This date is already blocked for the whole day.'
+                        : 'This date already has blocked time interval(s). Remove them before blocking the whole day.'
+                ], 422);
+            }
+
+            $exception = DoctorAvailabilityException::create([
+                'doctor_id' => $doctor->id,
+                'exception_date' => $exceptionDate,
+                'type' => 'blocked',
+                'reason' => $request->reason,
+                'is_all_day' => true,
+                'start_time' => null,
+                'end_time' => null,
+            ]);
+
+            $appointmentsOnDate = Appointment::where('doctor_id', $doctor->id)
+                ->whereDate('appointment_date', $exceptionDate)
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->count();
+
+            $message = 'Date blocked successfully.';
+            if ($appointmentsOnDate > 0) {
+                $message .= " Note: You have {$appointmentsOnDate} existing appointment(s) on this date that may need to be rescheduled.";
+            }
+
+            return $this->blockedDateResponse($request, $message, collect([$exception]), $appointmentsOnDate);
+        }
+
+        // ---- Time-interval block ----
+        if ($existingAllDay) {
             return response()->json([
                 'success' => false,
-                'message' => 'This date is already blocked.'
+                'message' => 'This date is already blocked for the whole day. Remove the whole-day block before adding intervals.'
             ], 422);
         }
 
-        // Check for existing appointments on this date
-        $appointmentsOnDate = Appointment::where('doctor_id', $doctor->id)
-            ->whereDate('appointment_date', $exceptionDate)
-            ->whereIn('status', ['pending', 'confirmed'])
-            ->count();
+        $intervals = $this->parseBlockIntervals($request);
 
-        $exception = DoctorAvailabilityException::create([
-            'doctor_id' => $doctor->id,
-            'exception_date' => $exceptionDate,
-            'type' => 'blocked',
-            'reason' => $request->reason,
-            'is_all_day' => $isAllDay,
-            'start_time' => $isAllDay ? null : $request->start_time,
-            'end_time' => $isAllDay ? null : $request->end_time
-        ]);
-
-        $message = 'Date blocked successfully.';
-        if ($appointmentsOnDate > 0) {
-            $message .= " Note: You have {$appointmentsOnDate} existing appointment(s) on this date that may need to be rescheduled.";
+        if (empty($intervals)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please provide at least one valid time interval (end time after start time).'
+            ], 422);
         }
 
+        // Reject intervals that overlap each other within this submission.
+        if ($this->intervalsOverlapWithinSet($intervals)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The time intervals overlap each other. Please use separate, non-overlapping intervals.'
+            ], 422);
+        }
+
+        // Reject intervals overlapping any interval already stored for this date.
+        $existingIntervals = $existingBlocks
+            ->where('is_all_day', false)
+            ->filter(fn($b) => $b->start_time && $b->end_time)
+            ->map(fn($b) => [
+                'start' => $b->start_time->format('H:i'),
+                'end' => $b->end_time->format('H:i'),
+            ])
+            ->values()
+            ->all();
+
+        foreach ($intervals as $interval) {
+            foreach ($existingIntervals as $existing) {
+                if ($this->twoIntervalsOverlap($interval, $existing)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Interval {$interval['start']}-{$interval['end']} overlaps an existing blocked interval ({$existing['start']}-{$existing['end']}) on this date."
+                    ], 422);
+                }
+            }
+        }
+
+        $created = collect();
+        foreach ($intervals as $interval) {
+            $created->push(DoctorAvailabilityException::create([
+                'doctor_id' => $doctor->id,
+                'exception_date' => $exceptionDate,
+                'type' => 'blocked',
+                'reason' => $request->reason,
+                'is_all_day' => false,
+                'start_time' => $interval['start'],
+                'end_time' => $interval['end'],
+            ]));
+        }
+
+        // Flag (do not drop) existing appointments that fall inside the new interval(s).
+        $conflicting = $this->appointmentsWithinIntervals($doctor->id, $exceptionDate, $intervals);
+
+        $message = count($intervals) > 1
+            ? 'Time intervals blocked successfully.'
+            : 'Time interval blocked successfully.';
+        if ($conflicting > 0) {
+            $message .= " Warning: {$conflicting} existing appointment(s) fall inside the blocked time and may need to be rescheduled.";
+        }
+
+        return $this->blockedDateResponse($request, $message, $created, $conflicting);
+    }
+
+    /**
+     * Build the add-blocked-date response (JSON for AJAX, redirect otherwise).
+     */
+    private function blockedDateResponse(Request $request, string $message, $exceptions, int $appointmentsCount)
+    {
         if ($request->expectsJson()) {
+            $first = $exceptions->first();
+
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'exception' => [
-                    'id' => $exception->id,
-                    'exception_date' => $exception->exception_date->format('Y-m-d'),
-                    'reason' => $exception->reason,
-                    'is_all_day' => (bool) $exception->is_all_day,
-                ],
-                'appointments_count' => $appointmentsOnDate
+                // Backwards-compatible single-exception payload (first created row).
+                'exception' => $first ? [
+                    'id' => $first->id,
+                    'exception_date' => $first->exception_date->format('Y-m-d'),
+                    'reason' => $first->reason,
+                    'is_all_day' => (bool) $first->is_all_day,
+                    'start_time' => $first->start_time?->format('H:i'),
+                    'end_time' => $first->end_time?->format('H:i'),
+                ] : null,
+                'exceptions' => $exceptions->map(fn($e) => [
+                    'id' => $e->id,
+                    'exception_date' => $e->exception_date->format('Y-m-d'),
+                    'reason' => $e->reason,
+                    'is_all_day' => (bool) $e->is_all_day,
+                    'start_time' => $e->start_time?->format('H:i'),
+                    'end_time' => $e->end_time?->format('H:i'),
+                ])->values(),
+                'appointments_count' => $appointmentsCount,
             ]);
         }
 
         return redirect()->back()->with('success', $message);
+    }
+
+    /**
+     * Normalize block intervals from the request.
+     * Accepts either an `intervals` array ([{start,end}, ...]) or a single
+     * legacy start_time/end_time pair. Returns only valid intervals (end > start).
+     */
+    private function parseBlockIntervals(Request $request): array
+    {
+        $raw = $request->input('intervals');
+        if (!is_array($raw) || empty($raw)) {
+            // Legacy single-interval payload.
+            $raw = [[
+                'start' => $request->input('start_time'),
+                'end' => $request->input('end_time'),
+            ]];
+        }
+
+        $intervals = [];
+        foreach ($raw as $item) {
+            $start = $item['start'] ?? null;
+            $end = $item['end'] ?? null;
+            if (!$start || !$end) {
+                continue;
+            }
+            // end must be strictly after start.
+            if ($this->timeToMinutes($end) <= $this->timeToMinutes($start)) {
+                continue;
+            }
+            $intervals[] = ['start' => $start, 'end' => $end];
+        }
+
+        return $intervals;
+    }
+
+    /**
+     * True if any two intervals in the set overlap.
+     */
+    private function intervalsOverlapWithinSet(array $intervals): bool
+    {
+        $count = count($intervals);
+        for ($i = 0; $i < $count; $i++) {
+            for ($j = $i + 1; $j < $count; $j++) {
+                if ($this->twoIntervalsOverlap($intervals[$i], $intervals[$j])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True if two HH:MM intervals overlap (touching edges do not count).
+     */
+    private function twoIntervalsOverlap(array $a, array $b): bool
+    {
+        $aStart = $this->timeToMinutes($a['start']);
+        $aEnd = $this->timeToMinutes($a['end']);
+        $bStart = $this->timeToMinutes($b['start']);
+        $bEnd = $this->timeToMinutes($b['end']);
+
+        return $aStart < $bEnd && $aEnd > $bStart;
+    }
+
+    /**
+     * Count pending/confirmed appointments whose start time falls inside any interval.
+     */
+    private function appointmentsWithinIntervals(int $doctorId, Carbon $date, array $intervals): int
+    {
+        if (empty($intervals)) {
+            return 0;
+        }
+
+        $appointments = Appointment::where('doctor_id', $doctorId)
+            ->whereDate('appointment_date', $date)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->get();
+
+        $count = 0;
+        foreach ($appointments as $appointment) {
+            if (!$appointment->appointment_time) {
+                continue;
+            }
+            $apptMinutes = $this->timeToMinutes($appointment->appointment_time->format('H:i'));
+            foreach ($intervals as $interval) {
+                $start = $this->timeToMinutes($interval['start']);
+                $end = $this->timeToMinutes($interval['end']);
+                if ($apptMinutes >= $start && $apptMinutes < $end) {
+                    $count++;
+                    break;
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Convert an HH:MM string to minutes since midnight.
+     */
+    private function timeToMinutes(?string $time): int
+    {
+        if (!$time) {
+            return 0;
+        }
+        $parts = explode(':', $time);
+        $hours = (int) ($parts[0] ?? 0);
+        $minutes = (int) ($parts[1] ?? 0);
+        return ($hours * 60) + $minutes;
     }
 
     /**
@@ -265,10 +479,12 @@ class ScheduleController extends Controller
         $dayName = strtolower($dateObj->format('l'));
         $availability = $doctor->availability ?? $this->getDefaultAvailability();
 
-        // Check if date is blocked
+        // Check if the whole date is blocked (all-day blocks only; partial-day
+        // interval blocks leave the rest of the day bookable).
         $isBlocked = DoctorAvailabilityException::where('doctor_id', $doctor->id)
             ->where('exception_date', $dateObj->toDateString())
             ->blocked()
+            ->where('is_all_day', true)
             ->exists();
 
         if ($isBlocked) {
@@ -279,6 +495,20 @@ class ScheduleController extends Controller
                 'message' => 'This date is blocked.'
             ]);
         }
+
+        // Partial-day blocked intervals for this date (so the preview can reflect them).
+        $blockedIntervals = DoctorAvailabilityException::where('doctor_id', $doctor->id)
+            ->where('exception_date', $dateObj->toDateString())
+            ->blocked()
+            ->where('is_all_day', false)
+            ->whereNotNull('start_time')
+            ->whereNotNull('end_time')
+            ->get()
+            ->map(fn($e) => [
+                'start' => $e->start_time->format('H:i'),
+                'end' => $e->end_time->format('H:i'),
+            ])
+            ->values();
 
         // Check regular availability
         $dayAvailability = $availability[$dayName] ?? null;
@@ -307,6 +537,7 @@ class ScheduleController extends Controller
                     'start' => min(array_column($sessions, 'start')),
                     'end' => max(array_column($sessions, 'end'))
                 ],
+                'blocked_intervals' => $blockedIntervals,
                 'appointments_count' => $appointments->count()
             ]);
         }
@@ -318,6 +549,7 @@ class ScheduleController extends Controller
                 'end' => $dayAvailability['end'] ?? '17:00'
             ],
             'breaks' => $dayAvailability['breaks'] ?? [],
+            'blocked_intervals' => $blockedIntervals,
             'appointments_count' => $appointments->count()
         ]);
     }

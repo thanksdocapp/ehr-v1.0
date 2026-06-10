@@ -189,7 +189,32 @@
                                    id="blockReason"
                                    placeholder="e.g., Annual Leave, Conference">
                         </div>
-                        <input type="hidden" name="is_all_day" value="1">
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold d-block">
+                                <i class="fas fa-clock me-1"></i>Block Type
+                            </label>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input block-type-radio" type="radio"
+                                       name="block_type" id="blockTypeWholeDay" value="whole_day" checked>
+                                <label class="form-check-label small" for="blockTypeWholeDay">Whole day</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input block-type-radio" type="radio"
+                                       name="block_type" id="blockTypeInterval" value="interval">
+                                <label class="form-check-label small" for="blockTypeInterval">Specific time(s)</label>
+                            </div>
+                        </div>
+
+                        <div id="blockIntervalsWrap" class="mb-3 d-none">
+                            <label class="form-label small fw-bold">Blocked time intervals</label>
+                            <div id="blockIntervalsList"></div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="addIntervalRow">
+                                <i class="fas fa-plus me-1"></i>Add another interval
+                            </button>
+                            <div class="form-text small">Slots outside these intervals stay bookable.</div>
+                        </div>
+
                         <button type="submit" class="btn btn-danger w-100">
                             <i class="fas fa-ban me-1"></i>Block This Date
                         </button>
@@ -208,8 +233,13 @@
                                 <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded mb-2 blocked-date-item" data-id="{{ $blocked->id }}">
                                     <div>
                                         <div class="fw-bold small">{{ $blocked->exception_date->format('l, j M Y') }}</div>
+                                        @if($blocked->is_all_day)
+                                            <span class="badge bg-danger-subtle text-danger small">All day</span>
+                                        @elseif($blocked->start_time && $blocked->end_time)
+                                            <span class="badge bg-warning-subtle text-warning-emphasis small">{{ $blocked->start_time->format('H:i') }} - {{ $blocked->end_time->format('H:i') }}</span>
+                                        @endif
                                         @if($blocked->reason)
-                                            <small class="text-muted">{{ $blocked->reason }}</small>
+                                            <small class="text-muted d-block">{{ $blocked->reason }}</small>
                                         @endif
                                     </div>
                                     <button type="button" class="btn btn-sm btn-outline-danger remove-blocked-date" data-id="{{ $blocked->id }}">
@@ -420,6 +450,53 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // --- Block type toggle + time-interval rows ---
+    const blockIntervalsWrap = document.getElementById('blockIntervalsWrap');
+    const blockIntervalsList = document.getElementById('blockIntervalsList');
+
+    function buildIntervalRow() {
+        const row = document.createElement('div');
+        row.className = 'interval-row d-flex align-items-center gap-2 mb-2';
+        row.innerHTML = `
+            <input type="time" class="form-control form-control-sm interval-start" aria-label="Start time">
+            <span class="small text-muted">to</span>
+            <input type="time" class="form-control form-control-sm interval-end" aria-label="End time">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-interval-row" aria-label="Remove interval">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        row.querySelector('.remove-interval-row').addEventListener('click', function() {
+            row.remove();
+            if (blockIntervalsList.querySelectorAll('.interval-row').length === 0) {
+                blockIntervalsList.appendChild(buildIntervalRow());
+            }
+        });
+        return row;
+    }
+
+    function getSelectedBlockType() {
+        const checked = document.querySelector('input[name="block_type"]:checked');
+        return checked ? checked.value : 'whole_day';
+    }
+
+    function syncBlockTypeUI() {
+        if (getSelectedBlockType() === 'interval') {
+            blockIntervalsWrap.classList.remove('d-none');
+            if (blockIntervalsList.querySelectorAll('.interval-row').length === 0) {
+                blockIntervalsList.appendChild(buildIntervalRow());
+            }
+        } else {
+            blockIntervalsWrap.classList.add('d-none');
+        }
+    }
+
+    document.querySelectorAll('.block-type-radio').forEach(function(radio) {
+        radio.addEventListener('change', syncBlockTypeUI);
+    });
+    document.getElementById('addIntervalRow').addEventListener('click', function() {
+        blockIntervalsList.appendChild(buildIntervalRow());
+    });
+
     // Add blocked date form submission
     document.getElementById('addBlockedDateForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -437,7 +514,40 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        const blockType = getSelectedBlockType();
+        const intervals = [];
+
+        if (blockType === 'interval') {
+            const rows = blockIntervalsList.querySelectorAll('.interval-row');
+            for (const row of rows) {
+                const start = row.querySelector('.interval-start').value;
+                const end = row.querySelector('.interval-end').value;
+                if (!start && !end) {
+                    continue; // skip empty rows
+                }
+                if (!start || !end) {
+                    Swal.fire({ icon: 'error', title: 'Incomplete Interval', text: 'Each interval needs both a start and end time.' });
+                    return;
+                }
+                if (end <= start) {
+                    Swal.fire({ icon: 'error', title: 'Invalid Interval', text: `End time must be after start time (${start} - ${end}).` });
+                    return;
+                }
+                intervals.push({ start, end });
+            }
+            if (intervals.length === 0) {
+                Swal.fire({ icon: 'error', title: 'No Intervals', text: 'Add at least one time interval to block.' });
+                return;
+            }
+        }
+
         const formData = new FormData(form);
+        formData.delete('block_type');
+        formData.set('is_all_day', blockType === 'interval' ? '0' : '1');
+        intervals.forEach(function(interval, i) {
+            formData.append(`intervals[${i}][start]`, interval.start);
+            formData.append(`intervals[${i}][end]`, interval.end);
+        });
 
         fetch('{{ route("staff.schedule.add-blocked-date") }}', {
             method: 'POST',
@@ -484,28 +594,43 @@ document.addEventListener('DOMContentLoaded', function() {
                     year: 'numeric'
                 });
 
-                const newItem = document.createElement('div');
-                newItem.className = 'd-flex justify-content-between align-items-center p-2 bg-light rounded mb-2 blocked-date-item';
-                newItem.setAttribute('data-id', data.exception.id);
-                newItem.innerHTML = `
-                    <div>
-                        <div class="fw-bold small">${formattedDate}</div>
-                        ${reasonInput.value ? `<small class="text-muted">${reasonInput.value}</small>` : ''}
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger remove-blocked-date" data-id="${data.exception.id}">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-                listContainer.prepend(newItem);
+                const createdList = (data.exceptions && data.exceptions.length) ? data.exceptions : [data.exception];
+                createdList.forEach(function(exc) {
+                    if (!exc) return;
+                    let badge;
+                    if (exc.is_all_day) {
+                        badge = '<span class="badge bg-danger-subtle text-danger small">All day</span>';
+                    } else if (exc.start_time && exc.end_time) {
+                        badge = `<span class="badge bg-warning-subtle text-warning-emphasis small">${exc.start_time} - ${exc.end_time}</span>`;
+                    } else {
+                        badge = '';
+                    }
 
-                // Attach event listener to new remove button
-                newItem.querySelector('.remove-blocked-date').addEventListener('click', function() {
-                    removeBlockedDate(this.getAttribute('data-id'));
+                    const newItem = document.createElement('div');
+                    newItem.className = 'd-flex justify-content-between align-items-center p-2 bg-light rounded mb-2 blocked-date-item';
+                    newItem.setAttribute('data-id', exc.id);
+                    newItem.innerHTML = `
+                        <div>
+                            <div class="fw-bold small">${formattedDate}</div>
+                            ${badge}
+                            ${reasonInput.value ? `<small class="text-muted d-block">${reasonInput.value}</small>` : ''}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-blocked-date" data-id="${exc.id}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    newItem.querySelector('.remove-blocked-date').addEventListener('click', function() {
+                        removeBlockedDate(this.getAttribute('data-id'));
+                    });
+                    listContainer.prepend(newItem);
                 });
 
                 // Reset form
                 dateInput.value = '';
                 reasonInput.value = '';
+                document.getElementById('blockTypeWholeDay').checked = true;
+                blockIntervalsList.innerHTML = '';
+                syncBlockTypeUI();
 
                 Swal.fire({
                     icon: 'success',
