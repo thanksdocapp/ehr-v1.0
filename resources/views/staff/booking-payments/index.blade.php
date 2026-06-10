@@ -117,6 +117,8 @@
                                 $sortAt = $row->sortAt();
                                 $inv = $row->payment?->invoice;
                                 $appt = $inv?->appointment;
+                                $patient = $inv?->patient ?? $row->serviceOrder?->patient;
+                                $isProvisional = $patient && ($patient->is_guest ?? false);
                             @endphp
                             <tr>
                                 <td>{{ $sortAt ? formatDateTimeUkAmPm($sortAt) : '—' }}</td>
@@ -124,7 +126,12 @@
                                 <td>{{ $bookingPaymentsService->methodLabelForRow($row) }}</td>
                                 <td><span class="badge bg-{{ $badgeClass }}">{{ $src }}</span></td>
                                 <td>{{ $bookingPaymentsService->invoiceLabelForRow($row) }}</td>
-                                <td>{{ $bookingPaymentsService->patientNameForRow($row) }}</td>
+                                <td>
+                                    {{ $bookingPaymentsService->patientNameForRow($row) }}
+                                    @if($isProvisional)
+                                        <span class="badge bg-secondary ms-1" style="font-size: 0.65rem;">Provisional</span>
+                                    @endif
+                                </td>
                                 <td>
                                     @if($appt)
                                         <a href="{{ route('staff.appointments.show', $appt->id) }}">{{ $fmtApptSlot($appt) }}</a>

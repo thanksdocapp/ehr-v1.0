@@ -15,6 +15,8 @@
     };
     $capture = $bookingPaymentsService->bookingCaptureForRow($row);
     $sortAt = $row->sortAt();
+    $patient = $row->payment?->invoice?->patient ?? $row->serviceOrder?->patient;
+    $isProvisional = $patient && ($patient->is_guest ?? false);
 @endphp
 <tr>
     <td>{{ $sortAt ? formatDateTimeUkAmPm($sortAt) : '—' }}</td>
@@ -24,7 +26,12 @@
     <td>{{ $bookingPaymentsService->invoiceLabelForRow($row) }}</td>
     <td>{{ $bookingPaymentsService->doctorNameForRow($row) ?? '—' }}</td>
     <td class="small">@include('admin.partials.booking-capture-cell', ['capture' => $capture])</td>
-    <td>{{ $bookingPaymentsService->patientNameForRow($row) }}</td>
+    <td>
+        {{ $bookingPaymentsService->patientNameForRow($row) }}
+        @if($isProvisional)
+            <span class="badge bg-secondary ms-1" style="font-size: 0.65rem;" title="Provisional profile from public booking">Provisional</span>
+        @endif
+    </td>
     <td>{{ $bookingPaymentsService->appointmentSlotLabelForRow($row) }}</td>
     <td class="small text-break" style="max-width: 220px;">{{ ($comments = $bookingPaymentsService->commentsForRow($row)) !== '' ? $comments : '—' }}</td>
 </tr>

@@ -21,9 +21,15 @@
 .detail-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 2rem;
+    padding: 1.5rem 1.75rem;
     border-radius: 15px 15px 0 0;
     position: relative;
+    overflow: hidden;
+}
+
+.detail-header .detail-header-inner {
+    position: relative;
+    z-index: 1;
 }
 
 .detail-header::before {
@@ -35,10 +41,18 @@
     bottom: 0;
     background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="25" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
     border-radius: 15px 15px 0 0;
+    pointer-events: none;
+    z-index: 0;
 }
 
 .detail-body {
-    padding: 2.5rem;
+    padding: 1.5rem;
+}
+
+@media (min-width: 992px) {
+    .detail-body {
+        padding: 2rem;
+    }
 }
 
 .info-section {
@@ -118,13 +132,21 @@
 }
 
 .email-content {
-    background: white;
+    background: #fff;
     border: 2px solid #e3e6f0;
     border-radius: 12px;
-    padding: 2rem;
-    margin-top: 1.5rem;
-    max-height: 400px;
-    overflow-y: auto;
+    margin-top: 1rem;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.email-preview-frame {
+    display: block;
+    width: 100%;
+    min-height: 280px;
+    max-height: 560px;
+    border: 0;
+    background: #fff;
 }
 
 .email-headers {
@@ -280,14 +302,14 @@
         <p class="page-subtitle text-muted">Detailed information about this email</p>
     </div>
 
-    <div class="row">
-        <div class="col-lg-8">
+    <div class="row g-4">
+        <div class="col-lg-8 order-lg-1">
             <div class="detail-card">
                 <div class="detail-header">
-                    <div class="row align-items-center">
+                    <div class="detail-header-inner row align-items-center g-2">
                         <div class="col">
-                            <h3 class="mb-0"><i class="fas fa-info-circle me-2"></i>Email Information</h3>
-                            <p class="mb-0 opacity-75">Email ID: #{{ $emailLog->id }}</p>
+                            <h3 class="mb-1 h4"><i class="fas fa-info-circle me-2"></i>Email Information</h3>
+                            <p class="mb-0 opacity-75 small">Email ID: #{{ $emailLog->id }}</p>
                         </div>
                         <div class="col-auto">
                             <span class="status-badge status-{{ $emailLog->status }}">
@@ -372,6 +394,31 @@
                         </table>
                     </div>
 
+                    @php
+                        $meta = is_array($emailLog->metadata) ? $emailLog->metadata : [];
+                        $relatedInvoiceId = $emailLog->invoice_id ?? ($meta['invoice_id'] ?? null);
+                        $relatedPaymentId = $emailLog->payment_id ?? ($meta['payment_id'] ?? null);
+                    @endphp
+                    @if($relatedInvoiceId || $relatedPaymentId)
+                    <div class="info-section">
+                        <h5><i class="fas fa-link text-warning"></i>Related records</h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            @if($relatedPaymentId)
+                                <a href="{{ route('admin.booking-payments.index', ['from' => '', 'to' => '']) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-credit-card me-1"></i>Booking payments
+                                </a>
+                            @endif
+                            @if($relatedInvoiceId)
+                                <span class="badge bg-light text-dark border align-self-center">Invoice #{{ $relatedInvoiceId }}</span>
+                            @endif
+                            @if($relatedPaymentId)
+                                <span class="badge bg-light text-dark border align-self-center">Payment #{{ $relatedPaymentId }}</span>
+                            @endif
+                        </div>
+                        <p class="small text-muted mb-0 mt-2">Open <strong>Booking payments</strong> and clear filters to find this checkout (search by patient email or amount).</p>
+                    </div>
+                    @endif
+
                     @if($emailLog->status === 'failed' && $emailLog->error_message)
                     <div class="error-details">
                         <h6><i class="fas fa-exclamation-triangle me-2"></i>Error Details</h6>
@@ -421,9 +468,14 @@
                             <div class="tab-pane fade show active" id="tabRendered" role="tabpanel">
                                 <div class="email-content mt-3">
                                     @if(trim($emailHtmlSafe) === '')
-                                        <div class="text-muted">No email body stored for this log.</div>
+                                        <div class="text-muted p-4">No email body stored for this log.</div>
                                     @else
-                                        {!! $emailHtmlSafe !!}
+                                        <iframe
+                                            id="emailPreviewFrame"
+                                            class="email-preview-frame"
+                                            title="Rendered email preview"
+                                            sandbox=""
+                                        ></iframe>
                                     @endif
                                 </div>
                             </div>
@@ -455,11 +507,13 @@ Metadata:
             </div>
         </div>
 
-        <div class="col-lg-4">
+        <div class="col-lg-4 order-lg-2">
             <!-- Timeline -->
             <div class="detail-card mb-4">
                 <div class="detail-header">
-                    <h4 class="mb-0"><i class="fas fa-history me-2"></i>Email Timeline</h4>
+                    <div class="detail-header-inner">
+                        <h4 class="mb-0 h5"><i class="fas fa-history me-2"></i>Email Timeline</h4>
+                    </div>
                 </div>
                 <div class="detail-body">
                     <div class="timeline">
@@ -511,7 +565,7 @@ Metadata:
                 </div>
 
                 <div class="d-grid gap-2">
-                    <a href="{{ route('admin.email-management.index') }}" class="btn btn-custom btn-back">
+                    <a href="{{ route('admin.email-management.logs') }}" class="btn btn-custom btn-back">
                         <i class="fas fa-arrow-left me-2"></i>Back to Logs
                     </a>
                 </div>
@@ -538,6 +592,27 @@ Metadata:
 document.addEventListener('DOMContentLoaded', function () {
     const html = @json((string)($emailLog->body ?? ''));
     const text = @json(trim(preg_replace('/\\s+/', ' ', strip_tags((string)($emailLog->body ?? '')))));
+
+    const previewFrame = document.getElementById('emailPreviewFrame');
+    if (previewFrame && html) {
+        previewFrame.srcdoc = html;
+        previewFrame.addEventListener('load', function () {
+            try {
+                const doc = previewFrame.contentDocument;
+                if (!doc) {
+                    return;
+                }
+                const height = Math.max(
+                    doc.documentElement?.scrollHeight || 0,
+                    doc.body?.scrollHeight || 0,
+                    280
+                );
+                previewFrame.style.height = Math.min(height + 24, 560) + 'px';
+            } catch (e) {
+                previewFrame.style.height = '400px';
+            }
+        });
+    }
 
     function copyToClipboard(value) {
         if (navigator.clipboard && window.isSecureContext) {

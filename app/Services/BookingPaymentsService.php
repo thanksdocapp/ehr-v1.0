@@ -6,8 +6,11 @@ use App\Data\BookingPaymentRow;
 use App\Models\ClinicBookingRequest;
 use App\Models\Department;
 use App\Models\Doctor;
+use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\Invoice;
+use App\Models\PendingBooking;
+use App\Models\PendingClinicBooking;
 use App\Models\ServiceOrder;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -122,6 +125,20 @@ class BookingPaymentsService
                     }
 
                     $q2->orWhereHas('serviceOrder', fn ($so) => $so->where('doctor_id', $doctorId));
+
+                    if (Schema::hasColumn((new Patient)->getTable(), 'is_guest')) {
+                        $q2->orWhere(function ($guest) use ($doctorId, $departmentIds) {
+                            $guest->whereHas('patient', fn ($p) => $p->where('is_guest', true))
+                                ->where(function ($booking) use ($doctorId, $departmentIds) {
+                                    $booking->whereHas('pendingBookings', fn ($pb) => $pb->where('doctor_id', $doctorId));
+                                    $booking->orWhereHas('doctorBookingDiscountCode', fn ($c) => $c->where('doctor_id', $doctorId));
+                                    if ($departmentIds !== []) {
+                                        $booking->orWhereHas('pendingClinicBookings', fn ($pcb) => $pcb->whereIn('department_id', $departmentIds));
+                                        $booking->orWhereHas('clinicBookingDiscountCode', fn ($c) => $c->whereIn('department_id', $departmentIds));
+                                    }
+                                });
+                        });
+                    }
                 });
             });
     }
@@ -326,6 +343,93 @@ class BookingPaymentsService
     }
 
     /**
+     * Doctor-link checkouts paid but not yet linked to an appointment (common for provisional patients after Stripe redirect).
+     */
+    public function paidPendingDoctorBookingsForReport(Request $request): Builder
+    {
+        $query = PendingBooking::query()
+            ->whereNotNull('invoice_id')
+            ->whereIn('status', ['pending_payment', 'completed'])
+            ->where(function ($q) {
+                $q->whereHas('invoice', fn ($inv) => $inv->where('status', 'paid'))
+                    ->orWhereHas('invoice.payments', fn ($p) => $p->where('status', 'completed'));
+            });
+
+        if ($request->filled('doctor_id')) {
+            $query->where('doctor_id', $request->integer('doctor_id'));
+        }
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->integer('department_id'));
+        }
+        if ($request->filled('from')) {
+            $query->where(function ($q) use ($request) {
+                $q->whereDate('appointment_date', '>=', $request->string('from'))
+                    ->orWhereHas('invoice.payments', function ($p) use ($request) {
+                        $p->where('status', 'completed')->whereDate('payment_date', '>=', $request->string('from'));
+                    });
+            });
+        }
+        if ($request->filled('to')) {
+            $query->where(function ($q) use ($request) {
+                $q->whereDate('appointment_date', '<=', $request->string('to'))
+                    ->orWhereHas('invoice.payments', function ($p) use ($request) {
+                        $p->where('status', 'completed')->whereDate('payment_date', '<=', $request->string('to'));
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Clinic pool checkouts paid but clinic request / appointment not created yet.
+     */
+    public function paidPendingClinicBookingsForReport(Request $request): Builder
+    {
+        if (! Schema::hasTable('pending_clinic_bookings')) {
+            return PendingClinicBooking::query()->whereRaw('1 = 0');
+        }
+
+        $query = PendingClinicBooking::query()
+            ->whereNotNull('invoice_id')
+            ->whereIn('status', ['pending_payment', 'completed'])
+            ->where(function ($q) {
+                $q->whereHas('invoice', fn ($inv) => $inv->where('status', 'paid'))
+                    ->orWhereHas('invoice.payments', fn ($p) => $p->where('status', 'completed'));
+            });
+
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->integer('department_id'));
+        }
+        if ($request->filled('doctor_id')) {
+            $departmentIds = $this->departmentIdsForDoctor(Doctor::findOrFail($request->integer('doctor_id')));
+            if ($departmentIds !== []) {
+                $query->whereIn('department_id', $departmentIds);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        }
+        if ($request->filled('from')) {
+            $query->where(function ($q) use ($request) {
+                $q->whereDate('appointment_date', '>=', $request->string('from'))
+                    ->orWhereHas('invoice.payments', function ($p) use ($request) {
+                        $p->where('status', 'completed')->whereDate('payment_date', '>=', $request->string('from'));
+                    });
+            });
+        }
+        if ($request->filled('to')) {
+            $query->where(function ($q) use ($request) {
+                $q->whereDate('appointment_date', '<=', $request->string('to'))
+                    ->orWhereHas('invoice.payments', function ($p) use ($request) {
+                        $p->where('status', 'completed')->whereDate('payment_date', '<=', $request->string('to'));
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    /**
      * @return Collection<int, BookingPaymentRow>
      */
     public function collectBookingPaymentRows(Request $request): Collection
@@ -341,6 +445,8 @@ class BookingPaymentsService
             $seenPaymentIds[$payment->id] = true;
             $rows->push(BookingPaymentRow::fromPayment($payment));
         }
+
+        $this->mergePaymentsFromPaidPendingCheckouts($request, $rows, $seenPaymentIds);
 
         if (Schema::hasTable('service_orders')) {
             $orders = $this->serviceOrdersForReport($request)
@@ -843,6 +949,51 @@ class BookingPaymentsService
         }
 
         return $inv->serviceOrder()->first();
+    }
+
+    /**
+     * @param  array<int, bool>  $seenPaymentIds
+     */
+    private function mergePaymentsFromPaidPendingCheckouts(
+        Request $request,
+        Collection $rows,
+        array &$seenPaymentIds
+    ): void {
+        foreach ($this->paidPendingDoctorBookingsForReport($request)->pluck('invoice_id') as $invoiceId) {
+            if ($invoiceId) {
+                $this->mergePaymentRowFromInvoiceId((int) $invoiceId, $request, $rows, $seenPaymentIds);
+            }
+        }
+
+        if (Schema::hasTable('pending_clinic_bookings')) {
+            foreach ($this->paidPendingClinicBookingsForReport($request)->pluck('invoice_id') as $invoiceId) {
+                if ($invoiceId) {
+                    $this->mergePaymentRowFromInvoiceId((int) $invoiceId, $request, $rows, $seenPaymentIds);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  array<int, bool>  $seenPaymentIds
+     */
+    private function mergePaymentRowFromInvoiceId(
+        int $invoiceId,
+        Request $request,
+        Collection $rows,
+        array &$seenPaymentIds
+    ): void {
+        $payment = $this->primaryCompletedPaymentForInvoice($invoiceId);
+        if (! $payment || ! $this->paymentMatchesReportDateFilter($payment, $request)) {
+            return;
+        }
+        if (isset($seenPaymentIds[$payment->id])) {
+            return;
+        }
+
+        $payment->load($this->bookingPaymentsEagerLoads());
+        $seenPaymentIds[$payment->id] = true;
+        $rows->push(BookingPaymentRow::fromPayment($payment));
     }
 
     private function primaryCompletedPaymentForInvoice(int $invoiceId): ?Payment

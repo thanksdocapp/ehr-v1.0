@@ -478,6 +478,10 @@ class PublicBillingController extends Controller
         // Always ensure billing is updated when viewing success page (fallback)
         $this->updateInvoiceAndBilling($invoice);
 
+        app(\App\Services\ClinicBookingService::class)->finalizeClinicBookingForPaidInvoice($invoice);
+        app(\App\Services\NonConsultationBookingService::class)->finalizeServiceOrderForPaidInvoice($invoice);
+        app(\App\Services\PublicBookingService::class)->finalizeDoctorBookingForPaidInvoice($invoice);
+
         $clinicRedirect = $this->redirectAfterClinicBookingFinalized($invoice);
         if ($clinicRedirect) {
             return $clinicRedirect;
@@ -666,6 +670,10 @@ class PublicBillingController extends Controller
                     ]);
                     $this->updateInvoiceAndBilling($invoice);
                     app(ClinicBookingService::class)->finalizeClinicBookingForPaidInvoice($invoice);
+                    app(\App\Services\NonConsultationBookingService::class)
+                        ->finalizeServiceOrderForPaidInvoice($invoice);
+                    app(\App\Services\PublicBookingService::class)
+                        ->finalizeDoctorBookingForPaidInvoice($invoice);
                 }
             } else {
                 // Verify the session with Stripe
@@ -699,6 +707,8 @@ class PublicBillingController extends Controller
                             app(ClinicBookingService::class)->finalizeClinicBookingForPaidInvoice($invoice);
                             app(\App\Services\NonConsultationBookingService::class)
                                 ->finalizeServiceOrderForPaidInvoice($invoice);
+                            app(\App\Services\PublicBookingService::class)
+                                ->finalizeDoctorBookingForPaidInvoice($invoice);
                             
                             \Log::info('Payment verified and updated from Stripe session', [
                                 'payment_id' => $payment->id,

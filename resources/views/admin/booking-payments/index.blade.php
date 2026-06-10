@@ -14,7 +14,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h1 class="h3 mb-1">Booking payments</h1>
-            <p class="text-muted mb-0">Completed payments for consultation bookings plus <strong>non-consultation service orders</strong> (screenings, kits, etc.). Free service orders appear as <strong>£0.00</strong> with source <strong>Service order</strong>. Filter by doctor and/or clinic.</p>
+            <p class="text-muted mb-0">Consultation bookings, clinic checkouts, and <strong>non-consultation service orders</strong>. Provisional patients are labelled in the patient column. Clear filters if a paid booking is missing.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
             <span class="fw-semibold">Filtered total: {{ CurrencyHelper::format((float) $totalAmount) }}</span>
@@ -69,7 +69,7 @@
     <div class="card shadow">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
+                <table class="table table-hover mb-0 align-middle" style="min-width: 1100px;">
                     <thead class="table-light">
                         <tr>
                             <th>Date</th>
