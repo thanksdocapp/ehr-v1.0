@@ -285,37 +285,20 @@ class Prescription extends Model
         }
         
         if ($user->role === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
-            
+            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
+
             if (!$doctor) {
                 return $query->whereRaw('1 = 0');
             }
-            
-            $doctorDepartmentIds = [];
-            if ($doctor->departments->isNotEmpty()) {
-                $doctorDepartmentIds = $doctor->departments->pluck('id')->toArray();
-            } elseif ($doctor->department_id) {
-                $doctorDepartmentIds = [$doctor->department_id];
-            }
-            
-            return $query->where(function($q) use ($doctor, $doctorDepartmentIds) {
-                $q->where('doctor_id', $doctor->id);
-                
-                $q->orWhereHas('patient', function($patientQuery) use ($doctor) {
-                    $patientQuery->where('created_by_doctor_id', $doctor->id);
-                });
-                
-                if (!empty($doctorDepartmentIds)) {
-                    $q->orWhereHas('patient', function($patientQuery) use ($doctorDepartmentIds) {
-                        $patientQuery->whereHas('departments', function($deptQuery) use ($doctorDepartmentIds) {
-                            $deptQuery->whereIn('departments.id', $doctorDepartmentIds);
-                        })
-                        ->orWhere(function($subQuery) use ($doctorDepartmentIds) {
-                            $subQuery->whereIn('department_id', $doctorDepartmentIds)
-                                    ->whereDoesntHave('departments');
-                        });
+
+            return $query->where(function($q) use ($doctor) {
+                $q->where('doctor_id', $doctor->id)
+                    ->orWhereHas('patient', function ($patientQuery) use ($doctor) {
+                        $patientQuery->where('created_by_doctor_id', $doctor->id)
+                            ->orWhere('assigned_doctor_id', $doctor->id)
+                            ->orWhereHas('appointments', fn ($aq) => $aq->where('doctor_id', $doctor->id))
+                            ->orWhereHas('medicalRecords', fn ($rq) => $rq->where('doctor_id', $doctor->id));
                     });
-                }
             });
         }
         
@@ -380,38 +363,10 @@ class Prescription extends Model
         }
         
         if ($user->role === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
-            
-            if (!$doctor) {
-                return false;
-            }
-            
-            if ($this->doctor_id === $doctor->id) {
-                return true;
-            }
-            
-            if ($this->patient && $this->patient->created_by_doctor_id === $doctor->id) {
-                return true;
-            }
-            
-            $doctorDepartmentIds = [];
-            if ($doctor->departments->isNotEmpty()) {
-                $doctorDepartmentIds = $doctor->departments->pluck('id')->toArray();
-            } elseif ($doctor->department_id) {
-                $doctorDepartmentIds = [$doctor->department_id];
-            }
-            
-            if (empty($doctorDepartmentIds)) {
-                return false;
-            }
-            
-            if ($this->patient) {
-                $patientDepartmentIds = $this->patient->getDepartmentIds();
-                $intersection = array_intersect($doctorDepartmentIds, $patientDepartmentIds);
-                return !empty($intersection);
-            }
-            
-            return false;
+            return static::query()
+                ->whereKey($this->id)
+                ->visibleTo($user)
+                ->exists();
         }
         
         $user->load('departments');

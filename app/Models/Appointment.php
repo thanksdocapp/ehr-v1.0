@@ -278,9 +278,8 @@ class Appointment extends Model
      * Scope to filter appointments visible to a specific user based on role.
      * 
      * For Doctors:
-     * - Appointments they have (doctor_id matches), OR
-     * - Appointments for patients in their department(s), OR
-     * - Appointments for patients they created
+     * - Appointments where they are the booking doctor (doctor_id)
+     * - Not clinic-wide: reassigning/removing the doctor hides the appointment from them
      * 
      * For Admins:
      * - All appointments (no filtering)
@@ -314,41 +313,13 @@ class Appointment extends Model
         }
         
         if ($user->role === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
-            
+            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
+
             if (!$doctor) {
                 return $query->whereRaw('1 = 0');
             }
-            
-            $doctorDepartmentIds = [];
-            if ($doctor->departments->isNotEmpty()) {
-                $doctorDepartmentIds = $doctor->departments->pluck('id')->toArray();
-            } elseif ($doctor->department_id) {
-                $doctorDepartmentIds = [$doctor->department_id];
-            }
-            
-            return $query->where(function($q) use ($doctor, $doctorDepartmentIds) {
-                $q->where('doctor_id', $doctor->id);
-                
-                $q->orWhereHas('patient', function($patientQuery) use ($doctor) {
-                    $patientQuery->where('created_by_doctor_id', $doctor->id);
-                });
-                
-                if (!empty($doctorDepartmentIds)) {
-                    $q->orWhere(function($subQuery) use ($doctorDepartmentIds) {
-                        $subQuery->whereIn('department_id', $doctorDepartmentIds);
-                    })
-                    ->orWhereHas('patient', function($patientQuery) use ($doctorDepartmentIds) {
-                        $patientQuery->whereHas('departments', function($deptQuery) use ($doctorDepartmentIds) {
-                            $deptQuery->whereIn('departments.id', $doctorDepartmentIds);
-                        })
-                        ->orWhere(function($subQuery2) use ($doctorDepartmentIds) {
-                            $subQuery2->whereIn('department_id', $doctorDepartmentIds)
-                                    ->whereDoesntHave('departments');
-                        });
-                    });
-                }
-            });
+
+            return $query->where('doctor_id', $doctor->id);
         }
         
         $userDepartmentIds = [];
@@ -413,42 +384,13 @@ class Appointment extends Model
         }
         
         if ($user->role === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
-            
+            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
+
             if (!$doctor) {
                 return false;
             }
-            
-            if ($this->doctor_id === $doctor->id) {
-                return true;
-            }
-            
-            if ($this->patient && $this->patient->created_by_doctor_id === $doctor->id) {
-                return true;
-            }
-            
-            $doctorDepartmentIds = [];
-            if ($doctor->departments->isNotEmpty()) {
-                $doctorDepartmentIds = $doctor->departments->pluck('id')->toArray();
-            } elseif ($doctor->department_id) {
-                $doctorDepartmentIds = [$doctor->department_id];
-            }
-            
-            if (empty($doctorDepartmentIds)) {
-                return false;
-            }
-            
-            if (in_array($this->department_id, $doctorDepartmentIds)) {
-                return true;
-            }
-            
-            if ($this->patient) {
-                $patientDepartmentIds = $this->patient->getDepartmentIds();
-                $intersection = array_intersect($doctorDepartmentIds, $patientDepartmentIds);
-                return !empty($intersection);
-            }
-            
-            return false;
+
+            return $this->doctor_id === $doctor->id;
         }
         
         $user->load('departments');

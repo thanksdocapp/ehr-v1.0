@@ -283,44 +283,22 @@ class MedicalRecord extends Model
             return $query; // No filtering
         }
         
-        // For doctors, filter by doctor relationship and department intersection
+        // For doctors: direct relationship only (not clinic-wide department overlap)
         if (strtolower($user->role ?? '') === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
-            
+            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
+
             if (!$doctor) {
-                return $query->whereRaw('1 = 0'); // No results if doctor not found
+                return $query->whereRaw('1 = 0');
             }
-            
-            $doctorDepartmentIds = $doctor->accessibleDepartmentIds();
 
-            return $query->where(function($q) use ($doctor, $doctorDepartmentIds) {
-                // Medical records created by this doctor
-                $q->where('doctor_id', $doctor->id);
-
-                // Records for appointments with this doctor
-                $q->orWhereHas('appointment', fn ($aq) => $aq->where('doctor_id', $doctor->id));
-                
-                // OR medical records for patients created by this doctor (regardless of department)
-                $q->orWhereHas('patient', function($patientQuery) use ($doctor) {
-                    $patientQuery->where('created_by_doctor_id', $doctor->id)
-                        ->orWhere('assigned_doctor_id', $doctor->id)
-                        ->orWhereHas('appointments', fn ($aq) => $aq->where('doctor_id', $doctor->id));
-                });
-                
-                // OR medical records for patients in doctor's department(s)
-                if (!empty($doctorDepartmentIds)) {
-                    $q->orWhereHas('patient', function($patientQuery) use ($doctorDepartmentIds) {
-                        // Priority: Check many-to-many relationship first
-                        $patientQuery->whereHas('departments', function($deptQuery) use ($doctorDepartmentIds) {
-                            $deptQuery->whereIn('departments.id', $doctorDepartmentIds);
-                        })
-                        // Fallback to legacy department_id field ONLY if no pivot records exist
-                        ->orWhere(function($subQuery) use ($doctorDepartmentIds) {
-                            $subQuery->whereIn('department_id', $doctorDepartmentIds)
-                                    ->whereDoesntHave('departments');
-                        });
+            return $query->where(function($q) use ($doctor) {
+                $q->where('doctor_id', $doctor->id)
+                    ->orWhereHas('appointment', fn ($aq) => $aq->where('doctor_id', $doctor->id))
+                    ->orWhereHas('patient', function ($patientQuery) use ($doctor) {
+                        $patientQuery->where('created_by_doctor_id', $doctor->id)
+                            ->orWhere('assigned_doctor_id', $doctor->id)
+                            ->orWhereHas('appointments', fn ($aq) => $aq->where('doctor_id', $doctor->id));
                     });
-                }
             });
         }
         

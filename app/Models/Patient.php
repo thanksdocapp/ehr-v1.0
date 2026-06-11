@@ -497,8 +497,8 @@ class Patient extends Authenticatable
      * Scope to filter patients visible to a specific user based on role.
      * 
      * For Doctors:
-     * - Patients whose department_id matches one of the doctor's departments, OR
-     * - Patients that were created by that doctor (created_by_doctor_id)
+     * - Patients they created, are assigned to them, or have appointments/records with them
+     * - Not clinic-wide: removing a doctor from an appointment removes patient visibility unless they added the patient
      * 
      * For Admins:
      * - All patients (no filtering)
@@ -535,63 +535,19 @@ class Patient extends Authenticatable
             return $query; // No filtering
         }
         
-        // For doctors, filter by department intersection and created_by
-        // Doctors should see:
-        // 1. Patients they added themselves (regardless of department)
-        // 2. Patients in their department (including those added by other doctors in the same department)
+        // For doctors: direct relationship only (not all patients in the same clinic/department).
         if ($user->role === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
-            
+            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
+
             if (!$doctor) {
-                return $query->whereRaw('1 = 0'); // No results if doctor not found
+                return $query->whereRaw('1 = 0');
             }
-            
-            $doctorDepartmentIds = $doctor->accessibleDepartmentIds();
 
-            return $query->where(function($q) use ($doctor, $doctorDepartmentIds) {
-                // Patients that were created by this doctor (regardless of department)
-                $q->where('created_by_doctor_id', $doctor->id);
-
-                // Patients assigned to or with appointments/records with this doctor (clinic moves)
-                $q->orWhere('assigned_doctor_id', $doctor->id)
+            return $query->where(function ($q) use ($doctor) {
+                $q->where('created_by_doctor_id', $doctor->id)
+                    ->orWhere('assigned_doctor_id', $doctor->id)
                     ->orWhereHas('appointments', fn ($aq) => $aq->where('doctor_id', $doctor->id))
                     ->orWhereHas('medicalRecords', fn ($rq) => $rq->where('doctor_id', $doctor->id));
-                
-                // OR patients whose departments intersect with the doctor's departments
-                // This includes patients added by other doctors IF they share at least one department
-                if (!empty($doctorDepartmentIds)) {
-                    // Priority: Check many-to-many relationship first (current implementation)
-                    // This ensures we use the most up-to-date department assignments
-                    $q->orWhere(function($subQuery) use ($doctorDepartmentIds) {
-                        // Check via pivot table - patient must have at least one department matching doctor's departments
-                        $subQuery->whereHas('departments', function($deptQuery) use ($doctorDepartmentIds) {
-                            $deptQuery->whereIn('departments.id', $doctorDepartmentIds);
-                        });
-                    })
-                    // Fallback to legacy department_id field ONLY if no pivot records exist
-                    // This ensures backward compatibility for old records without pivot entries
-                    ->orWhere(function($subQuery) use ($doctorDepartmentIds) {
-                        $subQuery->whereNotNull('department_id')
-                                ->whereIn('department_id', $doctorDepartmentIds)
-                                // Only use department_id if patient has no departments in pivot table
-                                ->whereDoesntHave('departments');
-                    });
-                }
-                
-                // OR patients with appointments to doctors in the doctor's departments
-                // This ensures guest patients from public bookings appear in the list
-                if (!empty($doctorDepartmentIds)) {
-                    $q->orWhereHas('appointments', function($appointmentQuery) use ($doctorDepartmentIds) {
-                        $appointmentQuery->whereHas('doctor', function($doctorQuery) use ($doctorDepartmentIds) {
-                            $doctorQuery->where(function($deptQuery) use ($doctorDepartmentIds) {
-                                $deptQuery->whereIn('department_id', $doctorDepartmentIds)
-                                         ->orWhereHas('departments', function($pivotQuery) use ($doctorDepartmentIds) {
-                                             $pivotQuery->whereIn('departments.id', $doctorDepartmentIds);
-                                         });
-                            });
-                        });
-                    });
-                }
             });
         }
         
@@ -668,22 +624,18 @@ class Patient extends Authenticatable
             return true;
         }
         
-        // For doctors, check department intersection and created_by
-        // Doctors should see:
-        // 1. Patients they added themselves (regardless of department)
-        // 2. Patients in their department (including those added by other doctors in the same department)
+        // For doctors: direct relationship only (not clinic-wide department overlap).
         if ($user->role === 'doctor') {
-            $doctor = \App\Models\Doctor::where('user_id', $user->id)->with('departments')->first();
-            
+            $doctor = \App\Models\Doctor::where('user_id', $user->id)->first();
+
             if (!$doctor) {
                 return false;
             }
-            
-            // Check if patient was created by this doctor (regardless of department)
+
             if ($this->created_by_doctor_id === $doctor->id) {
                 return true;
             }
-            
+
             if ($this->assigned_doctor_id === $doctor->id) {
                 return true;
             }
@@ -696,46 +648,6 @@ class Patient extends Authenticatable
                 return true;
             }
 
-            $doctorDepartmentIds = $doctor->accessibleDepartmentIds();
-
-            if (empty($doctorDepartmentIds)) {
-                return false;
-            }
-            
-            // Check if patient's departments intersect with doctor's departments
-            // Patient must have AT LEAST ONE department in common with doctor's departments
-            // Using many-to-many relationship (current implementation)
-            $hasMatchingDepartment = $this->departments()
-                ->whereIn('departments.id', $doctorDepartmentIds)
-                ->exists();
-            
-            if ($hasMatchingDepartment) {
-                return true;
-            }
-            
-            // OR fallback to legacy department_id field (for backward compatibility)
-            // Only check if patient's department_id matches one of doctor's departments
-            if ($this->department_id && in_array($this->department_id, $doctorDepartmentIds)) {
-                return true;
-            }
-            
-            // OR patient has appointments with doctors in this clinic (e.g. clinic booking flow)
-            // Ensures doctors of the same clinic can view patients who booked via clinic
-            $hasAppointmentInClinic = $this->appointments()
-                ->whereHas('doctor', function ($q) use ($doctorDepartmentIds) {
-                    $q->where(function ($deptQuery) use ($doctorDepartmentIds) {
-                        $deptQuery->whereIn('department_id', $doctorDepartmentIds)
-                            ->orWhereHas('departments', function ($pivotQuery) use ($doctorDepartmentIds) {
-                                $pivotQuery->whereIn('departments.id', $doctorDepartmentIds);
-                            });
-                    });
-                })
-                ->exists();
-            
-            if ($hasAppointmentInClinic) {
-                return true;
-            }
-            
             return false;
         }
         

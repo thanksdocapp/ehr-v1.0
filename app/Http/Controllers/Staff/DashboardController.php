@@ -91,23 +91,11 @@ class DashboardController extends Controller
         $departmentId = $this->getUserDepartmentId();
         $userDepartmentIds = $this->getUserDepartmentIds();
         
-        // Build queries filtered by visibility (visibleTo already handles department filtering)
+        // Build queries filtered by visibility rules per role
         $patientsQuery = Patient::query()->visibleTo($user);
-        $appointmentsQuery = Appointment::query();
-        
-        // Filter appointments by department if user has one (support multiple departments)
-        if (!empty($userDepartmentIds)) {
-            $appointmentsQuery->whereHas('doctor', function($q) use ($userDepartmentIds) {
-                $q->byDepartments($userDepartmentIds);
-            });
-        } elseif ($departmentId) {
-            // Fallback to single department
-            $appointmentsQuery->whereHas('doctor', function($q) use ($departmentId) {
-                $q->byDepartment($departmentId);
-            });
-        }
-        
-        // Calculate accurate stats filtered by department
+        $appointmentsQuery = Appointment::query()->visibleTo($user);
+
+        // Calculate accurate stats
         $stats = [
             'total_patients' => $patientsQuery->count(),
             'total_appointments' => $appointmentsQuery->count(),
@@ -121,18 +109,12 @@ class DashboardController extends Controller
         // Pending appointments today or in the future (awaiting confirmation - doctors often forget)
         $pendingUpcomingCount = (clone $appointmentsQuery)->pendingUpcoming()->count();
 
-        // Get recent appointments filtered by department
-        $recentAppointmentsQuery = Appointment::with(['patient', 'doctor']);
-        if (!empty($userDepartmentIds)) {
-            $recentAppointmentsQuery->whereHas('doctor', function($q) use ($userDepartmentIds) {
-                $q->byDepartments($userDepartmentIds);
-            });
-        } elseif ($departmentId) {
-            $recentAppointmentsQuery->whereHas('doctor', function($q) use ($departmentId) {
-                $q->byDepartment($departmentId);
-            });
-        }
-        $recentAppointments = $recentAppointmentsQuery->latest()->limit(5)->get();
+        // Get recent appointments for this user
+        $recentAppointments = Appointment::with(['patient', 'doctor'])
+            ->visibleTo($user)
+            ->latest()
+            ->limit(5)
+            ->get();
 
         // Get active notices for the current user's role
         $notices = Notice::active()
@@ -141,19 +123,12 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Get today's appointments filtered by department for the Today's Schedule widget
-        $todayAppointmentsQuery = Appointment::with(['patient', 'doctor'])
-            ->whereDate('appointment_date', Carbon::today());
-        if (!empty($userDepartmentIds)) {
-            $todayAppointmentsQuery->whereHas('doctor', function($q) use ($userDepartmentIds) {
-                $q->byDepartments($userDepartmentIds);
-            });
-        } elseif ($departmentId) {
-            $todayAppointmentsQuery->whereHas('doctor', function($q) use ($departmentId) {
-                $q->byDepartment($departmentId);
-            });
-        }
-        $todayAppointments = $todayAppointmentsQuery->orderBy('appointment_time', 'asc')->get();
+        // Get today's appointments for the Today's Schedule widget
+        $todayAppointments = Appointment::with(['patient', 'doctor'])
+            ->visibleTo($user)
+            ->whereDate('appointment_date', Carbon::today())
+            ->orderBy('appointment_time', 'asc')
+            ->get();
 
         // Check Quincy integration status (only for non-doctor staff)
         $quincyStatus = null;
@@ -221,25 +196,18 @@ class DashboardController extends Controller
         $departmentId = $this->getUserDepartmentId();
         $userDepartmentIds = $this->getUserDepartmentIds();
         
-        // Build queries filtered by department (support multiple departments)
+        // Build queries filtered by visibility rules per role
         $patientsQuery = Patient::query()->visibleTo(Auth::user());
-        $appointmentsQuery = Appointment::query();
+        $appointmentsQuery = Appointment::query()->visibleTo(Auth::user());
         $doctorsQuery = Doctor::where('status', 'active');
-        
-        // Filter by department if user has one (support multiple departments)
-        if (!empty($userDepartmentIds)) {
-            $patientsQuery->byDepartments($userDepartmentIds);
-            $appointmentsQuery->whereHas('doctor', function($q) use ($userDepartmentIds) {
-                $q->byDepartments($userDepartmentIds);
-            });
-            $doctorsQuery->byDepartments($userDepartmentIds);
-        } elseif ($departmentId) {
-            // Fallback to single department
-            $patientsQuery->byDepartment($departmentId);
-            $appointmentsQuery->whereHas('doctor', function($q) use ($departmentId) {
-                $q->byDepartment($departmentId);
-            });
-            $doctorsQuery->byDepartment($departmentId);
+
+        // Department filter for colleague lists (staff only; doctors use direct visibility above)
+        if (Auth::user()->role !== 'doctor') {
+            if (!empty($userDepartmentIds)) {
+                $doctorsQuery->byDepartments($userDepartmentIds);
+            } elseif ($departmentId) {
+                $doctorsQuery->byDepartment($departmentId);
+            }
         }
         
         $payload = [
