@@ -7,6 +7,7 @@ use App\Models\BookingService;
 use App\Models\ClinicBookingDiscountCode;
 use App\Models\Department;
 use App\Models\Doctor;
+use App\Models\DoctorBookingDiscountCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -66,7 +67,20 @@ class ClinicBookingDiscountCodesController extends Controller
             ->orderBy('code')
             ->get();
 
-        return view('admin.clinic-booking-discount-codes.index', compact('department', 'codes'));
+        $doctorCodes = collect();
+        if (Schema::hasTable('doctor_booking_discount_codes')) {
+            $doctorIds = Doctor::byDepartment($department->id)->active()->pluck('id');
+            if ($doctorIds->isNotEmpty()) {
+                $doctorCodes = DoctorBookingDiscountCode::query()
+                    ->whereIn('doctor_id', $doctorIds)
+                    ->with(['bookingServices', 'bookingService', 'doctor'])
+                    ->orderByDesc('is_active')
+                    ->orderBy('code')
+                    ->get();
+            }
+        }
+
+        return view('admin.clinic-booking-discount-codes.index', compact('department', 'codes', 'doctorCodes'));
     }
 
     public function create(Department $department)

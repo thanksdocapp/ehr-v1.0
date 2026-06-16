@@ -83,14 +83,14 @@ class PublicBookingService
             $rawCode = DoctorBookingDiscountCode::normalizeCode((string) ($data['discount_code'] ?? ''));
 
             if ($listPrice > 0 && $rawCode !== '' && Schema::hasTable('doctor_booking_discount_codes')) {
-                $code = DoctorBookingDiscountCode::query()
-                    ->where('doctor_id', $doctor->id)
-                    ->where('code', $rawCode)
-                    ->with('bookingServices')
-                    ->lockForUpdate()
-                    ->first();
+                $code = DoctorBookingDiscountCode::findUsableForDoctorBooking(
+                    $doctor,
+                    $rawCode,
+                    $service?->id,
+                    true
+                );
 
-                if (!$code || !$code->isUsableForBooking($service?->id)) {
+                if (!$code) {
                     throw ValidationException::withMessages([
                         'discount_code' => ['This discount code is not valid for this booking.'],
                     ]);
@@ -156,13 +156,13 @@ class PublicBookingService
             return ['ok' => false, 'message' => 'There is no fee to apply a discount to.'];
         }
 
-        $code = DoctorBookingDiscountCode::query()
-            ->where('doctor_id', $doctor->id)
-            ->where('code', $rawCode)
-            ->with('bookingServices')
-            ->first();
+        $code = DoctorBookingDiscountCode::findUsableForDoctorBooking(
+            $doctor,
+            $rawCode,
+            $service->id
+        );
 
-        if (!$code || !$code->isUsableForBooking($service->id)) {
+        if (!$code) {
             return ['ok' => false, 'message' => 'This discount code is not valid for this booking.'];
         }
 

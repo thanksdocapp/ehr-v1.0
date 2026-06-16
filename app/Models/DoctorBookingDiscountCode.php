@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -162,6 +163,113 @@ class DoctorBookingDiscountCode extends Model
     public static function normalizeCode(string $raw): string
     {
         return strtoupper(trim($raw));
+    }
+
+    /**
+     * Legacy installs may have more than one doctors row per user; codes may be stored on any of them.
+     *
+     * @return list<int>
+     */
+    public static function doctorIdsSharingUser(Doctor $doctor): array
+    {
+        if ($doctor->user_id) {
+            return Doctor::query()
+                ->where('user_id', $doctor->user_id)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        return [(int) $doctor->id];
+    }
+
+    public static function findUsableForDoctorBooking(
+        Doctor $doctor,
+        string $rawCode,
+        ?int $serviceId,
+        bool $lock = false
+    ): ?self {
+        if (! Schema::hasTable('doctor_booking_discount_codes')) {
+            return null;
+        }
+
+        $normalized = self::normalizeCode($rawCode);
+        if ($normalized === '') {
+            return null;
+        }
+
+        $query = self::query()
+            ->where('code', $normalized)
+            ->whereIn('doctor_id', self::doctorIdsSharingUser($doctor))
+            ->with('bookingServices');
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        return $query->get()->first(fn (self $code) => $code->isUsableForBooking($serviceId));
+    }
+
+    /**
+     * Doctor-created codes on the public clinic booking flow (when no clinic-level code matches).
+     */
+    public static function findUsableForClinicDepartment(
+        int $departmentId,
+        string $rawCode,
+        ?int $serviceId,
+        bool $lock = false
+    ): ?self {
+        if (! Schema::hasTable('doctor_booking_discount_codes')) {
+            return null;
+        }
+
+        $normalized = self::normalizeCode($rawCode);
+        if ($normalized === '') {
+            return null;
+        }
+
+        $doctors = Doctor::byDepartment($departmentId)->active()->get();
+        if ($doctors->isEmpty()) {
+            return null;
+        }
+
+        $doctorIds = $doctors->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $query = self::query()
+            ->where('code', $normalized)
+            ->whereIn('doctor_id', $doctorIds)
+            ->with('bookingServices');
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        $usable = $query->get()->filter(fn (self $code) => $code->isUsableForBooking($serviceId))->values();
+
+        if ($usable->isEmpty()) {
+            return null;
+        }
+
+        if ($usable->count() === 1) {
+            return $usable->first();
+        }
+
+        if ($serviceId === null) {
+            return $usable->sortBy('id')->first();
+        }
+
+        $service = BookingService::find($serviceId);
+
+        return $usable->sortBy(function (self $code) use ($doctors, $service) {
+            $doctor = $doctors->firstWhere('id', $code->doctor_id);
+            if (! $doctor || ! $service) {
+                return PHP_FLOAT_MAX;
+            }
+
+            return (float) ($service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? PHP_FLOAT_MAX);
+        })->first();
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ClinicBookingRequest;
 use App\Models\ClinicBookingDiscountCode;
 use App\Models\Department;
+use App\Models\DoctorBookingDiscountCode;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\PendingClinicBooking;
@@ -59,28 +60,28 @@ class ClinicBookingService
             }
 
             $discountCodeId = null;
+            $doctorDiscountCodeId = null;
             $discountAmount = 0;
-            $rawCode = ClinicBookingDiscountCode::normalizeCode((string) ($data['discount_code'] ?? ''));
+            $rawCode = DoctorBookingDiscountCode::normalizeCode((string) ($data['discount_code'] ?? ''));
 
-            if ($listPrice > 0 && $rawCode !== '' && Schema::hasTable('clinic_booking_discount_codes')) {
-                $code = ClinicBookingDiscountCode::query()
-                    ->where('department_id', $departmentId)
-                    ->where('code', $rawCode)
-                    ->lockForUpdate()
-                    ->first();
+            if ($listPrice > 0 && $rawCode !== '') {
+                $resolved = $this->resolveClinicBookingDiscount(
+                    $departmentId,
+                    $service?->id,
+                    $rawCode,
+                    $listPrice,
+                    true
+                );
 
-                if (!$code || !$code->isUsableForBooking($service?->id)) {
+                if ($resolved === null) {
                     throw ValidationException::withMessages([
                         'discount_code' => ['This discount code is not valid for this booking.'],
                     ]);
                 }
 
-                $discountAmount = $code->computeDiscountAmount($listPrice);
-                $discountCodeId = $code->id;
-            } elseif ($listPrice > 0 && $rawCode !== '' && !Schema::hasTable('clinic_booking_discount_codes')) {
-                throw ValidationException::withMessages([
-                    'discount_code' => ['Discount codes are not available right now. Please try again without a code.'],
-                ]);
+                $discountAmount = $resolved['discount_amount'];
+                $discountCodeId = $resolved['clinic_booking_discount_code_id'];
+                $doctorDiscountCodeId = $resolved['doctor_booking_discount_code_id'];
             }
 
             $payableFee = round(max(0, $listPrice - $discountAmount), 2);
@@ -126,9 +127,7 @@ class ClinicBookingService
 
             if ($payableFee <= 0) {
                 $clinicRequest = $this->createFromClinicBooking($data);
-                if ($discountCodeId !== null && Schema::hasTable('clinic_booking_discount_codes')) {
-                    ClinicBookingDiscountCode::whereKey($discountCodeId)->increment('uses_count');
-                }
+                $this->incrementClinicFlowDiscountUses($discountCodeId, $doctorDiscountCodeId);
 
                 return [
                     'invoice' => null,
@@ -168,6 +167,9 @@ class ClinicBookingService
             if ($discountCodeId !== null && Schema::hasColumn('invoices', 'clinic_booking_discount_code_id')) {
                 $invoicePayload['clinic_booking_discount_code_id'] = $discountCodeId;
             }
+            if ($doctorDiscountCodeId !== null && Schema::hasColumn('invoices', 'doctor_booking_discount_code_id')) {
+                $invoicePayload['doctor_booking_discount_code_id'] = $doctorDiscountCodeId;
+            }
             $invoice = Invoice::create($invoicePayload);
 
             InvoiceItem::create([
@@ -206,12 +208,12 @@ class ClinicBookingService
      */
     public function previewClinicBookingDiscount(int $departmentId, int $serviceId, string $discountCodeRaw): array
     {
-        $rawCode = ClinicBookingDiscountCode::normalizeCode($discountCodeRaw);
+        $rawCode = DoctorBookingDiscountCode::normalizeCode($discountCodeRaw);
         if ($rawCode === '') {
             return ['ok' => false, 'message' => 'Enter a discount code.'];
         }
 
-        if (!Schema::hasTable('clinic_booking_discount_codes')) {
+        if (! Schema::hasTable('clinic_booking_discount_codes') && ! Schema::hasTable('doctor_booking_discount_codes')) {
             return ['ok' => false, 'message' => 'Discount codes are not available right now.'];
         }
 
@@ -228,16 +230,12 @@ class ClinicBookingService
             return ['ok' => false, 'message' => 'There is no fee to apply a discount to.'];
         }
 
-        $code = ClinicBookingDiscountCode::query()
-            ->where('department_id', $departmentId)
-            ->where('code', $rawCode)
-            ->first();
-
-        if (!$code || !$code->isUsableForBooking($service->id)) {
+        $resolved = $this->resolveClinicBookingDiscount($departmentId, $service->id, $rawCode, $listPrice, false);
+        if ($resolved === null) {
             return ['ok' => false, 'message' => 'This discount code is not valid for this booking.'];
         }
 
-        $discountAmount = $code->computeDiscountAmount($listPrice);
+        $discountAmount = $resolved['discount_amount'];
         $amountDue = round(max(0, $listPrice - $discountAmount), 2);
 
         return [
@@ -1047,16 +1045,26 @@ class ClinicBookingService
             $invoice = $pending->invoice;
 
             if ($invoice
-                && $invoice->clinic_booking_discount_code_id
                 && Schema::hasColumn('invoices', 'discount_code_redemption_recorded_at')
-                && $invoice->discount_code_redemption_recorded_at === null
-                && Schema::hasTable('clinic_booking_discount_codes')) {
-                $discountCode = ClinicBookingDiscountCode::query()
-                    ->whereKey($invoice->clinic_booking_discount_code_id)
-                    ->lockForUpdate()
-                    ->first();
-                if ($discountCode) {
-                    $discountCode->increment('uses_count');
+                && $invoice->discount_code_redemption_recorded_at === null) {
+                if ($invoice->clinic_booking_discount_code_id
+                    && Schema::hasTable('clinic_booking_discount_codes')) {
+                    $discountCode = ClinicBookingDiscountCode::query()
+                        ->whereKey($invoice->clinic_booking_discount_code_id)
+                        ->lockForUpdate()
+                        ->first();
+                    if ($discountCode) {
+                        $discountCode->increment('uses_count');
+                    }
+                } elseif ($invoice->doctor_booking_discount_code_id
+                    && Schema::hasTable('doctor_booking_discount_codes')) {
+                    $discountCode = DoctorBookingDiscountCode::query()
+                        ->whereKey($invoice->doctor_booking_discount_code_id)
+                        ->lockForUpdate()
+                        ->first();
+                    if ($discountCode) {
+                        $discountCode->increment('uses_count');
+                    }
                 }
                 $invoice->update(['discount_code_redemption_recorded_at' => now()]);
             }
@@ -1506,6 +1514,64 @@ class ClinicBookingService
                     'read_at' => null,
                 ]);
             }
+        }
+    }
+
+    /**
+     * @return array{discount_amount: float, clinic_booking_discount_code_id: ?int, doctor_booking_discount_code_id: ?int}|null
+     */
+    private function resolveClinicBookingDiscount(
+        int $departmentId,
+        ?int $serviceId,
+        string $normalizedCode,
+        float $listPrice,
+        bool $lock
+    ): ?array {
+        if ($normalizedCode === '' || $listPrice <= 0) {
+            return null;
+        }
+
+        if (Schema::hasTable('clinic_booking_discount_codes')) {
+            $clinicQuery = ClinicBookingDiscountCode::query()
+                ->where('department_id', $departmentId)
+                ->where('code', $normalizedCode);
+            if ($lock) {
+                $clinicQuery->lockForUpdate();
+            }
+            $clinicCode = $clinicQuery->first();
+            if ($clinicCode && $clinicCode->isUsableForBooking($serviceId)) {
+                return [
+                    'discount_amount' => $clinicCode->computeDiscountAmount($listPrice),
+                    'clinic_booking_discount_code_id' => $clinicCode->id,
+                    'doctor_booking_discount_code_id' => null,
+                ];
+            }
+        }
+
+        $doctorCode = DoctorBookingDiscountCode::findUsableForClinicDepartment(
+            $departmentId,
+            $normalizedCode,
+            $serviceId,
+            $lock
+        );
+        if ($doctorCode) {
+            return [
+                'discount_amount' => $doctorCode->computeDiscountAmount($listPrice),
+                'clinic_booking_discount_code_id' => null,
+                'doctor_booking_discount_code_id' => $doctorCode->id,
+            ];
+        }
+
+        return null;
+    }
+
+    private function incrementClinicFlowDiscountUses(?int $clinicCodeId, ?int $doctorCodeId): void
+    {
+        if ($clinicCodeId !== null && Schema::hasTable('clinic_booking_discount_codes')) {
+            ClinicBookingDiscountCode::whereKey($clinicCodeId)->increment('uses_count');
+        }
+        if ($doctorCodeId !== null && Schema::hasTable('doctor_booking_discount_codes')) {
+            DoctorBookingDiscountCode::whereKey($doctorCodeId)->increment('uses_count');
         }
     }
 }
