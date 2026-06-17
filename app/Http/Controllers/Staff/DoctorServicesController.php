@@ -362,7 +362,8 @@ class DoctorServicesController extends Controller
     public function generateBookingLink(Request $request)
     {
         $user = Auth::user();
-        $doctor = Doctor::where('user_id', $user->id)->with('department')->firstOrFail();
+        $doctor = Doctor::where('user_id', $user->id)->active()->orderBy('id')->with('department')->firstOrFail();
+        $doctor = $doctor->bookingProfileDoctor();
 
         $request->validate([
             'service_id' => 'required|exists:booking_services,id',

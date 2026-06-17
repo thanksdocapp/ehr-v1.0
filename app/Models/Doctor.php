@@ -350,4 +350,67 @@ class Doctor extends Model
 
         return $this->availability[$day]['times'] ?? [];
     }
+
+    /**
+     * Legacy installs may have multiple doctors rows per user.
+     *
+     * @return list<int>
+     */
+    public function bookingDoctorIds(): array
+    {
+        if ($this->user_id) {
+            return static::query()
+                ->where('user_id', $this->user_id)
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        return [(int) $this->id];
+    }
+
+    /**
+     * Doctor row used for public booking links and slot availability.
+     */
+    public function bookingProfileDoctor(): self
+    {
+        if (! $this->user_id) {
+            return $this;
+        }
+
+        $candidates = static::query()
+            ->where('user_id', $this->user_id)
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->get();
+
+        if ($candidates->count() <= 1) {
+            return $this;
+        }
+
+        $withRules = $candidates->first(fn (self $doctor) => $doctor->hasAvailabilityRules());
+        if ($withRules) {
+            return $withRules;
+        }
+
+        $withLegacyAvailability = $candidates->first(function (self $doctor) {
+            return is_array($doctor->availability) && $doctor->availability !== [];
+        });
+        if ($withLegacyAvailability) {
+            return $withLegacyAvailability;
+        }
+
+        return $candidates->first() ?? $this;
+    }
+
+    public static function findActiveForBooking(int $doctorId): self
+    {
+        $doctor = static::query()->where('id', $doctorId)->active()->firstOrFail();
+
+        return $doctor->bookingProfileDoctor();
+    }
 }

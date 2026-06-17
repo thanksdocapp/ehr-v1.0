@@ -966,7 +966,14 @@ class PublicBookingController extends Controller
         $this->rememberPublicBookingEntryUrl($request);
 
         $service = BookingService::findOrFail($serviceId);
-        $doctor = Doctor::where('id', $doctorId)->active()->firstOrFail();
+        $doctor = Doctor::findActiveForBooking((int) $doctorId);
+
+        if ((int) $doctor->id !== (int) $doctorId) {
+            return redirect()->route('public.booking.service', [
+                'serviceId' => $service->id,
+                'doctorId' => $doctor->id,
+            ]);
+        }
 
         if (!$this->serviceIsBookableForDoctor($service->id, $doctor->id)) {
             abort(404, 'This service is not available for the selected doctor.');
@@ -1654,7 +1661,7 @@ class PublicBookingController extends Controller
      */
     public function getDoctorServices($doctorId)
     {
-        $doctor = Doctor::findOrFail($doctorId);
+        $doctor = Doctor::findActiveForBooking((int) $doctorId);
         $services = $this->getServicesForDoctor($doctor->id);
 
         $dobYmd = session($this->publicBookingDobSessionKey());
@@ -1722,6 +1729,9 @@ class PublicBookingController extends Controller
      */
     public function getAvailableSlots(Request $request, $doctorId)
     {
+        $doctor = Doctor::findActiveForBooking((int) $doctorId);
+        $doctorId = $doctor->id;
+
         $validator = Validator::make($request->all(), [
             'service_id' => 'nullable|exists:booking_services,id',
             'date' => 'required|date|after_or_equal:today',
@@ -1820,6 +1830,8 @@ class PublicBookingController extends Controller
     private function getServicesForDoctor(int $doctorId): Collection
     {
         $doctor = Doctor::findOrFail($doctorId);
+        $doctor = $doctor->bookingProfileDoctor();
+        $doctorIds = $doctor->bookingDoctorIds();
 
         $ids = collect();
 
@@ -1834,7 +1846,7 @@ class PublicBookingController extends Controller
 
         $ids = $ids->merge(
             DoctorServicePrice::query()
-                ->where('doctor_id', $doctor->id)
+                ->whereIn('doctor_id', $doctorIds)
                 ->where('is_active', true)
                 ->pluck('service_id')
         );
@@ -1848,7 +1860,15 @@ class PublicBookingController extends Controller
             ->where('is_active', true)
             ->ordered()
             ->get()
-            ->filter(fn (BookingService $svc) => $svc->isAvailableForDoctor($doctor->id))
+            ->filter(function (BookingService $svc) use ($doctorIds) {
+                foreach ($doctorIds as $id) {
+                    if ($svc->isAvailableForDoctor($id)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            })
             ->values();
     }
 

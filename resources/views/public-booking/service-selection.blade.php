@@ -912,38 +912,56 @@
             });
         }
 
-        // If service is pre-selected (from service booking link), set it up first and skip loading services
-        @if(isset($service) && isset($doctor))
-        selectedServiceId = {{ $service->id }};
-        selectedDoctorId = {{ $doctor->id }};
-        doctorSelect.value = {{ $doctor->id }};
-        serviceSelectionCard.style.display = 'block';
-        if (serviceIdInput) {
-            serviceIdInput.value = {{ $service->id }};
+        // If service is pre-selected (from service booking link), set it up after handlers are wired
+        function initPreselectedServiceBookingLink() {
+            @if(isset($service) && isset($doctor))
+            selectedDoctorId = String({{ $doctor->id }});
+            if (doctorSelect) {
+                doctorSelect.value = selectedDoctorId;
+            }
+            serviceSelectionCard.style.display = 'block';
+            if (serviceIdInput) {
+                serviceIdInput.value = String({{ $service->id }});
+            }
+            selectedServiceId = serviceIdInput ? serviceIdInput.value : null;
+            const preselectedCard = serviceCardsRoot
+                ? serviceCardsRoot.querySelector('.pb-service-card.is-selected')
+                : null;
+            if (preselectedCard) {
+                selectServiceCard(preselectedCard);
+            } else {
+                updateServiceDetails();
+                @if($service->isNonConsultation())
+                applyNonConsultationService();
+                @else
+                applyConsultationService();
+                @endif
+            }
+            syncPbServiceCardTabOrder(serviceCardsRoot);
+            @endif
         }
-        updateServiceDetails();
-        @if($service->isNonConsultation())
-        applyNonConsultationService();
-        @else
-        applyConsultationService();
-        @endif
-        syncPbServiceCardTabOrder(serviceCardsRoot);
-        @elseif(isset($doctor) && $doctors->count() == 1)
-        // If single doctor is pre-selected (from doctor link) or only one doctor available, load services immediately
+
+        @if(isset($doctor) && $doctors->count() == 1 && !isset($service))
+        // If single doctor is pre-selected (from doctor link), load services immediately
         selectedDoctorId = {{ $doctor->id }};
-        doctorSelect.value = {{ $doctor->id }};
+        if (doctorSelect) {
+            doctorSelect.value = {{ $doctor->id }};
+        }
         loadDoctorServices(selectedDoctorId);
-        @elseif($doctors->count() == 1)
+        @elseif(!isset($service) && $doctors->count() == 1)
         // Auto-select if only one doctor
-        const singleDoctor = doctorSelect.options[1]; // First option after "Select..."
-        if (singleDoctor) {
-            selectedDoctorId = singleDoctor.value;
-            doctorSelect.value = selectedDoctorId;
-            loadDoctorServices(selectedDoctorId);
+        if (doctorSelect) {
+            const singleDoctor = doctorSelect.options[1]; // First option after "Select..."
+            if (singleDoctor) {
+                selectedDoctorId = singleDoctor.value;
+                doctorSelect.value = selectedDoctorId;
+                loadDoctorServices(selectedDoctorId);
+            }
         }
         @endif
 
         // Doctor selection
+        if (doctorSelect) {
         doctorSelect.addEventListener('change', function() {
             selectedDoctorId = this.value;
             if (selectedDoctorId) {
@@ -967,6 +985,7 @@
                 serviceDetails.style.display = 'none';
             }
         });
+        }
 
         if (serviceCardsRoot) {
             serviceCardsRoot.addEventListener('click', function(e) {
@@ -981,6 +1000,7 @@
 
         const prevMonthBtn = document.getElementById('prev-month');
         const nextMonthBtn = document.getElementById('next-month');
+        if (prevMonthBtn && nextMonthBtn) {
         prevMonthBtn.addEventListener('click', function() {
             if (currentMonthIndex > 0) {
                 currentMonthIndex--;
@@ -999,6 +1019,8 @@
                 hydrateCurrentMonth();
             }
         });
+        }
+
         function buildDateRange() {
             dateRange = [];
             monthKeys = [];
@@ -1166,7 +1188,10 @@
             });
         }
 
+        initPreselectedServiceBookingLink();
+
         // Form submission
+        if (form) {
         form.addEventListener('submit', function(e) {
             if (!selectedDoctorId || !selectedServiceId) {
                 e.preventDefault();
@@ -1182,6 +1207,7 @@
                 return false;
             }
         });
+        }
     });
 </script>
 @endsection
