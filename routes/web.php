@@ -1153,6 +1153,12 @@ Route::group(['middleware' => 'installed'], function () {
             Route::get('/export-pdf', [\App\Http\Controllers\Admin\ConsultationsReportController::class, 'exportPdf'])->name('export-pdf');
         });
 
+        Route::prefix('clinic-export')->name('clinic-export.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\ClinicDataExportController::class, 'index'])->name('index');
+            Route::post('/preview', [\App\Http\Controllers\Admin\ClinicDataExportController::class, 'preview'])->name('preview');
+            Route::post('/download', [\App\Http\Controllers\Admin\ClinicDataExportController::class, 'download'])->name('download');
+        });
+
         Route::prefix('advanced-reports')->name('advanced-reports.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\AdvancedReportsController::class, 'index'])->name('index');
             Route::get('/custom-reports', [\App\Http\Controllers\Admin\AdvancedReportsController::class, 'customReports'])->name('custom-reports');

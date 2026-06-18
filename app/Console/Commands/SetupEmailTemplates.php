@@ -444,31 +444,31 @@ class SetupEmailTemplates extends Command
             // Appointment Completion
             [
                 'name' => 'appointment_completion',
-                'subject' => 'Thank You for Visiting {{ hospital_name }}',
+                'subject' => 'Thank you for your consultation - {{ hospital_name }}',
                 'body' => '<p>Dear {{ patient_name }},</p>
-<p>Thank you for visiting {{ hospital_name }} today!</p>
-<p><strong>Appointment Summary:</strong></p>
+<p>Thank you for your consultation with <strong>{{ doctor_name }}</strong> at {{ hospital_name }}.</p>
+<p><strong>Details recorded from your visit:</strong></p>
 <ul>
 <li><strong>Doctor:</strong> {{ doctor_name }}</li>
 <li><strong>Date:</strong> {{ appointment_date }}</li>
 <li><strong>Time:</strong> {{ appointment_time }}</li>
 <li><strong>Department:</strong> {{ department }}</li>
+<li><strong>Diagnosis:</strong> {{ diagnosis }}</li>
+<li><strong>Prescription:</strong> {{ prescription }}</li>
+<li><strong>Follow-up Instructions:</strong> {{ follow_up_instructions }}</li>
+<li><strong>Next Appointment:</strong> {{ next_appointment_date }}</li>
 </ul>
-<p><strong>Diagnosis:</strong> {{ diagnosis }}</p>
-<p><strong>Prescription:</strong> {{ prescription }}</p>
-<p><strong>Follow-up Instructions:</strong> {{ follow_up_instructions }}</p>
-<p><strong>Next Appointment:</strong> {{ next_appointment_date }}</p>
-<p>Your medical records have been updated in your patient portal. You can access them anytime at your convenience.</p>
-<p>If you have any questions or concerns, please don\'t hesitate to contact us.</p>
-<p>We hope you have a speedy recovery!</p>
-<p>Best regards,<br>{{ hospital_name }} Team</p>',
-                'description' => 'Appointment completion notification sent to patients.',
+<p style="white-space:pre-line;">{{ contact_doctor_note }}</p>
+<p>Best regards,<br>{{ hospital_name }} Care Team</p>',
+                'description' => 'Sent to patients after a consultation is completed with visit details and how to query their clinician.',
                 'category' => 'appointments',
                 'target_roles' => ['patient'],
                 'status' => 'active',
                 'variables' => [
                     'patient_name' => 'Patient\'s full name',
                     'doctor_name' => 'Doctor\'s name',
+                    'doctor_email' => 'Doctor\'s email address',
+                    'doctor_phone' => 'Doctor\'s phone number',
                     'appointment_date' => 'Appointment date',
                     'appointment_time' => 'Appointment time',
                     'department' => 'Department name',
@@ -477,6 +477,8 @@ class SetupEmailTemplates extends Command
                     'follow_up_instructions' => 'Follow-up instructions',
                     'next_appointment_date' => 'Next appointment date',
                     'hospital_name' => 'Hospital/clinic name',
+                    'hospital_phone' => 'Hospital phone number',
+                    'contact_doctor_note' => 'Note asking the patient to contact their clinician if anything is unclear or incorrect',
                 ],
                 'sender_name' => null,
                 'sender_email' => null,

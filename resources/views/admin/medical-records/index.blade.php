@@ -214,7 +214,11 @@
                     <i class="fas fa-download"></i>Export
                 </button>
                 <ul class="dropdown-menu">
-                    <li><span class="dropdown-item-text text-muted"><i class="fas fa-info-circle me-2"></i>Export coming soon</span></li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.clinic-export.index') }}">
+                            <i class="fas fa-file-archive me-2"></i>Clinic data export (ZIP)
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>

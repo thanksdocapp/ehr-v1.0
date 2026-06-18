@@ -2474,17 +2474,25 @@ class HospitalEmailNotificationService
             }
         }
 
+        $doctorName = $doctor ? $doctor->name : 'your clinician';
+        $doctorEmail = $doctor ? ($this->resolveDoctorNotificationEmail($doctor) ?? '') : '';
+        $doctorPhone = $doctor ? ($doctor->phone ?? '') : '';
+
         $variables = [
             'patient_name' => $patient->full_name,
-            'doctor_name' => $doctor ? $doctor->name : 'TBD',
+            'doctor_name' => $doctorName,
+            'doctor_email' => $doctorEmail,
+            'doctor_phone' => $doctorPhone,
             'appointment_date' => formatDateUkLong($appointment->appointment_date),
             'appointment_time' => $appointmentTime,
             'department' => $appointment->department ? $appointment->department->name : 'General',
             'hospital_name' => config('app.name', 'Hospital'),
+            'hospital_phone' => config('hospital.phone', ''),
             'diagnosis' => $appointment->diagnosis ?? 'No diagnosis recorded',
             'prescription' => $appointment->prescription ?? 'No prescription issued',
             'follow_up_instructions' => $appointment->follow_up_instructions ?? 'Please schedule a follow-up if needed.',
             'next_appointment_date' => $appointment->next_appointment_date ? formatDateUkLong($appointment->next_appointment_date) : 'Not scheduled',
+            'contact_doctor_note' => $this->buildAppointmentCompletionContactNote($doctor, $doctorName, $doctorEmail, $doctorPhone),
         ];
 
         return $this->emailService->sendTemplateEmail(
@@ -2492,6 +2500,40 @@ class HospitalEmailNotificationService
             [$patient->email => $patient->full_name],
             $variables
         );
+    }
+
+    /**
+     * Patient-facing note encouraging them to contact their clinician if the summary is unclear or incorrect.
+     */
+    protected function buildAppointmentCompletionContactNote(?Doctor $doctor, string $doctorName, string $doctorEmail, string $doctorPhone): string
+    {
+        $lines = [
+            'If anything in this summary is unclear, incorrect, or does not match what was discussed during your consultation, please contact '
+            . $doctorName
+            . ' so they can clarify or correct your record.',
+        ];
+
+        $contactParts = [];
+        if ($doctorEmail !== '') {
+            $contactParts[] = 'Email: ' . $doctorEmail;
+        }
+        if ($doctorPhone !== '') {
+            $contactParts[] = 'Phone: ' . $doctorPhone;
+        }
+
+        if (!empty($contactParts)) {
+            $lines[] = '';
+            $lines[] = 'Contact ' . $doctorName . ':';
+            array_push($lines, ...$contactParts);
+        }
+
+        $hospitalPhone = config('hospital.phone', '');
+        if ($hospitalPhone !== '') {
+            $lines[] = '';
+            $lines[] = 'If you cannot reach your clinician, you may contact us at ' . $hospitalPhone . '.';
+        }
+
+        return implode("\n", $lines);
     }
 
     /**

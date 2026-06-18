@@ -226,14 +226,14 @@ class EmailTemplateSeeder extends Seeder
             ],
             [
                 'name' => 'appointment_completion',
-                'subject' => 'Appointment Summary - {{hospital_name}}',
+                'subject' => 'Thank you for your consultation - {{hospital_name}}',
                 'category' => 'appointment',
                 'status' => 'active',
-                'description' => 'Sent to patients after appointment completion with summary',
-                'body' => 'Dear {{patient_name}},\n\nThank you for visiting {{hospital_name}}. Here is a summary of your appointment:\n\n- Doctor: {{doctor_name}}\n- Date: {{appointment_date}}\n- Time: {{appointment_time}}\n- Department: {{department}}\n- Diagnosis: {{diagnosis}}\n- Prescription: {{prescription}}\n- Follow-up Instructions: {{follow_up_instructions}}\n- Next Appointment: {{next_appointment_date}}\n\nIf you have any questions, please contact us.\n\nBest regards,\n{{hospital_name}} Care Team',
+                'description' => 'Sent to patients after a consultation is completed with visit details and how to query their clinician',
+                'body' => 'Dear {{patient_name}},\n\nThank you for your consultation with {{doctor_name}} at {{hospital_name}}.\n\nThe details recorded from your visit are below:\n\n- Doctor: {{doctor_name}}\n- Date: {{appointment_date}}\n- Time: {{appointment_time}}\n- Department: {{department}}\n- Diagnosis: {{diagnosis}}\n- Prescription: {{prescription}}\n- Follow-up Instructions: {{follow_up_instructions}}\n- Next Appointment: {{next_appointment_date}}\n\n{{contact_doctor_note}}\n\nBest regards,\n{{hospital_name}} Care Team',
                 'variables' => [
-                    'patient_name', 'doctor_name', 'appointment_date', 'appointment_time', 'department',
-                    'diagnosis', 'prescription', 'follow_up_instructions', 'next_appointment_date', 'hospital_name'
+                    'patient_name', 'doctor_name', 'doctor_email', 'doctor_phone', 'appointment_date', 'appointment_time', 'department',
+                    'diagnosis', 'prescription', 'follow_up_instructions', 'next_appointment_date', 'hospital_name', 'hospital_phone', 'contact_doctor_note'
                 ],
                 'sender_name' => 'Hospital Appointments',
                 'sender_email' => 'appointments@hospital.com'

@@ -116,6 +116,13 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6 mb-3">
+                            <a href="{{ route('admin.clinic-export.index') }}" class="btn btn-outline-dark btn-block">
+                                <i class="fas fa-file-archive mb-2 d-block"></i>
+                                Clinic Data Export
+                                <small class="d-block text-muted">Patients &amp; records ZIP</small>
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <a href="{{ route('admin.advanced-reports.custom-reports') }}" class="btn btn-outline-primary btn-block">
                                 <i class="fas fa-cogs mb-2 d-block"></i>
                                 Custom Reports
