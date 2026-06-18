@@ -422,6 +422,9 @@ class HospitalEmailTest extends Command
                     'doctor_name' => 'Dr. Test Doctor',
                     'appointment_date' => formatDateUkLong(now()->addDays(7)),
                     'appointment_time' => '2:00 PM',
+                    'provisional_notice' => '',
+                    'confirmation_intro' => 'Your appointment has been confirmed with the following details:',
+                    'confirmation_email_subject' => 'Appointment Confirmation',
                 ]);
             
             case 'test_results_ready':

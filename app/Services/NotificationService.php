@@ -654,11 +654,15 @@ class NotificationService
 
             switch ($eventType) {
                 case 'created':
-                    // Send confirmation email to patient
-                    $this->hospitalEmailService->sendAppointmentConfirmation($appointment);
-                    Log::info('Appointment confirmation email sent to patient', [
+                    // Send provisional booking email while appointment awaits clinician confirmation
+                    $this->hospitalEmailService->sendAppointmentConfirmation(
+                        $appointment,
+                        $appointment->status === 'pending'
+                    );
+                    Log::info('Appointment booking email sent to patient', [
                         'appointment_id' => $appointment->id,
-                        'patient_email' => $appointment->patient->email
+                        'patient_email' => $appointment->patient->email,
+                        'provisional' => $appointment->status === 'pending',
                     ]);
                     break;
 
@@ -666,8 +670,8 @@ class NotificationService
                     if (!config('hospital.notifications.appointment_confirmation.enabled', true)) {
                         break;
                     }
-                    // Send confirmation email to patient when appointment is confirmed
-                    $this->hospitalEmailService->sendAppointmentConfirmation($appointment);
+                    // Send full confirmation email once clinician confirms the appointment
+                    $this->hospitalEmailService->sendAppointmentConfirmation($appointment, false);
                     Log::info('Appointment confirmed email sent to patient', [
                         'appointment_id' => $appointment->id,
                         'patient_email' => $appointment->patient->email

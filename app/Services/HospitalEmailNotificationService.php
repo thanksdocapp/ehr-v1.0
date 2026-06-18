@@ -51,10 +51,12 @@ class HospitalEmailNotificationService
     /**
      * Send appointment confirmation email to patient.
      *
-     * @param Appointment $appointment
+     * Pending appointments receive a provisional notice; confirmed appointments receive the full confirmation copy.
+     *
+     * @param  bool|null  $provisional  When null, derived from appointment status (pending = provisional).
      * @return EmailLog|null
      */
-    public function sendAppointmentConfirmation(Appointment $appointment)
+    public function sendAppointmentConfirmation(Appointment $appointment, ?bool $provisional = null)
     {
         $appointment->loadMissing(['patient', 'doctor', 'department']);
 
@@ -107,6 +109,20 @@ class HospitalEmailNotificationService
             $notesWithVideoLink = trim($notesWithVideoLink) . "\n\n---\nONLINE VIDEO CONSULTATION\nJoin your video call here: " . $participantLink . "\nPlease join 5 minutes before your scheduled time.";
         }
 
+        if ($provisional === null) {
+            $provisional = $appointment->status === 'pending';
+        }
+
+        if ($provisional) {
+            $provisionalNotice = "Please note: this booking is provisional. Your clinician will confirm your appointment very shortly, and you will receive another email once it is fully confirmed.\n\n";
+            $confirmationIntro = 'We have received your appointment request with the following details:';
+            $confirmationEmailSubject = 'Provisional Appointment';
+        } else {
+            $provisionalNotice = '';
+            $confirmationIntro = 'Your appointment has been confirmed with the following details:';
+            $confirmationEmailSubject = 'Appointment Confirmation';
+        }
+
         $variables = [
             'patient_name' => $patient->full_name,
             'patient_email' => $recipientEmail,
@@ -131,6 +147,9 @@ class HospitalEmailNotificationService
             'join_meeting_url' => $participantLink,
             'meeting_platform' => $appointment->meeting_platform_name ?? null,
             'online_consultation_section' => $onlineConsultationSection,
+            'provisional_notice' => $provisionalNotice,
+            'confirmation_intro' => $confirmationIntro,
+            'confirmation_email_subject' => $confirmationEmailSubject,
         ];
 
         return $this->emailService->sendTemplateEmail(
@@ -138,12 +157,13 @@ class HospitalEmailNotificationService
             [$recipientEmail => $patient->full_name],
             $variables,
             [
-                'event' => 'appointment.confirmation_sent',
+                'event' => $provisional ? 'appointment.provisional_sent' : 'appointment.confirmation_sent',
                 'patient_id' => $patient->id,
                 'email_type' => 'appointment',
                 'metadata' => [
                     'appointment_id' => $appointment->id,
                     'doctor_id' => $doctor ? $doctor->id : null,
+                    'provisional' => $provisional,
                 ]
             ]
         );

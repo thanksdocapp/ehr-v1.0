@@ -41,11 +41,11 @@ class SeedEmailTemplates extends Command
         $templates = [
             [
                 'name' => 'appointment_confirmation',
-                'subject' => 'Appointment Confirmation - {{hospital_name}}',
+                'subject' => '{{confirmation_email_subject}} - {{hospital_name}}',
                 'category' => 'appointment',
                 'status' => 'active',
-                'description' => 'Sent to patients when their appointment is confirmed',
-                'body' => 'Dear {{patient_name}},\n\nYour appointment has been confirmed with the following details:\n\nDoctor: {{doctor_name}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nDepartment: {{department}}\nLocation: {{hospital_address}}\n\nAdditional Notes:\n{{notes}}\n\nPlease arrive 15 minutes early for check-in.\n\nImportant reminders:\n- Bring your ID and insurance card\n- Bring a list of current medications\n- Inform us of any changes to your health status\n\nIf you need to cancel or reschedule, please contact us at {{hospital_phone}} at least 24 hours in advance.\n\nThank you for choosing {{hospital_name}} for your healthcare needs.\n\nBest regards,\n{{hospital_name}} Team',
+                'description' => 'Sent to patients when an appointment is booked (provisional) and again when a clinician confirms it',
+                'body' => 'Dear {{patient_name}},\n\n{{provisional_notice}}{{confirmation_intro}}\n\nDoctor: {{doctor_name}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nDepartment: {{department}}\nLocation: {{hospital_address}}\n\nAdditional Notes:\n{{notes}}\n\nPlease arrive 15 minutes early for check-in.\n\nImportant reminders:\n- Bring your ID and insurance card\n- Bring a list of current medications\n- Inform us of any changes to your health status\n\nIf you need to cancel or reschedule, please contact us at {{hospital_phone}} at least 24 hours in advance.\n\nThank you for choosing {{hospital_name}} for your healthcare needs.\n\nBest regards,\n{{hospital_name}} Team',
                 'variables' => [
                     'patient_name' => 'Patient\'s full name',
                     'doctor_name' => 'Doctor\'s name',
@@ -55,7 +55,10 @@ class SeedEmailTemplates extends Command
                     'notes' => 'Additional appointment notes',
                     'hospital_name' => 'Hospital name',
                     'hospital_address' => 'Hospital address',
-                    'hospital_phone' => 'Hospital phone number'
+                    'hospital_phone' => 'Hospital phone number',
+                    'provisional_notice' => 'Provisional booking notice (empty once clinician confirms)',
+                    'confirmation_intro' => 'Opening line for provisional vs confirmed booking',
+                    'confirmation_email_subject' => 'Email subject prefix (Provisional Appointment vs Appointment Confirmation)',
                 ],
                 'sender_name' => 'Hospital Appointments',
                 'sender_email' => 'appointments@hospital.com'

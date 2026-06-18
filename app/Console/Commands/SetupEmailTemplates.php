@@ -317,9 +317,9 @@ class SetupEmailTemplates extends Command
             // Appointment Confirmation
             [
                 'name' => 'appointment_confirmation',
-                'subject' => 'Appointment Confirmed - {{ hospital_name }}',
+                'subject' => '{{ confirmation_email_subject }} - {{ hospital_name }}',
                 'body' => '<p>Dear {{ patient_name }},</p>
-<p>Your appointment has been confirmed!</p>
+<p>{{ provisional_notice }}{{ confirmation_intro }}</p>
 <p><strong>Appointment Details:</strong></p>
 <ul>
 <li><strong>Doctor:</strong> {{ doctor_name }} ({{ doctor_specialization }})</li>
@@ -339,7 +339,7 @@ class SetupEmailTemplates extends Command
 <p>Please arrive 15 minutes early for check-in. If you need to reschedule or cancel, please contact us at least 24 hours in advance.</p>
 <p>We look forward to seeing you!</p>
 <p>Best regards,<br>{{ hospital_name }} Appointment Team</p>',
-                'description' => 'Appointment confirmation email sent to patients.',
+                'description' => 'Appointment email sent to patients when booked (provisional) and again when confirmed by a clinician.',
                 'category' => 'appointments',
                 'status' => 'active',
                 'variables' => [
@@ -357,6 +357,9 @@ class SetupEmailTemplates extends Command
                     'hospital_name' => 'Hospital/clinic name',
                     'hospital_address' => 'Hospital address',
                     'hospital_phone' => 'Hospital phone',
+                    'provisional_notice' => 'Provisional booking notice (empty once clinician confirms)',
+                    'confirmation_intro' => 'Opening line for provisional vs confirmed booking',
+                    'confirmation_email_subject' => 'Email subject prefix (Provisional Appointment vs Appointment Confirmation)',
                 ],
                 'sender_name' => null,
                 'sender_email' => null,
