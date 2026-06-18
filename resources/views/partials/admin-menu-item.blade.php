@@ -97,6 +97,10 @@
                     <a class="dropdown-item" href="{{ route('admin.medical-records.create') }}">Add New Record</a>
                     <a class="dropdown-item" href="{{ route('admin.prescriptions.index') }}">Prescriptions</a>
                     <a class="dropdown-item" href="{{ route('admin.lab-reports.index') }}">Lab Reports</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item {{ request()->routeIs('admin.clinic-export.*') ? 'active' : '' }}" href="{{ route('admin.clinic-export.index') }}">
+                        <i class="fas fa-file-archive me-2"></i>Clinic data export (ZIP)
+                    </a>
                 </div>
             </div>
         </div>
@@ -183,12 +187,16 @@
     @case('advanced-reports')
         <div class="menu-item">
             <div class="dropdown">
-                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.advanced-reports.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                <a href="#" class="menu-link dropdown-toggle {{ request()->routeIs('admin.advanced-reports.*') || request()->routeIs('admin.clinic-export.*') ? 'active' : '' }}" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                     <i class="menu-icon fas {{ $icon }}"></i>
                     <span class="menu-text">{{ $label }}</span>
                 </a>
                 <div class="dropdown-menu">
                     <a class="dropdown-item {{ request()->routeIs('admin.advanced-reports.index') ? 'active' : '' }}" href="{{ route('admin.advanced-reports.index') }}">Reports Dashboard</a>
+                    <a class="dropdown-item {{ request()->routeIs('admin.clinic-export.*') ? 'active' : '' }}" href="{{ route('admin.clinic-export.index') }}">
+                        <i class="fas fa-file-archive me-2"></i>Clinic data export (ZIP)
+                    </a>
+                    <div class="dropdown-divider"></div>
                     <a class="dropdown-item {{ request()->routeIs('admin.consultations-report.*') ? 'active' : '' }}" href="{{ route('admin.consultations-report.index') }}">Consultations Report</a>
                     <a class="dropdown-item {{ request()->routeIs('admin.advanced-reports.custom-reports') ? 'active' : '' }}" href="{{ route('admin.advanced-reports.custom-reports') }}">Custom Reports</a>
                     <a class="dropdown-item {{ request()->routeIs('admin.advanced-reports.financial-analytics') ? 'active' : '' }}" href="{{ route('admin.advanced-reports.financial-analytics') }}">Financial Analytics</a>
