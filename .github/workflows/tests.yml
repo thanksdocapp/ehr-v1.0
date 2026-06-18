@@ -41,7 +41,13 @@ jobs:
           coverage: none
 
       - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: |
+          for attempt in 1 2 3; do
+            composer install --no-interaction --prefer-dist --no-progress && exit 0
+            echo "composer install failed (attempt ${attempt}/3), retrying..."
+            sleep 10
+          done
+          exit 1
 
       - name: Run tests
         run: php artisan test
