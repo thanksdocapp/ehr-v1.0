@@ -27,7 +27,7 @@ class ClinicDataExportController extends Controller
         $user = Auth::guard('admin')->user();
         $lockedDepartmentId = $user?->department_id ? (int) $user->department_id : null;
 
-        $departmentsQuery = Department::query()->where('is_active', true)->orderBy('name');
+        $departmentsQuery = Department::query()->orderByDesc('is_active')->orderBy('name');
         if ($lockedDepartmentId) {
             $departmentsQuery->where('id', $lockedDepartmentId);
         }

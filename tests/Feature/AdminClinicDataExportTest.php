@@ -19,6 +19,73 @@ class AdminClinicDataExportTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
+    public function super_admin_can_see_and_export_inactive_clinic(): void
+    {
+        $inactiveDept = Department::create([
+            'name' => 'Inactive Export Clinic',
+            'slug' => 'inactive-export-clinic-' . uniqid(),
+            'description' => 'Inactive test clinic',
+            'is_active' => false,
+        ]);
+
+        $doctor = Doctor::create([
+            'title' => 'Dr.',
+            'first_name' => 'Inactive',
+            'last_name' => 'Doctor',
+            'slug' => 'inactive-doc-' . uniqid(),
+            'specialization' => 'General',
+            'department_id' => $inactiveDept->id,
+            'bio' => 'Test',
+            'qualification' => 'MBBS',
+            'experience_years' => 3,
+            'email' => 'inactive-doctor-' . uniqid() . '@example.com',
+        ]);
+
+        $patient = Patient::create([
+            'patient_id' => 'P-INACTIVE-' . uniqid(),
+            'first_name' => 'Inactive',
+            'last_name' => 'Patient',
+            'email' => 'inactive-patient-' . uniqid() . '@example.com',
+            'phone' => '07123456789',
+            'password' => bcrypt('password'),
+            'department_id' => $inactiveDept->id,
+            'is_active' => true,
+        ]);
+
+        MedicalRecord::create([
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'record_type' => 'consultation',
+            'record_date' => now()->toDateString(),
+            'diagnosis' => 'Inactive clinic record marker',
+            'is_private' => false,
+        ]);
+
+        $admin = User::create([
+            'name' => 'Inactive Clinic Export Admin',
+            'email' => 'inactive-clinic-export-' . uniqid() . '@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+            'is_admin' => true,
+            'is_active' => true,
+        ]);
+
+        $this->withoutMiddleware([RequireTwoFactor::class]);
+        $this->actingAs($admin, 'admin');
+
+        $this->get(route('admin.clinic-export.index'))
+            ->assertOk()
+            ->assertSee('Inactive Export Clinic (Inactive)');
+
+        $this->postJson(route('admin.clinic-export.preview'), [
+            'department_id' => $inactiveDept->id,
+        ])->assertOk()->assertJson([
+            'patient_count' => 1,
+            'record_count' => 1,
+        ]);
+    }
+
+    /** @test */
     public function super_admin_can_preview_and_download_scoped_clinic_export(): void
     {
         [$deptA, $deptB, $doctorA, $patientA, $patientB, $publicRecord, $privateRecord] = $this->seedClinicFixtures();

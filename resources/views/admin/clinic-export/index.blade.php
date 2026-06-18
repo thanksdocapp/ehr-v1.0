@@ -45,7 +45,7 @@
                                     @foreach($departments as $department)
                                         <option value="{{ $department->id }}"
                                             @selected(old('department_id', $selectedDepartmentId) == $department->id)>
-                                            {{ $department->name }}
+                                            {{ $department->name }}@unless($department->is_active) (Inactive)@endunless
                                         </option>
                                     @endforeach
                                 </select>
