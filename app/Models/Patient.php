@@ -134,6 +134,11 @@ class Patient extends Authenticatable
         return $this->hasMany(Invoice::class);
     }
 
+    public function serviceOrders(): HasMany
+    {
+        return $this->hasMany(ServiceOrder::class);
+    }
+
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'email', 'email');
@@ -497,7 +502,8 @@ class Patient extends Authenticatable
      * Scope to filter patients visible to a specific user based on role.
      * 
      * For Doctors:
-     * - Patients they created, are assigned to them, or have appointments/records with them
+     * - Patients they created, are assigned to them, have appointments/records with them,
+     *   or have a service order with them
      * - Not clinic-wide: removing a doctor from an appointment removes patient visibility unless they added the patient
      * 
      * For Admins:
@@ -547,7 +553,8 @@ class Patient extends Authenticatable
                 $q->where('created_by_doctor_id', $doctor->id)
                     ->orWhere('assigned_doctor_id', $doctor->id)
                     ->orWhereHas('appointments', fn ($aq) => $aq->where('doctor_id', $doctor->id))
-                    ->orWhereHas('medicalRecords', fn ($rq) => $rq->where('doctor_id', $doctor->id));
+                    ->orWhereHas('medicalRecords', fn ($rq) => $rq->where('doctor_id', $doctor->id))
+                    ->orWhereHas('serviceOrders', fn ($sq) => $sq->where('doctor_id', $doctor->id));
             });
         }
         
@@ -645,6 +652,10 @@ class Patient extends Authenticatable
             }
 
             if ($this->medicalRecords()->where('doctor_id', $doctor->id)->exists()) {
+                return true;
+            }
+
+            if ($this->serviceOrders()->where('doctor_id', $doctor->id)->exists()) {
                 return true;
             }
 
