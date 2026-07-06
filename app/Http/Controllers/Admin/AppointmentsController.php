@@ -319,26 +319,37 @@ class AppointmentsController extends Controller
             'symptoms' => 'nullable|string',
             'notes' => 'nullable|string',
             'fee' => 'nullable|numeric|min:0',
+            'consultation_type' => 'nullable|in:in_person,online,telephone',
             'is_online' => 'boolean',
             'meeting_link' => 'nullable|url|max:500',
             'meeting_platform' => 'nullable|in:zoom,google_meet,teams,whereby,custom'
         ]);
 
+        $consultationType = in_array($request->consultation_type, ['in_person', 'online', 'telephone'], true)
+            ? $request->consultation_type
+            : ($request->boolean('is_online') ? 'online' : 'in_person');
+        $isOnline = $consultationType === 'online';
+
         // Check if Whereby is enabled - if so, we don't require manual meeting link
         $wherebyService = app(\App\Services\WherebyService::class);
         $wherebyEnabled = $wherebyService->isEnabled();
 
-        // Validate that meeting link is provided if online consultation and Whereby is not enabled
-        if ($request->boolean('is_online') && empty($request->meeting_link) && !$wherebyEnabled) {
+        // Validate that meeting link is provided if online consultation (except for Whereby which auto-generates)
+        if ($isOnline && empty($request->meeting_link) && $request->meeting_platform !== 'whereby' && !$wherebyEnabled) {
             return redirect()->back()
                 ->withErrors(['meeting_link' => 'Meeting link is required for online consultations.'])
                 ->withInput();
         }
 
-        $data = $request->all();
+        $data = $request->except(['consultation_type', 'is_online']);
         $data['appointment_number'] = Appointment::generateAppointmentNumber();
         $data['status'] = 'pending';
-        $data['is_online'] = $request->boolean('is_online', false);
+        $data['consultation_type'] = $consultationType;
+        $data['is_online'] = $isOnline;
+        if (!$isOnline) {
+            $data['meeting_link'] = null;
+            $data['meeting_platform'] = null;
+        }
 
         $appointment = Appointment::create($data);
 
@@ -397,7 +408,7 @@ class AppointmentsController extends Controller
 
                 // Send notification to doctor
                 if (config('hospital.notifications.appointment_confirmation.send_to_doctor', true) && $appointment->doctor) {
-                    $emailService->notifyDoctorNewAppointment($appointment, $appointment->doctor);
+                    $emailService->sendNewAppointmentToDoctor($appointment);
                     \Log::info('Doctor notification email sent after Whereby processing', [
                         'appointment_id' => $appointment->id
                     ]);
