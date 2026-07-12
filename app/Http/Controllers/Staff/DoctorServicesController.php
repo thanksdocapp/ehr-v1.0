@@ -136,7 +136,7 @@ class DoctorServicesController extends Controller
                 'tags' => $tags,
                 'created_by' => $user->id,
                 'sort_order' => $nextSortOrder,
-                'is_active' => $request->boolean('is_active', true),
+                'is_active' => $request->boolean('is_active'),
                 'is_non_consultation' => $request->boolean('is_non_consultation'),
             ]);
 
@@ -147,7 +147,7 @@ class DoctorServicesController extends Controller
                 'custom_price' => $request->default_price,
                 'custom_duration_minutes' => $durationMinutes,
                 'consultation_type' => $request->boolean('is_non_consultation') ? 'in_person' : ($request->consultation_type ?? 'in_person'),
-                'is_active' => $request->boolean('is_active', true),
+                'is_active' => $request->boolean('is_active'),
             ]);
 
             return redirect()->route('staff.doctor-services.index')
@@ -220,6 +220,8 @@ class DoctorServicesController extends Controller
                 ? (int) ($bookingService->default_duration_minutes ?? 30)
                 : (int) $request->custom_duration_minutes;
 
+            $isActive = $request->boolean('is_active');
+
             // Update service (doctor owns this service - can edit name, default price and duration)
             $bookingService->update([
                 'name' => $request->name,
@@ -229,6 +231,7 @@ class DoctorServicesController extends Controller
                 'minimum_age' => $minimumAge,
                 'maximum_age' => $maximumAge,
                 'is_non_consultation' => $request->boolean('is_non_consultation'),
+                'is_active' => $isActive,
             ]);
 
             // Update or create doctor service override (duration used by SlotAvailabilityService for scheduling)
@@ -241,7 +244,7 @@ class DoctorServicesController extends Controller
                     'custom_price' => $newDefaultPrice,
                     'custom_duration_minutes' => $duration,
                     'consultation_type' => $request->boolean('is_non_consultation') ? 'in_person' : ($request->consultation_type ?? 'in_person'),
-                    'is_active' => $request->boolean('is_active', true),
+                    'is_active' => $isActive,
                 ]
             );
 
