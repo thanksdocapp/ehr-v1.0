@@ -32,12 +32,18 @@ class PostBookingRedirectService
             return null;
         }
 
+        $bookingValue = round((float) ($appointment->fee ?? 0), 2);
+
         $params = [
             'appointment_number' => $appointment->appointment_number,
-            'booking_value' => (string) round((float) ($appointment->fee ?? 0), 2),
+            'booking_value' => (string) $bookingValue,
             'currency' => strtolower(CurrencyHelper::getDefaultCurrency()),
             'source' => 'thanksdoc',
         ];
+
+        if ($bookingValue <= 0) {
+            $params['checkout_status'] = 'complimentary';
+        }
 
         $utm = session('booking_utm_params', []);
         if (is_array($utm)) {
@@ -70,12 +76,18 @@ class PostBookingRedirectService
         $request->loadMissing('appointment');
         $appointment = $request->appointment;
 
+        $bookingValue = round((float) ($appointment?->fee ?? $request->fee ?? 0), 2);
+
         $params = [
             'clinic_request_number' => $request->request_number,
-            'booking_value' => (string) round((float) ($appointment?->fee ?? $request->fee ?? 0), 2),
+            'booking_value' => (string) $bookingValue,
             'currency' => strtolower(CurrencyHelper::getDefaultCurrency()),
             'source' => 'thanksdoc',
         ];
+
+        if ($bookingValue <= 0) {
+            $params['checkout_status'] = 'complimentary';
+        }
 
         if ($appointment && filled($appointment->appointment_number)) {
             $params['appointment_number'] = $appointment->appointment_number;

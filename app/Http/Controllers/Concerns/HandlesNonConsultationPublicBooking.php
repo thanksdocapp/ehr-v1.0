@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Http\Controllers\PublicBillingController;
 use App\Models\BookingService;
 use App\Models\Department;
 use App\Models\Doctor;
@@ -248,7 +249,17 @@ trait HandlesNonConsultationPublicBooking
         $order = $result['service_order'];
         session()->forget([$this->nonConsultationBookingContextKey(), $this->nonConsultationBookingDataKey(), 'booking_data']);
 
-        if ($result['invoice'] && $result['invoice']->payment_token) {
+        if ($result['invoice'] && (float) $result['invoice']->outstanding_amount <= 0.009) {
+            session(['pending_service_order_token' => $order->booking_token]);
+            $zeroRedirect = app(PublicBillingController::class)->tryCompleteZeroBalanceCheckout($result['invoice']);
+            if ($zeroRedirect) {
+                session()->forget('pending_service_order_token');
+
+                return $zeroRedirect;
+            }
+        }
+
+        if ($result['invoice'] && $result['invoice']->payment_token && (float) $result['invoice']->outstanding_amount > 0.009) {
             session(['pending_service_order_token' => $order->booking_token]);
 
             return redirect(publicBillingPayUrl($result['invoice']->payment_token));

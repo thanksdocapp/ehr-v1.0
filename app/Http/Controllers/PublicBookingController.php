@@ -898,6 +898,16 @@ class PublicBookingController extends Controller
                 $invoice = $result['invoice'];
                 $pending = $result['pending_clinic_booking'];
 
+                if ($invoice && (float) $invoice->outstanding_amount <= 0.009) {
+                    session(['pending_clinic_booking_token' => $pending->booking_token]);
+                    $zeroRedirect = app(PublicBillingController::class)->tryCompleteZeroBalanceCheckout($invoice);
+                    if ($zeroRedirect) {
+                        session()->forget('pending_clinic_booking_token');
+
+                        return $zeroRedirect;
+                    }
+                }
+
                 if ($invoice && $invoice->payment_token) {
                     session(['pending_clinic_booking_token' => $pending->booking_token]);
 
@@ -1544,6 +1554,17 @@ class PublicBookingController extends Controller
             // Patient and appointment will be created after payment
             if ($pendingBooking && $invoice) {
                 $invoice->refresh();
+
+                session(['pending_booking_token' => $pendingBooking->booking_token]);
+
+                if ((float) $invoice->outstanding_amount <= 0.009) {
+                    $zeroRedirect = app(PublicBillingController::class)->tryCompleteZeroBalanceCheckout($invoice);
+                    if ($zeroRedirect) {
+                        session()->forget('pending_booking_token');
+
+                        return $zeroRedirect;
+                    }
+                }
 
                 if ($invoice->payment_token) {
                     \Log::info('Redirecting to payment page (patient not created yet)', [

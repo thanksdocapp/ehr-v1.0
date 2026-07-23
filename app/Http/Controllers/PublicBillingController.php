@@ -86,6 +86,11 @@ class PublicBillingController extends Controller
             'status' => $invoice->status,
         ]);
 
+        $zeroBalanceRedirect = $this->tryCompleteZeroBalanceCheckout($invoice);
+        if ($zeroBalanceRedirect) {
+            return $zeroBalanceRedirect;
+        }
+
         // Check if token is expired (only if expiration is set)
         if ($invoice->payment_token_expires_at !== null && $invoice->payment_token_expires_at->isPast()) {
             return redirect(route('public.billing.invalid', [], false))
@@ -478,104 +483,18 @@ class PublicBillingController extends Controller
         // Always ensure billing is updated when viewing success page (fallback)
         $this->updateInvoiceAndBilling($invoice);
 
+        if ($invoice->status !== 'paid' && (float) $invoice->outstanding_amount <= 0.009) {
+            $invoice->update(['status' => 'paid', 'paid_date' => now()]);
+            $this->updateInvoiceAndBilling($invoice->fresh());
+        }
+
         app(\App\Services\ClinicBookingService::class)->finalizeClinicBookingForPaidInvoice($invoice);
         app(\App\Services\NonConsultationBookingService::class)->finalizeServiceOrderForPaidInvoice($invoice);
         app(\App\Services\PublicBookingService::class)->finalizeDoctorBookingForPaidInvoice($invoice);
 
-        $clinicRedirect = $this->redirectAfterClinicBookingFinalized($invoice);
-        if ($clinicRedirect) {
-            return $clinicRedirect;
-        }
-
-        // Check if this is a pending clinic booking that needs to be finalized after payment
-        $pendingClinicToken = session('pending_clinic_booking_token');
-        if ($pendingClinicToken) {
-            try {
-                $clinicService = app(\App\Services\ClinicBookingService::class);
-                $pending = \App\Models\PendingClinicBooking::where('booking_token', $pendingClinicToken)
-                    ->where('invoice_id', $invoice->id)
-                    ->where('status', 'pending_payment')
-                    ->first();
-
-                if ($pending) {
-                    $hasPaid = $invoice->payments()->where('status', 'completed')->exists() || $invoice->status === 'paid';
-                    if ($hasPaid) {
-                        $clinicRequest = $clinicService->finalizeClinicBookingAfterPayment($pending);
-                        session()->forget('pending_clinic_booking_token');
-
-                        $redirect = $this->redirectAfterClinicBookingFinalized($invoice, $clinicRequest);
-                        if ($redirect) {
-                            return $redirect;
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to finalize pending clinic booking after payment', [
-                    'invoice_id' => $invoice->id,
-                    'pending_clinic_token' => $pendingClinicToken,
-                    'error' => $e->getMessage()
-                ]);
-            }
-        }
-
-        try {
-            $ncService = app(\App\Services\NonConsultationBookingService::class);
-            $finalizedOrder = $ncService->finalizeServiceOrderForPaidInvoice($invoice);
-
-            if ($finalizedOrder) {
-                session()->forget('pending_service_order_token');
-
-                return redirect(publicBookingNonConsultationUrl('success', [
-                    'orderNumber' => $finalizedOrder->order_number,
-                ]))->with('payment_success', true);
-            }
-        } catch (\Exception $e) {
-            Log::error('Failed to finalize service order after payment', [
-                'invoice_id' => $invoice->id,
-                'pending_service_order_token' => session('pending_service_order_token'),
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        // Check if this is a pending booking (doctor-selected) that needs to be finalized after payment
-        $pendingBookingToken = session('pending_booking_token');
-        if ($pendingBookingToken) {
-            try {
-                $result = $this->finalizePendingBookingAfterPayment($invoice, $pendingBookingToken);
-                if ($result && isset($result['appointment'])) {
-                    session()->forget('pending_booking_token');
-                    $appointment = $result['appointment'];
-                    $appointment->loadMissing('doctor');
-
-                    $external = app(PostBookingRedirectService::class)->buildRedirectUrlForAppointment($appointment);
-                    if ($external !== null) {
-                        session()->forget('booking_utm_params');
-
-                        return redirect()->away($external);
-                    }
-
-                    return redirect()->route('public.booking.success', [
-                        'appointmentNumber' => $appointment->appointment_number,
-                    ])->with('payment_success', true);
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to finalize pending booking after payment', [
-                    'invoice_id' => $invoice->id,
-                    'pending_booking_token' => $pendingBookingToken,
-                    'error' => $e->getMessage()
-                ]);
-            }
-        }
-
-        // Check if this payment was from a booking flow (legacy - for free bookings)
-        $bookingAppointmentNumber = session('booking_appointment_number');
-        if ($bookingAppointmentNumber) {
-            // Clear the session
-            session()->forget('booking_appointment_number');
-            // Redirect to booking success page
-            return redirect()->route('public.booking.success', [
-                'appointmentNumber' => $bookingAppointmentNumber,
-            ])->with('payment_success', true);
+        $bookingRedirect = $this->redirectAfterBookingInvoicePaid($invoice);
+        if ($bookingRedirect) {
+            return $bookingRedirect;
         }
 
         return view('public.billing.success', array_merge(compact('invoice', 'token'), ['logo_only' => true]));
@@ -606,12 +525,17 @@ class PublicBillingController extends Controller
             ->where('status', 'completed')
             ->exists();
 
-        if (!$hasCompletedPayment && $invoice->status !== 'paid') {
-            Log::warning('Payment not completed for pending booking', [
-                'invoice_id' => $invoice->id,
-                'pending_booking_id' => $pendingBooking->id
-            ]);
-            return null;
+        if (! $hasCompletedPayment && $invoice->status !== 'paid') {
+            if ((float) $invoice->outstanding_amount > 0.009) {
+                Log::warning('Payment not completed for pending booking', [
+                    'invoice_id' => $invoice->id,
+                    'pending_booking_id' => $pendingBooking->id,
+                ]);
+
+                return null;
+            }
+
+            $invoice->update(['status' => 'paid', 'paid_date' => now()]);
         }
 
         Log::info('Finalizing pending booking after payment', [
@@ -845,6 +769,157 @@ class PublicBillingController extends Controller
                 'error' => $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Complete a complimentary checkout (100% discount / £0 due) without Stripe.
+     */
+    public function tryCompleteZeroBalanceCheckout(Invoice $invoice): ?RedirectResponse
+    {
+        $invoice->refresh();
+
+        if ((float) $invoice->outstanding_amount > 0.009) {
+            return null;
+        }
+
+        if ($invoice->status !== 'paid') {
+            $invoice->update([
+                'status' => 'paid',
+                'paid_date' => now(),
+            ]);
+            $this->updateInvoiceAndBilling($invoice->fresh());
+        }
+
+        app(\App\Services\ClinicBookingService::class)->finalizeClinicBookingForPaidInvoice($invoice);
+        app(\App\Services\NonConsultationBookingService::class)->finalizeServiceOrderForPaidInvoice($invoice);
+        app(\App\Services\PublicBookingService::class)->finalizeDoctorBookingForPaidInvoice($invoice);
+
+        Log::info('Zero-balance checkout completed without payment gateway', [
+            'invoice_id' => $invoice->id,
+            'invoice_number' => $invoice->invoice_number,
+        ]);
+
+        return $this->redirectAfterBookingInvoicePaid($invoice);
+    }
+
+    /**
+     * Redirect to the correct booking thank-you page after invoice is paid (card or complimentary).
+     */
+    private function redirectAfterBookingInvoicePaid(Invoice $invoice): ?RedirectResponse
+    {
+        $clinicRedirect = $this->redirectAfterClinicBookingFinalized($invoice);
+        if ($clinicRedirect) {
+            return $clinicRedirect;
+        }
+
+        $pendingClinicToken = session('pending_clinic_booking_token');
+        if ($pendingClinicToken) {
+            try {
+                $clinicService = app(\App\Services\ClinicBookingService::class);
+                $pending = \App\Models\PendingClinicBooking::where('booking_token', $pendingClinicToken)
+                    ->where('invoice_id', $invoice->id)
+                    ->where('status', 'pending_payment')
+                    ->first();
+
+                if ($pending) {
+                    $hasPaid = $invoice->payments()->where('status', 'completed')->exists() || $invoice->status === 'paid';
+                    if ($hasPaid) {
+                        $clinicRequest = $clinicService->finalizeClinicBookingAfterPayment($pending);
+                        session()->forget('pending_clinic_booking_token');
+
+                        $redirect = $this->redirectAfterClinicBookingFinalized($invoice, $clinicRequest);
+                        if ($redirect) {
+                            return $redirect;
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to finalize pending clinic booking after payment', [
+                    'invoice_id' => $invoice->id,
+                    'pending_clinic_token' => $pendingClinicToken,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        try {
+            $ncService = app(\App\Services\NonConsultationBookingService::class);
+            $finalizedOrder = $ncService->finalizeServiceOrderForPaidInvoice($invoice);
+
+            if ($finalizedOrder) {
+                session()->forget('pending_service_order_token');
+
+                return redirect(publicBookingNonConsultationUrl('success', [
+                    'orderNumber' => $finalizedOrder->order_number,
+                ]))->with('payment_success', true);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to finalize service order after payment', [
+                'invoice_id' => $invoice->id,
+                'pending_service_order_token' => session('pending_service_order_token'),
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $pendingBookingToken = session('pending_booking_token');
+        if ($pendingBookingToken) {
+            try {
+                $result = $this->finalizePendingBookingAfterPayment($invoice, $pendingBookingToken);
+                if ($result && isset($result['appointment'])) {
+                    session()->forget('pending_booking_token');
+                    $appointment = $result['appointment'];
+                    $appointment->loadMissing('doctor');
+
+                    $external = app(PostBookingRedirectService::class)->buildRedirectUrlForAppointment($appointment);
+                    if ($external !== null) {
+                        session()->forget('booking_utm_params');
+
+                        return redirect()->away($external);
+                    }
+
+                    return redirect()->route('public.booking.success', [
+                        'appointmentNumber' => $appointment->appointment_number,
+                    ])->with('payment_success', true);
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to finalize pending booking after payment', [
+                    'invoice_id' => $invoice->id,
+                    'pending_booking_token' => $pendingBookingToken,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if ($invoice->appointment_id) {
+            $appointment = \App\Models\Appointment::query()
+                ->whereKey($invoice->appointment_id)
+                ->first();
+
+            if ($appointment) {
+                $appointment->loadMissing('doctor');
+                $external = app(PostBookingRedirectService::class)->buildRedirectUrlForAppointment($appointment);
+                if ($external !== null) {
+                    session()->forget('booking_utm_params');
+
+                    return redirect()->away($external);
+                }
+
+                return redirect()->route('public.booking.success', [
+                    'appointmentNumber' => $appointment->appointment_number,
+                ])->with('payment_success', true);
+            }
+        }
+
+        $bookingAppointmentNumber = session('booking_appointment_number');
+        if ($bookingAppointmentNumber) {
+            session()->forget('booking_appointment_number');
+
+            return redirect()->route('public.booking.success', [
+                'appointmentNumber' => $bookingAppointmentNumber,
+            ])->with('payment_success', true);
+        }
+
+        return null;
     }
 
     /**
