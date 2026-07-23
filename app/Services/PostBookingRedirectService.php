@@ -27,7 +27,7 @@ class PostBookingRedirectService
             return null;
         }
 
-        $base = $this->validatedDoctorRedirectUrl($doctor->post_booking_redirect_url);
+        $base = $this->doctorBookingRedirectUrlFor($doctor);
         if ($base === null) {
             return null;
         }
@@ -179,11 +179,55 @@ class PostBookingRedirectService
 
     /**
      * Clinic thank-you prefers clinic-specific URL, then doctor booking URL.
+     * Checks all active doctor rows for the same user (legacy duplicate rows).
      */
     public function thankYouBaseUrlForDoctor(Doctor $doctor): ?string
     {
-        return $this->validatedDoctorRedirectUrl($doctor->clinic_post_booking_redirect_url)
-            ?? $this->validatedDoctorRedirectUrl($doctor->post_booking_redirect_url);
+        return $this->firstValidRedirectUrlOnDoctorRows($doctor, 'clinic_post_booking_redirect_url')
+            ?? $this->firstValidRedirectUrlOnDoctorRows($doctor, 'post_booking_redirect_url');
+    }
+
+    /**
+     * Doctor-link thank-you URL from this row or sibling rows for the same user account.
+     */
+    public function doctorBookingRedirectUrlFor(Doctor $doctor): ?string
+    {
+        return $this->firstValidRedirectUrlOnDoctorRows($doctor, 'post_booking_redirect_url');
+    }
+
+    /**
+     * @param  'post_booking_redirect_url'|'clinic_post_booking_redirect_url'  $column
+     */
+    private function firstValidRedirectUrlOnDoctorRows(Doctor $doctor, string $column): ?string
+    {
+        foreach ($this->doctorRowsForRedirectLookup($doctor) as $candidate) {
+            $url = $this->validatedDoctorRedirectUrl($candidate->{$column} ?? null);
+            if ($url !== null) {
+                return $url;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<Doctor>
+     */
+    private function doctorRowsForRedirectLookup(Doctor $doctor): array
+    {
+        if ($doctor->user_id) {
+            $rows = Doctor::query()
+                ->where('user_id', $doctor->user_id)
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->get();
+
+            if ($rows->isNotEmpty()) {
+                return $rows->all();
+            }
+        }
+
+        return [$doctor];
     }
 
     public function validatedDoctorRedirectUrl(?string $url): ?string

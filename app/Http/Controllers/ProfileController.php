@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\Doctor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -77,7 +78,9 @@ class ProfileController extends Controller
             }
 
             if ($doctorData !== []) {
-                $user->doctor->update($doctorData);
+                Doctor::query()
+                    ->where('user_id', $user->id)
+                    ->update($doctorData);
             }
         }
 
