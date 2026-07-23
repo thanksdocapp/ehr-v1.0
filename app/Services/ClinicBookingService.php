@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\AutoAcceptClinicBookingRequestJob;
 use App\Models\ClinicBookingRequest;
 use App\Models\ClinicBookingDiscountCode;
 use App\Models\Department;
@@ -1069,7 +1070,7 @@ class ClinicBookingService
                 $invoice->update(['discount_code_redemption_recorded_at' => now()]);
             }
 
-            $clinicRequest = $this->createFromClinicBooking($data, deferAutoAccept: false);
+            $clinicRequest = $this->createFromClinicBooking($data, deferAutoAccept: true);
             $pending->markCompleted();
 
             if ($invoice && $clinicRequest->appointment_id && ! $invoice->appointment_id) {
@@ -1223,9 +1224,8 @@ class ClinicBookingService
         $doctorId = (int) $doctor->id;
         $acceptedByUserId = $doctor->user_id ? (int) $doctor->user_id : null;
 
-        dispatch(function () use ($requestId, $doctorId, $acceptedByUserId): void {
-            app(self::class)->runDeferredAutoAccept($requestId, $doctorId, $acceptedByUserId);
-        })->afterResponse();
+        AutoAcceptClinicBookingRequestJob::dispatch($requestId, $doctorId, $acceptedByUserId)
+            ->afterResponse();
     }
 
     private function scheduleClinicDoctorNotifications(ClinicBookingRequest $request): void

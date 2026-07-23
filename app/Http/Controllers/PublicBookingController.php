@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Doctor;
 use App\Models\Department;
 use App\Models\BookingService;
+use App\Models\ClinicBookingRequest;
 use App\Models\DoctorServicePrice;
 use App\Models\Setting;
 use Illuminate\Support\Collection;
@@ -15,6 +16,7 @@ use App\Services\PublicBookingService;
 use App\Services\AppointmentCalendarInviteService;
 use App\Services\ClinicBookingService;
 use App\Services\PostBookingRedirectService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -204,11 +206,21 @@ class PublicBookingController extends Controller
 
     /**
      * Return to clinic review when session data exists; otherwise show session-expired page.
+     *
+     * @return RedirectResponse|JsonResponse
      */
-    private function redirectBackToClinicReview(?string $error = null): RedirectResponse
+    private function redirectBackToClinicReview(?string $error = null, ?Request $request = null): RedirectResponse|JsonResponse
     {
+        $request = $request ?? request();
+
+        if ($this->wantsClinicConfirmJson($request)) {
+            return response()->json([
+                'error' => $error ?? 'Something went wrong. Please try again.',
+            ], 422);
+        }
+
         if (! session($this->clinicBookingReviewSessionKey())) {
-            return redirect($this->publicBookingRestartUrl(request()))
+            return redirect($this->publicBookingRestartUrl($request))
                 ->with('error', $error ?? 'Your booking session has expired. Please start a new booking.');
         }
 
@@ -218,6 +230,49 @@ class PublicBookingController extends Controller
         }
 
         return $redirect;
+    }
+
+    private function wantsClinicConfirmJson(Request $request): bool
+    {
+        return $request->expectsJson()
+            || $request->ajax()
+            || $request->header('X-Requested-With') === 'XMLHttpRequest';
+    }
+
+    private function clinicBookingSuccessUrl(ClinicBookingRequest $clinicRequest): string
+    {
+        return route('public.booking.clinic-success', [
+            'requestNumber' => $clinicRequest->request_number,
+        ]).$this->appendBookingEmbedQuery(request());
+    }
+
+    /**
+     * @return RedirectResponse|JsonResponse
+     */
+    private function respondToClinicBookingOutcome(Request $request, ClinicBookingRequest $clinicRequest): RedirectResponse|JsonResponse
+    {
+        session()->forget($this->clinicBookingReviewSessionKey());
+        session()->forget($this->publicBookingClinicPatientContextKey());
+
+        $successUrl = $this->clinicBookingSuccessUrl($clinicRequest);
+
+        if ($this->wantsClinicConfirmJson($request)) {
+            return response()->json(['redirect' => $successUrl]);
+        }
+
+        return redirect()->to($successUrl)->with('request', $clinicRequest);
+    }
+
+    /**
+     * @return RedirectResponse|JsonResponse
+     */
+    private function respondToClinicRedirectUrl(Request $request, string $url): RedirectResponse|JsonResponse
+    {
+        if ($this->wantsClinicConfirmJson($request)) {
+            return response()->json(['redirect' => $url]);
+        }
+
+        return redirect()->to($url);
     }
 
     /**
@@ -865,6 +920,13 @@ class PublicBookingController extends Controller
         ], $this->publicBookingAddressValidationRules(), $this->publicBookingGuardianFieldRules($request)));
 
         if ($validator->fails()) {
+            if ($this->wantsClinicConfirmJson($request)) {
+                return response()->json([
+                    'error' => 'Please check the form and try again.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
             return $this->redirectBackToClinicReview()->withErrors($validator)->withInput();
         }
 
@@ -884,7 +946,7 @@ class PublicBookingController extends Controller
         );
         $selectedSlot = collect($slots)->firstWhere('start', $request->appointment_time);
         if (!$selectedSlot) {
-            return $this->redirectBackToClinicReview('Selected time slot is no longer available. Please choose another time.');
+            return $this->redirectBackToClinicReview('Selected time slot is no longer available. Please choose another time.', $request);
         }
 
         $data = $request->all();
@@ -896,7 +958,7 @@ class PublicBookingController extends Controller
         $service = BookingService::findOrFail($request->service_id);
 
         if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service, $data['date_of_birth'] ?? null)) {
-            return $this->redirectBackToClinicReview('This service is not available for this age.');
+            return $this->redirectBackToClinicReview('This service is not available for this age.', $request);
         }
         session([$this->publicBookingDobSessionKey() => $data['date_of_birth']]);
 
@@ -910,7 +972,7 @@ class PublicBookingController extends Controller
                 if (!empty($result['clinic_request'])) {
                     $clinicRequest = $result['clinic_request'];
 
-                    return $this->redirectToClinicBookingOutcome($clinicRequest);
+                    return $this->respondToClinicBookingOutcome($request, $clinicRequest);
                 }
                 $invoice = $result['invoice'];
                 $pending = $result['pending_clinic_booking'];
@@ -921,6 +983,10 @@ class PublicBookingController extends Controller
                     if ($zeroRedirect) {
                         session()->forget('pending_clinic_booking_token');
 
+                        if ($this->wantsClinicConfirmJson($request)) {
+                            return response()->json(['redirect' => $zeroRedirect->getTargetUrl()]);
+                        }
+
                         return $zeroRedirect;
                     }
                 }
@@ -928,22 +994,32 @@ class PublicBookingController extends Controller
                 if ($invoice && $invoice->payment_token) {
                     session(['pending_clinic_booking_token' => $pending->booking_token]);
 
-                    return redirect()->route('public.billing.pay', ['token' => $invoice->payment_token]);
+                    return $this->respondToClinicRedirectUrl(
+                        $request,
+                        route('public.billing.pay', ['token' => $invoice->payment_token])
+                    );
                 }
 
-                return $this->redirectBackToClinicReview('Payment setup failed. Please try again.');
+                return $this->redirectBackToClinicReview('Payment setup failed. Please try again.', $request);
             }
 
             $clinicRequest = $this->clinicBookingService->createFromClinicBooking($data);
 
-            return $this->redirectToClinicBookingOutcome($clinicRequest);
+            return $this->respondToClinicBookingOutcome($request, $clinicRequest);
         } catch (ValidationException $e) {
-            return $this->redirectBackToClinicReview('Please check the form and try again.')
+            if ($this->wantsClinicConfirmJson($request)) {
+                return response()->json([
+                    'error' => 'Please check the form and try again.',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+
+            return $this->redirectBackToClinicReview('Please check the form and try again.', $request)
                 ->withErrors($e->errors())
                 ->withInput();
         } catch (\Exception $e) {
             \Log::error('Clinic booking failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return $this->redirectBackToClinicReview('Failed to submit booking request. Please try again.');
+            return $this->redirectBackToClinicReview('Failed to submit booking request. Please try again.', $request);
         }
     }
 
@@ -964,6 +1040,14 @@ class PublicBookingController extends Controller
         if ($external !== null) {
             session()->forget('booking_utm_params');
 
+            $embed = request()->boolean('embed') || session('embed', false);
+            if ($embed) {
+                return view('public-booking.external-redirect', [
+                    'url' => $external,
+                    'title' => 'Booking confirmed',
+                ]);
+            }
+
             return redirect()->away($external);
         }
 
@@ -982,25 +1066,11 @@ class PublicBookingController extends Controller
     }
 
     /**
-     * Redirect to a doctor's external clinic thank-you URL when configured, else ThanksDoc clinic success.
+     * @deprecated Use respondToClinicBookingOutcome() for POST confirm flows.
      */
-    private function redirectToClinicBookingOutcome(\App\Models\ClinicBookingRequest $clinicRequest): RedirectResponse
+    private function redirectToClinicBookingOutcome(ClinicBookingRequest $clinicRequest): RedirectResponse
     {
-        $clinicRequest->loadMissing(['department', 'service', 'doctor', 'appointment.doctor', 'appointment.service']);
-
-        session()->forget($this->clinicBookingReviewSessionKey());
-        session()->forget($this->publicBookingClinicPatientContextKey());
-
-        $external = app(PostBookingRedirectService::class)->buildRedirectUrlForClinicBookingRequest($clinicRequest);
-        if ($external !== null) {
-            session()->forget('booking_utm_params');
-
-            return redirect()->away($external);
-        }
-
-        return redirect()->route('public.booking.clinic-success', [
-            'requestNumber' => $clinicRequest->request_number,
-        ])->with('request', $clinicRequest);
+        return redirect()->to($this->clinicBookingSuccessUrl($clinicRequest))->with('request', $clinicRequest);
     }
 
     /**
