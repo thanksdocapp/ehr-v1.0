@@ -790,9 +790,7 @@ class PublicBookingController extends Controller
             return redirect()->back()->with('error', 'Selected time slot is no longer available.')->withInput();
         }
 
-        $doctors = Doctor::byDepartment($department->id)->active()->get();
-        $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
-        $price = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
+        $price = $this->clinicBookingService->minimumListPriceForClinicService($service, $department->id);
 
         $patientData = $request->only([
             'first_name', 'last_name', 'email', 'phone', 'notes', 'consultation_type',
@@ -875,9 +873,7 @@ class PublicBookingController extends Controller
                 ->with('error', 'Selected time slot is no longer available. Please choose another time.');
         }
 
-        $doctors = Doctor::byDepartment($department->id)->active()->get();
-        $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
-        $price = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
+        $price = $this->clinicBookingService->minimumListPriceForClinicService($service, $department->id);
 
         session([$this->clinicBookingReviewSessionKey() => array_merge($data, ['price' => $price])]);
 
@@ -962,50 +958,47 @@ class PublicBookingController extends Controller
         }
         session([$this->publicBookingDobSessionKey() => $data['date_of_birth']]);
 
-        $doctors = Doctor::byDepartment($department->id)->active()->get();
-        $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
-        $price = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
+        $data = array_merge($data, normalize_public_booking_address_fields($data));
 
         try {
-            if ($price > 0) {
-                $result = $this->clinicBookingService->createPendingFromClinicBooking($data);
-                if (!empty($result['clinic_request'])) {
-                    $clinicRequest = $result['clinic_request'];
+            $result = $this->clinicBookingService->createPendingFromClinicBooking($data);
 
-                    return $this->respondToClinicBookingOutcome($request, $clinicRequest);
-                }
-                $invoice = $result['invoice'];
-                $pending = $result['pending_clinic_booking'];
-
-                if ($invoice && (float) $invoice->outstanding_amount <= 0.009) {
-                    session(['pending_clinic_booking_token' => $pending->booking_token]);
-                    $zeroRedirect = app(PublicBillingController::class)->tryCompleteZeroBalanceCheckout($invoice);
-                    if ($zeroRedirect) {
-                        session()->forget('pending_clinic_booking_token');
-
-                        if ($this->wantsClinicConfirmJson($request)) {
-                            return response()->json(['redirect' => $zeroRedirect->getTargetUrl()]);
-                        }
-
-                        return $zeroRedirect;
-                    }
-                }
-
-                if ($invoice && $invoice->payment_token) {
-                    session(['pending_clinic_booking_token' => $pending->booking_token]);
-
-                    return $this->respondToClinicRedirectUrl(
-                        $request,
-                        route('public.billing.pay', ['token' => $invoice->payment_token])
-                    );
-                }
-
-                return $this->redirectBackToClinicReview('Payment setup failed. Please try again.', $request);
+            if (! empty($result['clinic_request'])) {
+                return $this->respondToClinicBookingOutcome($request, $result['clinic_request']);
             }
 
-            $clinicRequest = $this->clinicBookingService->createFromClinicBooking($data);
+            $invoice = $result['invoice'] ?? null;
+            $pending = $result['pending_clinic_booking'] ?? null;
 
-            return $this->respondToClinicBookingOutcome($request, $clinicRequest);
+            if ($invoice && (float) $invoice->outstanding_amount <= 0.009) {
+                session(['pending_clinic_booking_token' => $pending->booking_token]);
+                $zeroRedirect = app(PublicBillingController::class)->tryCompleteZeroBalanceCheckout($invoice);
+                if ($zeroRedirect) {
+                    session()->forget('pending_clinic_booking_token');
+
+                    if ($this->wantsClinicConfirmJson($request)) {
+                        $clinicRequest = app(ClinicBookingService::class)->finalizeClinicBookingForPaidInvoice($invoice->fresh());
+                        if ($clinicRequest) {
+                            return $this->respondToClinicBookingOutcome($request, $clinicRequest);
+                        }
+
+                        return response()->json(['redirect' => $zeroRedirect->getTargetUrl()]);
+                    }
+
+                    return $zeroRedirect;
+                }
+            }
+
+            if ($invoice && $invoice->payment_token) {
+                session(['pending_clinic_booking_token' => $pending->booking_token]);
+
+                return $this->respondToClinicRedirectUrl(
+                    $request,
+                    route('public.billing.pay', ['token' => $invoice->payment_token])
+                );
+            }
+
+            return $this->redirectBackToClinicReview('Payment setup failed. Please try again.', $request);
         } catch (ValidationException $e) {
             if ($this->wantsClinicConfirmJson($request)) {
                 return response()->json([
@@ -1751,6 +1744,14 @@ class PublicBookingController extends Controller
         $external = app(PostBookingRedirectService::class)->buildRedirectUrlForAppointment($appointment);
         if ($external !== null) {
             session()->forget('booking_utm_params');
+
+            $embed = request()->boolean('embed') || session('embed', false);
+            if ($embed) {
+                return view('public-booking.external-redirect', [
+                    'url' => $external,
+                    'title' => 'Booking confirmed',
+                ]);
+            }
 
             return redirect()->away($external);
         }

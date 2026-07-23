@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Jobs\AutoAcceptClinicBookingRequestJob;
 use App\Models\ClinicBookingRequest;
 use App\Models\ClinicBookingDiscountCode;
 use App\Models\Department;
@@ -27,6 +26,24 @@ use Carbon\Carbon;
 
 class ClinicBookingService
 {
+    /**
+     * Minimum list price across active doctors in a department (includes £0).
+     */
+    public function minimumListPriceForClinicService(BookingService $service, int $departmentId): float
+    {
+        $doctors = Doctor::byDepartment($departmentId)->active()->get();
+
+        if ($doctors->isEmpty()) {
+            return round((float) ($service->default_price ?? 0), 2);
+        }
+
+        $minimum = $doctors->min(
+            fn (Doctor $doctor) => (float) ($service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0)
+        );
+
+        return round((float) $minimum, 2);
+    }
+
     protected $guestPatientService;
     protected $emailService;
     protected $wherebyService;
@@ -47,18 +64,15 @@ class ClinicBookingService
      */
     public function createPendingFromClinicBooking(array $data): array
     {
-        return DB::transaction(function () use ($data) {
-            $data = array_merge($data, normalize_public_booking_address_fields($data));
+        $data = array_merge($data, normalize_public_booking_address_fields($data));
 
+        $pricing = DB::transaction(function () use ($data) {
             $departmentId = $data['department_id'];
             $service = BookingService::find($data['service_id'] ?? null);
 
-            $listPrice = 0;
-            if ($service) {
-                $doctors = Doctor::byDepartment($departmentId)->active()->get();
-                $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
-                $listPrice = $prices->isEmpty() ? (float) ($service->default_price ?? 0) : (float) $prices->min();
-            }
+            $listPrice = $service
+                ? $this->minimumListPriceForClinicService($service, $departmentId)
+                : 0.0;
 
             $discountCodeId = null;
             $doctorDiscountCodeId = null;
@@ -86,6 +100,37 @@ class ClinicBookingService
             }
 
             $payableFee = round(max(0, $listPrice - $discountAmount), 2);
+
+            return compact(
+                'departmentId',
+                'service',
+                'listPrice',
+                'discountAmount',
+                'payableFee',
+                'discountCodeId',
+                'doctorDiscountCodeId'
+            );
+        });
+
+        if ($pricing['payableFee'] <= 0) {
+            $clinicRequest = $this->createFromClinicBooking($data);
+            $this->incrementClinicFlowDiscountUses($pricing['discountCodeId'], $pricing['doctorDiscountCodeId']);
+
+            return [
+                'invoice' => null,
+                'pending_clinic_booking' => null,
+                'clinic_request' => $clinicRequest,
+            ];
+        }
+
+        return DB::transaction(function () use ($data, $pricing) {
+            $departmentId = $pricing['departmentId'];
+            $service = $pricing['service'];
+            $listPrice = $pricing['listPrice'];
+            $discountAmount = $pricing['discountAmount'];
+            $payableFee = $pricing['payableFee'];
+            $discountCodeId = $pricing['discountCodeId'];
+            $doctorDiscountCodeId = $pricing['doctorDiscountCodeId'];
 
             $patientData = [
                 'first_name' => $data['first_name'],
@@ -125,17 +170,6 @@ class ClinicBookingService
                 'guardian_name' => $patientData['guardian_name'] ?? null,
                 'guardian_phone' => $patientData['guardian_phone'] ?? null,
             ]);
-
-            if ($payableFee <= 0) {
-                $clinicRequest = $this->createFromClinicBooking($data);
-                $this->incrementClinicFlowDiscountUses($discountCodeId, $doctorDiscountCodeId);
-
-                return [
-                    'invoice' => null,
-                    'pending_clinic_booking' => null,
-                    'clinic_request' => $clinicRequest,
-                ];
-            }
 
             $pendingBooking = PendingClinicBooking::create([
                 'booking_token' => PendingClinicBooking::generateBookingToken(),
@@ -223,9 +257,7 @@ class ClinicBookingService
             return ['ok' => false, 'message' => 'Invalid booking selection.'];
         }
 
-        $doctors = Doctor::byDepartment($departmentId)->active()->get();
-        $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
-        $listPrice = $prices->isEmpty() ? (float) ($service->default_price ?? 0) : (float) $prices->min();
+        $listPrice = $this->minimumListPriceForClinicService($service, $departmentId);
 
         if ($listPrice <= 0) {
             return ['ok' => false, 'message' => 'There is no fee to apply a discount to.'];
@@ -1094,12 +1126,9 @@ class ClinicBookingService
             $service = BookingService::find($data['service_id'] ?? null);
 
             // Use minimum price across doctors for display; actual fee set when doctor accepts
-            $fee = 0;
-            if ($service) {
-                $doctors = Doctor::byDepartment($departmentId)->active()->get();
-                $prices = $doctors->map(fn($d) => $service->getPriceForDoctor($d->id) ?? $service->default_price ?? 0)->filter();
-                $fee = $prices->isEmpty() ? ($service->default_price ?? 0) : $prices->min();
-            }
+            $fee = $service
+                ? $this->minimumListPriceForClinicService($service, $departmentId)
+                : 0.0;
 
             $patientData = [
                 'first_name' => $data['first_name'],
@@ -1224,8 +1253,9 @@ class ClinicBookingService
         $doctorId = (int) $doctor->id;
         $acceptedByUserId = $doctor->user_id ? (int) $doctor->user_id : null;
 
-        AutoAcceptClinicBookingRequestJob::dispatch($requestId, $doctorId, $acceptedByUserId)
-            ->afterResponse();
+        dispatch(function () use ($requestId, $doctorId, $acceptedByUserId): void {
+            app(self::class)->runDeferredAutoAccept($requestId, $doctorId, $acceptedByUserId);
+        })->afterResponse();
     }
 
     private function scheduleClinicDoctorNotifications(ClinicBookingRequest $request): void

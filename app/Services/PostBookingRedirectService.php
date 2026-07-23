@@ -6,6 +6,7 @@ use App\Helpers\CurrencyHelper;
 use App\Models\Appointment;
 use App\Models\ClinicBookingRequest;
 use App\Models\Doctor;
+use App\Models\ServiceOrder;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -91,6 +92,48 @@ class PostBookingRedirectService
 
         if ($appointment && filled($appointment->appointment_number)) {
             $params['appointment_number'] = $appointment->appointment_number;
+        }
+
+        $utm = session('booking_utm_params', []);
+        if (is_array($utm)) {
+            foreach ($utm as $key => $value) {
+                if (is_string($key) && is_scalar($value) && $value !== '') {
+                    $params[$key] = (string) $value;
+                }
+            }
+        }
+
+        return $this->mergeQueryString($base, $params);
+    }
+
+    /**
+     * After non-consultation service order checkout: optional doctor thank-you URL with order params.
+     */
+    public function buildRedirectUrlForServiceOrder(ServiceOrder $order): ?string
+    {
+        $order->loadMissing('doctor');
+        $doctor = $order->doctor;
+
+        if (! $doctor instanceof Doctor) {
+            return null;
+        }
+
+        $base = $this->doctorBookingRedirectUrlFor($doctor);
+        if ($base === null) {
+            return null;
+        }
+
+        $bookingValue = round((float) ($order->fee ?? 0), 2);
+
+        $params = [
+            'service_order_number' => $order->order_number,
+            'booking_value' => (string) $bookingValue,
+            'currency' => strtolower(CurrencyHelper::getDefaultCurrency()),
+            'source' => 'thanksdoc',
+        ];
+
+        if ($bookingValue <= 0) {
+            $params['checkout_status'] = 'complimentary';
         }
 
         $utm = session('booking_utm_params', []);

@@ -98,7 +98,10 @@ class NonConsultationBookingService
         if ($result['service_order']->status === ServiceOrder::STATUS_PAID) {
             $patient = Patient::find($result['service_order']->patient_id);
             if ($patient) {
-                $this->sendNotifications($result['service_order']->fresh(['doctor', 'service', 'department']), $patient);
+                $order = $result['service_order']->fresh(['doctor', 'service', 'department']);
+                dispatch(function () use ($order, $patient): void {
+                    $this->sendNotifications($order, $patient);
+                })->afterResponse();
             }
         }
 

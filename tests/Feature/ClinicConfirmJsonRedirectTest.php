@@ -97,7 +97,7 @@ class ClinicConfirmJsonRedirectTest extends TestCase
 
         $createdRequest = null;
         $serviceMock = Mockery::mock(ClinicBookingService::class)->makePartial();
-        $serviceMock->shouldReceive('createFromClinicBooking')->once()->andReturnUsing(function () use (&$createdRequest, $department, $service, $appointmentDate) {
+        $serviceMock->shouldReceive('createPendingFromClinicBooking')->once()->andReturnUsing(function () use (&$createdRequest, $department, $service, $appointmentDate) {
             $createdRequest = ClinicBookingRequest::create([
                 'request_number' => ClinicBookingRequest::generateRequestNumber(),
                 'department_id' => $department->id,
@@ -109,7 +109,11 @@ class ClinicConfirmJsonRedirectTest extends TestCase
                 'status' => 'pending_acceptance',
             ]);
 
-            return $createdRequest;
+            return [
+                'invoice' => null,
+                'pending_clinic_booking' => null,
+                'clinic_request' => $createdRequest,
+            ];
         });
         $this->app->instance(ClinicBookingService::class, $serviceMock);
 

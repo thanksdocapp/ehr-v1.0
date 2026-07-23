@@ -18,6 +18,8 @@
     </div>
     @endif
 
+    <div id="nc-review-live-error" class="alert alert-danger d-none" role="alert"></div>
+
     <form id="nc-confirm-form" method="POST" action="{{ publicBookingNonConsultationUrl('confirm') }}">
         @csrf
         <div class="review-card">
@@ -73,6 +75,8 @@
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('nc-confirm-form');
+    const confirmBtn = document.getElementById('confirm-btn');
     const previewUrl = @json($is_clinic_flow ? publicBookingNonConsultationUrl('preview-clinic-discount') : publicBookingNonConsultationUrl('preview-doctor-discount'));
     const discountInput = document.getElementById('discount_code');
     const discountApplyBtn = document.getElementById('discount-apply-btn');
@@ -82,6 +86,120 @@ document.addEventListener('DOMContentLoaded', function() {
     const discountAmtEl = document.getElementById('pb-discount-amt');
     const dueAmtEl = document.getElementById('pb-due-amt');
     const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    const liveError = document.getElementById('nc-review-live-error');
+    const pbEmbed = @json(request()->boolean('embed') || session('embed', false));
+    const defaultConfirmHtml = confirmBtn ? confirmBtn.innerHTML : '';
+    let isSubmitting = false;
+
+    function showLiveError(message) {
+        if (!liveError) {
+            alert(message);
+            return;
+        }
+        liveError.textContent = message;
+        liveError.classList.remove('d-none');
+        liveError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideLiveError() {
+        if (liveError) {
+            liveError.textContent = '';
+            liveError.classList.add('d-none');
+        }
+    }
+
+    function navigateAfterBooking(url) {
+        if (!url) {
+            showLiveError('Booking completed but no redirect URL was returned. Please refresh and check your email.');
+            return;
+        }
+        try {
+            if (pbEmbed && window.top && window.top !== window.self) {
+                window.top.location.href = url;
+                return;
+            }
+        } catch (e) {
+            // Fall through to same-frame navigation.
+        }
+        window.location.href = url;
+    }
+
+    function resetConfirmButton() {
+        isSubmitting = false;
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = defaultConfirmHtml;
+        }
+    }
+
+    if (form && confirmBtn) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (isSubmitting) {
+                return false;
+            }
+
+            const csrfToken = form.querySelector('input[name="_token"]');
+            if (!csrfToken || !csrfToken.value) {
+                showLiveError('Security token missing. Please refresh the page and try again.');
+                return false;
+            }
+
+            hideLiveError();
+            isSubmitting = true;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            })
+                .then(function(response) {
+                    return response.json()
+                        .catch(function() {
+                            return { error: response.status === 419
+                                ? 'Your session expired. Please refresh the page and start again.'
+                                : 'Something went wrong. Please try again.' };
+                        })
+                        .then(function(data) {
+                            return { ok: response.ok, data: data };
+                        });
+                })
+                .then(function(res) {
+                    if (res.ok && res.data && res.data.redirect) {
+                        navigateAfterBooking(res.data.redirect);
+                        return;
+                    }
+
+                    let message = (res.data && res.data.error)
+                        ? res.data.error
+                        : 'Failed to submit booking request. Please try again.';
+
+                    if (res.data && res.data.errors) {
+                        const firstKey = Object.keys(res.data.errors)[0];
+                        if (firstKey && res.data.errors[firstKey] && res.data.errors[firstKey][0]) {
+                            message = res.data.errors[firstKey][0];
+                        }
+                    }
+
+                    showLiveError(message);
+                    resetConfirmButton();
+                })
+                .catch(function() {
+                    showLiveError('Network error. Please check your connection and try again.');
+                    resetConfirmButton();
+                });
+
+            return false;
+        });
+    }
+
     if (!discountInput || !discountApplyBtn) return;
     discountApplyBtn.addEventListener('click', function() {
         const code = (discountInput.value || '').trim();

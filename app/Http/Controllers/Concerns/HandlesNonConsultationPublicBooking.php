@@ -8,7 +8,10 @@ use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\ServiceOrder;
 use App\Services\NonConsultationBookingService;
+use App\Services\PostBookingRedirectService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -23,6 +26,49 @@ trait HandlesNonConsultationPublicBooking
     private function nonConsultationBookingDataKey(): string
     {
         return 'non_consultation_booking_data';
+    }
+
+    private function wantsNonConsultationConfirmJson(Request $request): bool
+    {
+        return $request->expectsJson()
+            || $request->ajax()
+            || $request->header('X-Requested-With') === 'XMLHttpRequest';
+    }
+
+    private function nonConsultationSuccessUrl(string $orderNumber, Request $request): string
+    {
+        $url = publicBookingNonConsultationUrl('success', ['orderNumber' => $orderNumber]);
+        if ($request->boolean('embed') || session('embed', false)) {
+            return $url.(str_contains($url, '?') ? '&' : '?').'embed=1';
+        }
+
+        return $url;
+    }
+
+    /**
+     * @return RedirectResponse|JsonResponse
+     */
+    private function respondToNonConsultationBookingOutcome(Request $request, ServiceOrder $order): RedirectResponse|JsonResponse
+    {
+        $successUrl = $this->nonConsultationSuccessUrl($order->order_number, $request);
+
+        if ($this->wantsNonConsultationConfirmJson($request)) {
+            return response()->json(['redirect' => $successUrl]);
+        }
+
+        return redirect($successUrl);
+    }
+
+    /**
+     * @return RedirectResponse|JsonResponse
+     */
+    private function respondToNonConsultationRedirectUrl(Request $request, string $url): RedirectResponse|JsonResponse
+    {
+        if ($this->wantsNonConsultationConfirmJson($request)) {
+            return response()->json(['redirect' => $url]);
+        }
+
+        return redirect($url);
     }
 
     protected function redirectToNonConsultationFlow(Request $request, BookingService $service)
@@ -192,7 +238,7 @@ trait HandlesNonConsultationPublicBooking
 
         $doctor = Doctor::findOrFail($ctx['doctor_id']);
         $service = BookingService::findOrFail($ctx['service_id']);
-        $price = $service->getPriceForDoctor($doctor->id);
+        $price = (float) ($service->getPriceForDoctor($doctor->id) ?? $service->default_price ?? 0);
 
         return view('public-booking.non-consultation-review', [
             'doctor' => $doctor,
@@ -234,6 +280,13 @@ trait HandlesNonConsultationPublicBooking
                 $isClinic
             );
         } catch (ValidationException $e) {
+            if ($this->wantsNonConsultationConfirmJson($request)) {
+                return response()->json([
+                    'error' => 'Please check the form and try again.',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             \Log::error('Non-consultation booking failed', [
@@ -242,6 +295,12 @@ trait HandlesNonConsultationPublicBooking
                 'service_id' => $service->id,
                 'doctor_id' => $doctor->id,
             ]);
+
+            if ($this->wantsNonConsultationConfirmJson($request)) {
+                return response()->json([
+                    'error' => 'Unable to complete booking. Please try again.',
+                ], 422);
+            }
 
             return redirect()->back()->with('error', 'Unable to complete booking. Please try again.')->withInput();
         }
@@ -254,6 +313,16 @@ trait HandlesNonConsultationPublicBooking
             $zeroRedirect = app(PublicBillingController::class)->tryCompleteZeroBalanceCheckout($result['invoice']);
             if ($zeroRedirect) {
                 session()->forget('pending_service_order_token');
+                $finalizedOrder = app(NonConsultationBookingService::class)
+                    ->finalizeServiceOrderForPaidInvoice($result['invoice']->fresh());
+
+                if ($finalizedOrder instanceof ServiceOrder) {
+                    return $this->respondToNonConsultationBookingOutcome($request, $finalizedOrder);
+                }
+
+                if ($this->wantsNonConsultationConfirmJson($request)) {
+                    return response()->json(['redirect' => $zeroRedirect->getTargetUrl()]);
+                }
 
                 return $zeroRedirect;
             }
@@ -262,10 +331,13 @@ trait HandlesNonConsultationPublicBooking
         if ($result['invoice'] && $result['invoice']->payment_token && (float) $result['invoice']->outstanding_amount > 0.009) {
             session(['pending_service_order_token' => $order->booking_token]);
 
-            return redirect(publicBillingPayUrl($result['invoice']->payment_token));
+            return $this->respondToNonConsultationRedirectUrl(
+                $request,
+                publicBillingPayUrl($result['invoice']->payment_token)
+            );
         }
 
-        return redirect(publicBookingNonConsultationUrl('success', ['orderNumber' => $order->order_number]));
+        return $this->respondToNonConsultationBookingOutcome($request, $order);
     }
 
     public function nonConsultationSuccess(Request $request, string $orderNumber)
@@ -274,6 +346,21 @@ trait HandlesNonConsultationPublicBooking
         $order = ServiceOrder::where('order_number', $orderNumber)
             ->with(['doctor', 'service', 'patient'])
             ->firstOrFail();
+
+        $external = app(PostBookingRedirectService::class)->buildRedirectUrlForServiceOrder($order);
+        if ($external !== null) {
+            session()->forget('booking_utm_params');
+
+            $embed = $request->boolean('embed') || session('embed', false);
+            if ($embed) {
+                return view('public-booking.external-redirect', [
+                    'url' => $external,
+                    'title' => 'Booking confirmed',
+                ]);
+            }
+
+            return redirect()->away($external);
+        }
 
         return view('public-booking.non-consultation-success', compact('order'));
     }
