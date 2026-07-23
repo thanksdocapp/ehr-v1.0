@@ -824,7 +824,7 @@ class ClinicBookingService
 
         try {
             $data = $this->pendingRecordToBookingData($pending);
-            $request = $this->createFromClinicBooking($data);
+            $request = $this->createFromClinicBooking($data, deferAutoAccept: false);
 
             if ($pending->status !== 'completed') {
                 $pending->markCompleted();
@@ -1069,7 +1069,7 @@ class ClinicBookingService
                 $invoice->update(['discount_code_redemption_recorded_at' => now()]);
             }
 
-            $clinicRequest = $this->createFromClinicBooking($data);
+            $clinicRequest = $this->createFromClinicBooking($data, deferAutoAccept: false);
             $pending->markCompleted();
 
             if ($invoice && $clinicRequest->appointment_id && ! $invoice->appointment_id) {
@@ -1083,8 +1083,10 @@ class ClinicBookingService
     /**
      * Create a clinic booking request (pending doctor acceptance).
      * When the clinic has a default doctor (primary, sole, or first active), auto-assign and accept.
+     *
+     * @param  bool  $deferAutoAccept  When true (public checkout), accept + notifications run after the HTTP response.
      */
-    public function createFromClinicBooking(array $data): ClinicBookingRequest
+    public function createFromClinicBooking(array $data, bool $deferAutoAccept = true): ClinicBookingRequest
     {
         [$request, $defaultDoctor] = DB::transaction(function () use ($data) {
             $departmentId = $data['department_id'];
@@ -1144,38 +1146,95 @@ class ClinicBookingService
         });
 
         if ($defaultDoctor) {
-            try {
-                $this->acceptRequest($request, $defaultDoctor, $defaultDoctor->user_id, true);
-            } catch (\Throwable $e) {
-                Log::error('Clinic booking auto-accept failed; falling back to manual acceptance flow', [
-                    'clinic_booking_request_id' => $request->id,
-                    'doctor_id' => $defaultDoctor->id,
-                    'error' => $e->getMessage(),
-                ]);
-                try {
-                    $this->notifyDoctorsOfNewRequest($request);
-                    $this->emailService->notifyClinicDoctorsNewBookingRequest($request);
-                } catch (\Throwable $notifyEx) {
-                    Log::error('Clinic booking fallback doctor notifications failed', [
-                        'clinic_booking_request_id' => $request->id,
-                        'error' => $notifyEx->getMessage(),
-                    ]);
-                }
+            if ($deferAutoAccept) {
+                $this->scheduleAutoAcceptClinicRequest($request, $defaultDoctor);
+
+                return $request;
             }
+
+            $this->runDeferredAutoAccept(
+                (int) $request->id,
+                (int) $defaultDoctor->id,
+                $defaultDoctor->user_id ? (int) $defaultDoctor->user_id : null
+            );
 
             return $request->refresh();
         }
 
+        if ($deferAutoAccept) {
+            $this->scheduleClinicDoctorNotifications($request);
+
+            return $request;
+        }
+
+        $this->runDeferredClinicDoctorNotifications((int) $request->id);
+
+        return $request;
+    }
+
+    /**
+     * Auto-accept a clinic request after the HTTP response (Whereby + emails must not block checkout).
+     */
+    public function runDeferredAutoAccept(int $requestId, int $doctorId, ?int $acceptedByUserId): void
+    {
+        $request = ClinicBookingRequest::query()->find($requestId);
+        $doctor = Doctor::query()->find($doctorId);
+        if (! $request || ! $doctor || $request->status !== 'pending_acceptance') {
+            return;
+        }
+
         try {
+            $this->acceptRequest($request, $doctor, $acceptedByUserId, true);
+        } catch (\Throwable $e) {
+            Log::error('Clinic booking auto-accept failed; falling back to manual acceptance flow', [
+                'clinic_booking_request_id' => $requestId,
+                'doctor_id' => $doctorId,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->runDeferredClinicDoctorNotifications($requestId);
+        }
+    }
+
+    /**
+     * Notify clinic doctors about a new request after the HTTP response.
+     */
+    public function runDeferredClinicDoctorNotifications(int $requestId): void
+    {
+        $request = ClinicBookingRequest::query()->find($requestId);
+        if (! $request) {
+            return;
+        }
+
+        try {
+            $this->notifyDoctorsOfNewRequest($request);
             $this->emailService->notifyClinicDoctorsNewBookingRequest($request);
         } catch (\Throwable $e) {
             Log::error('Clinic booking request doctor emails failed', [
-                'clinic_booking_request_id' => $request->id,
+                'clinic_booking_request_id' => $requestId,
                 'error' => $e->getMessage(),
             ]);
         }
+    }
 
-        return $request;
+    private function scheduleAutoAcceptClinicRequest(ClinicBookingRequest $request, Doctor $doctor): void
+    {
+        $requestId = (int) $request->id;
+        $doctorId = (int) $doctor->id;
+        $acceptedByUserId = $doctor->user_id ? (int) $doctor->user_id : null;
+
+        dispatch(function () use ($requestId, $doctorId, $acceptedByUserId): void {
+            app(self::class)->runDeferredAutoAccept($requestId, $doctorId, $acceptedByUserId);
+        })->afterResponse();
+    }
+
+    private function scheduleClinicDoctorNotifications(ClinicBookingRequest $request): void
+    {
+        $requestId = (int) $request->id;
+
+        dispatch(function () use ($requestId): void {
+            app(self::class)->runDeferredClinicDoctorNotifications($requestId);
+        })->afterResponse();
     }
 
     /**
