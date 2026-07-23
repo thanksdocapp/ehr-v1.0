@@ -203,6 +203,24 @@ class PublicBookingController extends Controller
     }
 
     /**
+     * Return to clinic review when session data exists; otherwise show session-expired page.
+     */
+    private function redirectBackToClinicReview(?string $error = null): RedirectResponse
+    {
+        if (! session($this->clinicBookingReviewSessionKey())) {
+            return redirect($this->publicBookingRestartUrl(request()))
+                ->with('error', $error ?? 'Your booking session has expired. Please start a new booking.');
+        }
+
+        $redirect = redirect()->route('public.booking.clinic-review.show');
+        if ($error !== null) {
+            $redirect = $redirect->with('error', $error);
+        }
+
+        return $redirect;
+    }
+
+    /**
      * Patient home address captured during public / clinic booking (Ideal Postcodes + manual fields).
      *
      * @return array<string, string>
@@ -847,7 +865,7 @@ class PublicBookingController extends Controller
         ], $this->publicBookingAddressValidationRules(), $this->publicBookingGuardianFieldRules($request)));
 
         if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+            return $this->redirectBackToClinicReview()->withErrors($validator)->withInput();
         }
 
         $department = Department::findOrFail($request->department_id);
@@ -866,7 +884,7 @@ class PublicBookingController extends Controller
         );
         $selectedSlot = collect($slots)->firstWhere('start', $request->appointment_time);
         if (!$selectedSlot) {
-            return redirect()->back()->with('error', 'Selected time slot is no longer available.')->withInput();
+            return $this->redirectBackToClinicReview('Selected time slot is no longer available. Please choose another time.');
         }
 
         $data = $request->all();
@@ -878,7 +896,7 @@ class PublicBookingController extends Controller
         $service = BookingService::findOrFail($request->service_id);
 
         if ($redirect = $this->redirectIfServiceIneligibleForPublicBooking($service, $data['date_of_birth'] ?? null)) {
-            return $redirect;
+            return $this->redirectBackToClinicReview('This service is not available for this age.');
         }
         session([$this->publicBookingDobSessionKey() => $data['date_of_birth']]);
 
@@ -913,20 +931,19 @@ class PublicBookingController extends Controller
                     return redirect()->route('public.billing.pay', ['token' => $invoice->payment_token]);
                 }
 
-                return redirect()->back()->with('error', 'Payment setup failed. Please try again.')->withInput();
+                return $this->redirectBackToClinicReview('Payment setup failed. Please try again.');
             }
 
             $clinicRequest = $this->clinicBookingService->createFromClinicBooking($data);
 
             return $this->redirectToClinicBookingOutcome($clinicRequest);
         } catch (ValidationException $e) {
-            return redirect()->back()
+            return $this->redirectBackToClinicReview('Please check the form and try again.')
                 ->withErrors($e->errors())
-                ->withInput()
-                ->with('error', 'Please check the form and try again.');
+                ->withInput();
         } catch (\Exception $e) {
             \Log::error('Clinic booking failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return redirect()->back()->with('error', 'Failed to submit booking request. Please try again.')->withInput();
+            return $this->redirectBackToClinicReview('Failed to submit booking request. Please try again.');
         }
     }
 
@@ -970,6 +987,9 @@ class PublicBookingController extends Controller
     private function redirectToClinicBookingOutcome(\App\Models\ClinicBookingRequest $clinicRequest): RedirectResponse
     {
         $clinicRequest->loadMissing(['department', 'service', 'doctor', 'appointment.doctor', 'appointment.service']);
+
+        session()->forget($this->clinicBookingReviewSessionKey());
+        session()->forget($this->publicBookingClinicPatientContextKey());
 
         $external = app(PostBookingRedirectService::class)->buildRedirectUrlForClinicBookingRequest($clinicRequest);
         if ($external !== null) {

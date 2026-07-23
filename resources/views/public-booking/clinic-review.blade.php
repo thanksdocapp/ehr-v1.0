@@ -8,6 +8,13 @@
         <p>Please review your booking.</p>
     </div>
 
+    @if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
+
     @if($errors->any())
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <i class="fas fa-exclamation-circle me-2"></i>
@@ -126,7 +133,14 @@
 
         <div class="text-center mt-4">
             <a href="{{ route('public.booking.clinic-patient-details.show') }}" class="btn btn-outline-secondary btn-lg me-2"><i class="fas fa-arrow-left me-2"></i>Back</a>
-            <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-credit-card me-2"></i>Proceed to Payment</button>
+            @php $clinicIsFree = !isset($price) || (float) $price <= 0; @endphp
+            <button type="submit" class="btn btn-primary btn-lg" id="confirm-btn">
+                @if($clinicIsFree)
+                <i class="fas fa-check me-2"></i>Confirm booking
+                @else
+                <i class="fas fa-credit-card me-2"></i>Proceed to Payment
+                @endif
+            </button>
         </div>
     </form>
 
@@ -139,6 +153,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('confirm-form');
+        const confirmBtn = document.getElementById('confirm-btn');
         const discountInput = document.getElementById('discount_code');
         const discountApplyBtn = document.getElementById('discount-apply-btn');
         const discountFeedback = document.getElementById('discount-apply-feedback');
@@ -148,6 +163,28 @@
         const discountAmtEl = document.getElementById('cl-discount-amt');
         const dueAmtEl = document.getElementById('cl-due-amt');
         const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+        let isSubmitting = false;
+
+        if (form && confirmBtn) {
+            form.addEventListener('submit', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                const csrfToken = form.querySelector('input[name="_token"]');
+                if (!csrfToken || !csrfToken.value) {
+                    e.preventDefault();
+                    alert('Security token missing. Please refresh the page and try again.');
+                    return false;
+                }
+
+                isSubmitting = true;
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+            });
+        }
 
         function clearDiscountFeedback() {
             if (!discountFeedback) {
