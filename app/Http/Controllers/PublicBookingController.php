@@ -892,8 +892,7 @@ class PublicBookingController extends Controller
                 if (!empty($result['clinic_request'])) {
                     $clinicRequest = $result['clinic_request'];
 
-                    return redirect()->route('public.booking.clinic-success', ['requestNumber' => $clinicRequest->request_number])
-                        ->with('request', $clinicRequest);
+                    return $this->redirectToClinicBookingOutcome($clinicRequest);
                 }
                 $invoice = $result['invoice'];
                 $pending = $result['pending_clinic_booking'];
@@ -919,8 +918,7 @@ class PublicBookingController extends Controller
 
             $clinicRequest = $this->clinicBookingService->createFromClinicBooking($data);
 
-            return redirect()->route('public.booking.clinic-success', ['requestNumber' => $clinicRequest->request_number])
-                ->with('request', $clinicRequest);
+            return $this->redirectToClinicBookingOutcome($clinicRequest);
         } catch (ValidationException $e) {
             return redirect()->back()
                 ->withErrors($e->errors())
@@ -964,6 +962,25 @@ class PublicBookingController extends Controller
             'patientEmail' => $patientEmail,
             'calendarLinks' => $calendarLinks,
         ]);
+    }
+
+    /**
+     * Redirect to a doctor's external clinic thank-you URL when configured, else ThanksDoc clinic success.
+     */
+    private function redirectToClinicBookingOutcome(\App\Models\ClinicBookingRequest $clinicRequest): RedirectResponse
+    {
+        $clinicRequest->loadMissing(['department', 'service', 'doctor', 'appointment.doctor', 'appointment.service']);
+
+        $external = app(PostBookingRedirectService::class)->buildRedirectUrlForClinicBookingRequest($clinicRequest);
+        if ($external !== null) {
+            session()->forget('booking_utm_params');
+
+            return redirect()->away($external);
+        }
+
+        return redirect()->route('public.booking.clinic-success', [
+            'requestNumber' => $clinicRequest->request_number,
+        ])->with('request', $clinicRequest);
     }
 
     /**

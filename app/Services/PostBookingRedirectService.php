@@ -111,10 +111,19 @@ class PostBookingRedirectService
      */
     public function resolveDoctorForClinicBookingRedirect(ClinicBookingRequest $request): ?Doctor
     {
-        $request->loadMissing('doctor');
+        $request->loadMissing('doctor', 'appointment.doctor');
 
-        if ($request->doctor_id && $request->doctor) {
-            return $request->doctor;
+        if ($request->doctor_id && $request->doctor instanceof Doctor) {
+            if ($this->thankYouBaseUrlForDoctor($request->doctor) !== null) {
+                return $request->doctor;
+            }
+        }
+
+        $appointmentDoctor = $request->appointment?->doctor;
+        if ($appointmentDoctor instanceof Doctor
+            && (int) $appointmentDoctor->id !== (int) $request->doctor_id
+            && $this->thankYouBaseUrlForDoctor($appointmentDoctor) !== null) {
+            return $appointmentDoctor;
         }
 
         $departmentId = (int) $request->department_id;
@@ -133,7 +142,9 @@ class PostBookingRedirectService
         }
 
         if ($active->count() === 1) {
-            return $active->first();
+            $only = $active->first();
+
+            return $only && $this->thankYouBaseUrlForDoctor($only) !== null ? $only : null;
         }
 
         $primary = Doctor::query()
