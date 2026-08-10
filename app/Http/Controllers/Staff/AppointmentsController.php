@@ -413,8 +413,13 @@ class AppointmentsController extends Controller
         $consultationType = $request->consultation_type ?? ($request->boolean('is_online') ? 'online' : 'in_person');
         $isOnline = $consultationType === 'online';
 
+        $wherebyService = app(\App\Services\WherebyService::class);
+        $meetingPlatform = $isOnline
+            ? $wherebyService->resolvedOnlineMeetingPlatform($request->meeting_platform)
+            : null;
+
         // Validate that meeting link is provided if online consultation (except for Whereby which auto-generates)
-        if ($isOnline && empty($request->meeting_link) && $request->meeting_platform !== 'whereby') {
+        if ($isOnline && empty($request->meeting_link) && $wherebyService->requiresManualMeetingLink($meetingPlatform)) {
             return redirect()->back()
                 ->withErrors(['meeting_link' => 'Meeting link is required for online consultations.'])
                 ->withInput();
@@ -471,12 +476,11 @@ class AppointmentsController extends Controller
             'consultation_type' => $consultationType,
             'is_online' => $isOnline,
             'meeting_link' => $isOnline ? $request->meeting_link : null,
-            'meeting_platform' => $isOnline ? $request->meeting_platform : null,
+            'meeting_platform' => $meetingPlatform,
         ]);
 
         // Track if we need to send emails manually (for Whereby appointments where observer skipped email)
         $sendEmailsManually = false;
-        $wherebyService = app(\App\Services\WherebyService::class);
         $wherebyEnabled = $wherebyService->isEnabled();
 
         \Log::info('Staff appointment created - checking Whereby', [
@@ -605,8 +609,9 @@ class AppointmentsController extends Controller
         }
 
         $canManageConsultationReportExclusion = $this->userCanManageConsultationReportExclusion();
+        $wherebyAutoGenerate = app(\App\Services\WherebyService::class)->isEnabled();
 
-        return view('staff.appointments.edit', compact('appointment', 'patients', 'doctors', 'departments', 'currentDoctor', 'currentDepartment', 'canManageConsultationReportExclusion'));
+        return view('staff.appointments.edit', compact('appointment', 'patients', 'doctors', 'departments', 'currentDoctor', 'currentDepartment', 'canManageConsultationReportExclusion', 'wherebyAutoGenerate'));
     }
 
     public function update(Request $request, $id)
@@ -655,8 +660,13 @@ class AppointmentsController extends Controller
         $consultationType = $request->consultation_type ?? ($request->boolean('is_online') ? 'online' : ($appointment->consultation_type ?? 'in_person'));
         $isOnline = $consultationType === 'online';
 
+        $wherebyService = app(\App\Services\WherebyService::class);
+        $meetingPlatform = $isOnline
+            ? $wherebyService->resolvedOnlineMeetingPlatform($request->meeting_platform)
+            : null;
+
         // Validate that meeting link is provided if online consultation (except for Whereby which auto-generates)
-        if ($isOnline && empty($request->meeting_link) && $request->meeting_platform !== 'whereby') {
+        if ($isOnline && empty($request->meeting_link) && $wherebyService->requiresManualMeetingLink($meetingPlatform)) {
             return redirect()->back()
                 ->withErrors(['meeting_link' => 'Meeting link is required for online consultations.'])
                 ->withInput();
@@ -680,7 +690,7 @@ class AppointmentsController extends Controller
             'consultation_type' => $consultationType,
             'is_online' => $isOnline,
             'meeting_link' => $isOnline ? $request->meeting_link : null,
-            'meeting_platform' => $isOnline ? $request->meeting_platform : null,
+            'meeting_platform' => $meetingPlatform,
         ];
 
         // Do not wipe patient "reason for booking" (stored in notes) when the notes field is left empty.
@@ -712,6 +722,8 @@ class AppointmentsController extends Controller
         // Handle priority and estimated_duration if they exist in the appointments table
         // Check if these columns exist before trying to update them
         $appointment->update($updateData);
+        $appointment->refresh();
+        $wherebyService->ensureMeetingForAppointment($appointment);
 
         // Log the edit reason (you might want to store this in an audit log table)
         // For now, we'll add it as a note in the appointment notes

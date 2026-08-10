@@ -29,6 +29,47 @@ class WherebyService
     }
 
     /**
+     * Default meeting platform for online appointments when none is selected.
+     */
+    public function resolvedOnlineMeetingPlatform(?string $requested): ?string
+    {
+        if ($requested !== null && $requested !== '') {
+            return $requested;
+        }
+
+        return $this->isEnabled() ? 'whereby' : null;
+    }
+
+    /**
+     * Whether staff must paste a meeting URL (Whereby auto-generates when enabled).
+     */
+    public function requiresManualMeetingLink(?string $platform): bool
+    {
+        if (($platform ?? '') === 'whereby' && $this->isEnabled()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Create a Whereby room on an online appointment if one is not already set.
+     */
+    public function ensureMeetingForAppointment(Appointment $appointment): Appointment
+    {
+        if (! $appointment->is_online
+            || ($appointment->meeting_platform ?? '') !== 'whereby'
+            || ! empty($appointment->meeting_link)
+            || ! $this->isEnabled()) {
+            return $appointment;
+        }
+
+        $this->createMeetingForAppointment($appointment);
+
+        return $appointment->refresh();
+    }
+
+    /**
      * Create a Whereby meeting room for an appointment.
      *
      * @param Appointment $appointment

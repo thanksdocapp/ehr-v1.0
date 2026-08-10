@@ -309,6 +309,55 @@ textarea.form-control {
                         </div>
                         
                         <script>
+                        var wherebyAutoGenerate = @json($wherebyAutoGenerate ?? false);
+
+                        function isManualMeetingLinkRequired() {
+                            var consultationTypeSelect = document.getElementById('consultation_type');
+                            if (!consultationTypeSelect || consultationTypeSelect.value !== 'online') {
+                                return false;
+                            }
+                            if (!wherebyAutoGenerate) {
+                                return true;
+                            }
+                            var platformSelect = document.getElementById('meeting_platform');
+                            var platformValue = platformSelect ? platformSelect.value : '';
+                            return platformValue !== '' && platformValue !== 'whereby';
+                        }
+
+                        function syncWherebyMeetingUi() {
+                            var meetingLink = document.getElementById('meeting_link');
+                            var notice = document.getElementById('whereby_auto_notice');
+                            var requiredMark = document.getElementById('meeting_link_required_mark');
+                            var helpText = document.getElementById('meeting_link_help');
+                            var manualRequired = isManualMeetingLinkRequired();
+
+                            if (meetingLink) {
+                                meetingLink.required = manualRequired;
+                                if (manualRequired) {
+                                    meetingLink.setAttribute('required', 'required');
+                                } else {
+                                    meetingLink.removeAttribute('required');
+                                    meetingLink.classList.remove('is-invalid');
+                                }
+                            }
+
+                            if (notice) {
+                                var consultationTypeSelect = document.getElementById('consultation_type');
+                                var isOnline = consultationTypeSelect && consultationTypeSelect.value === 'online';
+                                notice.style.display = (isOnline && wherebyAutoGenerate && !manualRequired) ? '' : 'none';
+                            }
+
+                            if (requiredMark) {
+                                requiredMark.style.display = manualRequired ? '' : 'none';
+                            }
+
+                            if (helpText) {
+                                helpText.textContent = manualRequired
+                                    ? 'Required for online consultations'
+                                    : 'Leave blank — ThanksDoc will create the Whereby room when you save.';
+                            }
+                        }
+
                         function handleOnlineConsultationChange(control) {
                             var meetingRow = document.getElementById('meeting_link_row');
                             var meetingLink = document.getElementById('meeting_link');
@@ -322,12 +371,7 @@ textarea.form-control {
                                 meetingRow.style.opacity = '1';
                                 meetingRow.removeAttribute('style');
                                 meetingRow.setAttribute('style', 'display: block !important; visibility: visible !important; opacity: 1 !important;');
-                                
-                                // Set required field
-                                if (meetingLink) {
-                                    meetingLink.required = true;
-                                    meetingLink.setAttribute('required', 'required');
-                                }
+                                syncWherebyMeetingUi();
                             } else {
                                 // Force hide
                                 meetingRow.style.display = 'none';
@@ -344,6 +388,7 @@ textarea.form-control {
                                 if (meetingPlatform) {
                                     meetingPlatform.value = '';
                                 }
+                                syncWherebyMeetingUi();
                             }
                         }
                         
@@ -396,49 +441,66 @@ textarea.form-control {
                                 // Add fresh event listener
                                 newSelect.addEventListener('change', function() {
                                     window.updateMeetingLinkPlaceholder();
+                                    syncWherebyMeetingUi();
                                 });
                                 
                                 // Also add onchange attribute as backup
-                                newSelect.setAttribute('onchange', 'window.updateMeetingLinkPlaceholder();');
+                                newSelect.setAttribute('onchange', 'window.updateMeetingLinkPlaceholder(); syncWherebyMeetingUi();');
                                 
                                 // Update placeholder on page load if platform is already selected
                                 setTimeout(function() {
                                     window.updateMeetingLinkPlaceholder();
+                                    syncWherebyMeetingUi();
                                 }, 200);
                             } else {
                                 // Retry if element not ready
                                 setTimeout(function() {
                                     var retrySelect = document.getElementById('meeting_platform');
                                     if (retrySelect) {
-                                        retrySelect.addEventListener('change', window.updateMeetingLinkPlaceholder);
+                                        retrySelect.addEventListener('change', function() {
+                                            window.updateMeetingLinkPlaceholder();
+                                            syncWherebyMeetingUi();
+                                        });
                                         window.updateMeetingLinkPlaceholder();
+                                        syncWherebyMeetingUi();
                                     }
                                 }, 100);
                             }
                         })();
                         </script>
                         
-                        @php $showMeetingRow = (old('consultation_type', $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person')) === 'online'); @endphp
+                        @php
+                            $showMeetingRow = (old('consultation_type', $appointment->consultation_type ?? ($appointment->is_online ? 'online' : 'in_person')) === 'online');
+                            $selectedMeetingPlatform = old('meeting_platform', $appointment->meeting_platform ?? (($wherebyAutoGenerate ?? false) ? 'whereby' : ''));
+                        @endphp
                         <div class="row" id="meeting_link_row" style="{{ $showMeetingRow ? '' : 'display: none;' }}">
+                            @if($wherebyAutoGenerate ?? false)
+                            <div class="col-12 mb-3" id="whereby_auto_notice" style="{{ $showMeetingRow ? '' : 'display: none;' }}">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-magic me-1"></i>
+                                    Whereby is enabled. Leave the meeting link blank and ThanksDoc will create the video room when you save.
+                                </div>
+                            </div>
+                            @endif
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="meeting_platform" class="form-label">Meeting Platform</label>
                                     <select class="form-control @error('meeting_platform') is-invalid @enderror" 
                                             id="meeting_platform" name="meeting_platform">
                                         <option value="">Select Platform</option>
-                                        <option value="zoom" {{ old('meeting_platform', $appointment->meeting_platform) == 'zoom' ? 'selected' : '' }}>
+                                        <option value="zoom" {{ $selectedMeetingPlatform == 'zoom' ? 'selected' : '' }}>
                                             Zoom
                                         </option>
-                                        <option value="google_meet" {{ old('meeting_platform', $appointment->meeting_platform) == 'google_meet' ? 'selected' : '' }}>
+                                        <option value="google_meet" {{ $selectedMeetingPlatform == 'google_meet' ? 'selected' : '' }}>
                                             Google Meet
                                         </option>
-                                        <option value="teams" {{ old('meeting_platform', $appointment->meeting_platform) == 'teams' ? 'selected' : '' }}>
+                                        <option value="teams" {{ $selectedMeetingPlatform == 'teams' ? 'selected' : '' }}>
                                             Microsoft Teams
                                         </option>
-                                        <option value="whereby" {{ old('meeting_platform', $appointment->meeting_platform) == 'whereby' ? 'selected' : '' }}>
+                                        <option value="whereby" {{ $selectedMeetingPlatform == 'whereby' ? 'selected' : '' }}>
                                             Whereby
                                         </option>
-                                        <option value="custom" {{ old('meeting_platform', $appointment->meeting_platform) == 'custom' ? 'selected' : '' }}>
+                                        <option value="custom" {{ $selectedMeetingPlatform == 'custom' ? 'selected' : '' }}>
                                             Custom Platform
                                         </option>
                                     </select>
@@ -449,7 +511,10 @@ textarea.form-control {
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="meeting_link" class="form-label">Meeting Link <span class="text-danger">*</span></label>
+                                    <label for="meeting_link" class="form-label">
+                                        Meeting Link
+                                        <span class="text-danger" id="meeting_link_required_mark">*</span>
+                                    </label>
                                     <div class="input-group">
                                         <input type="url" class="form-control @error('meeting_link') is-invalid @enderror" 
                                                id="meeting_link" name="meeting_link" 
@@ -464,7 +529,7 @@ textarea.form-control {
                                     @error('meeting_link')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-                                    <small class="form-text text-muted">Required for online consultations</small>
+                                    <small class="form-text text-muted" id="meeting_link_help">Required for online consultations</small>
                                 </div>
                             </div>
                         </div>
@@ -786,14 +851,19 @@ $(document).ready(function() {
     $('#consultation_type').change(function() {
         if ($(this).val() === 'online') {
             $('#meeting_link_row').show();
-            $('#meeting_link').prop('required', true);
         } else {
             $('#meeting_link_row').hide();
-            $('#meeting_link').prop('required', false);
             $('#meeting_link').val('');
             $('#meeting_platform').val('');
         }
+        if (typeof syncWherebyMeetingUi === 'function') {
+            syncWherebyMeetingUi();
+        }
     });
+
+    if (typeof syncWherebyMeetingUi === 'function') {
+        syncWherebyMeetingUi();
+    }
 
     // Copy meeting link to clipboard
     $('#copy_meeting_link').click(function() {

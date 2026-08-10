@@ -487,8 +487,9 @@ class AppointmentsController extends Controller
         $doctors = $doctorsQuery->ordered()->get();
 
         $canManageConsultationReportExclusion = $this->userCanManageConsultationReportExclusion();
+        $wherebyAutoGenerate = app(\App\Services\WherebyService::class)->isEnabled();
 
-        return view('admin.appointments.edit', compact('appointment', 'patients', 'departments', 'doctors', 'canManageConsultationReportExclusion'));
+        return view('admin.appointments.edit', compact('appointment', 'patients', 'departments', 'doctors', 'canManageConsultationReportExclusion', 'wherebyAutoGenerate'));
     }
 
     public function update(Request $request, $id, HospitalEmailNotificationService $emailService)
@@ -523,8 +524,13 @@ class AppointmentsController extends Controller
             : ($request->boolean('is_online') ? 'online' : ($appointment->consultation_type ?? 'in_person'));
         $isOnline = $consultationType === 'online';
 
+        $wherebyService = app(\App\Services\WherebyService::class);
+        $meetingPlatform = $isOnline
+            ? $wherebyService->resolvedOnlineMeetingPlatform($request->meeting_platform)
+            : null;
+
         // Validate that meeting link is provided if online consultation (except for Whereby which auto-generates)
-        if ($isOnline && empty($request->meeting_link) && $request->meeting_platform !== 'whereby') {
+        if ($isOnline && empty($request->meeting_link) && $wherebyService->requiresManualMeetingLink($meetingPlatform)) {
             return redirect()->back()
                 ->withErrors(['meeting_link' => 'Meeting link is required for online (video) consultations.'])
                 ->withInput();
@@ -546,8 +552,12 @@ class AppointmentsController extends Controller
         if (!$isOnline) {
             $data['meeting_link'] = null;
             $data['meeting_platform'] = null;
+        } else {
+            $data['meeting_platform'] = $meetingPlatform;
         }
         $appointment->update($data);
+        $appointment->refresh();
+        $wherebyService->ensureMeetingForAppointment($appointment);
         $appointment->load(['patient', 'doctor', 'department']);
         
         // Status change patient/doctor emails are sent by AppointmentObserver (avoid duplicate sends).
