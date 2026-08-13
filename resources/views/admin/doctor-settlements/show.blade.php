@@ -33,7 +33,17 @@
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-body">
-                    <h2 class="h4 mb-3">Settlement #{{ $doctorSettlement->id }}</h2>
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                        <h2 class="h4 mb-0">Settlement #{{ $doctorSettlement->id }}</h2>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('admin.doctor-settlements.export-csv', $doctorSettlement) }}" class="btn btn-sm btn-success">
+                                <i class="fas fa-file-csv me-1"></i>Export CSV
+                            </a>
+                            <a href="{{ route('admin.doctor-settlements.export-pdf', $doctorSettlement) }}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-file-pdf me-1"></i>Export PDF
+                            </a>
+                        </div>
+                    </div>
                     <p class="mb-1"><strong>Doctor:</strong> {{ $doctorSettlement->doctor->user->name ?? '—' }}</p>
                     <p class="mb-1"><strong>Period:</strong> {{ formatDateUk($doctorSettlement->period_start) }} — {{ formatDateUk($doctorSettlement->period_end) }} ({{ $doctorSettlement->period_type }})</p>
                     <p class="mb-1"><strong>Total:</strong> {{ CurrencyHelper::format((float) $doctorSettlement->total_amount) }}</p>

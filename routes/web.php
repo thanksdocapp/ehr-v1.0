@@ -949,6 +949,8 @@ Route::group(['middleware' => 'installed'], function () {
         Route::prefix('doctor-settlements')->name('doctor-settlements.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'index'])->name('index');
             Route::post('{doctorSettlement}/recalculate', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'recalculate'])->name('recalculate');
+            Route::get('{doctorSettlement}/export-csv', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'exportCsv'])->name('export-csv');
+            Route::get('{doctorSettlement}/export-pdf', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'exportPdf'])->name('export-pdf');
             Route::get('{doctorSettlement}', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'show'])->name('show');
             Route::patch('{doctorSettlement}/status', [\App\Http\Controllers\Admin\DoctorSettlementsController::class, 'updateStatus'])->name('update-status');
         });
