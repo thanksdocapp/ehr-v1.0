@@ -112,6 +112,7 @@
     <table>
         <thead>
             <tr>
+                <th>Name</th>
                 <th>Description</th>
                 <th>Billing ID</th>
                 <th>Bill number</th>
@@ -120,7 +121,13 @@
         </thead>
         <tbody>
             @forelse($doctorSettlement->lines as $line)
+            @php
+                $patient = $line->billing?->patient;
+                $patientName = $patient ? trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')) : '';
+                $patientName = $patientName !== '' ? $patientName : '—';
+            @endphp
             <tr>
+                <td>{{ $patientName }}</td>
                 <td>{{ $line->description }}</td>
                 <td>{{ $line->billing_id ?? '—' }}</td>
                 <td>{{ $line->billing?->bill_number ?? '—' }}</td>
@@ -128,7 +135,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="4" style="text-align: center; color: #7f8c8d;">No line items.</td>
+                <td colspan="5" style="text-align: center; color: #7f8c8d;">No line items.</td>
             </tr>
             @endforelse
         </tbody>

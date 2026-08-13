@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DoctorSettlement;
+use App\Models\DoctorSettlementLine;
 use App\Services\DoctorSettlementService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -36,14 +37,14 @@ class DoctorSettlementsController extends Controller
 
     public function show(DoctorSettlement $doctorSettlement): View
     {
-        $doctorSettlement->load(['lines.billing', 'doctor.user', 'reviewedByUser']);
+        $doctorSettlement->load(['lines.billing.patient', 'doctor.user', 'reviewedByUser']);
 
         return view('admin.doctor-settlements.show', compact('doctorSettlement'));
     }
 
     public function exportCsv(DoctorSettlement $doctorSettlement): StreamedResponse
     {
-        $doctorSettlement->load(['lines.billing', 'doctor.user', 'reviewedByUser']);
+        $doctorSettlement->load(['lines.billing.patient', 'doctor.user', 'reviewedByUser']);
 
         $filename = $this->settlementExportFilename($doctorSettlement, 'csv');
 
@@ -72,10 +73,11 @@ class DoctorSettlementsController extends Controller
             }
 
             fputcsv($file, []);
-            fputcsv($file, ['Description', 'Billing ID', 'Bill number', 'Amount']);
+            fputcsv($file, ['Name', 'Description', 'Billing ID', 'Bill number', 'Amount']);
 
             foreach ($doctorSettlement->lines as $line) {
                 fputcsv($file, [
+                    $this->patientNameForLine($line),
                     $line->description,
                     $line->billing_id ?? '—',
                     $line->billing?->bill_number ?? '—',
@@ -91,7 +93,7 @@ class DoctorSettlementsController extends Controller
 
     public function exportPdf(DoctorSettlement $doctorSettlement): StreamedResponse
     {
-        $doctorSettlement->load(['lines.billing', 'doctor.user', 'reviewedByUser']);
+        $doctorSettlement->load(['lines.billing.patient', 'doctor.user', 'reviewedByUser']);
 
         $html = view('admin.doctor-settlements.pdf', compact('doctorSettlement'))->render();
 
@@ -129,6 +131,18 @@ class DoctorSettlementsController extends Controller
         );
 
         return substr($base, 0, 180).'.'.ltrim($extension, '.');
+    }
+
+    private function patientNameForLine(DoctorSettlementLine $line): string
+    {
+        $patient = $line->billing?->patient;
+        if (! $patient) {
+            return '—';
+        }
+
+        $name = trim(($patient->first_name ?? '').' '.($patient->last_name ?? ''));
+
+        return $name !== '' ? $name : '—';
     }
 
     public function recalculate(DoctorSettlement $doctorSettlement, DoctorSettlementService $service): RedirectResponse

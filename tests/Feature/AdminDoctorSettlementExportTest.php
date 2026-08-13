@@ -34,6 +34,7 @@ class AdminDoctorSettlementExportTest extends TestCase
         $this->assertStringContainsString('Doctor settlement request export', $content);
         $this->assertStringContainsString('Settlement ID,'.$settlement->id, $content);
         $this->assertStringContainsString('Export Doctor', $content);
+        $this->assertStringContainsString('Settle Patient', $content);
         $this->assertStringContainsString('150.00', $content);
         $settlement->load('lines');
         $this->assertStringContainsString($settlement->lines->first()->description, $content);

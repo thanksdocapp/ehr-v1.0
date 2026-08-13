@@ -74,13 +74,20 @@
                         <table class="table table-sm mb-0">
                             <thead class="table-light">
                                 <tr>
+                                    <th>Name</th>
                                     <th>Description</th>
                                     <th class="text-end">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($doctorSettlement->lines as $line)
+                                @php
+                                    $patient = $line->billing?->patient;
+                                    $patientName = $patient ? trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')) : '';
+                                    $patientName = $patientName !== '' ? $patientName : '—';
+                                @endphp
                                 <tr>
+                                    <td>{{ $patientName }}</td>
                                     <td>{{ $line->description }}</td>
                                     <td class="text-end">{{ CurrencyHelper::format((float) $line->amount) }}</td>
                                 </tr>
