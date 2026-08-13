@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 10px;
+            font-size: 8px;
             color: #333;
         }
         .header {
@@ -33,7 +33,7 @@
             padding: 12px;
             margin-bottom: 16px;
             border-radius: 4px;
-            font-size: 10px;
+            font-size: 9px;
         }
         .summary p {
             margin: 4px 0;
@@ -46,13 +46,13 @@
         th {
             background-color: #34495e;
             color: white;
-            padding: 8px 6px;
+            padding: 6px 4px;
             text-align: left;
             border: 1px solid #2c3e50;
-            font-size: 9px;
+            font-size: 7px;
         }
         td {
-            padding: 7px 6px;
+            padding: 5px 4px;
             border: 1px solid #ddd;
             vertical-align: top;
         }
@@ -60,6 +60,10 @@
             background-color: #f8f9fa;
         }
         .text-end { text-align: right; }
+        .comments {
+            max-width: 140px;
+            word-wrap: break-word;
+        }
         .notes {
             margin-top: 12px;
             padding: 10px;
@@ -67,7 +71,7 @@
             border: 1px solid #e9ecef;
             border-radius: 4px;
             white-space: pre-wrap;
-            font-size: 9px;
+            font-size: 8px;
         }
         .footer {
             margin-top: 16px;
@@ -112,30 +116,57 @@
     <table>
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Billing ID</th>
-                <th>Bill number</th>
+                <th>Date</th>
                 <th class="text-end">Amount</th>
+                <th>Method</th>
+                <th>Source</th>
+                <th>Invoice</th>
+                <th>Patient</th>
+                <th>Appointment</th>
+                <th>Comments</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($doctorSettlement->lines as $line)
-            @php
-                $patient = $line->billing?->patient;
-                $patientName = $patient ? trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')) : '';
-                $patientName = $patientName !== '' ? $patientName : '—';
-            @endphp
-            <tr>
-                <td>{{ $patientName }}</td>
-                <td>{{ $line->description }}</td>
-                <td>{{ $line->billing_id ?? '—' }}</td>
-                <td>{{ $line->billing?->bill_number ?? '—' }}</td>
-                <td class="text-end">{{ CurrencyHelper::format((float) $line->amount) }}</td>
-            </tr>
+            @forelse($settlementExportEntries as $entry)
+                @php
+                    $line = $entry['line'];
+                    $row = $entry['row'];
+                @endphp
+                @if($row)
+                    @php
+                        $sortAt = $row->sortAt();
+                        $comments = $bookingPaymentsService->commentsForRow($row);
+                    @endphp
+                    <tr>
+                        <td>{{ $sortAt ? formatDateTimeUkAmPm($sortAt) : '—' }}</td>
+                        <td class="text-end">{{ CurrencyHelper::format($row->amount()) }}</td>
+                        <td>{{ $bookingPaymentsService->methodLabelForRow($row) }}</td>
+                        <td>{{ $bookingPaymentsService->labelForRow($row) }}</td>
+                        <td>{{ $bookingPaymentsService->invoiceLabelForRow($row) }}</td>
+                        <td>{{ $bookingPaymentsService->patientNameForRow($row) }}</td>
+                        <td>{{ $bookingPaymentsService->appointmentSlotLabelForRow($row) }}</td>
+                        <td class="comments">{{ $comments !== '' ? $comments : '—' }}</td>
+                    </tr>
+                @else
+                    @php
+                        $patient = $line->billing?->patient;
+                        $patientName = $patient ? trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')) : '';
+                        $patientName = $patientName !== '' ? $patientName : '—';
+                    @endphp
+                    <tr>
+                        <td>—</td>
+                        <td class="text-end">{{ CurrencyHelper::format((float) $line->amount) }}</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>{{ $line->billing?->bill_number ?? '—' }}</td>
+                        <td>{{ $patientName }}</td>
+                        <td>—</td>
+                        <td class="comments">{{ $line->description }}</td>
+                    </tr>
+                @endif
             @empty
             <tr>
-                <td colspan="5" style="text-align: center; color: #7f8c8d;">No line items.</td>
+                <td colspan="8" style="text-align: center; color: #7f8c8d;">No line items.</td>
             </tr>
             @endforelse
         </tbody>

@@ -71,27 +71,30 @@
                 <div class="card-header">Line items</div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-sm mb-0">
+                        <table class="table table-sm mb-0 align-middle" style="min-width: 1100px;">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Name</th>
-                                    <th>Description</th>
+                                    <th>Date</th>
                                     <th class="text-end">Amount</th>
+                                    <th>Method</th>
+                                    <th>Source</th>
+                                    <th>Invoice</th>
+                                    <th>Patient</th>
+                                    <th>Appointment</th>
+                                    <th>Comments</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($doctorSettlement->lines as $line)
-                                @php
-                                    $patient = $line->billing?->patient;
-                                    $patientName = $patient ? trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')) : '';
-                                    $patientName = $patientName !== '' ? $patientName : '—';
-                                @endphp
+                                @forelse($settlementExportEntries as $entry)
+                                    @include('admin.partials.doctor-settlement-line-row', [
+                                        'entry' => $entry,
+                                        'bookingPaymentsService' => $bookingPaymentsService,
+                                    ])
+                                @empty
                                 <tr>
-                                    <td>{{ $patientName }}</td>
-                                    <td>{{ $line->description }}</td>
-                                    <td class="text-end">{{ CurrencyHelper::format((float) $line->amount) }}</td>
+                                    <td colspan="8" class="text-center text-muted py-3">No line items.</td>
                                 </tr>
-                                @endforeach
+                                @endforelse
                             </tbody>
                         </table>
                     </div>

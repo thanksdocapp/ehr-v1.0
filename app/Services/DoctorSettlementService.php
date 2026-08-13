@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Data\BookingPaymentRow;
 use App\Models\Doctor;
 use App\Models\DoctorSettlement;
 use App\Models\DoctorSettlementLine;
 use App\Models\Payment;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class DoctorSettlementService
@@ -159,5 +161,85 @@ class DoctorSettlementService
 
             return $settlement->fresh(['lines.billing']);
         });
+    }
+
+    /**
+     * Match each settlement line to its underlying booking payment row for export/display.
+     *
+     * @return Collection<int, array{line: DoctorSettlementLine, row: BookingPaymentRow|null}>
+     */
+    public function exportEntriesForSettlement(DoctorSettlement $settlement): Collection
+    {
+        $settlement->loadMissing(['doctor', 'lines']);
+
+        $doctor = $settlement->doctor;
+        $periodStart = Carbon::parse($settlement->period_start)->startOfDay();
+        $periodEnd = Carbon::parse($settlement->period_end)->startOfDay();
+
+        $payments = $this->bookingPayments
+            ->completedPaymentsForDoctorInPeriod($doctor, $periodStart, $periodEnd)
+            ->with($this->bookingPayments->bookingPaymentsEagerLoads())
+            ->orderBy('payment_date')
+            ->get();
+
+        $usedPaymentIds = [];
+
+        return $settlement->lines->map(function (DoctorSettlementLine $line) use ($payments, &$usedPaymentIds) {
+            $payment = $this->matchPaymentToLine($line, $payments, $usedPaymentIds);
+
+            if ($payment) {
+                $usedPaymentIds[] = $payment->id;
+            }
+
+            return [
+                'line' => $line,
+                'row' => $payment ? BookingPaymentRow::fromPayment($payment) : null,
+            ];
+        });
+    }
+
+    /**
+     * @param  array<int, int>  $usedPaymentIds
+     */
+    private function matchPaymentToLine(DoctorSettlementLine $line, Collection $payments, array $usedPaymentIds): ?Payment
+    {
+        $candidates = $payments->filter(fn (Payment $payment) => ! in_array($payment->id, $usedPaymentIds, true));
+
+        if ($line->billing_id) {
+            $match = $candidates->first(function (Payment $payment) use ($line) {
+                $billingId = $payment->invoice?->billing?->id;
+
+                return $billingId
+                    && (int) $billingId === (int) $line->billing_id
+                    && abs((float) $payment->amount - (float) $line->amount) < 0.01;
+            });
+
+            if ($match) {
+                return $match;
+            }
+        }
+
+        $lineDate = $this->paymentDateFromLineDescription($line->description);
+
+        return $candidates->first(function (Payment $payment) use ($line, $lineDate) {
+            if (abs((float) $payment->amount - (float) $line->amount) >= 0.01) {
+                return false;
+            }
+
+            if ($lineDate === null) {
+                return true;
+            }
+
+            return $payment->payment_date?->format('Y-m-d') === $lineDate;
+        });
+    }
+
+    private function paymentDateFromLineDescription(string $description): ?string
+    {
+        if (preg_match('/(\d{4}-\d{2}-\d{2})\s*$/', $description, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
     }
 }

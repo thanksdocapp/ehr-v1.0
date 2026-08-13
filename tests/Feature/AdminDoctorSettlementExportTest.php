@@ -7,7 +7,9 @@ use App\Models\Billing;
 use App\Models\Doctor;
 use App\Models\DoctorSettlement;
 use App\Models\DoctorSettlementLine;
+use App\Models\Invoice;
 use App\Models\Patient;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -35,6 +37,9 @@ class AdminDoctorSettlementExportTest extends TestCase
         $this->assertStringContainsString('Settlement ID,'.$settlement->id, $content);
         $this->assertStringContainsString('Export Doctor', $content);
         $this->assertStringContainsString('Settle Patient', $content);
+        $this->assertStringContainsString('Date,Amount,Method,Source', $content);
+        $this->assertStringContainsString('Card', $content);
+        $this->assertStringContainsString('Billing', $content);
         $this->assertStringContainsString('150.00', $content);
         $settlement->load('lines');
         $this->assertStringContainsString($settlement->lines->first()->description, $content);
@@ -64,6 +69,8 @@ class AdminDoctorSettlementExportTest extends TestCase
 
         $this->get(route('admin.doctor-settlements.show', $settlement))
             ->assertOk()
+            ->assertSee('Invoice', false)
+            ->assertSee('Settle Patient', false)
             ->assertSee(route('admin.doctor-settlements.export-csv', $settlement), false)
             ->assertSee(route('admin.doctor-settlements.export-pdf', $settlement), false);
     }
@@ -105,18 +112,39 @@ class AdminDoctorSettlementExportTest extends TestCase
         ]);
 
         $billNumber = 'B-'.uniqid();
+        $invoiceNumber = 'INV'.uniqid();
+        $paymentDate = now();
 
         $billing = Billing::create([
             'bill_number' => $billNumber,
             'patient_id' => $patient->id,
             'doctor_id' => $doctor->id,
-            'billing_date' => now()->toDateString(),
+            'billing_date' => $paymentDate->toDateString(),
             'description' => 'Consultation fee',
             'subtotal' => 150.00,
             'total_amount' => 150.00,
             'paid_amount' => 150.00,
             'status' => 'paid',
             'created_by' => $doctorUser->id,
+        ]);
+
+        $invoice = Invoice::create([
+            'billing_id' => $billing->id,
+            'patient_id' => $patient->id,
+            'invoice_number' => $invoiceNumber,
+            'invoice_date' => $paymentDate->toDateString(),
+            'subtotal' => 150.00,
+            'total_amount' => 150.00,
+            'status' => 'paid',
+            'description' => 'Payment via public link | Consultation fee',
+        ]);
+
+        Payment::create([
+            'invoice_id' => $invoice->id,
+            'payment_date' => $paymentDate,
+            'amount' => 150.00,
+            'payment_method' => 'card',
+            'status' => 'completed',
         ]);
 
         $settlement = DoctorSettlement::create([
@@ -132,7 +160,7 @@ class AdminDoctorSettlementExportTest extends TestCase
         DoctorSettlementLine::create([
             'doctor_settlement_id' => $settlement->id,
             'billing_id' => $billing->id,
-            'description' => 'Bill '.$billNumber.' — Clinic booking — '.now()->format('Y-m-d'),
+            'description' => 'Bill '.$billNumber.' — Billing — '.$paymentDate->format('Y-m-d'),
             'amount' => 150.00,
         ]);
 

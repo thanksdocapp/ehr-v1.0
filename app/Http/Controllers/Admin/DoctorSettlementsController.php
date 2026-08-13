@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DoctorSettlement;
-use App\Models\DoctorSettlementLine;
+use App\Services\BookingPaymentsService;
 use App\Services\DoctorSettlementService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -17,6 +17,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DoctorSettlementsController extends Controller
 {
+    public function __construct(
+        private readonly DoctorSettlementService $doctorSettlementService,
+        private readonly BookingPaymentsService $bookingPaymentsService
+    ) {}
+
     public function index(Request $request): View
     {
         $query = DoctorSettlement::query()
@@ -38,13 +43,20 @@ class DoctorSettlementsController extends Controller
     public function show(DoctorSettlement $doctorSettlement): View
     {
         $doctorSettlement->load(['lines.billing.patient', 'doctor.user', 'reviewedByUser']);
+        $settlementExportEntries = $this->doctorSettlementService->exportEntriesForSettlement($doctorSettlement);
 
-        return view('admin.doctor-settlements.show', compact('doctorSettlement'));
+        return view('admin.doctor-settlements.show', [
+            'doctorSettlement' => $doctorSettlement,
+            'settlementExportEntries' => $settlementExportEntries,
+            'bookingPaymentsService' => $this->bookingPaymentsService,
+        ]);
     }
 
     public function exportCsv(DoctorSettlement $doctorSettlement): StreamedResponse
     {
         $doctorSettlement->load(['lines.billing.patient', 'doctor.user', 'reviewedByUser']);
+        $settlementExportEntries = $this->doctorSettlementService->exportEntriesForSettlement($doctorSettlement);
+        $bookingPaymentsService = $this->bookingPaymentsService;
 
         $filename = $this->settlementExportFilename($doctorSettlement, 'csv');
 
@@ -53,7 +65,7 @@ class DoctorSettlementsController extends Controller
             'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
-        $callback = function () use ($doctorSettlement) {
+        $callback = function () use ($doctorSettlement, $settlementExportEntries, $bookingPaymentsService) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
@@ -73,16 +85,19 @@ class DoctorSettlementsController extends Controller
             }
 
             fputcsv($file, []);
-            fputcsv($file, ['Name', 'Description', 'Billing ID', 'Bill number', 'Amount']);
+            fputcsv($file, [
+                'Date',
+                'Amount',
+                'Method',
+                'Source',
+                'Invoice / order',
+                'Patient',
+                'Appointment',
+                'Comments',
+            ]);
 
-            foreach ($doctorSettlement->lines as $line) {
-                fputcsv($file, [
-                    $this->patientNameForLine($line),
-                    $line->description,
-                    $line->billing_id ?? '—',
-                    $line->billing?->bill_number ?? '—',
-                    number_format((float) $line->amount, 2, '.', ''),
-                ]);
+            foreach ($settlementExportEntries as $entry) {
+                fputcsv($file, $this->settlementLineCsvValues($entry, $bookingPaymentsService));
             }
 
             fclose($file);
@@ -94,8 +109,13 @@ class DoctorSettlementsController extends Controller
     public function exportPdf(DoctorSettlement $doctorSettlement): StreamedResponse
     {
         $doctorSettlement->load(['lines.billing.patient', 'doctor.user', 'reviewedByUser']);
+        $settlementExportEntries = $this->doctorSettlementService->exportEntriesForSettlement($doctorSettlement);
 
-        $html = view('admin.doctor-settlements.pdf', compact('doctorSettlement'))->render();
+        $html = view('admin.doctor-settlements.pdf', [
+            'doctorSettlement' => $doctorSettlement,
+            'settlementExportEntries' => $settlementExportEntries,
+            'bookingPaymentsService' => $this->bookingPaymentsService,
+        ])->render();
 
         $options = new Options();
         $options->set('isRemoteEnabled', true);
@@ -103,7 +123,7 @@ class DoctorSettlementsController extends Controller
 
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
 
         $filename = $this->settlementExportFilename($doctorSettlement, 'pdf');
@@ -133,16 +153,45 @@ class DoctorSettlementsController extends Controller
         return substr($base, 0, 180).'.'.ltrim($extension, '.');
     }
 
-    private function patientNameForLine(DoctorSettlementLine $line): string
+    /**
+     * @param  array{line: \App\Models\DoctorSettlementLine, row: \App\Data\BookingPaymentRow|null}  $entry
+     * @return array<int, string>
+     */
+    private function settlementLineCsvValues(array $entry, BookingPaymentsService $bookingPaymentsService): array
     {
-        $patient = $line->billing?->patient;
-        if (! $patient) {
-            return '—';
+        $row = $entry['row'];
+        $line = $entry['line'];
+
+        if ($row) {
+            $comments = $bookingPaymentsService->commentsForRow($row);
+            $sortAt = $row->sortAt();
+
+            return [
+                $sortAt ? formatDateTimeUkAmPm($sortAt) : '—',
+                number_format($row->amount(), 2, '.', ''),
+                $bookingPaymentsService->methodLabelForRow($row),
+                $bookingPaymentsService->labelForRow($row),
+                $bookingPaymentsService->invoiceLabelForRow($row),
+                $bookingPaymentsService->patientNameForRow($row),
+                $bookingPaymentsService->appointmentSlotLabelForRow($row),
+                $comments !== '' ? $comments : '—',
+            ];
         }
 
-        $name = trim(($patient->first_name ?? '').' '.($patient->last_name ?? ''));
+        $patient = $line->billing?->patient;
+        $patientName = $patient ? trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')) : '';
+        $patientName = $patientName !== '' ? $patientName : '—';
 
-        return $name !== '' ? $name : '—';
+        return [
+            '—',
+            number_format((float) $line->amount, 2, '.', ''),
+            '—',
+            '—',
+            $line->billing?->bill_number ?? '—',
+            $patientName,
+            '—',
+            $line->description,
+        ];
     }
 
     public function recalculate(DoctorSettlement $doctorSettlement, DoctorSettlementService $service): RedirectResponse
