@@ -9,6 +9,7 @@ use App\Models\Patient;
 use App\Models\User;
 use App\Models\PasswordResetToken;
 use App\Services\HospitalEmailNotificationService;
+use App\Services\DoctorWeeklyAvailabilityService;
 use App\Services\PatientFeedbackService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -167,9 +168,11 @@ class DoctorsController extends Controller
             ->with('success', 'Doctor created successfully!');
     }
 
-    public function show(Doctor $doctor)
+    public function show(Doctor $doctor, DoctorWeeklyAvailabilityService $weeklyAvailabilityService)
     {
         $doctor->load(['departments', 'department']); // Load both for compatibility
+        $weeklyAvailabilityService->syncRulesFromWeeklyScheduleIfStale($doctor);
+        $weeklyAvailabilityDays = $weeklyAvailabilityService->displayDaysForDoctor($doctor->fresh());
         
         $upcomingAppointments = $doctor->appointments()
             ->with('patient')
@@ -215,7 +218,8 @@ class DoctorsController extends Controller
         }
 
         return view('admin.doctors.show', compact(
-            'doctor', 
+            'doctor',
+            'weeklyAvailabilityDays', 
             'upcomingAppointments', 
             'todayAppointments', 
             'recentTestimonials',
@@ -230,7 +234,7 @@ class DoctorsController extends Controller
         return view('admin.doctors.edit', compact('doctor', 'departments'));
     }
 
-    public function update(Request $request, Doctor $doctor, HospitalEmailNotificationService $emailService)
+    public function update(Request $request, Doctor $doctor, HospitalEmailNotificationService $emailService, DoctorWeeklyAvailabilityService $weeklyAvailabilityService)
     {
         
         $request->validate([
@@ -342,6 +346,10 @@ class DoctorsController extends Controller
         $data['department_id'] = $primaryDepartmentId;
 
         $doctor->update($data);
+
+        if (array_key_exists('availability', $data)) {
+            $weeklyAvailabilityService->syncRulesFromWeeklySchedule($doctor->fresh());
+        }
 
         $syncData = [];
         foreach ($departmentIds as $deptId) {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Doctor;
 use App\Models\DoctorAvailabilityException;
 use App\Models\Appointment;
+use App\Services\DoctorWeeklyAvailabilityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,10 @@ use Carbon\Carbon;
 
 class ScheduleController extends Controller
 {
+    public function __construct(
+        private readonly DoctorWeeklyAvailabilityService $weeklyAvailabilityService
+    ) {}
+
     /**
      * Display the doctor's schedule/availability management page.
      */
@@ -132,6 +137,7 @@ class ScheduleController extends Controller
         }
 
         $doctor->update(['availability' => $availability]);
+        $this->weeklyAvailabilityService->syncRulesFromWeeklySchedule($doctor->fresh());
 
         return redirect()->route('staff.schedule.index')
             ->with('success', 'Your weekly availability has been updated successfully.');

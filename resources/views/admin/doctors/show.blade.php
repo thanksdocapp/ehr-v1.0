@@ -122,14 +122,14 @@ use Illuminate\Support\Facades\Storage;
                                         <i class="fas fa-edit me-1"></i>Edit Availability
                                     </a>
                                 </div>
-                                @if($doctor->availability && is_array($doctor->availability) && count($doctor->availability) > 0)
+                                @if(!empty($weeklyAvailabilityDays))
                                     <div class="table-responsive">
                                         <table class="table table-sm">
                                             <thead>
                                                 <tr>
                                                     <th>Day</th>
                                                     <th>Available</th>
-                                                    <th>Time</th>
+                                                    <th>Time windows</th>
                                                     <th>Breaks</th>
                                                 </tr>
                                             </thead>
@@ -139,10 +139,9 @@ use Illuminate\Support\Facades\Storage;
                                                 @endphp
                                                 @foreach($days as $day => $dayName)
                                                     @php
-                                                        $dayAvailability = $doctor->availability[$day] ?? [];
+                                                        $dayAvailability = $weeklyAvailabilityDays[$day] ?? ['available' => false, 'sessions' => [], 'breaks' => []];
                                                         $isAvailable = $dayAvailability['available'] ?? false;
-                                                        $startTime = $dayAvailability['start'] ?? $dayAvailability['from'] ?? 'N/A';
-                                                        $endTime = $dayAvailability['end'] ?? $dayAvailability['to'] ?? 'N/A';
+                                                        $sessions = $dayAvailability['sessions'] ?? [];
                                                         $breaks = $dayAvailability['breaks'] ?? [];
                                                     @endphp
                                                     <tr>
@@ -155,8 +154,12 @@ use Illuminate\Support\Facades\Storage;
                                                             @endif
                                                         </td>
                                                         <td>
-                                                            @if($isAvailable)
-                                                                {{ $startTime }} - {{ $endTime }}
+                                                            @if($isAvailable && !empty($sessions))
+                                                                @foreach($sessions as $session)
+                                                                    <span class="badge bg-light text-dark border me-1 mb-1">
+                                                                        {{ $session['start'] ?? '—' }} - {{ $session['end'] ?? '—' }}
+                                                                    </span>
+                                                                @endforeach
                                                             @else
                                                                 -
                                                             @endif
@@ -177,6 +180,9 @@ use Illuminate\Support\Facades\Storage;
                                             </tbody>
                                         </table>
                                     </div>
+                                    <p class="small text-muted mb-0">
+                                        Mirrors the doctor’s weekly schedule, including multiple time windows per day.
+                                    </p>
                                 @else
                                     <div class="alert alert-warning mb-0">
                                         <i class="fas fa-exclamation-triangle me-2"></i>
