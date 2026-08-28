@@ -361,6 +361,7 @@ Route::group(['middleware' => 'installed'], function () {
         
         // AJAX Routes for Calendar
         Route::get('/api/appointments/calendar-data', [\App\Http\Controllers\Staff\AppointmentsController::class, 'getCalendarData'])->name('api.appointments.calendar-data');
+        Route::get('/api/doctors/{doctor}/available-slots', [\App\Http\Controllers\Staff\AppointmentsController::class, 'getAvailableSlots'])->name('api.doctors.available-slots');
         // Note: Staff cannot delete appointments or access advanced features
         
         // Doctors - Read Only Access

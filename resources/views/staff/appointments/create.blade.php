@@ -873,8 +873,24 @@ $(document).ready(function() {
                 apiDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
             }
             
-            const url = `/api/doctor/${encodeURIComponent(doctorId)}/available-slots?date=${encodeURIComponent(apiDate)}&duration=${encodeURIComponent(duration)}`;
-            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const serviceId = $('#service_id').val();
+            const modality = $('#consultation_type').val();
+            const params = new URLSearchParams({
+                date: apiDate,
+                duration: String(duration),
+            });
+            if (serviceId) {
+                params.set('service_id', serviceId);
+            }
+            if (modality) {
+                params.set('modality', modality);
+            }
+            const url = @json(url('staff/api/doctors/__DOCTOR__/available-slots')).replace('__DOCTOR__', encodeURIComponent(doctorId))
+                + '?' + params.toString();
+            const res = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 throw new Error(data?.error || `Failed to load availability (${res.status})`);
@@ -931,8 +947,7 @@ $(document).ready(function() {
         loadAvailableTimeSlots();
         loadDoctorServices();
     });
-    $('#estimated_duration').on('change', function() {
-        // Duration affects the slot end time and available ranges
+    $('#estimated_duration, #service_id, #consultation_type').on('change', function() {
         loadAvailableTimeSlots();
     });
     // Also handle doctor-locked view (hidden input) - initial load

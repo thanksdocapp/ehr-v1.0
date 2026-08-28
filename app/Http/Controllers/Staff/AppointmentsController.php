@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Staff;
 
-use App\Services\AppointmentCalendarInviteService;
 use App\Http\Controllers\Controller;
+use App\Services\AppointmentCalendarInviteService;
+use App\Services\SlotAvailabilityService;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Doctor;
@@ -954,6 +955,37 @@ class AppointmentsController extends Controller
     public function calendar()
     {
         return view('staff.appointments.calendar');
+    }
+
+    /**
+     * Available appointment start times for staff scheduling (uses weekly availability rules).
+     */
+    public function getAvailableSlots(Request $request, Doctor $doctor, SlotAvailabilityService $slotAvailabilityService)
+    {
+        $user = Auth::user();
+        if ($user?->role === 'doctor' && $user->doctor && (int) $user->doctor->id !== (int) $doctor->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'duration' => 'nullable|integer|min:5|max:480',
+            'service_id' => 'nullable|exists:booking_services,id',
+            'modality' => 'nullable|in:in_person,online,telephone',
+        ]);
+
+        $slots = $slotAvailabilityService->getAvailableSlots(
+            $doctor->id,
+            Carbon::parse($validated['date'])->format('Y-m-d'),
+            $validated['service_id'] ?? null,
+            $validated['duration'] ?? null,
+            $validated['modality'] ?? null,
+        );
+
+        return response()->json([
+            'slots' => $slots,
+            'date' => Carbon::parse($validated['date'])->format('Y-m-d'),
+        ]);
     }
 
     /**
