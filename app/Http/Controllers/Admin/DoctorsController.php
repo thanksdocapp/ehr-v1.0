@@ -231,7 +231,7 @@ class DoctorsController extends Controller
     {
         $doctor->load(['departments', 'department']); // Load both for compatibility
         $departments = Department::active()->ordered()->get();
-        $weeklyAvailabilityForForm = $weeklyAvailabilityService->normalizeAvailabilityForForm($doctor->availability);
+        $weeklyAvailabilityForForm = $weeklyAvailabilityService->availabilityForAdminForm($doctor);
 
         return view('admin.doctors.edit', compact('doctor', 'departments', 'weeklyAvailabilityForForm'));
     }

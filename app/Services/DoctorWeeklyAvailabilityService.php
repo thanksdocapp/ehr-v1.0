@@ -44,6 +44,53 @@ class DoctorWeeklyAvailabilityService
     }
 
     /**
+     * Weekly availability shaped for admin edit forms (matches show-page display).
+     *
+     * @return array<string, array{available: bool, sessions: array<int, array{start: string, end: string}>, breaks: array<int, array{start: string, end: string}>}>
+     */
+    public function availabilityForAdminForm(Doctor $doctor): array
+    {
+        $days = $this->displayDaysForDoctor($doctor);
+        if ($days === []) {
+            $days = $this->normalizeAvailabilityForForm($doctor->availability);
+        }
+
+        foreach ($this->allDays as $day) {
+            if (! isset($days[$day])) {
+                $days[$day] = ['available' => false, 'sessions' => [], 'breaks' => []];
+            }
+
+            $sessions = is_array($days[$day]['sessions'] ?? null) ? $days[$day]['sessions'] : [];
+            $days[$day]['sessions'] = array_values(array_map(
+                fn (array $session): array => [
+                    'start' => $this->formatTimeForInput($session['start'] ?? null),
+                    'end' => $this->formatTimeForInput($session['end'] ?? null),
+                ],
+                $sessions
+            ));
+            $days[$day]['available'] = ($days[$day]['available'] ?? false) || $days[$day]['sessions'] !== [];
+        }
+
+        return $days;
+    }
+
+    /**
+     * Normalize a stored time value for HTML time inputs (HH:MM).
+     */
+    public function formatTimeForInput(?string $time): string
+    {
+        if ($time === null || trim($time) === '') {
+            return '09:00';
+        }
+
+        if (preg_match('/^(\d{1,2}):(\d{2})/', trim($time), $matches)) {
+            return sprintf('%02d:%02d', (int) $matches[1], (int) $matches[2]);
+        }
+
+        return '09:00';
+    }
+
+    /**
      * Normalize availability so each day has sessions for schedule/edit forms.
      * Converts legacy start/end/breaks into sessions when needed.
      *
@@ -56,7 +103,17 @@ class DoctorWeeklyAvailabilityService
         foreach ($this->allDays as $day) {
             $dayData = $availability[$day] ?? ['available' => false, 'start' => '09:00', 'end' => '17:00', 'breaks' => []];
             if (! empty($dayData['sessions']) && is_array($dayData['sessions'])) {
-                $availability[$day] = $dayData;
+                $sessions = $this->parseSessions($dayData['sessions']);
+                $availability[$day] = array_merge($dayData, [
+                    'available' => filter_var($dayData['available'] ?? false, FILTER_VALIDATE_BOOLEAN) || $sessions !== [],
+                    'sessions' => array_map(
+                        fn (array $session): array => [
+                            'start' => $this->formatTimeForInput($session['start']),
+                            'end' => $this->formatTimeForInput($session['end']),
+                        ],
+                        $sessions
+                    ),
+                ]);
 
                 continue;
             }
@@ -71,7 +128,13 @@ class DoctorWeeklyAvailabilityService
             $end = $dayData['end'] ?? $dayData['to'] ?? '17:00';
             $breaks = is_array($dayData['breaks'] ?? null) ? $dayData['breaks'] : [];
             $availability[$day] = array_merge($dayData, [
-                'sessions' => $this->splitRangeByBreaks($start, $end, $breaks),
+                'sessions' => array_map(
+                    fn (array $session): array => [
+                        'start' => $this->formatTimeForInput($session['start']),
+                        'end' => $this->formatTimeForInput($session['end']),
+                    ],
+                    $this->splitRangeByBreaks($start, $end, $breaks)
+                ),
             ]);
         }
 

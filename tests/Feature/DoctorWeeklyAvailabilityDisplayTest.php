@@ -90,8 +90,11 @@ class DoctorWeeklyAvailabilityDisplayTest extends TestCase
         $this->assertCount(1, $rules);
         $this->assertSame(DoctorAvailabilityRule::SOURCE_WEEKLY_SCHEDULE, $rules->first()->source);
         $this->assertSame('13:00:00', $rules->first()->start_time);
+        $this->assertSame('20:00:00', $rules->first()->end_time);
+    }
+
     /** @test */
-    public function normalize_availability_for_form_converts_sessions_for_admin_edit(): void
+    public function admin_edit_form_matches_show_page_sessions(): void
     {
         $doctor = Doctor::create([
             'title' => 'Dr.',
@@ -104,20 +107,28 @@ class DoctorWeeklyAvailabilityDisplayTest extends TestCase
             'experience_years' => 3,
             'email' => 'weekly-edit-'.uniqid().'@example.com',
             'availability' => [
-                'thursday' => [
+                'monday' => [
                     'available' => true,
                     'sessions' => [
-                        ['start' => '09:00', 'end' => '12:30'],
+                        ['start' => '09:00:00', 'end' => '12:30:00'],
+                    ],
+                ],
+                'thursday' => [
+                    'sessions' => [
                         ['start' => '13:00', 'end' => '20:00'],
                     ],
                 ],
             ],
         ]);
 
-        $formData = app(DoctorWeeklyAvailabilityService::class)->normalizeAvailabilityForForm($doctor->availability);
+        $service = app(DoctorWeeklyAvailabilityService::class);
+        $formData = $service->availabilityForAdminForm($doctor);
 
-        $this->assertCount(2, $formData['thursday']['sessions']);
-        $this->assertSame('09:00', $formData['thursday']['sessions'][0]['start']);
-        $this->assertSame('20:00', $formData['thursday']['sessions'][1]['end']);
+        $this->assertTrue($formData['monday']['available']);
+        $this->assertSame('09:00', $formData['monday']['sessions'][0]['start']);
+        $this->assertSame('12:30', $formData['monday']['sessions'][0]['end']);
+        $this->assertTrue($formData['thursday']['available']);
+        $this->assertSame('13:00', $formData['thursday']['sessions'][0]['start']);
+        $this->assertSame('20:00', $formData['thursday']['sessions'][0]['end']);
     }
 }
