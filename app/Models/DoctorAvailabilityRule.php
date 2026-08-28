@@ -22,6 +22,18 @@ class DoctorAvailabilityRule extends Model
     public const MODALITY_TELEPHONE = 'telephone';
     public const MODALITY_ALL = 'all';
 
+    public const SOURCE_BACKFILL = 'backfill';
+    public const SOURCE_DEFAULT = 'default';
+    public const SOURCE_MANUAL = 'manual';
+    public const SOURCE_WEEKLY_SCHEDULE = 'weekly_schedule';
+
+    /** @var array<int, string> */
+    public const AUTO_MANAGED_SOURCES = [
+        self::SOURCE_BACKFILL,
+        self::SOURCE_DEFAULT,
+        self::SOURCE_WEEKLY_SCHEDULE,
+    ];
+
     /** Concrete modalities a service can request (telephone is treated like online: remote). */
     public const CONCRETE_MODALITIES = ['in_person', 'online', 'telephone'];
 

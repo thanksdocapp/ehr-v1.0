@@ -88,7 +88,7 @@ class DoctorWeeklyAvailabilityDisplayTest extends TestCase
             ->get();
 
         $this->assertCount(1, $rules);
-        $this->assertSame('weekly_schedule', $rules->first()->source);
+        $this->assertSame(DoctorAvailabilityRule::SOURCE_WEEKLY_SCHEDULE, $rules->first()->source);
         $this->assertSame('13:00:00', $rules->first()->start_time);
         $this->assertSame('20:00:00', $rules->first()->end_time);
     }

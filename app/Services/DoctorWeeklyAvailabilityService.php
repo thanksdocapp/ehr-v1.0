@@ -56,11 +56,11 @@ class DoctorWeeklyAvailabilityService
             return;
         }
 
-        if ($doctor->availabilityRules()->where('source', 'manual')->exists()) {
+        if ($doctor->availabilityRules()->where('source', DoctorAvailabilityRule::SOURCE_MANUAL)->exists()) {
             return;
         }
 
-        if ($doctor->availabilityRules()->where('source', 'weekly_schedule')->exists()) {
+        if ($doctor->availabilityRules()->where('source', DoctorAvailabilityRule::SOURCE_WEEKLY_SCHEDULE)->exists()) {
             return;
         }
 
@@ -83,7 +83,7 @@ class DoctorWeeklyAvailabilityService
         }
 
         $doctor->availabilityRules()
-            ->whereIn('source', ['backfill', 'default', 'weekly_schedule'])
+            ->whereIn('source', DoctorAvailabilityRule::AUTO_MANAGED_SOURCES)
             ->delete();
 
         $hasSavedWeeklySchedule = count($availability) > 0;
@@ -97,7 +97,7 @@ class DoctorWeeklyAvailabilityService
                     'modality' => DoctorAvailabilityRule::MODALITY_ALL,
                     'is_active' => true,
                     'needs_review' => false,
-                    'source' => 'weekly_schedule',
+                    'source' => DoctorAvailabilityRule::SOURCE_WEEKLY_SCHEDULE,
                 ]);
             }
         }
