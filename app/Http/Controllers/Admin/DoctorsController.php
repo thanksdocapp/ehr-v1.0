@@ -227,11 +227,13 @@ class DoctorsController extends Controller
         ));
     }
 
-    public function edit(Doctor $doctor)
+    public function edit(Doctor $doctor, DoctorWeeklyAvailabilityService $weeklyAvailabilityService)
     {
         $doctor->load(['departments', 'department']); // Load both for compatibility
         $departments = Department::active()->ordered()->get();
-        return view('admin.doctors.edit', compact('doctor', 'departments'));
+        $weeklyAvailabilityForForm = $weeklyAvailabilityService->normalizeAvailabilityForForm($doctor->availability);
+
+        return view('admin.doctors.edit', compact('doctor', 'departments', 'weeklyAvailabilityForForm'));
     }
 
     public function update(Request $request, Doctor $doctor, HospitalEmailNotificationService $emailService, DoctorWeeklyAvailabilityService $weeklyAvailabilityService)
@@ -278,59 +280,16 @@ class DoctorsController extends Controller
         $oldPhone = $doctor->phone;
         $oldDepartmentId = $doctor->department_id;
         
-        // Normalize availability data format
+        // Normalize availability data format (supports multi-window sessions)
         if (isset($data['availability']) && is_array($data['availability'])) {
-            $normalizedAvailability = [];
-            foreach ($data['availability'] as $day => $dayData) {
-                if (!is_array($dayData)) {
-                    continue;
-                }
-                
-                // Convert boolean strings to actual booleans
-                $isAvailable = isset($dayData['available']) && ($dayData['available'] === '1' || $dayData['available'] === 1 || $dayData['available'] === true);
-                
-                if (!$isAvailable) {
-                    // Store as unavailable day
-                    $normalizedAvailability[$day] = ['available' => false];
-                    continue;
-                }
-                
-                // Normalize time fields (support both 'start'/'end' and 'from'/'to')
-                $startTime = $dayData['start'] ?? $dayData['from'] ?? '09:00';
-                $endTime = $dayData['end'] ?? $dayData['to'] ?? '17:00';
-                
-                // Build day availability data
-                $normalizedDayData = [
-                    'available' => true,
-                    'start' => $startTime,
-                    'end' => $endTime,
-                    // Keep 'from' and 'to' for backward compatibility
-                    'from' => $startTime,
-                    'to' => $endTime,
-                ];
-                
-                // Add breaks if provided
-                if (isset($dayData['breaks']) && is_array($dayData['breaks']) && !empty($dayData['breaks'])) {
-                    // Filter out empty breaks and normalize
-                    $breaks = [];
-                    foreach ($dayData['breaks'] as $break) {
-                        if (isset($break['start']) && isset($break['end']) && 
-                            !empty($break['start']) && !empty($break['end'])) {
-                            $breaks[] = [
-                                'start' => $break['start'],
-                                'end' => $break['end'],
-                            ];
-                        }
-                    }
-                    if (!empty($breaks)) {
-                        $normalizedDayData['breaks'] = $breaks;
-                    }
-                }
-                
-                $normalizedAvailability[$day] = $normalizedDayData;
+            try {
+                $data['availability'] = $weeklyAvailabilityService->buildAvailabilityFromRequest($data['availability']);
+            } catch (\InvalidArgumentException $e) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->withErrors(['availability' => $e->getMessage()]);
             }
-            
-            $data['availability'] = $normalizedAvailability;
         }
         
         // Handle multiple departments — always include primary clinic (legacy column + pivot)

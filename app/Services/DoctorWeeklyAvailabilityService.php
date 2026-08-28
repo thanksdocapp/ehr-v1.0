@@ -44,6 +44,91 @@ class DoctorWeeklyAvailabilityService
     }
 
     /**
+     * Normalize availability so each day has sessions for schedule/edit forms.
+     * Converts legacy start/end/breaks into sessions when needed.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function normalizeAvailabilityForForm(?array $availability): array
+    {
+        $availability = is_array($availability) ? $availability : [];
+
+        foreach ($this->allDays as $day) {
+            $dayData = $availability[$day] ?? ['available' => false, 'start' => '09:00', 'end' => '17:00', 'breaks' => []];
+            if (! empty($dayData['sessions']) && is_array($dayData['sessions'])) {
+                $availability[$day] = $dayData;
+
+                continue;
+            }
+
+            if (empty($dayData['available'])) {
+                $availability[$day] = array_merge($dayData, ['sessions' => []]);
+
+                continue;
+            }
+
+            $start = $dayData['start'] ?? $dayData['from'] ?? '09:00';
+            $end = $dayData['end'] ?? $dayData['to'] ?? '17:00';
+            $breaks = is_array($dayData['breaks'] ?? null) ? $dayData['breaks'] : [];
+            $availability[$day] = array_merge($dayData, [
+                'sessions' => $this->splitRangeByBreaks($start, $end, $breaks),
+            ]);
+        }
+
+        return $availability;
+    }
+
+    /**
+     * Parse availability submitted from a schedule form (sessions or legacy start/end).
+     *
+     * @param  array<string, mixed>  $requestAvailability
+     * @return array<string, array<string, mixed>>
+     */
+    public function buildAvailabilityFromRequest(array $requestAvailability): array
+    {
+        $availability = [];
+
+        foreach ($this->allDays as $day) {
+            $dayInput = is_array($requestAvailability[$day] ?? null) ? $requestAvailability[$day] : [];
+            $sessionsInput = $dayInput['sessions'] ?? [];
+            $isAvailable = filter_var($dayInput['available'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            if ($isAvailable && is_array($sessionsInput) && ! empty($sessionsInput)) {
+                $sessions = $this->parseSessions($sessionsInput);
+                if ($sessions === []) {
+                    throw new \InvalidArgumentException(ucfirst($day).': at least one valid time window (start before end) is required.');
+                }
+
+                $availability[$day] = [
+                    'available' => true,
+                    'sessions' => $sessions,
+                ];
+
+                continue;
+            }
+
+            if ($isAvailable && is_array($sessionsInput) && empty($sessionsInput)) {
+                throw new \InvalidArgumentException(ucfirst($day).': at least one valid time window (start before end) is required.');
+            }
+
+            $startTime = $dayInput['start'] ?? '09:00';
+            $endTime = $dayInput['end'] ?? '17:00';
+            if ($isAvailable && $startTime >= $endTime) {
+                throw new \InvalidArgumentException('Invalid time range for '.ucfirst($day).'. Start time must be before end time.');
+            }
+
+            $availability[$day] = [
+                'available' => $isAvailable,
+                'start' => $startTime,
+                'end' => $endTime,
+                'breaks' => $this->parseBreaks($dayInput['breaks'] ?? []),
+            ];
+        }
+
+        return $availability;
+    }
+
+    /**
      * One-time heal: doctors who saved weekly JSON before rule sync existed.
      */
     public function syncRulesFromWeeklyScheduleIfStale(Doctor $doctor): void
@@ -201,5 +286,54 @@ class DoctorWeeklyAvailabilityService
         }
 
         return '00:00:00';
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $sessions
+     * @return array<int, array{start: string, end: string}>
+     */
+    private function parseSessions(array $sessions): array
+    {
+        $parsed = [];
+        foreach ($sessions as $session) {
+            if (! is_array($session)) {
+                continue;
+            }
+
+            $start = $session['start'] ?? $session['from'] ?? null;
+            $end = $session['end'] ?? $session['to'] ?? null;
+            if (! empty($start) && ! empty($end) && $start < $end) {
+                $parsed[] = ['start' => $start, 'end' => $end];
+            }
+        }
+
+        return $parsed;
+    }
+
+    /**
+     * @param  mixed  $breaks
+     * @return array<int, array{start: string, end: string}>
+     */
+    private function parseBreaks($breaks): array
+    {
+        if (! is_array($breaks)) {
+            return [];
+        }
+
+        $parsedBreaks = [];
+        foreach ($breaks as $break) {
+            if (! is_array($break)) {
+                continue;
+            }
+
+            if (! empty($break['start']) && ! empty($break['end'])) {
+                $parsedBreaks[] = [
+                    'start' => $break['start'],
+                    'end' => $break['end'],
+                ];
+            }
+        }
+
+        return $parsedBreaks;
     }
 }

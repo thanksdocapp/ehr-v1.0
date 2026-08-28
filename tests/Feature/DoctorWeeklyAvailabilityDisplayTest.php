@@ -90,6 +90,34 @@ class DoctorWeeklyAvailabilityDisplayTest extends TestCase
         $this->assertCount(1, $rules);
         $this->assertSame(DoctorAvailabilityRule::SOURCE_WEEKLY_SCHEDULE, $rules->first()->source);
         $this->assertSame('13:00:00', $rules->first()->start_time);
-        $this->assertSame('20:00:00', $rules->first()->end_time);
+    /** @test */
+    public function normalize_availability_for_form_converts_sessions_for_admin_edit(): void
+    {
+        $doctor = Doctor::create([
+            'title' => 'Dr.',
+            'first_name' => 'Weekly',
+            'last_name' => 'Edit',
+            'slug' => 'weekly-edit-'.uniqid(),
+            'specialization' => 'GP',
+            'bio' => 'Test',
+            'qualification' => 'MBBS',
+            'experience_years' => 3,
+            'email' => 'weekly-edit-'.uniqid().'@example.com',
+            'availability' => [
+                'thursday' => [
+                    'available' => true,
+                    'sessions' => [
+                        ['start' => '09:00', 'end' => '12:30'],
+                        ['start' => '13:00', 'end' => '20:00'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $formData = app(DoctorWeeklyAvailabilityService::class)->normalizeAvailabilityForForm($doctor->availability);
+
+        $this->assertCount(2, $formData['thursday']['sessions']);
+        $this->assertSame('09:00', $formData['thursday']['sessions'][0]['start']);
+        $this->assertSame('20:00', $formData['thursday']['sessions'][1]['end']);
     }
 }

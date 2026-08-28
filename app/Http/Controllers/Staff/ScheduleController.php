@@ -32,7 +32,7 @@ class ScheduleController extends Controller
         }
 
         // Get current availability settings and normalize to sessions for the form
-        $availability = $this->normalizeAvailabilityForForm($doctor->availability ?? $this->getDefaultAvailability());
+        $availability = $this->weeklyAvailabilityService->normalizeAvailabilityForForm($doctor->availability ?? $this->getDefaultAvailability());
 
         // Get upcoming blocked dates
         try {
@@ -99,41 +99,14 @@ class ScheduleController extends Controller
             return redirect()->back()->with('error', 'Doctor profile not found.');
         }
 
-        $daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        $availability = [];
-
-        foreach ($daysOfWeek as $day) {
-            $sessionsInput = $request->input("availability.{$day}.sessions", []);
-            $isAvailable = $request->input("availability.{$day}.available", false);
-
-            if ($isAvailable && is_array($sessionsInput) && !empty($sessionsInput)) {
-                // New format: multiple sessions (time windows) per day
-                $sessions = $this->parseSessions($sessionsInput);
-                if (empty($sessions)) {
-                    return redirect()->back()
-                        ->with('error', ucfirst($day) . ": at least one valid time window (start before end) is required.")
-                        ->withInput();
-                }
-                $availability[$day] = [
-                    'available' => true,
-                    'sessions' => $sessions
-                ];
-            } else {
-                // Legacy format: single start/end + breaks (e.g. from old form or API)
-                $startTime = $request->input("availability.{$day}.start", '09:00');
-                $endTime = $request->input("availability.{$day}.end", '17:00');
-                if ($isAvailable && $startTime >= $endTime) {
-                    return redirect()->back()
-                        ->with('error', "Invalid time range for " . ucfirst($day) . ". Start time must be before end time.")
-                        ->withInput();
-                }
-                $availability[$day] = [
-                    'available' => (bool) $isAvailable,
-                    'start' => $startTime,
-                    'end' => $endTime,
-                    'breaks' => $this->parseBreaks($request->input("availability.{$day}.breaks", []))
-                ];
-            }
+        try {
+            $availability = $this->weeklyAvailabilityService->buildAvailabilityFromRequest(
+                $request->input('availability', [])
+            );
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->back()
+                ->with('error', $e->getMessage())
+                ->withInput();
         }
 
         $doctor->update(['availability' => $availability]);
@@ -597,63 +570,6 @@ class ScheduleController extends Controller
     }
 
     /**
-     * Normalize availability so each day has 'sessions' (array of time windows) for the form.
-     * Converts legacy start/end/breaks into sessions so the UI can show multiple windows.
-     */
-    private function normalizeAvailabilityForForm(array $availability): array
-    {
-        $daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        foreach ($daysOfWeek as $day) {
-            $dayData = $availability[$day] ?? ['available' => false, 'start' => '09:00', 'end' => '17:00', 'breaks' => []];
-            if (!empty($dayData['sessions']) && is_array($dayData['sessions'])) {
-                continue; // already has sessions
-            }
-            if (empty($dayData['available'])) {
-                $availability[$day] = array_merge($dayData, ['sessions' => []]);
-                continue;
-            }
-            $start = $dayData['start'] ?? $dayData['from'] ?? '09:00';
-            $end = $dayData['end'] ?? $dayData['to'] ?? '17:00';
-            $breaks = $dayData['breaks'] ?? [];
-            $availability[$day]['sessions'] = $this->splitRangeByBreaks($start, $end, $breaks);
-        }
-        return $availability;
-    }
-
-    /**
-     * Split a time range into sessions by subtracting break periods.
-     */
-    private function splitRangeByBreaks(string $start, string $end, array $breaks): array
-    {
-        if (empty($breaks)) {
-            return $start < $end ? [['start' => $start, 'end' => $end]] : [];
-        }
-        $ranges = [['start' => $start, 'end' => $end]];
-        foreach ($breaks as $break) {
-            if (empty($break['start']) || empty($break['end'])) {
-                continue;
-            }
-            $newRanges = [];
-            foreach ($ranges as $r) {
-                $bStart = $break['start'];
-                $bEnd = $break['end'];
-                if ($bEnd <= $r['start'] || $bStart >= $r['end']) {
-                    $newRanges[] = $r;
-                    continue;
-                }
-                if ($r['start'] < $bStart) {
-                    $newRanges[] = ['start' => $r['start'], 'end' => $bStart];
-                }
-                if ($bEnd < $r['end']) {
-                    $newRanges[] = ['start' => $bEnd, 'end' => $r['end']];
-                }
-            }
-            $ranges = $newRanges;
-        }
-        return array_values(array_filter($ranges, fn($r) => $r['start'] < $r['end']));
-    }
-
-    /**
      * Get default availability settings.
      */
     private function getDefaultAvailability(): array
@@ -667,44 +583,5 @@ class ScheduleController extends Controller
             'saturday' => ['available' => false, 'start' => '09:00', 'end' => '13:00', 'breaks' => []],
             'sunday' => ['available' => false, 'start' => '09:00', 'end' => '13:00', 'breaks' => []]
         ];
-    }
-
-    /**
-     * Parse sessions (time windows) from request input.
-     * Each session must have start and end (HH:MM), start < end.
-     */
-    private function parseSessions(array $sessions): array
-    {
-        $parsed = [];
-        foreach ($sessions as $s) {
-            $start = $s['start'] ?? $s['from'] ?? null;
-            $end = $s['end'] ?? $s['to'] ?? null;
-            if (!empty($start) && !empty($end) && $start < $end) {
-                $parsed[] = ['start' => $start, 'end' => $end];
-            }
-        }
-        return $parsed;
-    }
-
-    /**
-     * Parse breaks from request input.
-     */
-    private function parseBreaks($breaks): array
-    {
-        if (!is_array($breaks)) {
-            return [];
-        }
-
-        $parsedBreaks = [];
-        foreach ($breaks as $break) {
-            if (!empty($break['start']) && !empty($break['end'])) {
-                $parsedBreaks[] = [
-                    'start' => $break['start'],
-                    'end' => $break['end']
-                ];
-            }
-        }
-
-        return $parsedBreaks;
     }
 }
