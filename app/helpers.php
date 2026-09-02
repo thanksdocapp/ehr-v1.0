@@ -791,3 +791,14 @@ if (! function_exists('adminSettingsApplyDeploymentUpdatesUrl')) {
         return url('/admin/settings/apply-deployment-updates');
     }
 }
+
+if (! function_exists('adminSettingsRestoreBeynon364Url')) {
+    function adminSettingsRestoreBeynon364Url(): string
+    {
+        if (\Illuminate\Support\Facades\Route::has('admin.settings.restore-beynon-364')) {
+            return route('admin.settings.restore-beynon-364');
+        }
+
+        return url('/admin/settings/restore-beynon-364');
+    }
+}

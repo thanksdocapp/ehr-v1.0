@@ -377,7 +377,6 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/medical-records/{medical_record}', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'show'])->name('medical-records.show');
         Route::get('/medical-records/{medical_record}/edit', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'edit'])->name('medical-records.edit');
         Route::put('/medical-records/{medical_record}', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'update'])->name('medical-records.update');
-        Route::delete('/medical-records/{medical_record}', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'destroy'])->name('medical-records.destroy');
         Route::post('/medical-records/{medical_record}/add-attachments', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'addAttachments'])->name('medical-records.add-attachments');
         Route::get('medical-records/create-from-appointment/{appointment}', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'createFromAppointment'])->name('medical-records.create-from-appointment');
         Route::get('api/appointments-by-patient', [\App\Http\Controllers\Staff\MedicalRecordsController::class, 'getAppointmentsByPatient'])->name('api.appointments-by-patient');
@@ -387,7 +386,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::get('/medical-record-attachments/{attachment}/download', [\App\Http\Controllers\MedicalRecordAttachmentController::class, 'download'])->name('medical-record-attachments.download');
         Route::get('/medical-record-attachments/{attachment}/signed-url', [\App\Http\Controllers\MedicalRecordAttachmentController::class, 'getSignedUrl'])->name('medical-record-attachments.signed-url');
         Route::delete('/medical-record-attachments/{attachment}', [\App\Http\Controllers\MedicalRecordAttachmentController::class, 'destroy'])->name('medical-record-attachments.destroy');
-        // Note: Only doctors can delete medical records they created, others can view/create based on role
+        // Note: Staff cannot permanently delete whole medical records; attachment delete is separate below
         
         // Prescriptions - Role-based Access (doctors and pharmacists can create/edit, others view only)
         Route::get('/prescriptions', [\App\Http\Controllers\Staff\PrescriptionsController::class, 'index'])->name('prescriptions.index');
@@ -1116,6 +1115,7 @@ Route::group(['middleware' => 'installed'], function () {
         Route::post('/settings/test-security', [\App\Http\Controllers\Admin\SettingsController::class, 'testSecurity'])->name('settings.test-security');
         Route::post('/settings/clear-cache', [\App\Http\Controllers\Admin\SettingsController::class, 'clearCache'])->name('settings.clear-cache');
         Route::post('/settings/apply-deployment-updates', [\App\Http\Controllers\Admin\SettingsController::class, 'applyDeploymentUpdates'])->name('settings.apply-deployment-updates');
+        Route::post('/settings/restore-beynon-364', [\App\Http\Controllers\Admin\SettingsController::class, 'restoreRobertBeynonMedicalRecord364'])->name('settings.restore-beynon-364');
         Route::post('/settings/optimize', [\App\Http\Controllers\Admin\SettingsController::class, 'optimize'])->name('settings.optimize');
         Route::get('/settings/download-logs', [\App\Http\Controllers\Admin\SettingsController::class, 'downloadLogs'])->name('settings.download-logs');
         Route::post('/settings/create-backup', [\App\Http\Controllers\Admin\SettingsController::class, 'createBackup'])->name('settings.create-backup');

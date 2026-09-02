@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Console\Commands\RestoreRobertBeynonMedicalRecord364;
 use App\Models\Setting;
 use App\Services\ClinicBookingService;
 use App\Services\ResilientMigrationService;
@@ -1619,6 +1620,78 @@ class SettingsController extends Controller
             'message' => implode(' ', $steps),
             'steps' => $steps,
         ], $hadErrors ? 500 : 200);
+    }
+
+    /**
+     * One-time restore for deleted medical record #364 (Robert Beynon).
+     * Runs in the web/PHP context so Plesk chroot paths and /tmp isolation do not apply.
+     */
+    public function restoreRobertBeynonMedicalRecord364(Request $request)
+    {
+        $dryRun = $request->boolean('dry_run');
+        $pdfPath = null;
+
+        if ($request->hasFile('pdf')) {
+            $request->validate([
+                'pdf' => 'required|file|mimes:pdf|max:10240',
+            ]);
+
+            $storedPath = $request->file('pdf')->storeAs(
+                'restore-incoming',
+                'Robert_Beynon-Photo-01-09-2026-1788289290_mxnhxa.pdf',
+                'private'
+            );
+            $pdfPath = storage_path('app/private/'.$storedPath);
+        } else {
+            $stagedPath = storage_path('app/private/'.RestoreRobertBeynonMedicalRecord364::STAGING_PDF_RELATIVE_PATH);
+            if (is_file($stagedPath)) {
+                $pdfPath = $stagedPath;
+            } elseif ($request->filled('pdf_path')) {
+                $pdfPath = (string) $request->input('pdf_path');
+            }
+        }
+
+        if ($pdfPath === null || $pdfPath === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload the recovered PDF in this form, or place it at storage/app/private/restore-incoming/Robert_Beynon-Photo-01-09-2026-1788289290_mxnhxa.pdf via File Manager.',
+            ], 422);
+        }
+
+        try {
+            $params = [
+                '--pdf-path' => $pdfPath,
+            ];
+
+            if ($dryRun) {
+                $params['--dry-run'] = true;
+            } else {
+                $params['--force'] = true;
+            }
+
+            $exitCode = Artisan::call('medical-records:restore-beynon-364', $params);
+            $output = trim(Artisan::output());
+
+            if ($exitCode !== 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $output !== '' ? $output : 'Restore command failed.',
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $dryRun ? 'Dry run passed. No changes made.' : 'Medical record #364 restored successfully.',
+                'output' => $output,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('restoreRobertBeynonMedicalRecord364 failed', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Restore failed: '.$e->getMessage(),
+            ], 500);
+        }
     }
     
     /**

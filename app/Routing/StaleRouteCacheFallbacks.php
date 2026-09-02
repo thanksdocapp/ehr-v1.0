@@ -22,7 +22,17 @@ class StaleRouteCacheFallbacks
 
     private static function registerAdminSettingsDeploymentRoute(): void
     {
-        if (Route::has('admin.settings.apply-deployment-updates')) {
+        if (! Route::has('admin.settings.apply-deployment-updates')) {
+            Route::middleware(['web', 'installed', 'auth:admin', 'admin', 'require.2fa', 'log.activity'])
+                ->prefix('admin')
+                ->name('admin.')
+                ->group(function () {
+                    Route::post('/settings/apply-deployment-updates', [SettingsController::class, 'applyDeploymentUpdates'])
+                        ->name('settings.apply-deployment-updates');
+                });
+        }
+
+        if (Route::has('admin.settings.restore-beynon-364')) {
             return;
         }
 
@@ -30,8 +40,8 @@ class StaleRouteCacheFallbacks
             ->prefix('admin')
             ->name('admin.')
             ->group(function () {
-                Route::post('/settings/apply-deployment-updates', [SettingsController::class, 'applyDeploymentUpdates'])
-                    ->name('settings.apply-deployment-updates');
+                Route::post('/settings/restore-beynon-364', [SettingsController::class, 'restoreRobertBeynonMedicalRecord364'])
+                    ->name('settings.restore-beynon-364');
             });
     }
 

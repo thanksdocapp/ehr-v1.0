@@ -1141,53 +1141,6 @@ class MedicalRecordsController extends Controller
         return response()->json($appointments);
     }
 
-    public function destroy(Request $request, MedicalRecord $medicalRecord)
-    {
-        $user = Auth::user();
-        
-        // Only doctors can delete medical records, and only their own
-        if ($user->role !== 'doctor') {
-            return redirect()->route('staff.medical-records.index')
-                ->with('error', 'You do not have permission to delete medical records.');
-        }
-        
-        // Check if this doctor can delete this record
-        if ($medicalRecord->doctor_id) {
-            $doctorRecord = \App\Models\Doctor::where('user_id', $user->id)->first();
-            if (!$doctorRecord || $medicalRecord->doctor_id !== $doctorRecord->id) {
-                return redirect()->route('staff.medical-records.index')
-                    ->with('error', 'You can only delete your own medical records.');
-            }
-        }
-        
-        try {
-            // Store record information for logging
-            $recordInfo = [
-                'record_id' => $medicalRecord->id,
-                'patient_name' => $medicalRecord->patient->first_name . ' ' . $medicalRecord->patient->last_name,
-                'record_date' => $medicalRecord->record_date,
-                'record_type' => $medicalRecord->record_type,
-                'deleted_by' => $user->id,
-                'deleted_at' => now(),
-            ];
-            
-            // Log the deletion for audit purposes
-            \Log::info('Medical record deleted', $recordInfo);
-            
-            // Delete the medical record
-            $medicalRecord->delete();
-            
-            return redirect()->route('staff.medical-records.index')
-                ->with('success', 'Medical record has been permanently deleted.');
-                
-        } catch (\Exception $e) {
-            \Log::error('Failed to delete medical record: ' . $e->getMessage());
-            
-            return redirect()->route('staff.medical-records.edit', $medicalRecord)
-                ->with('error', 'Failed to delete medical record. Please try again.');
-        }
-    }
-
     /**
      * Add attachments to an existing medical record.
      * 

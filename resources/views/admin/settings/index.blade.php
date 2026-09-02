@@ -299,6 +299,23 @@
                         Runs database migrations and clears caches after you deploy new code — no server terminal needed.
                     </p>
                 </div>
+                <div class="col-12">
+                    <div class="border rounded p-3 bg-light">
+                        <h6 class="mb-2"><i class="fas fa-file-medical me-1"></i>Restore Robert Beynon record #364</h6>
+                        <p class="text-muted small mb-2">
+                            One-time recovery for the deleted record. Upload the recovered PDF here (runs inside the app — no SSH or Plesk /tmp needed).
+                        </p>
+                        <input type="file" id="beynon364Pdf" class="form-control form-control-sm mb-2" accept="application/pdf,.pdf">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn-modern btn-modern-outline btn-sm" onclick="restoreBeynon364(true)">
+                                Dry run
+                            </button>
+                            <button type="button" class="btn-modern btn-modern-primary btn-sm" onclick="restoreBeynon364(false)">
+                                Restore now
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-md-6">
                     <button class="btn-modern btn-modern-outline w-100" onclick="clearCache()">
                         <i class="fas fa-broom"></i>Clear application cache
@@ -575,6 +592,78 @@
                 icon: 'error',
                 confirmButtonColor: '#ef4444',
                 confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    async function restoreBeynon364(dryRun) {
+        try {
+            const fileInput = document.getElementById('beynon364Pdf');
+            const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+
+            const confirmText = dryRun
+                ? 'Validate restore only (no database or file changes)?'
+                : 'Restore medical record #364 for Robert Beynon with original IDs and timestamps?';
+
+            const result = await Swal.fire({
+                title: dryRun ? 'Dry run restore?' : 'Restore record #364?',
+                text: confirmText,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: dryRun ? '#6b7280' : '#e94560',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: dryRun ? 'Dry run' : 'Restore',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            Swal.fire({
+                title: dryRun ? 'Running dry run…' : 'Restoring record…',
+                text: 'Please wait.',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const formData = new FormData();
+            if (file) {
+                formData.append('pdf', file);
+            }
+            formData.append('dry_run', dryRun ? '1' : '0');
+
+            const response = await fetch('{{ adminSettingsRestoreBeynon364Url() }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire({
+                    title: dryRun ? 'Dry run OK' : 'Restored',
+                    html: `<div class="small text-start">${(data.output || data.message || '').replace(/\n/g, '<br>')}</div>`,
+                    icon: 'success',
+                    confirmButtonColor: '#10b981'
+                });
+            } else {
+                throw new Error(data.message || 'Restore failed');
+            }
+        } catch (error) {
+            Swal.fire({
+                title: 'Error',
+                text: error.message || 'Restore failed. Upload the PDF or place it in storage/app/private/restore-incoming/.',
+                icon: 'error',
+                confirmButtonColor: '#ef4444'
             });
         }
     }
