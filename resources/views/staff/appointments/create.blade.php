@@ -932,9 +932,9 @@ $(document).ready(function() {
                 $timeSelect.val(prevVal);
             }
         } catch (e) {
-            // Fallback to original hardcoded times to avoid breaking scheduling
-            restoreStaticTimesFallback();
-            showTimeSlotNotice('Could not load weekly availability right now. Using default times—please double-check the doctor schedule or choose tomorrow.');
+            $timeSelect.empty();
+            $timeSelect.append($('<option value="">Select Time</option>'));
+            showTimeSlotNotice('Could not load weekly availability right now. Please try again or choose another date.');
         } finally {
             $timeSelect.prop('disabled', false);
         }

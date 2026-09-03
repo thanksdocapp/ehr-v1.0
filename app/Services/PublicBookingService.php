@@ -828,6 +828,24 @@ class PublicBookingService
         // Serialize all bookings for this practitioner.
         Doctor::whereKey($doctor->id)->lockForUpdate()->first();
 
+        $modality = null;
+        if (config('booking.modality_rules_enabled', true)) {
+            $modality = DoctorAvailabilityRule::normalizeModality(
+                $service
+                    ? $service->getConsultationTypeForDoctor($doctor->id)
+                    : ($data['consultation_type'] ?? null)
+            );
+        }
+
+        app(SlotAvailabilityService::class)->assertSlotBookable(
+            $doctor->id,
+            (string) $date,
+            (string) $time,
+            $service?->id,
+            null,
+            $modality
+        );
+
         $duration = $service ? (int) ($service->getDurationForDoctor($doctor->id) ?? 30) : 30;
         if ($duration <= 0) {
             $duration = 30;
@@ -841,12 +859,6 @@ class PublicBookingService
         if (!config('booking.modality_rules_enabled', true)) {
             return null;
         }
-
-        $modality = DoctorAvailabilityRule::normalizeModality(
-            $service
-                ? $service->getConsultationTypeForDoctor($doctor->id)
-                : ($data['consultation_type'] ?? null)
-        );
 
         $rule = $this->findCoveringRule($doctor, $slotStart, $slotEnd, $modality);
 
@@ -877,6 +889,13 @@ class PublicBookingService
         $timeStr = $time instanceof \DateTimeInterface ? $time->format('H:i:s') : (string) $time;
 
         Doctor::whereKey($doctor->id)->lockForUpdate()->first();
+
+        app(SlotAvailabilityService::class)->assertSlotBookable(
+            $doctor->id,
+            $dateStr,
+            $timeStr,
+            $service?->id
+        );
 
         $duration = $service ? (int) ($service->getDurationForDoctor($doctor->id) ?? 30) : 30;
         if ($duration <= 0) {

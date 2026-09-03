@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 
 class AppointmentsController extends Controller
@@ -424,6 +425,20 @@ class AppointmentsController extends Controller
             return redirect()->back()
                 ->withErrors(['meeting_link' => 'Meeting link is required for online consultations.'])
                 ->withInput();
+        }
+
+        try {
+            app(SlotAvailabilityService::class)->assertSlotBookable(
+                (int) $request->doctor_id,
+                (string) $request->appointment_date,
+                (string) $request->appointment_time,
+                null,
+                (int) $request->estimated_duration,
+                $consultationType,
+                ignoreMinimumAdvance: true
+            );
+        } catch (ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
         }
 
         // Update patient's department and assigned_doctor_id if not set

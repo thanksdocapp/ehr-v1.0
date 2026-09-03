@@ -1482,6 +1482,24 @@ class ClinicBookingService
         // Serialize all bookings for this practitioner.
         Doctor::whereKey($doctor->id)->lockForUpdate()->first();
 
+        $modality = null;
+        if (config('booking.modality_rules_enabled', true)) {
+            $modality = DoctorAvailabilityRule::normalizeModality(
+                $service
+                    ? $service->getConsultationTypeForDoctor($doctor->id)
+                    : ($request->consultation_type ?? null)
+            );
+        }
+
+        app(SlotAvailabilityService::class)->assertSlotBookable(
+            $doctor->id,
+            $dateStr,
+            $timeStr,
+            $service?->id,
+            null,
+            $modality
+        );
+
         $duration = $service ? (int) ($service->getDurationForDoctor($doctor->id) ?? 30) : 30;
         if ($duration <= 0) {
             $duration = 30;
@@ -1548,12 +1566,6 @@ class ClinicBookingService
         }
 
         // Confirm the requested modality is possible for this doctor and capture the rule.
-        $modality = DoctorAvailabilityRule::normalizeModality(
-            $service
-                ? $service->getConsultationTypeForDoctor($doctor->id)
-                : ($request->consultation_type ?? null)
-        );
-
         $dayName = strtolower($slotStart->format('l'));
         $rules = $doctor->availabilityRules()->active()->forDay($dayName)->get();
         if ($rules->isEmpty()) {

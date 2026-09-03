@@ -10,6 +10,7 @@ use App\Models\DoctorAvailabilityException;
 use App\Models\DoctorAvailabilityRule;
 use App\Models\PendingBooking;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class SlotAvailabilityService
 {
@@ -28,9 +29,10 @@ class SlotAvailabilityService
      * @param int|null $durationMinutes Override duration (minutes) if provided
      * @param string|null $modality Requested modality (in_person|online|telephone). When null and a
      *                              service is given, it is inferred from the service for this doctor.
+     * @param array{ignore_minimum_advance?: bool} $options
      * @return array
      */
-    public function getAvailableSlots($doctorId, $date, $serviceId = null, $durationMinutes = null, $modality = null)
+    public function getAvailableSlots($doctorId, $date, $serviceId = null, $durationMinutes = null, $modality = null, array $options = [])
     {
         $doctor = Doctor::findOrFail($doctorId);
         $dateObj = Carbon::parse($date);
@@ -102,6 +104,7 @@ class SlotAvailabilityService
 
         // Get blocked times (breaks within a session + partial day blocks)
         $blockedTimes = $this->getBlockedTimes($doctor, $dateObj);
+        $ignoreMinimumAdvance = (bool) ($options['ignore_minimum_advance'] ?? false);
 
         // Generate time slots for each session, keyed by start time so overlapping modality windows
         // union into a single slot carrying all valid modalities.
@@ -118,7 +121,7 @@ class SlotAvailabilityService
                 $key = $slotStart->format('H:i');
 
                 if (!isset($slotMap[$key])) {
-                    $free = $this->isSlotAvailable($slotStart, $slotEnd, $existingAppointments, $blockedTimes)
+                    $free = $this->isSlotAvailable($slotStart, $slotEnd, $existingAppointments, $blockedTimes, $ignoreMinimumAdvance)
                         && ($pendingBookings->isEmpty() || $this->isSlotFreeOfPending($slotStart, $slotEnd, $pendingBookings));
 
                     if ($free) {
@@ -189,6 +192,10 @@ class SlotAvailabilityService
      */
     private function getSessionsWithModality($doctor, string $dayName, bool $modalityEnabled): array
     {
+        if ($this->isWeeklyDayClosed($doctor, $dayName)) {
+            return [];
+        }
+
         if ($modalityEnabled) {
             $rules = $doctor->relationLoaded('availabilityRules')
                 ? $doctor->availabilityRules->where('is_active', true)->where('day_of_week', $dayName)
@@ -398,6 +405,68 @@ class SlotAvailabilityService
     }
 
     /**
+     * Whether a slot can be booked for this doctor (blocks, schedule, overlaps, modality).
+     */
+    public function isSlotBookable(
+        int $doctorId,
+        string $date,
+        string $time,
+        ?int $serviceId = null,
+        ?int $durationMinutes = null,
+        ?string $modality = null,
+        bool $ignoreMinimumAdvance = false
+    ): bool {
+        if ($this->isDateBlocked($doctorId, $date)) {
+            return false;
+        }
+
+        $normalizedTime = $this->normalizeSlotTime($time);
+        $slots = $this->getAvailableSlots(
+            $doctorId,
+            $date,
+            $serviceId,
+            $durationMinutes,
+            $modality,
+            ['ignore_minimum_advance' => $ignoreMinimumAdvance]
+        );
+
+        foreach ($slots as $slot) {
+            if ($this->normalizeSlotTime($slot['start'] ?? '') === $normalizedTime) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Reject booking when the doctor blocked the date/time or the slot is not in their schedule.
+     *
+     * @throws ValidationException
+     */
+    public function assertSlotBookable(
+        int $doctorId,
+        string $date,
+        string $time,
+        ?int $serviceId = null,
+        ?int $durationMinutes = null,
+        ?string $modality = null,
+        bool $ignoreMinimumAdvance = false
+    ): void {
+        if ($this->isDateBlocked($doctorId, $date)) {
+            throw ValidationException::withMessages([
+                'appointment_date' => ['This date is blocked and not available for bookings.'],
+            ]);
+        }
+
+        if (!$this->isSlotBookable($doctorId, $date, $time, $serviceId, $durationMinutes, $modality, $ignoreMinimumAdvance)) {
+            throw ValidationException::withMessages([
+                'appointment_time' => ['This time is not available. The doctor may have blocked this date or time, or the slot is already taken.'],
+            ]);
+        }
+    }
+
+    /**
      * Get blocked date exception for a specific date (if any).
      *
      * @param int $doctorId
@@ -594,13 +663,15 @@ class SlotAvailabilityService
      * @param array $blockedTimes
      * @return bool
      */
-    private function isSlotAvailable($slotStart, $slotEnd, $existingAppointments, $blockedTimes)
+    private function isSlotAvailable($slotStart, $slotEnd, $existingAppointments, $blockedTimes, bool $ignoreMinimumAdvance = false)
     {
         // Check if slot is at least 5 minutes in the future
         // Doctors can book appointments with only 5 minutes advance notice
-        $minimumAdvanceTime = Carbon::now()->addMinutes(5);
-        if ($slotStart->lte($minimumAdvanceTime)) {
-            return false;
+        if (!$ignoreMinimumAdvance) {
+            $minimumAdvanceTime = Carbon::now()->addMinutes(5);
+            if ($slotStart->lte($minimumAdvanceTime)) {
+                return false;
+            }
         }
 
         // Check if slot conflicts with existing appointments
@@ -713,5 +784,38 @@ class SlotAvailabilityService
         }
 
         return Carbon::parse($date)->toDateString();
+    }
+
+    private function isWeeklyDayClosed(Doctor $doctor, string $dayName): bool
+    {
+        $availability = $doctor->availability;
+        $hasSavedWeeklySchedule = is_array($availability) && count($availability) > 0;
+
+        if (!$availability || !isset($availability[$dayName])) {
+            return $hasSavedWeeklySchedule;
+        }
+
+        $dayAvailability = $availability[$dayName];
+        if (!is_array($dayAvailability)) {
+            return false;
+        }
+
+        if (!array_key_exists('available', $dayAvailability)) {
+            return false;
+        }
+
+        $flag = $dayAvailability['available'];
+
+        return $flag === false || $flag === 0 || $flag === '0' || $flag === '' || $flag === null;
+    }
+
+    private function normalizeSlotTime(string $time): string
+    {
+        $time = trim($time);
+        if ($time === '') {
+            return '';
+        }
+
+        return Carbon::parse($time)->format('H:i');
     }
 }

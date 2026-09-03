@@ -8,9 +8,11 @@ use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\Department;
 use App\Services\HospitalEmailNotificationService;
+use App\Services\SlotAvailabilityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 
 class AppointmentsController extends Controller
@@ -339,6 +341,20 @@ class AppointmentsController extends Controller
             return redirect()->back()
                 ->withErrors(['meeting_link' => 'Meeting link is required for online consultations.'])
                 ->withInput();
+        }
+
+        try {
+            app(SlotAvailabilityService::class)->assertSlotBookable(
+                (int) $request->doctor_id,
+                (string) $request->appointment_date,
+                (string) $request->appointment_time,
+                null,
+                30,
+                $consultationType,
+                ignoreMinimumAdvance: true
+            );
+        } catch (ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
         }
 
         $data = $request->except(['consultation_type', 'is_online']);
