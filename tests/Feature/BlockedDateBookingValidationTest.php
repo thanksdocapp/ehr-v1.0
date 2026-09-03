@@ -152,6 +152,68 @@ class BlockedDateBookingValidationTest extends TestCase
         $this->assertNotEmpty($clinicSlots);
     }
 
+    /** @test */
+    public function department_calendar_is_empty_when_all_doctors_blocked(): void
+    {
+        $department = \App\Models\Department::create([
+            'name' => 'Test Clinic',
+            'slug' => 'dept-blocked-' . uniqid(),
+            'description' => 'Test',
+        ]);
+
+        $doctorA = $this->makeDoctor('dept-a');
+        $doctorB = $this->makeDoctor('dept-b');
+        $doctorA->update(['department_id' => $department->id]);
+        $doctorB->update(['department_id' => $department->id]);
+
+        $date = $this->futureMonday();
+
+        $this->makeRule($doctorA, 'monday', DoctorAvailabilityRule::MODALITY_ALL);
+        $this->makeRule($doctorB, 'monday', DoctorAvailabilityRule::MODALITY_ALL);
+
+        foreach ([$doctorA, $doctorB] as $doctor) {
+            DoctorAvailabilityException::create([
+                'doctor_id' => $doctor->id,
+                'exception_date' => $date->toDateString(),
+                'type' => 'blocked',
+                'is_all_day' => true,
+            ]);
+        }
+
+        $this->assertTrue($this->slotService->isDepartmentFullyBlocked($department->id, $date->toDateString()));
+        $this->assertSame([], $this->slotService->getAvailableSlotsForDepartment($department->id, $date->toDateString()));
+    }
+
+    /** @test */
+    public function department_calendar_can_still_show_slots_when_one_doctor_is_blocked(): void
+    {
+        $department = \App\Models\Department::create([
+            'name' => 'Mixed Clinic',
+            'slug' => 'dept-mixed-' . uniqid(),
+            'description' => 'Test',
+        ]);
+
+        $blockedDoctor = $this->makeDoctor('blocked-one');
+        $workingDoctor = $this->makeDoctor('working-one');
+        $blockedDoctor->update(['department_id' => $department->id]);
+        $workingDoctor->update(['department_id' => $department->id]);
+
+        $date = $this->futureMonday();
+
+        $this->makeRule($blockedDoctor, 'monday', DoctorAvailabilityRule::MODALITY_ALL);
+        $this->makeRule($workingDoctor, 'monday', DoctorAvailabilityRule::MODALITY_ALL);
+
+        DoctorAvailabilityException::create([
+            'doctor_id' => $blockedDoctor->id,
+            'exception_date' => $date->toDateString(),
+            'type' => 'blocked',
+            'is_all_day' => true,
+        ]);
+
+        $this->assertFalse($this->slotService->isDepartmentFullyBlocked($department->id, $date->toDateString()));
+        $this->assertNotEmpty($this->slotService->getAvailableSlotsForDepartment($department->id, $date->toDateString()));
+    }
+
     private function futureMonday(): Carbon
     {
         return Carbon::now()->addWeek()->startOfWeek(Carbon::MONDAY);

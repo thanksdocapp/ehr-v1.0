@@ -1849,7 +1849,9 @@ class PublicBookingController extends Controller
 
         return response()->json([
             'slots' => $slots,
-            'date' => $request->date
+            'date' => $request->date,
+            'fully_blocked' => $this->slotAvailabilityService->isDepartmentFullyBlocked((int) $departmentId, (string) $request->date),
+            'has_availability' => count($slots) > 0,
         ]);
     }
 

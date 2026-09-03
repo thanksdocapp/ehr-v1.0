@@ -299,9 +299,13 @@ class SlotAvailabilityService
 
         // Collect all slots from all doctors (union). Each doctor already filters by the requested
         // modality (or the service's modality for that doctor), so the union shows a slot whenever
-        // ANY doctor can serve it — acceptance later re-validates against the accepting doctor.
+        // ANY unblocked doctor can serve it — acceptance later re-validates against the accepting doctor.
         $allSlots = [];
         foreach ($doctors as $doctor) {
+            if ($this->isDateBlocked($doctor->id, $date)) {
+                continue;
+            }
+
             if (!$serviceId || \App\Models\BookingService::find($serviceId)?->isAvailableForDoctor($doctor->id)) {
                 $doctorSlots = $this->getAvailableSlots($doctor->id, $date, $serviceId, $duration, $modality);
                 foreach ($doctorSlots as $slot) {
@@ -756,6 +760,26 @@ class SlotAvailabilityService
             }
         }
         return false;
+    }
+
+    /**
+     * Whether every active doctor in a department is fully blocked on a date.
+     */
+    public function isDepartmentFullyBlocked(int $departmentId, string $date): bool
+    {
+        $doctors = Doctor::byDepartment($departmentId)->active()->get();
+
+        if ($doctors->isEmpty()) {
+            return true;
+        }
+
+        foreach ($doctors as $doctor) {
+            if (!$this->isDateBlocked($doctor->id, $date)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -246,6 +246,8 @@
     .date-item { padding: 0.5rem 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; min-width: 90px; text-align: center; }
     .date-item:hover { border-color: var(--booking-primary, #007bff); }
     .date-item.selected { border-color: var(--booking-primary); background: var(--booking-primary); color: #fff; }
+    .date-item.pending { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; cursor: wait; }
+    .date-item.pending:hover { border-color: #e2e8f0; }
     .date-item.unavailable { background: #eef2f7; border-color: #d6dce5; color: #8a94a6; cursor: not-allowed; }
     .date-item.unavailable:hover { border-color: #d6dce5; }
     .calendar-legend { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
@@ -452,13 +454,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const day = dt.toLocaleDateString('en-GB', { weekday: 'short' });
             const date = dt.getDate();
             const isSelected = d === selectedDate;
-            const unavailable = Array.isArray(slotsByDate[d]) && slotsByDate[d].length === 0;
+            const slotState = slotsByDate[d];
+            const isLoaded = Array.isArray(slotState);
+            const unavailable = isLoaded && slotState.length === 0;
+            const pending = !isLoaded;
+            const pendingClass = pending ? ' pending' : '';
             const unavailableClass = unavailable ? ' unavailable' : '';
-            return `<div class="date-item ${isSelected ? 'selected' : ''}${unavailableClass}" data-date="${d}">${day}<br>${date}</div>`;
+            return `<div class="date-item ${isSelected ? 'selected' : ''}${pendingClass}${unavailableClass}" data-date="${d}">${day}<br>${date}</div>`;
         }).join('');
         dateDisplay.querySelectorAll('.date-item').forEach(el => {
             el.addEventListener('click', () => {
-                if (el.classList.contains('unavailable')) {
+                if (el.classList.contains('unavailable') || el.classList.contains('pending')) {
                     return;
                 }
                 selectedDate = el.dataset.date;
