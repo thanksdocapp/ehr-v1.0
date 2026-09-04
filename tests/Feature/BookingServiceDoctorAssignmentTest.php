@@ -37,6 +37,7 @@ class BookingServiceDoctorAssignmentTest extends TestCase
         ]);
 
         $request = Request::create('/', 'POST', [
+            'department_id' => (string) $department->id,
             'assigned_doctor_ids' => [(string) $colleague->id],
             'created_for_doctor_id' => (string) $primary->id,
             'default_consultation_type' => 'online',
@@ -155,6 +156,7 @@ class BookingServiceDoctorAssignmentTest extends TestCase
         ]);
 
         $request = Request::create('/', 'PUT', [
+            'department_id' => (string) $department->id,
             'assigned_doctor_ids' => [(string) $doctorA->id],
             'default_consultation_type' => 'in_person',
         ]);
@@ -169,6 +171,34 @@ class BookingServiceDoctorAssignmentTest extends TestCase
             'doctor_id' => $doctorB->id,
             'service_id' => $service->id,
         ]);
+    }
+
+    /** @test */
+    public function admin_assignment_only_lists_doctors_in_selected_department(): void
+    {
+        $departmentA = Department::create([
+            'name' => 'Clinic A',
+            'slug' => 'clinic-a-' . uniqid(),
+            'is_active' => true,
+        ]);
+        $departmentB = Department::create([
+            'name' => 'Clinic B',
+            'slug' => 'clinic-b-' . uniqid(),
+            'is_active' => true,
+        ]);
+
+        $doctorA = $this->makeDoctor('in-a', $departmentA);
+        $doctorB = $this->makeDoctor('in-b', $departmentB);
+
+        $service = app(BookingServiceDoctorAssignmentService::class);
+
+        $clinicADoctors = $service->doctorsForAdminAssignment($departmentA->id)->pluck('id')->all();
+        $clinicBDoctors = $service->doctorsForAdminAssignment($departmentB->id)->pluck('id')->all();
+
+        $this->assertContains($doctorA->id, $clinicADoctors);
+        $this->assertNotContains($doctorB->id, $clinicADoctors);
+        $this->assertContains($doctorB->id, $clinicBDoctors);
+        $this->assertNotContains($doctorA->id, $clinicBDoctors);
     }
 
     private function makeDoctor(string $suffix, Department $department): Doctor

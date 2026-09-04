@@ -124,6 +124,8 @@
                         </div>
 
                         @include('partials.booking-service-doctor-assignments', [
+                            'departments' => $departments,
+                            'selectedDepartmentId' => $selectedDepartmentId,
                             'assignableDoctors' => $assignableDoctors,
                             'assignedDoctorIds' => $assignedDoctorIds,
                             'lockedDoctorIds' => $lockedDoctorIds,

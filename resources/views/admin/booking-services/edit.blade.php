@@ -135,6 +135,8 @@
 
                         @include('partials.booking-service-doctor-assignments', [
                             'bookingService' => $bookingService,
+                            'departments' => $departments,
+                            'selectedDepartmentId' => $selectedDepartmentId,
                             'assignableDoctors' => $assignableDoctors,
                             'assignedDoctorIds' => $assignedDoctorIds,
                             'doctorAssignments' => $doctorAssignments,

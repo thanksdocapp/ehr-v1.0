@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BookingService;
+use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\DoctorServicePrice;
 use App\Services\BookingServiceDoctorAssignmentService;
@@ -56,15 +57,28 @@ class BookingServicesController extends Controller
     {
         $forDoctor = null;
         if ($request->filled('doctor_id')) {
-            $forDoctor = Doctor::find($request->integer('doctor_id'));
+            $forDoctor = Doctor::query()
+                ->with(['departments', 'department'])
+                ->find($request->integer('doctor_id'));
         }
 
-        $assignableDoctors = $this->doctorAssignmentService->doctorsForAdminAssignment();
+        $departments = $this->doctorAssignmentService->departmentsForAdminAssignment();
+        $selectedDepartmentId = $this->doctorAssignmentService->resolveAdminDepartmentId(
+            $request->filled('department_id') ? $request->integer('department_id') : null,
+            $forDoctor
+        );
+        if (old('department_id')) {
+            $selectedDepartmentId = (int) old('department_id');
+        }
+
+        $assignableDoctors = $this->doctorAssignmentService->doctorsForAdminAssignment($selectedDepartmentId);
         $assignedDoctorIds = $forDoctor ? [(int) $forDoctor->id] : [];
         $lockedDoctorIds = $forDoctor ? [(int) $forDoctor->id] : [];
 
         return view('admin.booking-services.create', compact(
             'forDoctor',
+            'departments',
+            'selectedDepartmentId',
             'assignableDoctors',
             'assignedDoctorIds',
             'lockedDoctorIds'
@@ -111,6 +125,7 @@ class BookingServicesController extends Controller
             'tags.*' => 'string|max:50',
             'is_active' => 'boolean',
             'created_for_doctor_id' => 'nullable|exists:doctors,id',
+            'department_id' => 'nullable|exists:departments,id',
             'assigned_doctor_ids' => 'nullable|array',
             'assigned_doctor_ids.*' => 'integer|exists:doctors,id',
         ]);
@@ -190,14 +205,26 @@ class BookingServicesController extends Controller
     /**
      * Show the form for editing the specified booking service.
      */
-    public function edit(BookingService $bookingService)
+    public function edit(Request $request, BookingService $bookingService)
     {
-        $assignableDoctors = $this->doctorAssignmentService->doctorsForAdminAssignment();
+        $departments = $this->doctorAssignmentService->departmentsForAdminAssignment();
+        $selectedDepartmentId = $this->doctorAssignmentService->resolveAdminDepartmentId(
+            $request->filled('department_id') ? $request->integer('department_id') : null,
+            null,
+            $bookingService
+        );
+        if (old('department_id')) {
+            $selectedDepartmentId = (int) old('department_id');
+        }
+
+        $assignableDoctors = $this->doctorAssignmentService->doctorsForAdminAssignment($selectedDepartmentId);
         $assignedDoctorIds = $this->doctorAssignmentService->assignedDoctorIds($bookingService);
         $doctorAssignments = $this->doctorAssignmentService->assignmentRowsForService($bookingService);
 
         return view('admin.booking-services.edit', compact(
             'bookingService',
+            'departments',
+            'selectedDepartmentId',
             'assignableDoctors',
             'assignedDoctorIds',
             'doctorAssignments'
@@ -220,6 +247,7 @@ class BookingServicesController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'is_active' => 'boolean',
+            'department_id' => 'nullable|exists:departments,id',
             'assigned_doctor_ids' => 'nullable|array',
             'assigned_doctor_ids.*' => 'integer|exists:doctors,id',
             'doctor_assignments' => 'nullable|array',
@@ -344,20 +372,28 @@ class BookingServicesController extends Controller
     /**
      * Show form to assign service to a doctor.
      */
-    public function assignDoctor(BookingService $bookingService)
+    public function assignDoctor(Request $request, BookingService $bookingService)
     {
-        $doctors = Doctor::where('is_active', true)
-            ->with('user')
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->get();
+        $departments = $this->doctorAssignmentService->departmentsForAdminAssignment();
+        $selectedDepartmentId = $this->doctorAssignmentService->resolveAdminDepartmentId(
+            $request->filled('department_id') ? $request->integer('department_id') : null,
+            null,
+            $bookingService
+        );
 
-        // Get doctors who already have this service
+        $doctors = $this->doctorAssignmentService->doctorsForAdminAssignment($selectedDepartmentId);
+
         $assignedDoctorIds = DoctorServicePrice::where('service_id', $bookingService->id)
             ->pluck('doctor_id')
             ->toArray();
 
-        return view('admin.booking-services.assign-doctor', compact('bookingService', 'doctors', 'assignedDoctorIds'));
+        return view('admin.booking-services.assign-doctor', compact(
+            'bookingService',
+            'departments',
+            'selectedDepartmentId',
+            'doctors',
+            'assignedDoctorIds'
+        ));
     }
 
     /**
@@ -366,6 +402,7 @@ class BookingServicesController extends Controller
     public function storeDoctorAssignment(Request $request, BookingService $bookingService)
     {
         $validator = Validator::make($request->all(), [
+            'department_id' => 'required|exists:departments,id',
             'doctor_id' => 'required|exists:doctors,id',
             'custom_price' => 'nullable|numeric|min:0',
             'custom_duration_minutes' => 'nullable|integer|min:5|max:480',
@@ -375,6 +412,19 @@ class BookingServicesController extends Controller
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
+        }
+
+        $departmentId = (int) $request->input('department_id');
+        $allowedDoctorIds = $this->doctorAssignmentService
+            ->doctorsForAdminAssignment($departmentId)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (! in_array((int) $request->doctor_id, $allowedDoctorIds, true)) {
+            return back()->withErrors([
+                'doctor_id' => 'The selected doctor is not in this clinic.',
+            ])->withInput();
         }
 
         try {

@@ -6,6 +6,8 @@
     $showPerDoctorSettings = (bool) ($showPerDoctorSettings ?? false);
     $assignmentMode = $assignmentMode ?? 'admin';
     $bookingService = $bookingService ?? null;
+    $departments = $departments ?? collect();
+    $selectedDepartmentId = old('department_id', $selectedDepartmentId ?? null);
     $assignmentGroups = app(\App\Services\BookingServiceDoctorAssignmentService::class)
         ->groupDoctorsByDepartment($assignableDoctors);
     $defaultConsultationType = old(
@@ -20,7 +22,9 @@
             <i class="fas fa-user-md me-2"></i>Assign to doctors
         </h6>
         <p class="small text-muted mb-0">
-            @if($showPerDoctorSettings)
+            @if($assignmentMode === 'admin')
+                Choose a clinic first, then select doctors in that clinic only.
+            @elseif($showPerDoctorSettings)
                 Choose which doctors offer this service. Only assigned doctors will show this service on public and clinic booking.
             @else
                 Select doctors now; they will use the service defaults above. You can customize each doctor after saving.
@@ -28,12 +32,37 @@
         </p>
     </div>
     <div class="card-body">
+        @if($assignmentMode === 'admin')
+            <div class="mb-3">
+                <label for="assignment_department_id" class="form-label fw-semibold">
+                    Clinic / department <span class="text-danger">*</span>
+                </label>
+                <select class="form-select @error('department_id') is-invalid @enderror"
+                        id="assignment_department_id"
+                        name="department_id"
+                        required
+                        onchange="window.location.href = buildAssignmentDepartmentUrl(this.value)">
+                    <option value="">Select a clinic...</option>
+                    @foreach($departments as $department)
+                        <option value="{{ $department->id }}" @selected((int) $selectedDepartmentId === (int) $department->id)>
+                            {{ $department->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('department_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        @endif
+
         @error('assigned_doctor_ids')
             <div class="alert alert-danger py-2">{{ $message }}</div>
         @enderror
 
-        @if(empty($assignmentGroups))
-            <p class="text-muted mb-0">No active doctors are available to assign.</p>
+        @if($assignmentMode === 'admin' && ! $selectedDepartmentId)
+            <p class="text-muted mb-0">Select a clinic to see its doctors.</p>
+        @elseif(empty($assignmentGroups))
+            <p class="text-muted mb-0">No active doctors are available in this clinic.</p>
         @else
             @foreach($assignmentGroups as $group)
                 <div class="mb-3">
@@ -149,6 +178,21 @@
         @endif
     </div>
 </div>
+
+@if($assignmentMode === 'admin')
+<script>
+function buildAssignmentDepartmentUrl(departmentId) {
+    const url = new URL(window.location.href);
+    if (departmentId) {
+        url.searchParams.set('department_id', departmentId);
+    } else {
+        url.searchParams.delete('department_id');
+    }
+
+    return url.toString();
+}
+</script>
+@endif
 
 @if($showPerDoctorSettings)
 <script>

@@ -17,6 +17,28 @@
                         @csrf
 
                         <div class="mb-3">
+                            <label for="department_id" class="form-label fw-semibold">Clinic / department <span class="text-danger">*</span></label>
+                            <select class="form-select @error('department_id') is-invalid @enderror"
+                                    id="department_id"
+                                    name="department_id"
+                                    required
+                                    onchange="window.location.href = buildAssignDoctorDepartmentUrl(this.value)">
+                                <option value="">Select a clinic...</option>
+                                @foreach($departments as $department)
+                                    <option value="{{ $department->id }}" @selected((int) ($selectedDepartmentId ?? 0) === (int) $department->id)>
+                                        {{ $department->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('department_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        @if(! $selectedDepartmentId)
+                            <p class="text-muted">Select a clinic to see its doctors.</p>
+                        @else
+                        <div class="mb-3">
                             <label for="doctor_id" class="form-label fw-semibold">Select Doctor <span class="text-danger">*</span></label>
                             <select class="form-select @error('doctor_id') is-invalid @enderror" 
                                     id="doctor_id" 
@@ -109,12 +131,13 @@
                                 </label>
                             </div>
                         </div>
+                        @endif
 
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{{ route('admin.booking-services.show', $bookingService) }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-times me-2"></i>Cancel
                             </a>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" @disabled(! $selectedDepartmentId)>
                                 <i class="fas fa-save me-2"></i>Assign Service
                             </button>
                         </div>
@@ -124,5 +147,18 @@
         </div>
     </div>
 </div>
+
+<script>
+function buildAssignDoctorDepartmentUrl(departmentId) {
+    const url = new URL(window.location.href);
+    if (departmentId) {
+        url.searchParams.set('department_id', departmentId);
+    } else {
+        url.searchParams.delete('department_id');
+    }
+
+    return url.toString();
+}
+</script>
 @endsection
 

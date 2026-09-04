@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BookingService;
+use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\DoctorServicePrice;
 use Illuminate\Http\Request;
@@ -12,18 +13,110 @@ use Illuminate\Validation\ValidationException;
 class BookingServiceDoctorAssignmentService
 {
     /**
-     * Active doctors available for admin assignment (all clinics).
+     * Active doctors in a clinic/department available for admin assignment.
      *
      * @return Collection<int, Doctor>
      */
-    public function doctorsForAdminAssignment(): Collection
+    public function doctorsForAdminAssignment(?int $departmentId = null): Collection
     {
+        if (! $departmentId || $departmentId <= 0) {
+            return collect();
+        }
+
         return Doctor::query()
+            ->byDepartment($departmentId)
             ->active()
             ->with(['departments', 'department'])
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
+    }
+
+    /**
+     * @return Collection<int, Department>
+     */
+    public function departmentsForAdminAssignment(): Collection
+    {
+        return Department::query()
+            ->active()
+            ->ordered()
+            ->get();
+    }
+
+    public function defaultDepartmentIdForDoctor(Doctor $doctor): ?int
+    {
+        $doctor->loadMissing(['departments', 'department']);
+
+        $primary = $doctor->departments->firstWhere(fn ($dept) => (bool) ($dept->pivot->is_primary ?? false));
+        if ($primary) {
+            return (int) $primary->id;
+        }
+
+        if ($doctor->departments->isNotEmpty()) {
+            return (int) $doctor->departments->first()->id;
+        }
+
+        return $doctor->department_id ? (int) $doctor->department_id : null;
+    }
+
+    public function inferDepartmentIdForService(BookingService $service): ?int
+    {
+        $assignedDoctorIds = $this->assignedDoctorIds($service);
+
+        if ($assignedDoctorIds !== []) {
+            $counts = [];
+
+            $doctors = Doctor::query()
+                ->whereIn('id', $assignedDoctorIds)
+                ->with(['departments', 'department'])
+                ->get();
+
+            foreach ($doctors as $doctor) {
+                foreach ($this->departmentIdsForDoctor($doctor) as $deptId) {
+                    $counts[$deptId] = ($counts[$deptId] ?? 0) + 1;
+                }
+            }
+
+            if ($counts !== []) {
+                arsort($counts);
+
+                return (int) array_key_first($counts);
+            }
+        }
+
+        $service->loadMissing('creator');
+
+        if ($service->created_by) {
+            $creatorDoctor = Doctor::query()
+                ->where('user_id', $service->created_by)
+                ->first();
+
+            if ($creatorDoctor) {
+                return $this->defaultDepartmentIdForDoctor($creatorDoctor);
+            }
+        }
+
+        return null;
+    }
+
+    public function resolveAdminDepartmentId(
+        ?int $requestDepartmentId,
+        ?Doctor $forDoctor = null,
+        ?BookingService $service = null
+    ): ?int {
+        if ($requestDepartmentId && $requestDepartmentId > 0) {
+            return $requestDepartmentId;
+        }
+
+        if ($forDoctor) {
+            return $this->defaultDepartmentIdForDoctor($forDoctor);
+        }
+
+        if ($service) {
+            return $this->inferDepartmentIdForService($service);
+        }
+
+        return null;
     }
 
     /**
@@ -173,6 +266,21 @@ class BookingServiceDoctorAssignmentService
      */
     public function syncFromAdminRequest(Request $request, BookingService $service): void
     {
+        $departmentId = (int) $request->input('department_id', 0);
+
+        if ($departmentId <= 0 && $request->filled('created_for_doctor_id')) {
+            $forDoctor = Doctor::query()->find($request->integer('created_for_doctor_id'));
+            if ($forDoctor) {
+                $departmentId = (int) ($this->defaultDepartmentIdForDoctor($forDoctor) ?? 0);
+            }
+        }
+
+        if ($departmentId <= 0) {
+            throw ValidationException::withMessages([
+                'department_id' => ['Select a clinic before assigning doctors.'],
+            ]);
+        }
+
         $selectedDoctorIds = $this->normalizeDoctorIds($request->input('assigned_doctor_ids', []));
         $requiredDoctorIds = [];
 
@@ -181,18 +289,68 @@ class BookingServiceDoctorAssignmentService
         }
 
         $perDoctorSettings = $this->parsePerDoctorSettingsFromRequest($request);
-        $allowedDoctorIds = $this->doctorsForAdminAssignment()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $allowedDoctorIds = $this->doctorsForAdminAssignment($departmentId)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
 
         $this->assertDoctorIdsAllowed($selectedDoctorIds, $allowedDoctorIds);
         $this->assertDoctorIdsAllowed($requiredDoctorIds, $allowedDoctorIds);
 
-        $this->syncAssignments(
-            $service,
-            $selectedDoctorIds,
-            $requiredDoctorIds,
-            $perDoctorSettings,
-            $request->input('default_consultation_type', $service->default_consultation_type)
-        );
+        $keepDoctorIds = array_values(array_unique(array_merge($selectedDoctorIds, $requiredDoctorIds)));
+
+        foreach ($keepDoctorIds as $doctorId) {
+            $settings = $perDoctorSettings[$doctorId] ?? $perDoctorSettings[(string) $doctorId] ?? [];
+
+            DoctorServicePrice::updateOrCreate(
+                [
+                    'doctor_id' => $doctorId,
+                    'service_id' => $service->id,
+                ],
+                $this->assignmentPayloadForDoctor($service, $settings, $request->input('default_consultation_type', $service->default_consultation_type))
+            );
+        }
+
+        DoctorServicePrice::query()
+            ->where('service_id', $service->id)
+            ->whereIn('doctor_id', $allowedDoctorIds)
+            ->whereNotIn('doctor_id', $keepDoctorIds)
+            ->delete();
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     * @return array<string, mixed>
+     */
+    private function assignmentPayloadForDoctor(
+        BookingService $service,
+        array $settings,
+        ?string $defaultConsultationType = null
+    ): array {
+        $consultationDefault = $defaultConsultationType
+            ?? $service->default_consultation_type
+            ?? 'in_person';
+
+        $customPrice = array_key_exists('custom_price', $settings)
+            ? $settings['custom_price']
+            : $service->default_price;
+
+        $customDuration = array_key_exists('custom_duration_minutes', $settings)
+            ? $settings['custom_duration_minutes']
+            : null;
+
+        if ($customDuration === '') {
+            $customDuration = null;
+        }
+
+        return [
+            'custom_price' => $customPrice,
+            'custom_duration_minutes' => $customDuration,
+            'consultation_type' => $settings['consultation_type'] ?? $consultationDefault,
+            'is_active' => array_key_exists('is_active', $settings)
+                ? (bool) $settings['is_active']
+                : true,
+        ];
     }
 
     /**
