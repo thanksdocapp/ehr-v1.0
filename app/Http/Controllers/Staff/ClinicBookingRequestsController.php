@@ -8,6 +8,7 @@ use App\Models\Doctor;
 use App\Services\ClinicBookingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class ClinicBookingRequestsController extends Controller
 {
@@ -39,7 +40,9 @@ class ClinicBookingRequestsController extends Controller
                 ->whereIn('department_id', $departmentIds)
                 ->orderBy('appointment_date')
                 ->orderBy('appointment_time')
-                ->get();
+                ->get()
+                ->filter(fn (ClinicBookingRequest $req) => $this->clinicBookingService->canDoctorAcceptClinicRequest($doctor, $req))
+                ->values();
         }
 
         return view('staff.clinic-booking-requests.index', [
@@ -68,12 +71,18 @@ class ClinicBookingRequestsController extends Controller
             return redirect()->back()->with('error', 'You cannot accept bookings from this clinic.');
         }
 
+        if (! $this->clinicBookingService->canDoctorAcceptClinicRequest($doctor, $clinicBookingRequest)) {
+            return redirect()->back()->with('error', 'You are not available at this date and time.');
+        }
+
         try {
             $appointment = $this->clinicBookingService->acceptRequest($clinicBookingRequest, $doctor, $user->id);
             return redirect()->route('staff.appointments.show', $appointment)
                 ->with('success', 'Booking accepted! The patient has been added to your schedule.');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
+        } catch (ValidationException $e) {
+            return redirect()->back()->with('error', collect($e->errors())->flatten()->first() ?: 'You are not available at this date and time.');
         } catch (\Exception $e) {
             \Log::error('Clinic booking accept failed', ['error' => $e->getMessage()]);
             return redirect()->back()->with('error', 'Failed to accept booking. Please try again.');

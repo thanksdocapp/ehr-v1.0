@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -251,6 +252,10 @@ class ClinicBookingRequestsController extends Controller
             return redirect()->back()->with('error', 'The selected doctor does not offer this booking service.');
         }
 
+        if (! $this->clinicBookingService->canDoctorAcceptClinicRequest($doctor, $clinicBookingRequest)) {
+            return redirect()->back()->with('error', 'The selected doctor is not available at this date and time.');
+        }
+
         try {
             $appointment = $this->clinicBookingService->acceptRequest($clinicBookingRequest, $doctor, Auth::id());
             $doctorLabel = $doctor->user->name ?? trim($doctor->first_name.' '.$doctor->last_name);
@@ -259,6 +264,8 @@ class ClinicBookingRequestsController extends Controller
                 ->with('success', 'Booking accepted. Appointment created for '.$doctorLabel.'.');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
+        } catch (ValidationException $e) {
+            return redirect()->back()->with('error', collect($e->errors())->flatten()->first() ?: 'The selected doctor is not available at this date and time.');
         } catch (\Exception $e) {
             \Log::error('Admin clinic booking accept failed', ['error' => $e->getMessage()]);
 

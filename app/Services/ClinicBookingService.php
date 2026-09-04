@@ -65,6 +65,7 @@ class ClinicBookingService
     public function createPendingFromClinicBooking(array $data): array
     {
         $data = array_merge($data, normalize_public_booking_address_fields($data));
+        $this->assertClinicSlotHasEligibleDoctor($data);
 
         $pricing = DB::transaction(function () use ($data) {
             $departmentId = $data['department_id'];
@@ -373,7 +374,25 @@ class ClinicBookingService
         }
 
         $departmentId = (int) $pcb->department_id;
-        $doctor = $this->defaultDoctorForDepartment($departmentId);
+        $dateStr = $pcb->appointment_date instanceof \DateTimeInterface
+            ? $pcb->appointment_date->format('Y-m-d')
+            : (string) ($pcb->appointment_date ?? '');
+        $timeStr = $pcb->appointment_time instanceof \DateTimeInterface
+            ? $pcb->appointment_time->format('H:i:s')
+            : (string) ($pcb->appointment_time ?? '');
+
+        $doctor = ($dateStr !== '' && $timeStr !== '')
+            ? $this->resolveDoctorForClinicSlot(
+                $departmentId,
+                $dateStr,
+                $timeStr,
+                $pcb->service_id ? (int) $pcb->service_id : null,
+                $pcb->consultation_type ?? null
+            )
+            : null;
+        if (! $doctor) {
+            $doctor = $this->defaultDoctorForDepartment($departmentId);
+        }
         $changed = false;
 
         $patient = $invoice->patient;
@@ -637,6 +656,118 @@ class ClinicBookingService
     }
 
     /**
+     * Whether this doctor can accept a clinic request at its date/time (respects blocked dates).
+     */
+    public function canDoctorAcceptClinicRequest(Doctor $doctor, ClinicBookingRequest $request): bool
+    {
+        $dateStr = $request->appointment_date instanceof \DateTimeInterface
+            ? $request->appointment_date->format('Y-m-d')
+            : (string) $request->appointment_date;
+        $timeStr = $request->appointment_time instanceof \DateTimeInterface
+            ? $request->appointment_time->format('H:i:s')
+            : (string) $request->appointment_time;
+
+        $service = $request->service;
+        $duration = null;
+        $modality = $request->consultation_type;
+
+        if ($service) {
+            $duration = (int) ($service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 30);
+            if (config('booking.modality_rules_enabled', true)
+                && !(method_exists($service, 'isNonConsultation') && $service->isNonConsultation())) {
+                $modality = DoctorAvailabilityRule::normalizeModality(
+                    $service->getConsultationTypeForDoctor($doctor->id)
+                );
+            }
+        }
+
+        return app(SlotAvailabilityService::class)->isSlotBookable(
+            $doctor->id,
+            $dateStr,
+            $timeStr,
+            $request->service_id,
+            $duration,
+            $modality
+        );
+    }
+
+    /**
+     * Pick the best doctor to auto-accept a clinic slot: primary if bookable, else first bookable doctor.
+     */
+    public function resolveDoctorForClinicSlot(
+        int $departmentId,
+        string $date,
+        string $time,
+        ?int $serviceId = null,
+        ?string $consultationType = null
+    ): ?Doctor {
+        if ($departmentId <= 0) {
+            return null;
+        }
+
+        $service = $serviceId ? BookingService::find($serviceId) : null;
+
+        $available = app(SlotAvailabilityService::class)->doctorsAvailableForClinicSlot(
+            $departmentId,
+            $date,
+            $time,
+            $service,
+            $consultationType
+        );
+
+        if ($available->isEmpty()) {
+            return null;
+        }
+
+        if ($available->count() === 1) {
+            return $available->first();
+        }
+
+        $primary = Doctor::query()
+            ->whereIn('id', $available->pluck('id'))
+            ->byDepartment($departmentId)
+            ->active()
+            ->whereHas('departments', function ($q) use ($departmentId) {
+                $q->where('departments.id', $departmentId)
+                    ->where('doctor_department.is_primary', true);
+            })
+            ->orderBy('id')
+            ->first();
+
+        return $primary ?? $available->sortBy('id')->first();
+    }
+
+    /**
+     * Reject clinic bookings when no doctor in the department can take the slot.
+     *
+     * @throws ValidationException
+     */
+    public function assertClinicSlotHasEligibleDoctor(array $data): void
+    {
+        $departmentId = (int) ($data['department_id'] ?? 0);
+        $date = (string) ($data['appointment_date'] ?? '');
+        $time = (string) ($data['appointment_time'] ?? '');
+
+        if ($departmentId <= 0 || $date === '' || $time === '') {
+            return;
+        }
+
+        $doctor = $this->resolveDoctorForClinicSlot(
+            $departmentId,
+            $date,
+            $time,
+            isset($data['service_id']) ? (int) $data['service_id'] : null,
+            $data['consultation_type'] ?? null
+        );
+
+        if ($doctor === null) {
+            throw ValidationException::withMessages([
+                'appointment_time' => ['This time is no longer available. Please choose another date or time.'],
+            ]);
+        }
+    }
+
+    /**
      * Backfill accepted bookings (and paid pending) with clinic + default doctor from checkout capture.
      *
      * @return array{updated: int, skipped: int, failed: int}
@@ -730,8 +861,21 @@ class ClinicBookingService
         }
 
         $doctor = $request->resolvedDoctor();
-        if (! $doctor) {
-            $doctor = $this->defaultDoctorForDepartment($departmentId);
+        if (! $doctor || ! $this->canDoctorAcceptClinicRequest($doctor, $request)) {
+            $dateStr = $request->appointment_date instanceof \DateTimeInterface
+                ? $request->appointment_date->format('Y-m-d')
+                : (string) $request->appointment_date;
+            $timeStr = $request->appointment_time instanceof \DateTimeInterface
+                ? $request->appointment_time->format('H:i:s')
+                : (string) $request->appointment_time;
+
+            $doctor = $this->resolveDoctorForClinicSlot(
+                $departmentId,
+                $dateStr,
+                $timeStr,
+                $request->service_id ? (int) $request->service_id : null,
+                $request->consultation_type
+            );
         }
 
         if (! $doctor) {
@@ -747,7 +891,36 @@ class ClinicBookingService
 
                     return true;
                 } catch (\Throwable $e) {
-                    Log::warning('Clinic booking auto-accept during assign failed; setting doctor on request', [
+                    $dateStr = $request->appointment_date instanceof \DateTimeInterface
+                        ? $request->appointment_date->format('Y-m-d')
+                        : (string) $request->appointment_date;
+                    $timeStr = $request->appointment_time instanceof \DateTimeInterface
+                        ? $request->appointment_time->format('H:i:s')
+                        : (string) $request->appointment_time;
+
+                    $alternate = $this->resolveDoctorForClinicSlot(
+                        $departmentId,
+                        $dateStr,
+                        $timeStr,
+                        $request->service_id ? (int) $request->service_id : null,
+                        $request->consultation_type
+                    );
+
+                    if ($alternate && (int) $alternate->id !== (int) $doctor->id) {
+                        try {
+                            $this->acceptRequest($request, $alternate, $alternate->user_id, true);
+
+                            return true;
+                        } catch (\Throwable $inner) {
+                            Log::warning('Clinic booking auto-accept alternate doctor failed', [
+                                'clinic_booking_request_id' => $request->id,
+                                'doctor_id' => $alternate->id,
+                                'error' => $inner->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    Log::warning('Clinic booking auto-accept during assign failed', [
                         'clinic_booking_request_id' => $request->id,
                         'doctor_id' => $doctor->id,
                         'error' => $e->getMessage(),
@@ -755,7 +928,7 @@ class ClinicBookingService
                 }
             }
 
-            if (! $request->doctor_id) {
+            if (! $request->doctor_id && $this->canDoctorAcceptClinicRequest($doctor, $request)) {
                 $request->update(['doctor_id' => $doctor->id]);
                 $request->refresh();
 
@@ -768,7 +941,7 @@ class ClinicBookingService
         if (! $request->department_id) {
             $requestUpdates['department_id'] = $departmentId;
         }
-        if (! $request->doctor_id) {
+        if (! $request->doctor_id && $this->canDoctorAcceptClinicRequest($doctor, $request)) {
             $requestUpdates['doctor_id'] = $doctor->id;
         }
         if ($requestUpdates !== []) {
@@ -1121,6 +1294,8 @@ class ClinicBookingService
      */
     public function createFromClinicBooking(array $data, bool $deferAutoAccept = true): ClinicBookingRequest
     {
+        $this->assertClinicSlotHasEligibleDoctor($data);
+
         [$request, $defaultDoctor] = DB::transaction(function () use ($data) {
             $departmentId = $data['department_id'];
             $service = BookingService::find($data['service_id'] ?? null);
@@ -1167,7 +1342,13 @@ class ClinicBookingService
                 'created_from' => 'Public Clinic Booking',
             ]);
 
-            $defaultDoctor = $this->defaultDoctorForDepartment($departmentId);
+            $defaultDoctor = $this->resolveDoctorForClinicSlot(
+                $departmentId,
+                (string) $data['appointment_date'],
+                (string) $data['appointment_time'],
+                $service?->id,
+                $data['consultation_type'] ?? null
+            );
             if (! $defaultDoctor) {
                 $this->notifyDoctorsOfNewRequest($request);
             }
@@ -1208,22 +1389,60 @@ class ClinicBookingService
     public function runDeferredAutoAccept(int $requestId, int $doctorId, ?int $acceptedByUserId): void
     {
         $request = ClinicBookingRequest::query()->find($requestId);
-        $doctor = Doctor::query()->find($doctorId);
-        if (! $request || ! $doctor || $request->status !== 'pending_acceptance') {
+        if (! $request || $request->status !== 'pending_acceptance') {
             return;
         }
 
-        try {
-            $this->acceptRequest($request, $doctor, $acceptedByUserId, true);
-        } catch (\Throwable $e) {
-            Log::error('Clinic booking auto-accept failed; falling back to manual acceptance flow', [
-                'clinic_booking_request_id' => $requestId,
-                'doctor_id' => $doctorId,
-                'error' => $e->getMessage(),
-            ]);
+        $doctor = Doctor::query()->find($doctorId);
+        if ($doctor && $this->canDoctorAcceptClinicRequest($doctor, $request)) {
+            try {
+                $this->acceptRequest($request, $doctor, $acceptedByUserId, true);
 
-            $this->runDeferredClinicDoctorNotifications($requestId);
+                return;
+            } catch (\Throwable $e) {
+                Log::error('Clinic booking auto-accept failed for resolved doctor', [
+                    'clinic_booking_request_id' => $requestId,
+                    'doctor_id' => $doctorId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
+
+        $dateStr = $request->appointment_date instanceof \DateTimeInterface
+            ? $request->appointment_date->format('Y-m-d')
+            : (string) $request->appointment_date;
+        $timeStr = $request->appointment_time instanceof \DateTimeInterface
+            ? $request->appointment_time->format('H:i:s')
+            : (string) $request->appointment_time;
+
+        $alternate = $this->resolveDoctorForClinicSlot(
+            (int) $request->department_id,
+            $dateStr,
+            $timeStr,
+            $request->service_id ? (int) $request->service_id : null,
+            $request->consultation_type
+        );
+
+        if ($alternate && (! $doctor || (int) $alternate->id !== (int) $doctor->id)) {
+            try {
+                $this->acceptRequest($request, $alternate, $alternate->user_id, true);
+
+                return;
+            } catch (\Throwable $e) {
+                Log::error('Clinic booking auto-accept failed for alternate doctor', [
+                    'clinic_booking_request_id' => $requestId,
+                    'doctor_id' => $alternate->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        Log::error('Clinic booking auto-accept failed; falling back to manual acceptance flow', [
+            'clinic_booking_request_id' => $requestId,
+            'doctor_id' => $doctorId,
+        ]);
+
+        $this->runDeferredClinicDoctorNotifications($requestId);
     }
 
     /**
@@ -1605,6 +1824,10 @@ class ClinicBookingService
 
         $doctors = Doctor::byDepartment($request->department_id)->active()->get();
         foreach ($doctors as $doctor) {
+            if (! $this->canDoctorAcceptClinicRequest($doctor, $request)) {
+                continue;
+            }
+
             if ($doctor->user_id) {
                 \App\Models\UserNotification::create([
                     'user_id' => $doctor->user_id,

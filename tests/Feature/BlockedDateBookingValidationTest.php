@@ -214,6 +214,93 @@ class BlockedDateBookingValidationTest extends TestCase
         $this->assertNotEmpty($this->slotService->getAvailableSlotsForDepartment($department->id, $date->toDateString()));
     }
 
+    /** @test */
+    public function resolve_doctor_for_clinic_slot_skips_blocked_primary_doctor(): void
+    {
+        $department = \App\Models\Department::create([
+            'name' => 'Routing Clinic',
+            'slug' => 'route-clinic-' . uniqid(),
+            'description' => 'Test',
+        ]);
+
+        $blockedPrimary = $this->makeDoctor('primary-blocked');
+        $workingDoctor = $this->makeDoctor('working-alt');
+        $blockedPrimary->update(['department_id' => $department->id, 'is_active' => true]);
+        $workingDoctor->update(['department_id' => $department->id, 'is_active' => true]);
+
+        $blockedPrimary->departments()->sync([
+            $department->id => ['is_primary' => true],
+        ]);
+        $workingDoctor->departments()->sync([
+            $department->id => ['is_primary' => false],
+        ]);
+
+        $date = $this->futureMonday();
+
+        $this->makeRule($blockedPrimary, 'monday', DoctorAvailabilityRule::MODALITY_ALL);
+        $this->makeRule($workingDoctor, 'monday', DoctorAvailabilityRule::MODALITY_ALL);
+
+        DoctorAvailabilityException::create([
+            'doctor_id' => $blockedPrimary->id,
+            'exception_date' => $date->toDateString(),
+            'type' => 'blocked',
+            'is_all_day' => true,
+        ]);
+
+        $clinicService = app(\App\Services\ClinicBookingService::class);
+
+        $resolved = $clinicService->resolveDoctorForClinicSlot(
+            $department->id,
+            $date->toDateString(),
+            '10:00'
+        );
+
+        $this->assertNotNull($resolved);
+        $this->assertSame($workingDoctor->id, $resolved->id);
+        $this->assertFalse($clinicService->canDoctorAcceptClinicRequest($blockedPrimary, new \App\Models\ClinicBookingRequest([
+            'department_id' => $department->id,
+            'appointment_date' => $date->toDateString(),
+            'appointment_time' => '10:00:00',
+            'consultation_type' => 'in_person',
+        ])));
+    }
+
+    /** @test */
+    public function doctors_available_for_clinic_slot_excludes_blocked_doctor(): void
+    {
+        $department = \App\Models\Department::create([
+            'name' => 'Available Clinic',
+            'slug' => 'avail-clinic-' . uniqid(),
+            'description' => 'Test',
+        ]);
+
+        $blockedDoctor = $this->makeDoctor('blocked-available');
+        $workingDoctor = $this->makeDoctor('working-available');
+        $blockedDoctor->update(['department_id' => $department->id]);
+        $workingDoctor->update(['department_id' => $department->id]);
+
+        $date = $this->futureMonday();
+
+        $this->makeRule($blockedDoctor, 'monday', DoctorAvailabilityRule::MODALITY_ALL);
+        $this->makeRule($workingDoctor, 'monday', DoctorAvailabilityRule::MODALITY_ALL);
+
+        DoctorAvailabilityException::create([
+            'doctor_id' => $blockedDoctor->id,
+            'exception_date' => $date->toDateString(),
+            'type' => 'blocked',
+            'is_all_day' => true,
+        ]);
+
+        $available = $this->slotService->doctorsAvailableForClinicSlot(
+            $department->id,
+            $date->toDateString(),
+            '10:00'
+        );
+
+        $this->assertCount(1, $available);
+        $this->assertSame($workingDoctor->id, $available->first()->id);
+    }
+
     private function futureMonday(): Carbon
     {
         return Carbon::now()->addWeek()->startOfWeek(Carbon::MONDAY);

@@ -783,6 +783,49 @@ class SlotAvailabilityService
     }
 
     /**
+     * Active doctors in a department who can accept a clinic slot (not blocked, in schedule, free).
+     *
+     * @return \Illuminate\Support\Collection<int, Doctor>
+     */
+    public function doctorsAvailableForClinicSlot(
+        int $departmentId,
+        string $date,
+        string $time,
+        ?BookingService $service = null,
+        ?string $consultationType = null
+    ): \Illuminate\Support\Collection {
+        $doctors = Doctor::byDepartment($departmentId)->active()->get();
+
+        return $doctors->filter(function (Doctor $doctor) use ($date, $time, $service, $consultationType) {
+            if ($service && ! $service->isAvailableForDoctor($doctor->id)) {
+                return false;
+            }
+
+            $duration = null;
+            $modality = $consultationType;
+
+            if ($service) {
+                $duration = (int) ($service->getDurationForDoctor($doctor->id) ?? $service->default_duration_minutes ?? 30);
+                if (config('booking.modality_rules_enabled', true)
+                    && ! (method_exists($service, 'isNonConsultation') && $service->isNonConsultation())) {
+                    $modality = DoctorAvailabilityRule::normalizeModality(
+                        $service->getConsultationTypeForDoctor($doctor->id)
+                    );
+                }
+            }
+
+            return $this->isSlotBookable(
+                $doctor->id,
+                $date,
+                $time,
+                $service?->id,
+                $duration,
+                $modality
+            );
+        })->values();
+    }
+
+    /**
      * Get blocked dates for a doctor within a date range.
      *
      * @param int $doctorId
