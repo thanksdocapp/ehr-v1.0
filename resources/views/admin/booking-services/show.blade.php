@@ -10,8 +10,8 @@
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h4 class="mb-0 fw-bold">Service Details</h4>
                     <div>
-                        <a href="{{ route('admin.booking-services.assign-doctor', $bookingService) }}" class="btn btn-success me-2">
-                            <i class="fas fa-user-plus me-2"></i>Assign to Doctor
+                        <a href="{{ route('admin.booking-services.assign-doctor', $bookingService) }}" class="btn btn-outline-success me-2">
+                            <i class="fas fa-user-plus me-2"></i>Assign one doctor
                         </a>
                         <a href="{{ route('admin.booking-services.edit', $bookingService) }}" class="btn btn-primary me-2">
                             <i class="fas fa-edit me-2"></i>Edit

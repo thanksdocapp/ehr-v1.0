@@ -123,6 +123,14 @@
                             </div>
                         </div>
 
+                        @include('partials.booking-service-doctor-assignments', [
+                            'assignableDoctors' => $assignableDoctors,
+                            'assignedDoctorIds' => $assignedDoctorIds,
+                            'lockedDoctorIds' => $lockedDoctorIds,
+                            'showPerDoctorSettings' => false,
+                            'assignmentMode' => 'admin',
+                        ])
+
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{{ !empty($forDoctor) ? route('admin.doctors.show', $forDoctor) : route('admin.booking-services.index') }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-2"></i>Cancel

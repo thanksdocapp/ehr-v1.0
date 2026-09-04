@@ -10,15 +10,17 @@ use App\Models\Billing;
 use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\Department;
+use App\Services\BookingServiceDoctorAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 
 class DoctorServicesController extends Controller
 {
-    public function __construct()
+    public function __construct(protected BookingServiceDoctorAssignmentService $doctorAssignmentService)
     {
         $this->middleware('auth');
     }
@@ -180,7 +182,20 @@ class DoctorServicesController extends Controller
             'service_id' => $bookingService->id,
         ]);
 
-        return view('staff.doctor-services.edit', compact('bookingService', 'doctor', 'override'));
+        $assignableDoctors = $this->doctorAssignmentService->doctorsForStaffAssignment($doctor);
+        $assignedDoctorIds = $this->doctorAssignmentService->assignedDoctorIds($bookingService);
+        $doctorAssignments = $this->doctorAssignmentService->assignmentRowsForService($bookingService);
+        $lockedDoctorIds = [(int) $doctor->id];
+
+        return view('staff.doctor-services.edit', compact(
+            'bookingService',
+            'doctor',
+            'override',
+            'assignableDoctors',
+            'assignedDoctorIds',
+            'doctorAssignments',
+            'lockedDoctorIds'
+        ));
     }
 
     /**
@@ -204,6 +219,9 @@ class DoctorServicesController extends Controller
             'consultation_type' => ['nullable', Rule::requiredIf(! $request->boolean('is_non_consultation')), 'in:in_person,online,telephone'],
             'is_non_consultation' => 'boolean',
             'is_active' => 'boolean',
+            'assigned_doctor_ids' => 'nullable|array',
+            'assigned_doctor_ids.*' => 'integer|exists:doctors,id',
+            'doctor_assignments' => 'nullable|array',
         ]);
         if ($request->boolean('under_18_only') && $request->boolean('adults_only')) {
             return back()->withErrors(['age_restriction' => 'Choose only one age option, or leave both unchecked for any age.'])->withInput();
@@ -234,19 +252,15 @@ class DoctorServicesController extends Controller
                 'is_active' => $isActive,
             ]);
 
-            // Update or create doctor service override (duration used by SlotAvailabilityService for scheduling)
-            DoctorServicePrice::updateOrCreate(
-                [
-                    'doctor_id' => $doctor->id,
-                    'service_id' => $bookingService->id,
-                ],
-                [
-                    'custom_price' => $newDefaultPrice,
-                    'custom_duration_minutes' => $duration,
-                    'consultation_type' => $request->boolean('is_non_consultation') ? 'in_person' : ($request->consultation_type ?? 'in_person'),
-                    'is_active' => $isActive,
-                ]
-            );
+            try {
+                $this->doctorAssignmentService->syncFromStaffRequest(
+                    $request,
+                    $bookingService->fresh(),
+                    $doctor
+                );
+            } catch (ValidationException $e) {
+                return back()->withErrors($e->errors())->withInput();
+            }
 
             return redirect()->route('staff.doctor-services.index')
                 ->with('success', 'Service settings updated successfully.');

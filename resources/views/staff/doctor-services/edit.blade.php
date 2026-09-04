@@ -156,6 +156,23 @@
                             </div>
                         </div>
 
+                        @if($assignableDoctors->count() > 1)
+                            @include('partials.booking-service-doctor-assignments', [
+                                'bookingService' => $bookingService,
+                                'assignableDoctors' => $assignableDoctors,
+                                'assignedDoctorIds' => $assignedDoctorIds,
+                                'doctorAssignments' => $doctorAssignments,
+                                'lockedDoctorIds' => $lockedDoctorIds,
+                                'showPerDoctorSettings' => true,
+                                'assignmentMode' => 'staff',
+                            ])
+                        @else
+                            <div class="alert alert-light border mb-4">
+                                <i class="fas fa-user-check me-2 text-success"></i>
+                                You are assigned to this service. Colleague assignment is available when your clinic has more than one doctor.
+                            </div>
+                        @endif
+
                         <div class="d-flex justify-content-between align-items-center pt-3 border-top">
                             <a href="{{ route('staff.doctor-services.index') }}" class="btn btn-outline-secondary">
                                 Cancel

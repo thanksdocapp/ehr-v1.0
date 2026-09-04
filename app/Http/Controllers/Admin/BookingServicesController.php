@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\BookingService;
 use App\Models\Doctor;
 use App\Models\DoctorServicePrice;
+use App\Services\BookingServiceDoctorAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class BookingServicesController extends Controller
 {
+    public function __construct(protected BookingServiceDoctorAssignmentService $doctorAssignmentService) {}
     /**
      * Display a listing of booking services.
      */
@@ -56,7 +59,16 @@ class BookingServicesController extends Controller
             $forDoctor = Doctor::find($request->integer('doctor_id'));
         }
 
-        return view('admin.booking-services.create', compact('forDoctor'));
+        $assignableDoctors = $this->doctorAssignmentService->doctorsForAdminAssignment();
+        $assignedDoctorIds = $forDoctor ? [(int) $forDoctor->id] : [];
+        $lockedDoctorIds = $forDoctor ? [(int) $forDoctor->id] : [];
+
+        return view('admin.booking-services.create', compact(
+            'forDoctor',
+            'assignableDoctors',
+            'assignedDoctorIds',
+            'lockedDoctorIds'
+        ));
     }
 
     /**
@@ -99,6 +111,8 @@ class BookingServicesController extends Controller
             'tags.*' => 'string|max:50',
             'is_active' => 'boolean',
             'created_for_doctor_id' => 'nullable|exists:doctors,id',
+            'assigned_doctor_ids' => 'nullable|array',
+            'assigned_doctor_ids.*' => 'integer|exists:doctors,id',
         ]);
 
         if ($validator->fails()) {
@@ -141,22 +155,15 @@ class BookingServicesController extends Controller
             'is_active' => $request->has('is_active') ? true : false,
         ]);
 
-        if ($forDoctorId) {
-            DoctorServicePrice::firstOrCreate(
-                [
-                    'doctor_id' => (int) $forDoctorId,
-                    'service_id' => $service->id,
-                ],
-                [
-                    'custom_price' => $service->default_price,
-                    'custom_duration_minutes' => $service->default_duration_minutes,
-                    'consultation_type' => $defaultConsultationType,
-                    'is_active' => true,
-                ]
-            );
+        try {
+            $this->doctorAssignmentService->syncFromAdminRequest($request, $service);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
 
+        if ($forDoctorId) {
             return redirect()->route('admin.doctors.show', ['doctor' => $forDoctorId])
-                ->with('success', 'Booking service created and linked to this doctor.');
+                ->with('success', 'Booking service created and linked to the selected doctor(s).');
         }
 
         return redirect()->route('admin.booking-services.index')
@@ -185,7 +192,16 @@ class BookingServicesController extends Controller
      */
     public function edit(BookingService $bookingService)
     {
-        return view('admin.booking-services.edit', compact('bookingService'));
+        $assignableDoctors = $this->doctorAssignmentService->doctorsForAdminAssignment();
+        $assignedDoctorIds = $this->doctorAssignmentService->assignedDoctorIds($bookingService);
+        $doctorAssignments = $this->doctorAssignmentService->assignmentRowsForService($bookingService);
+
+        return view('admin.booking-services.edit', compact(
+            'bookingService',
+            'assignableDoctors',
+            'assignedDoctorIds',
+            'doctorAssignments'
+        ));
     }
 
     /**
@@ -204,6 +220,9 @@ class BookingServicesController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'is_active' => 'boolean',
+            'assigned_doctor_ids' => 'nullable|array',
+            'assigned_doctor_ids.*' => 'integer|exists:doctors,id',
+            'doctor_assignments' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -235,6 +254,12 @@ class BookingServicesController extends Controller
             'tags' => $request->tags ?? [],
             'is_active' => $request->has('is_active') ? true : false,
         ]);
+
+        try {
+            $this->doctorAssignmentService->syncFromAdminRequest($request, $bookingService->fresh());
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
 
         $successParts = ['Booking service updated.'];
         $priceUpdated = 0;
