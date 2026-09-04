@@ -306,19 +306,27 @@ class SlotAvailabilityService
                 continue;
             }
 
-            if (!$serviceId || \App\Models\BookingService::find($serviceId)?->isAvailableForDoctor($doctor->id)) {
+            if (! $serviceId) {
                 $doctorSlots = $this->getAvailableSlots($doctor->id, $date, $serviceId, $duration, $modality);
-                foreach ($doctorSlots as $slot) {
-                    $key = $slot['start'];
-                    if (!isset($allSlots[$key])) {
-                        $allSlots[$key] = $slot;
-                    } else {
-                        // Merge the modality sets across doctors for accurate display.
-                        $allSlots[$key]['modalities'] = array_values(array_unique(array_merge(
-                            $allSlots[$key]['modalities'] ?? [],
-                            $slot['modalities'] ?? []
-                        )));
-                    }
+            } else {
+                $service = BookingService::find($serviceId);
+                if (! $service || ! $service->isOfferedByDoctor($doctor->id)) {
+                    continue;
+                }
+
+                $doctorSlots = $this->getAvailableSlots($doctor->id, $date, $serviceId, $duration, $modality);
+            }
+
+            foreach ($doctorSlots as $slot) {
+                $key = $slot['start'];
+                if (!isset($allSlots[$key])) {
+                    $allSlots[$key] = $slot;
+                } else {
+                    // Merge the modality sets across doctors for accurate display.
+                    $allSlots[$key]['modalities'] = array_values(array_unique(array_merge(
+                        $allSlots[$key]['modalities'] ?? [],
+                        $slot['modalities'] ?? []
+                    )));
                 }
             }
         }
@@ -797,7 +805,7 @@ class SlotAvailabilityService
         $doctors = Doctor::byDepartment($departmentId)->active()->get();
 
         return $doctors->filter(function (Doctor $doctor) use ($date, $time, $service, $consultationType) {
-            if ($service && ! $service->isAvailableForDoctor($doctor->id)) {
+            if ($service && ! $service->isOfferedByDoctor($doctor->id)) {
                 return false;
             }
 

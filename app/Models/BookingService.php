@@ -194,5 +194,42 @@ class BookingService extends Model
         // when the global service is active
         return $this->is_active;
     }
+
+    /**
+     * Whether this doctor actually offers the service on public/clinic booking.
+     * Uses explicit doctor_service_prices rows, or ownership via created_by when unassigned.
+     * Legacy services with no assignment rows fall back to isAvailableForDoctor().
+     */
+    public function isOfferedByDoctor(int $doctorId): bool
+    {
+        if (! $this->is_active) {
+            return false;
+        }
+
+        $doctor = Doctor::find($doctorId);
+        if (! $doctor) {
+            return false;
+        }
+
+        if (! $this->doctorPrices()->exists()) {
+            return $this->isAvailableForDoctor($doctorId);
+        }
+
+        $doctorIds = $doctor->bookingDoctorIds();
+
+        $assignment = $this->doctorPrices()
+            ->whereIn('doctor_id', $doctorIds)
+            ->first();
+
+        if ($assignment) {
+            return (bool) $assignment->is_active;
+        }
+
+        if (! $doctor->user_id || ! $this->created_by) {
+            return false;
+        }
+
+        return (int) $this->created_by === (int) $doctor->user_id;
+    }
 }
 

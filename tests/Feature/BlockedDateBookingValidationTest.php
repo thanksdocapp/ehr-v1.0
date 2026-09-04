@@ -301,6 +301,88 @@ class BlockedDateBookingValidationTest extends TestCase
         $this->assertSame($workingDoctor->id, $available->first()->id);
     }
 
+    /** @test */
+    public function maria_owned_service_ignores_colleague_slots_when_she_is_blocked(): void
+    {
+        $department = \App\Models\Department::create([
+            'name' => 'Maria Service Clinic',
+            'slug' => 'maria-svc-' . uniqid(),
+            'description' => 'Test',
+        ]);
+
+        $mariaUser = \App\Models\User::factory()->create([
+            'email' => 'maria-' . uniqid() . '@example.com',
+        ]);
+
+        $maria = Doctor::create([
+            'user_id' => $mariaUser->id,
+            'title' => 'Dr.',
+            'first_name' => 'Maria',
+            'last_name' => 'Owner',
+            'slug' => 'maria-owner-' . uniqid(),
+            'specialization' => 'General',
+            'bio' => 'Test',
+            'qualification' => 'MD',
+            'experience_years' => 5,
+            'department_id' => $department->id,
+            'is_active' => true,
+        ]);
+
+        $colleague = $this->makeDoctor('colleague-open', $department);
+
+        $monday = $this->futureMonday();
+        $tuesday = $monday->copy()->addDay();
+
+        $this->makeRule($maria, 'monday', DoctorAvailabilityRule::MODALITY_ALL);
+        $this->makeRule($maria, 'tuesday', DoctorAvailabilityRule::MODALITY_ALL);
+        $this->makeRule($colleague, 'monday', DoctorAvailabilityRule::MODALITY_ALL);
+        $this->makeRule($colleague, 'tuesday', DoctorAvailabilityRule::MODALITY_ALL);
+
+        $service = \App\Models\BookingService::create([
+            'name' => 'Maria Only Service',
+            'default_duration_minutes' => 30,
+            'default_consultation_type' => 'in_person',
+            'default_price' => 100,
+            'created_by' => $mariaUser->id,
+            'is_active' => true,
+        ]);
+
+        \App\Models\DoctorServicePrice::create([
+            'doctor_id' => $maria->id,
+            'service_id' => $service->id,
+            'custom_price' => 100,
+            'custom_duration_minutes' => 30,
+            'consultation_type' => 'in_person',
+            'is_active' => true,
+        ]);
+
+        foreach ([$monday, $tuesday] as $blockedDay) {
+            DoctorAvailabilityException::create([
+                'doctor_id' => $maria->id,
+                'exception_date' => $blockedDay->toDateString(),
+                'type' => 'blocked',
+                'is_all_day' => true,
+            ]);
+        }
+
+        $this->assertFalse($service->isOfferedByDoctor($colleague->id));
+        $this->assertTrue($service->isOfferedByDoctor($maria->id));
+
+        $mondaySlots = $this->slotService->getAvailableSlotsForDepartment(
+            $department->id,
+            $monday->toDateString(),
+            $service->id
+        );
+        $tuesdaySlots = $this->slotService->getAvailableSlotsForDepartment(
+            $department->id,
+            $tuesday->toDateString(),
+            $service->id
+        );
+
+        $this->assertSame([], $mondaySlots);
+        $this->assertSame([], $tuesdaySlots);
+    }
+
     private function futureMonday(): Carbon
     {
         return Carbon::now()->addWeek()->startOfWeek(Carbon::MONDAY);
