@@ -43,6 +43,7 @@
                             <th>Type</th>
                             <th class="text-end">Total</th>
                             <th>Status</th>
+                            <th>Date submitted</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -58,13 +59,14 @@
                             <td>
                                 <span class="badge bg-secondary">{{ $s->status }}</span>
                             </td>
+                            <td>{{ $s->submitted_at ? formatDateTimeUkAmPm($s->submitted_at) : '—' }}</td>
                             <td class="text-end">
                                 <a href="{{ route('admin.doctor-settlements.show', $s) }}" class="btn btn-sm btn-primary">View</a>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">No settlement requests.</td>
+                            <td colspan="9" class="text-center text-muted py-4">No settlement requests.</td>
                         </tr>
                         @endforelse
                     </tbody>
