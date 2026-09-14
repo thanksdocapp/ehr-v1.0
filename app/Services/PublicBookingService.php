@@ -3,31 +3,30 @@
 namespace App\Services;
 
 use App\Models\Appointment;
-use App\Models\Patient;
+use App\Models\Billing;
+use App\Models\BookingService as BookingServiceModel;
 use App\Models\Doctor;
 use App\Models\DoctorAvailabilityRule;
-use App\Models\Billing;
 use App\Models\DoctorBookingDiscountCode;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Patient;
 use App\Models\PendingBooking;
-use App\Models\BookingService as BookingServiceModel;
 use App\Models\User;
 use App\Models\UserNotification;
-use App\Services\GuestPatientService;
-use App\Services\HospitalEmailNotificationService;
-use App\Services\WherebyService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Carbon\Carbon;
 
 class PublicBookingService
 {
     protected $guestPatientService;
+
     protected $emailService;
+
     protected $wherebyService;
 
     public function __construct(GuestPatientService $guestPatientService, HospitalEmailNotificationService $emailService, WherebyService $wherebyService)
@@ -42,7 +41,6 @@ class PublicBookingService
      * For paid services: Creates a pending booking and invoice, patient is created after payment.
      * For free services: Creates patient and appointment immediately.
      *
-     * @param array $data
      * @return array
      */
     public function createFromPublicBooking(array $data)
@@ -61,7 +59,7 @@ class PublicBookingService
             // authoritative — never trust a client-supplied consultation_type.
             if (config('booking.modality_rules_enabled', true)
                 && $service
-                && !(method_exists($service, 'isNonConsultation') && $service->isNonConsultation())) {
+                && ! (method_exists($service, 'isNonConsultation') && $service->isNonConsultation())) {
                 $data['consultation_type'] = DoctorAvailabilityRule::normalizeModality(
                     $service->getConsultationTypeForDoctor($doctor->id)
                 );
@@ -90,7 +88,7 @@ class PublicBookingService
                     true
                 );
 
-                if (!$code) {
+                if (! $code) {
                     throw ValidationException::withMessages([
                         'discount_code' => ['This discount code is not valid for this booking.'],
                     ]);
@@ -98,7 +96,7 @@ class PublicBookingService
 
                 $discountAmount = $code->computeDiscountAmount($listPrice);
                 $discountCodeId = $code->id;
-            } elseif ($listPrice > 0 && $rawCode !== '' && !Schema::hasTable('doctor_booking_discount_codes')) {
+            } elseif ($listPrice > 0 && $rawCode !== '' && ! Schema::hasTable('doctor_booking_discount_codes')) {
                 throw ValidationException::withMessages([
                     'discount_code' => ['Discount codes are not available right now. Please try again without a code.'],
                 ]);
@@ -141,13 +139,13 @@ class PublicBookingService
             return ['ok' => false, 'message' => 'Enter a discount code.'];
         }
 
-        if (!Schema::hasTable('doctor_booking_discount_codes')) {
+        if (! Schema::hasTable('doctor_booking_discount_codes')) {
             return ['ok' => false, 'message' => 'Discount codes are not available right now.'];
         }
 
         $doctor = Doctor::find($doctorId);
         $service = BookingServiceModel::find($serviceId);
-        if (!$doctor || !$service) {
+        if (! $doctor || ! $service) {
             return ['ok' => false, 'message' => 'Invalid booking selection.'];
         }
 
@@ -162,7 +160,7 @@ class PublicBookingService
             $service->id
         );
 
-        if (!$code) {
+        if (! $code) {
             return ['ok' => false, 'message' => 'This discount code is not valid for this booking.'];
         }
 
@@ -209,7 +207,7 @@ class PublicBookingService
         // Create appointment
         $consultationType = $data['consultation_type'] ?? 'in_person';
         $validTypes = ['in_person', 'online', 'telephone'];
-        if (!in_array($consultationType, $validTypes, true)) {
+        if (! in_array($consultationType, $validTypes, true)) {
             $consultationType = 'in_person';
         }
         $isOnline = $consultationType === 'online';
@@ -237,7 +235,7 @@ class PublicBookingService
         if (Schema::hasColumn('appointments', 'service_id')) {
             $appointmentData['service_id'] = $service?->id;
         }
-        if (Schema::hasColumn('appointments', 'availability_rule_id') && !empty($data['availability_rule_id'])) {
+        if (Schema::hasColumn('appointments', 'availability_rule_id') && ! empty($data['availability_rule_id'])) {
             $appointmentData['availability_rule_id'] = $data['availability_rule_id'];
         }
         if (Schema::hasColumn('appointments', 'created_from')) {
@@ -432,10 +430,9 @@ class PublicBookingService
      * Finalize booking after payment is completed.
      * Creates patient, appointment, billing from pending booking data.
      *
-     * @param PendingBooking $pendingBooking
      * @return array
      */
-    public function finalizeBookingAfterPayment(PendingBooking $pendingBooking)
+    public function finalizeBookingAfterPayment(PendingBooking $pendingBooking, bool $skipSlotCheck = false)
     {
         if ($pendingBooking->status !== 'pending_payment') {
             throw new \Exception('Booking is not in pending payment status');
@@ -448,12 +445,12 @@ class PublicBookingService
         $paymentCompleted = $invoice
             && ($invoice->status === 'paid' || $invoice->payments()->where('status', 'completed')->exists());
 
-        if (!$paymentCompleted && $pendingBooking->isExpired()) {
+        if (! $paymentCompleted && $pendingBooking->isExpired()) {
             $pendingBooking->markExpired();
             throw new \Exception('Booking has expired');
         }
 
-        return DB::transaction(function () use ($pendingBooking) {
+        return DB::transaction(function () use ($pendingBooking, $skipSlotCheck) {
             $patientData = array_merge(
                 $pendingBooking->patient_data ?? [],
                 normalize_public_booking_address_fields($pendingBooking->patient_data ?? [])
@@ -464,7 +461,9 @@ class PublicBookingService
 
             // Re-check the physical slot is still free before materializing the appointment: a
             // confirmed booking could have landed since this pending was created. Serialize on the doctor.
-            if ($doctor) {
+            // When $skipSlotCheck is true (e.g. admin recovery of already-paid bookings), skip this
+            // validation — the patient has paid and the appointment must be honoured.
+            if ($doctor && ! $skipSlotCheck) {
                 $this->assertSlotFreeOfAppointments(
                     $doctor,
                     $service,
@@ -490,10 +489,10 @@ class PublicBookingService
 
             // Prefer patient already linked to invoice (new flow); fallback to old flow if missing
             $patient = null;
-            if ($invoice && !empty($invoice->patient_id)) {
+            if ($invoice && ! empty($invoice->patient_id)) {
                 $patient = Patient::find($invoice->patient_id);
             }
-            if (!$patient) {
+            if (! $patient) {
                 $patient = $this->guestPatientService->findOrCreateGuest([
                     'first_name' => $patientData['first_name'],
                     'last_name' => $patientData['last_name'],
@@ -518,7 +517,7 @@ class PublicBookingService
             // Create appointment
             $useWhereby = $pendingBooking->is_online && $this->wherebyService->isEnabled();
             $consultationType = $patientData['consultation_type'] ?? ($pendingBooking->is_online ? 'online' : 'in_person');
-            if (!in_array($consultationType, ['in_person', 'online', 'telephone'], true)) {
+            if (! in_array($consultationType, ['in_person', 'online', 'telephone'], true)) {
                 $consultationType = $pendingBooking->is_online ? 'online' : 'in_person';
             }
             $appointmentData = [
@@ -541,7 +540,7 @@ class PublicBookingService
             if (Schema::hasColumn('appointments', 'service_id')) {
                 $appointmentData['service_id'] = $service?->id;
             }
-            if (Schema::hasColumn('appointments', 'availability_rule_id') && !empty($pendingBooking->availability_rule_id)) {
+            if (Schema::hasColumn('appointments', 'availability_rule_id') && ! empty($pendingBooking->availability_rule_id)) {
                 $appointmentData['availability_rule_id'] = $pendingBooking->availability_rule_id;
             }
             if (Schema::hasColumn('appointments', 'created_from')) {
@@ -705,58 +704,66 @@ class PublicBookingService
         if (! empty($data['email']) && filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $patientUpdateData['email'] = trim((string) $data['email']);
         }
-        if (!empty($data['date_of_birth'])) {
+        if (! empty($data['date_of_birth'])) {
             $patientUpdateData['date_of_birth'] = $data['date_of_birth'];
         }
-        if (!empty($data['gender'])) {
+        if (! empty($data['gender'])) {
             $patientUpdateData['gender'] = $data['gender'];
         }
 
         // Handle GP consent
-        if (!empty($data['consent_share_with_gp'])) {
+        if (! empty($data['consent_share_with_gp'])) {
             $patientUpdateData['consent_share_with_gp'] = true;
-            if (!empty($data['gp_name'])) $patientUpdateData['gp_name'] = $data['gp_name'];
-            if (!empty($data['gp_email'])) $patientUpdateData['gp_email'] = $data['gp_email'];
-            if (!empty($data['gp_phone'])) $patientUpdateData['gp_phone'] = $data['gp_phone'];
-            if (!empty($data['gp_address'])) $patientUpdateData['gp_address'] = $data['gp_address'];
+            if (! empty($data['gp_name'])) {
+                $patientUpdateData['gp_name'] = $data['gp_name'];
+            }
+            if (! empty($data['gp_email'])) {
+                $patientUpdateData['gp_email'] = $data['gp_email'];
+            }
+            if (! empty($data['gp_phone'])) {
+                $patientUpdateData['gp_phone'] = $data['gp_phone'];
+            }
+            if (! empty($data['gp_address'])) {
+                $patientUpdateData['gp_address'] = $data['gp_address'];
+            }
         }
 
         // Assign to department
-        if ($departmentId && !$patient->department_id) {
+        if ($departmentId && ! $patient->department_id) {
             $patientUpdateData['department_id'] = $departmentId;
         }
 
-        if (!empty($data['address'])) {
+        if (! empty($data['address'])) {
             $patientUpdateData['address'] = $data['address'];
         }
-        if (!empty($data['city'])) {
+        if (! empty($data['city'])) {
             $patientUpdateData['city'] = $data['city'];
         }
-        if (!empty($data['state'])) {
+        if (! empty($data['state'])) {
             $patientUpdateData['state'] = $data['state'];
         }
-        if (!empty($data['postal_code'])) {
+        if (! empty($data['postal_code'])) {
             $patientUpdateData['postal_code'] = $data['postal_code'];
         }
-        if (!empty($data['country'])) {
+        if (! empty($data['country'])) {
             $patientUpdateData['country'] = $data['country'];
         }
-        if (!empty($data['guardian_name'])) {
+        if (! empty($data['guardian_name'])) {
             $patientUpdateData['guardian_name'] = $data['guardian_name'];
         }
-        if (!empty($data['guardian_phone'])) {
+        if (! empty($data['guardian_phone'])) {
             $patientUpdateData['guardian_phone'] = $data['guardian_phone'];
         }
 
-        if (!empty($patientUpdateData)) {
+        if (! empty($patientUpdateData)) {
             $patient->update($patientUpdateData);
         }
 
         // Attach to departments pivot table
-        if ($departmentId && !$patient->departments()->where('departments.id', $departmentId)->exists()) {
+        if ($departmentId && ! $patient->departments()->where('departments.id', $departmentId)->exists()) {
             $hasPrimary = $patient->departments()->wherePivot('is_primary', true)->exists();
             $patient->departments()->attach($departmentId, [
-                'is_primary' => !$hasPrimary,
+                'is_primary' => ! $hasPrimary,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -828,7 +835,7 @@ class PublicBookingService
     {
         $date = $data['appointment_date'] ?? null;
         $time = $data['appointment_time'] ?? null;
-        if (!$date || !$time) {
+        if (! $date || ! $time) {
             return null;
         }
 
@@ -858,12 +865,12 @@ class PublicBookingService
             $duration = 30;
         }
 
-        $slotStart = Carbon::parse($date . ' ' . $time);
+        $slotStart = Carbon::parse($date.' '.$time);
         $slotEnd = $slotStart->copy()->addMinutes($duration);
 
         $this->throwIfSlotTaken($doctor, $slotStart, $slotEnd, $date);
 
-        if (!config('booking.modality_rules_enabled', true)) {
+        if (! config('booking.modality_rules_enabled', true)) {
             return null;
         }
 
@@ -909,7 +916,7 @@ class PublicBookingService
             $duration = 30;
         }
 
-        $slotStart = Carbon::parse($dateStr . ' ' . $timeStr);
+        $slotStart = Carbon::parse($dateStr.' '.$timeStr);
         $slotEnd = $slotStart->copy()->addMinutes($duration);
 
         $this->throwIfSlotTaken($doctor, $slotStart, $slotEnd, $dateStr, includePending: false);
@@ -949,8 +956,8 @@ class PublicBookingService
             foreach ($pendings as $pending) {
                 $pStart = Carbon::parse(
                     ($pending->appointment_date instanceof \DateTimeInterface ? $pending->appointment_date->format('Y-m-d') : (string) $pending->appointment_date)
-                    . ' '
-                    . ($pending->appointment_time instanceof \DateTimeInterface ? $pending->appointment_time->format('H:i:s') : substr((string) $pending->appointment_time, 0, 8))
+                    .' '
+                    .($pending->appointment_time instanceof \DateTimeInterface ? $pending->appointment_time->format('H:i:s') : substr((string) $pending->appointment_time, 0, 8))
                 );
                 $pDuration = ($pending->service_id && $pending->service)
                     ? (int) ($pending->service->getDurationForDoctor($pending->doctor_id) ?? 30)
@@ -975,7 +982,7 @@ class PublicBookingService
     private function overlapsAppointment(Carbon $slotStart, Carbon $slotEnd, Appointment $appointment): bool
     {
         $apptStart = Carbon::parse(
-            $appointment->appointment_date->format('Y-m-d') . ' ' . $appointment->appointment_time->format('H:i:s')
+            $appointment->appointment_date->format('Y-m-d').' '.$appointment->appointment_time->format('H:i:s')
         );
         $apptDuration = (int) ($appointment->estimated_duration ?? 0);
         if ($apptDuration <= 0 && $appointment->service_id && $appointment->doctor_id) {
@@ -1011,7 +1018,7 @@ class PublicBookingService
 
         $ids = Doctor::byDepartments($departmentIds)->pluck('id')->all();
 
-        return !empty($ids) ? $ids : [$doctor->id];
+        return ! empty($ids) ? $ids : [$doctor->id];
     }
 
     /**
@@ -1029,7 +1036,7 @@ class PublicBookingService
         $slotEndMinutes = (int) $slotEnd->format('H') * 60 + (int) $slotEnd->format('i');
 
         foreach ($rules as $rule) {
-            if (!$rule->supportsModality($modality)) {
+            if (! $rule->supportsModality($modality)) {
                 continue;
             }
             $ruleStart = $this->timeStringToMinutes((string) $rule->start_time);
@@ -1057,7 +1064,7 @@ class PublicBookingService
     private function generateAppointmentNumber()
     {
         do {
-            $number = 'A' . date('Ymd') . strtoupper(Str::random(4));
+            $number = 'A'.date('Ymd').strtoupper(Str::random(4));
         } while (Appointment::where('appointment_number', $number)->exists());
 
         return $number;
@@ -1068,7 +1075,7 @@ class PublicBookingService
      */
     private function createPublicBookingNotifications(Appointment $appointment, Patient $patient)
     {
-        $patientName = trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? ''));
+        $patientName = trim(($patient->first_name ?? '').' '.($patient->last_name ?? ''));
         $appointmentDate = formatDateUk($appointment->appointment_date);
         $appointmentTime = \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A');
 
@@ -1090,7 +1097,7 @@ class PublicBookingService
         ];
 
         // Notify all admin users
-        $adminUsers = User::where(function($query) {
+        $adminUsers = User::where(function ($query) {
             $query->where('is_admin', true)->orWhere('role', 'admin');
         })->where('is_active', true)->get();
 
@@ -1115,11 +1122,15 @@ class PublicBookingService
             $departmentStaff = User::where('department_id', $appointment->department_id)
                 ->where('is_active', true)
                 ->where('role', '!=', 'admin')
-                ->where(function($q) { $q->where('is_admin', false)->orWhereNull('is_admin'); })
+                ->where(function ($q) {
+                    $q->where('is_admin', false)->orWhereNull('is_admin');
+                })
                 ->get();
 
             foreach ($departmentStaff as $staff) {
-                if ($appointment->doctor && $appointment->doctor->user_id == $staff->id) continue;
+                if ($appointment->doctor && $appointment->doctor->user_id == $staff->id) {
+                    continue;
+                }
 
                 UserNotification::create(array_merge($notificationData, [
                     'user_id' => $staff->id,

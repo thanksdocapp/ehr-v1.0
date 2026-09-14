@@ -11,7 +11,8 @@ class FinalizePendingBookings extends Command
 {
     protected $signature = 'bookings:finalize-pending
                             {--dry-run : List stuck bookings without finalizing}
-                            {--booking-id= : Finalize a specific pending booking ID}';
+                            {--booking-id= : Finalize a specific pending booking ID}
+                            {--force : Skip slot availability checks (use when the patient already paid but the slot is now taken or blocked)}';
 
     protected $description = 'Finalize pending bookings that have completed payments but were never converted into appointments (and thus never sent doctor notification emails)';
 
@@ -20,9 +21,9 @@ class FinalizePendingBookings extends Command
         $query = PendingBooking::where('status', 'pending_payment')
             ->whereHas('invoice', function ($q) {
                 $q->where('status', 'paid')
-                  ->orWhereHas('payments', function ($pq) {
-                      $pq->where('status', 'completed');
-                  });
+                    ->orWhereHas('payments', function ($pq) {
+                        $pq->where('status', 'completed');
+                    });
             });
 
         if ($bookingId = $this->option('booking-id')) {
@@ -33,6 +34,7 @@ class FinalizePendingBookings extends Command
 
         if ($stuck->isEmpty()) {
             $this->info('No stuck pending bookings found.');
+
             return self::SUCCESS;
         }
 
@@ -57,7 +59,13 @@ class FinalizePendingBookings extends Command
 
         if ($this->option('dry-run')) {
             $this->warn('Dry-run mode — no changes made.');
+
             return self::SUCCESS;
+        }
+
+        $force = $this->option('force');
+        if ($force) {
+            $this->warn('Force mode — slot availability checks will be skipped.');
         }
 
         $finalized = 0;
@@ -65,7 +73,7 @@ class FinalizePendingBookings extends Command
 
         foreach ($stuck as $pendingBooking) {
             try {
-                $result = $bookingService->finalizeBookingAfterPayment($pendingBooking);
+                $result = $bookingService->finalizeBookingAfterPayment($pendingBooking, $force);
 
                 $appointmentNumber = $result['appointment']->appointment_number ?? '?';
                 $this->info("  ✓ Booking #{$pendingBooking->id} → Appointment {$appointmentNumber} (doctor notified)");
