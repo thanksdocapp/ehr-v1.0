@@ -441,7 +441,14 @@ class PublicBookingService
             throw new \Exception('Booking is not in pending payment status');
         }
 
-        if ($pendingBooking->isExpired()) {
+        // Only enforce expiry when payment has NOT been completed.
+        // If payment went through, we must honour the booking regardless of
+        // the expiry window — the patient has already paid.
+        $invoice = $pendingBooking->invoice;
+        $paymentCompleted = $invoice
+            && ($invoice->status === 'paid' || $invoice->payments()->where('status', 'completed')->exists());
+
+        if (!$paymentCompleted && $pendingBooking->isExpired()) {
             $pendingBooking->markExpired();
             throw new \Exception('Booking has expired');
         }

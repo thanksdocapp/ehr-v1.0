@@ -17,7 +17,7 @@ return new class extends Migration
             'value' => '1',
             'type' => 'boolean',
             'group' => 'general',
-            'description' => 'Enable or disable frontend/homepage display. When disabled, visitors will be redirected to staff login.',
+            'description' => 'Enable or disable frontend/homepage display. When disabled, visitors will be redirected to notes.thanksdoc.co.uk',
             'is_public' => false,
             'created_at' => now(),
             'updated_at' => now(),
