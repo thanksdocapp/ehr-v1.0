@@ -697,20 +697,32 @@ Route::group(['middleware' => 'installed'], function () {
         }); // Handle POST requests to /admin by redirecting to dashboard
         Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index']);
 
-        // Recover stuck pending bookings (sends missed doctor notifications)
+        // Recover stuck pending bookings across all types (doctor, clinic, service orders)
         Route::get('/finalize-pending-bookings', function () {
             $dryRun = request()->boolean('dry_run', true);
             $force = request()->boolean('force', false);
+            $type = request()->input('type'); // doctor, clinic, service, or null for all
             $args = ['--dry-run' => $dryRun];
             if ($force) {
                 $args['--force'] = true;
             }
-            $result = \Illuminate\Support\Facades\Artisan::call('bookings:finalize-pending', $args);
+            if ($type) {
+                $args['--type'] = $type;
+            }
+            \Illuminate\Support\Facades\Artisan::call('bookings:finalize-pending', $args);
             $output = \Illuminate\Support\Facades\Artisan::output();
             $links = '';
             if ($dryRun) {
-                $links = '<p><a href="?dry_run=0" onclick="return confirm(\'This will finalize the bookings and send doctor emails. Continue?\')">Run for real</a>'
-                    .' | <a href="?dry_run=0&force=1" onclick="return confirm(\'This will FORCE-finalize bookings even if slots are taken. Continue?\')">Run for real (force, skip slot checks)</a></p>';
+                $links = '<p>'
+                    .'<a href="?dry_run=0" onclick="return confirm(\'This will finalize all bookings and send notifications. Continue?\')">Run for real</a>'
+                    .' | <a href="?dry_run=0&force=1" onclick="return confirm(\'This will FORCE-finalize all bookings even if slots are taken. Continue?\')">Run for real (force, skip slot checks)</a>'
+                    .'</p>'
+                    .'<p>Filter by type: '
+                    .'<a href="?type=doctor">Doctor only</a> | '
+                    .'<a href="?type=clinic">Clinic only</a> | '
+                    .'<a href="?type=service">Service orders only</a> | '
+                    .'<a href="?">All types</a>'
+                    .'</p>';
             }
 
             return response('<h2>Finalize Pending Bookings</h2><pre>'.e($output).'</pre>'.$links

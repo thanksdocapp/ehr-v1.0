@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BookingService as BookingServiceModel;
 use App\Models\ClinicBookingDiscountCode;
 use App\Models\Doctor;
 use App\Models\DoctorBookingDiscountCode;
@@ -9,7 +10,6 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Patient;
 use App\Models\ServiceOrder;
-use App\Models\BookingService as BookingServiceModel;
 use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Support\Facades\DB;
@@ -23,8 +23,7 @@ class NonConsultationBookingService
         protected GuestPatientService $guestPatientService,
         protected HospitalEmailNotificationService $emailService,
         protected PublicBookingService $publicBookingService,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{service_order: ServiceOrder, invoice: ?Invoice}
@@ -137,7 +136,7 @@ class NonConsultationBookingService
 
         $order = ServiceOrder::query()
             ->where('invoice_id', $invoice->id)
-            ->where('status', ServiceOrder::STATUS_PENDING_PAYMENT)
+            ->whereIn('status', [ServiceOrder::STATUS_PENDING_PAYMENT, ServiceOrder::STATUS_EXPIRED])
             ->first();
 
         if (! $order) {
@@ -148,7 +147,7 @@ class NonConsultationBookingService
         }
 
         try {
-            return $this->finalizeAfterPayment($order);
+            return $this->finalizeAfterPayment($order, allowExpiredWhenPaid: true);
         } catch (\Exception $e) {
             Log::error('Failed to finalize service order for paid invoice', [
                 'invoice_id' => $invoice->id,
@@ -160,14 +159,24 @@ class NonConsultationBookingService
         }
     }
 
-    public function finalizeAfterPayment(ServiceOrder $order): ServiceOrder
+    public function finalizeAfterPayment(ServiceOrder $order, bool $allowExpiredWhenPaid = false): ServiceOrder
     {
-        if ($order->status !== ServiceOrder::STATUS_PENDING_PAYMENT) {
+        if (! in_array($order->status, [ServiceOrder::STATUS_PENDING_PAYMENT, ServiceOrder::STATUS_EXPIRED], true)) {
             throw new \Exception('Order is not awaiting payment.');
         }
-        if ($order->isExpired()) {
+
+        $invoice = $order->invoice;
+        $paymentCompleted = $invoice
+            && ($invoice->status === 'paid' || $invoice->payments()->where('status', 'completed')->exists());
+
+        if ($order->isExpired() && ! ($allowExpiredWhenPaid && $paymentCompleted)) {
             $order->markExpired();
             throw new \Exception('Order has expired.');
+        }
+
+        if ($order->status === ServiceOrder::STATUS_EXPIRED && $allowExpiredWhenPaid && $paymentCompleted) {
+            $order->update(['status' => ServiceOrder::STATUS_PENDING_PAYMENT]);
+            $order->refresh();
         }
 
         return DB::transaction(function () use ($order) {
@@ -411,7 +420,7 @@ class NonConsultationBookingService
     private function createStaffNotifications(ServiceOrder $order, Patient $patient): void
     {
         try {
-            $patientName = trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? ''));
+            $patientName = trim(($patient->first_name ?? '').' '.($patient->last_name ?? ''));
             $serviceName = $order->service?->name ?? 'Service';
 
             $notificationData = [
