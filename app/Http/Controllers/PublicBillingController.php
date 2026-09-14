@@ -490,6 +490,15 @@ class PublicBillingController extends Controller
                     'error' => $e->getMessage()
                 ]);
             }
+        } else {
+            // Fallback: session token may be lost after external payment gateway redirect.
+            // Look up the pending booking directly from the invoice.
+            $result = $this->finalizePendingBookingByInvoice($invoice);
+            if ($result && isset($result['appointment'])) {
+                return redirect()->route('public.booking.success', [
+                    'appointmentNumber' => $result['appointment']->appointment_number
+                ])->with('payment_success', true);
+            }
         }
 
         // Check if this payment was from a booking flow (legacy - for free bookings)
@@ -545,6 +554,46 @@ class PublicBillingController extends Controller
         ]);
 
         return $bookingService->finalizeBookingAfterPayment($pendingBooking);
+    }
+
+    /**
+     * Finalize pending booking by looking it up from the invoice.
+     * Used as a fallback when the session token is lost (e.g. after external payment redirect).
+     */
+    private function finalizePendingBookingByInvoice(Invoice $invoice): ?array
+    {
+        $pendingBooking = \App\Models\PendingBooking::where('invoice_id', $invoice->id)
+            ->where('status', 'pending_payment')
+            ->first();
+
+        if (!$pendingBooking) {
+            return null;
+        }
+
+        $hasCompletedPayment = $invoice->payments()
+            ->where('status', 'completed')
+            ->exists();
+
+        if (!$hasCompletedPayment && $invoice->status !== 'paid') {
+            return null;
+        }
+
+        Log::info('Finalizing pending booking via invoice fallback (session token was lost)', [
+            'pending_booking_id' => $pendingBooking->id,
+            'invoice_id' => $invoice->id,
+        ]);
+
+        try {
+            $bookingService = app(\App\Services\PublicBookingService::class);
+            return $bookingService->finalizeBookingAfterPayment($pendingBooking);
+        } catch (\Exception $e) {
+            Log::error('Failed to finalize pending booking via invoice fallback', [
+                'invoice_id' => $invoice->id,
+                'pending_booking_id' => $pendingBooking->id,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
     }
     
     /**
@@ -661,6 +710,11 @@ class PublicBillingController extends Controller
                     // Mark receipt as sent (cache for 1 hour)
                     Cache::put('receipt_sent_' . $payment->id, true, 3600);
                 }
+
+                // Finalize any pending booking tied to this invoice so the
+                // doctor notification email is sent even when the session
+                // token is lost after the Stripe redirect.
+                $this->finalizePendingBookingByInvoice($invoice);
             }
         } catch (\Exception $e) {
             \Log::error('Error handling Stripe success callback', [
