@@ -638,6 +638,11 @@ class PaymentController extends Controller
                             'error' => $e->getMessage()
                         ]);
                     }
+
+                    // Finalize any pending booking tied to this invoice so the
+                    // doctor notification email is sent even when the session-based
+                    // finalization in the success page was missed.
+                    $this->finalizePendingBookingByInvoice($patientPayment->invoice);
                     
                     // Also update the admin billing if connected
                     // Note: syncToAdminBilling already handles this, but we ensure it's done here too
@@ -688,6 +693,45 @@ class PaymentController extends Controller
             ]);
             
             return response()->json(['error' => 'Webhook processing failed'], 500);
+        }
+    }
+
+    /**
+     * Finalize a pending booking by looking it up from the invoice.
+     * Creates the appointment and sends doctor notification email.
+     */
+    private function finalizePendingBookingByInvoice(\App\Models\Invoice $invoice): void
+    {
+        $pendingBooking = \App\Models\PendingBooking::where('invoice_id', $invoice->id)
+            ->where('status', 'pending_payment')
+            ->first();
+
+        if (!$pendingBooking) {
+            return;
+        }
+
+        $hasCompletedPayment = $invoice->payments()
+            ->where('status', 'completed')
+            ->exists();
+
+        if (!$hasCompletedPayment && $invoice->status !== 'paid') {
+            return;
+        }
+
+        try {
+            $bookingService = app(\App\Services\PublicBookingService::class);
+            $bookingService->finalizeBookingAfterPayment($pendingBooking);
+
+            Log::info('Pending booking finalized via webhook', [
+                'pending_booking_id' => $pendingBooking->id,
+                'invoice_id' => $invoice->id,
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to finalize pending booking via webhook', [
+                'invoice_id' => $invoice->id,
+                'pending_booking_id' => $pendingBooking->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

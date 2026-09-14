@@ -627,6 +627,17 @@ Route::group(['middleware' => 'installed'], function () {
         }); // Handle POST requests to /admin by redirecting to dashboard
         Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index']);
         
+        // Recover stuck pending bookings (sends missed doctor notifications)
+        Route::get('/finalize-pending-bookings', function () {
+            $result = \Illuminate\Support\Facades\Artisan::call('bookings:finalize-pending', ['--dry-run' => request()->boolean('dry_run', true)]);
+            $output = \Illuminate\Support\Facades\Artisan::output();
+            return response('<h2>Finalize Pending Bookings</h2><pre>' . e($output) . '</pre>'
+                . (request()->boolean('dry_run', true)
+                    ? '<p><a href="?dry_run=0" onclick="return confirm(\'This will finalize the bookings and send doctor emails. Continue?\')">Run for real</a></p>'
+                    : '<p>Done.</p>'),
+                200, ['Content-Type' => 'text/html']);
+        })->name('finalize-pending-bookings');
+
         // AJAX Routes for Dashboard
         Route::get('/api/stats', [\App\Http\Controllers\Admin\DashboardController::class, 'getStats'])->name('api.stats');
         Route::get('/api/chart-data', [\App\Http\Controllers\Admin\DashboardController::class, 'getChartData'])->name('api.chart-data');
