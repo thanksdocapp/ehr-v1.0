@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (dueWrap) {
                 dueWrap.classList.remove('d-none');
-                dueAmtEl.textContent = parseFloat(data.payable_fee).toFixed(2);
+                dueAmtEl.textContent = parseFloat(data.amount_due).toFixed(2);
             }
         })
         .catch(function() {
