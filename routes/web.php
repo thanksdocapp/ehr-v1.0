@@ -52,7 +52,7 @@ Route::get('/', function () {
     // Check if frontend is enabled
     $frontendEnabled = \App\Models\Setting::get('enable_frontend', '1');
     if ($frontendEnabled != '1') {
-        return redirect()->away('https://notes.thanksdoc.co.uk');
+        return redirect('/admin/login');
     }
 
     // Homepage is now the patient booking page

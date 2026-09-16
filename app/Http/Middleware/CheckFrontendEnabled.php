@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Setting;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use App\Models\Setting;
 
 class CheckFrontendEnabled
 {
@@ -18,8 +18,8 @@ class CheckFrontendEnabled
     {
         // Skip this middleware for admin, patient, staff, and public booking routes
         // These routes should be accessible regardless of frontend setting
-        if ($request->is('admin/*') || 
-            $request->is('patient/*') || 
+        if ($request->is('admin/*') ||
+            $request->is('patient/*') ||
             $request->is('staff/*') ||
             $request->is('book/*') ||
             $request->is('pay/*') ||
@@ -31,15 +31,15 @@ class CheckFrontendEnabled
             $request->is('install/*')) {
             return $next($request);
         }
-        
+
         // Check if frontend/homepage is enabled
         $frontendEnabled = Setting::get('enable_frontend', '1');
-        
-        // If frontend is disabled, redirect to external site
+
+        // If frontend is disabled, redirect to staff login
         if ($frontendEnabled != '1') {
-            return redirect()->away('https://notes.thanksdoc.co.uk');
+            return redirect('/admin/login');
         }
-        
+
         return $next($request);
     }
 }
