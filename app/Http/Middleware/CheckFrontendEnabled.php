@@ -37,7 +37,7 @@ class CheckFrontendEnabled
 
         // If frontend is disabled, redirect to staff login
         if ($frontendEnabled != '1') {
-            return redirect('/admin/login');
+            return redirect('/login');
         }
 
         return $next($request);
