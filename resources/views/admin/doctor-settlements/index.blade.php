@@ -19,7 +19,7 @@
         The total is stored when a settlement is created. If older rows show £0.00 after a fix, open the request and use <strong>Recalculate from payments</strong> (draft or submitted) to rebuild lines and the total.
     </p>
 
-    <form method="get" class="row g-2 mb-3">
+    <form method="get" class="row g-2 mb-3 align-items-center">
         <div class="col-auto">
             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="">All statuses</option>
@@ -28,6 +28,31 @@
                 @endforeach
             </select>
         </div>
+        <div class="col-auto">
+            <select name="doctor_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All doctors</option>
+                @foreach($doctors as $doctor)
+                    <option value="{{ $doctor->id }}" {{ (string) request('doctor_id') === (string) $doctor->id ? 'selected' : '' }}>
+                        {{ $doctor->user?->name ?? trim(($doctor->first_name ?? '').' '.($doctor->last_name ?? '')) ?: 'Doctor #'.$doctor->id }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-auto">
+            <select name="department_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All clinics</option>
+                @foreach($departments as $department)
+                    <option value="{{ $department->id }}" {{ (string) request('department_id') === (string) $department->id ? 'selected' : '' }}>
+                        {{ $department->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        @if(request()->hasAny(['status', 'doctor_id', 'department_id']))
+        <div class="col-auto">
+            <a href="{{ route('admin.doctor-settlements.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+        </div>
+        @endif
     </form>
 
     <div class="card shadow">

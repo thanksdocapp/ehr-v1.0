@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
+use App\Models\Doctor;
 use App\Models\DoctorSettlement;
 use App\Services\BookingPaymentsService;
 use App\Services\DoctorSettlementService;
@@ -34,10 +36,22 @@ class DoctorSettlementsController extends Controller
         if ($request->filled('doctor_id')) {
             $query->where('doctor_id', $request->integer('doctor_id'));
         }
+        if ($request->filled('department_id')) {
+            $departmentId = $request->integer('department_id');
+            $query->whereHas('doctor', function ($doctorQuery) use ($departmentId) {
+                $doctorQuery->where('department_id', $departmentId)
+                    ->orWhereHas('departments', function ($deptQuery) use ($departmentId) {
+                        $deptQuery->where('departments.id', $departmentId);
+                    });
+            });
+        }
 
         $settlements = $query->paginate(20)->withQueryString();
 
-        return view('admin.doctor-settlements.index', compact('settlements'));
+        $doctors = Doctor::with('user')->orderBy('first_name')->orderBy('last_name')->get();
+        $departments = Department::active()->ordered()->get();
+
+        return view('admin.doctor-settlements.index', compact('settlements', 'doctors', 'departments'));
     }
 
     public function show(DoctorSettlement $doctorSettlement): View
