@@ -507,7 +507,50 @@ class BookingPaymentsService
             }
         }
 
-        return $rows->sortByDesc(fn (BookingPaymentRow $row) => $row->sortAt()?->timestamp ?? 0)->values();
+        $rows = $rows->sortByDesc(fn (BookingPaymentRow $row) => $row->sortAt()?->timestamp ?? 0)->values();
+
+        $this->reconcileStaleGuestFlagsForRows($rows);
+
+        return $rows;
+    }
+
+    public function patientForRow(BookingPaymentRow $row): ?Patient
+    {
+        if ($row->payment?->invoice?->patient) {
+            return $row->payment->invoice->patient;
+        }
+
+        return $row->serviceOrder?->patient;
+    }
+
+    public function showsProvisionalBadgeForRow(BookingPaymentRow $row): bool
+    {
+        $patient = $this->patientForRow($row);
+
+        return $patient !== null && $patient->is_guest;
+    }
+
+    /**
+     * Clear is_guest when UK core demographics are already complete (common after public booking).
+     *
+     * @param  Collection<int, BookingPaymentRow>  $rows
+     */
+    private function reconcileStaleGuestFlagsForRows(Collection $rows): void
+    {
+        /** @var array<int, Patient> $patients */
+        $patients = [];
+        foreach ($rows as $row) {
+            $patient = $this->patientForRow($row);
+            if ($patient && $patient->is_guest) {
+                $patients[$patient->id] = $patient;
+            }
+        }
+
+        foreach ($patients as $patient) {
+            if ($patient->clearGuestFlagIfInformationComplete()) {
+                $patient->is_guest = false;
+            }
+        }
     }
 
     public function paginateBookingPaymentRows(Request $request, int $perPage = 30): LengthAwarePaginator

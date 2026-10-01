@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\User;
+use App\Services\GuestPatientService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -89,6 +90,25 @@ class GuestPatientMedicalRecordFlowTest extends TestCase
         $this->assertTrue($patient->clearGuestFlagIfInformationComplete());
         $patient->refresh();
         $this->assertFalse($patient->is_guest);
+    }
+
+    /** @test */
+    public function find_or_create_guest_clears_flag_when_booking_includes_complete_uk_core_demographics(): void
+    {
+        $service = app(GuestPatientService::class);
+
+        $patient = $service->findOrCreateGuest([
+            'first_name' => 'Andrew',
+            'last_name' => 'Bennett',
+            'email' => 'andrew.bennett.' . uniqid() . '@example.com',
+            'phone' => '07111222333',
+            'date_of_birth' => '1985-06-12',
+            'gender' => 'male',
+            'address' => '22 Example Road, London',
+        ]);
+
+        $this->assertFalse($patient->is_guest);
+        $this->assertFalse($patient->hasIncompleteInformation()['is_incomplete']);
     }
 
     /** @test */

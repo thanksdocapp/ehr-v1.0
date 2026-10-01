@@ -64,8 +64,9 @@ class GuestPatientService
                 $patient->guardian_phone = $data['guardian_phone'];
             }
             $patient->save();
+            $patient->clearGuestFlagIfInformationComplete();
 
-            return $patient;
+            return $patient->fresh();
         }
 
         // Create new guest patient
@@ -116,7 +117,10 @@ class GuestPatientService
             $patientData['guardian_phone'] = $data['guardian_phone'];
         }
 
-        return Patient::create($patientData);
+        $patient = Patient::create($patientData);
+        $patient->clearGuestFlagIfInformationComplete();
+
+        return $patient->fresh();
     }
 
     /**

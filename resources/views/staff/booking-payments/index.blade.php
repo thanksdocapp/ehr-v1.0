@@ -117,8 +117,7 @@
                                 $sortAt = $row->sortAt();
                                 $inv = $row->payment?->invoice;
                                 $appt = $inv?->appointment;
-                                $patient = $inv?->patient ?? $row->serviceOrder?->patient;
-                                $isProvisional = $patient && ($patient->is_guest ?? false);
+                                $isProvisional = $bookingPaymentsService->showsProvisionalBadgeForRow($row);
                             @endphp
                             <tr>
                                 <td>{{ $sortAt ? formatDateTimeUkAmPm($sortAt) : '—' }}</td>

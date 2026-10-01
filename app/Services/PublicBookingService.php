@@ -757,6 +757,8 @@ class PublicBookingService
 
         if (! empty($patientUpdateData)) {
             $patient->update($patientUpdateData);
+            $patient->refresh();
+            $patient->clearGuestFlagIfInformationComplete();
         }
 
         // Attach to departments pivot table

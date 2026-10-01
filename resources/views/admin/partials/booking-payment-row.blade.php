@@ -15,8 +15,7 @@
     };
     $capture = $bookingPaymentsService->bookingCaptureForRow($row);
     $sortAt = $row->sortAt();
-    $patient = $row->payment?->invoice?->patient ?? $row->serviceOrder?->patient;
-    $isProvisional = $patient && ($patient->is_guest ?? false);
+    $isProvisional = $bookingPaymentsService->showsProvisionalBadgeForRow($row);
 @endphp
 <tr>
     <td>{{ $sortAt ? formatDateTimeUkAmPm($sortAt) : '—' }}</td>
