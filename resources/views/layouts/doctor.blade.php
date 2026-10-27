@@ -2810,6 +2810,18 @@
         background: rgba(0,0,0,0.05) !important;
     }
     </style>
+
+    @if(\App\Models\Setting::get('migration_mode', '0') == '1' && !(auth()->user()->is_admin ?? false))
+        @include('partials.migration-modal')
+
+        <div id="migration-mode-banner" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 3001; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-align: center; padding: 10px 20px; font-size: 14px; font-weight: 500; box-shadow: 0 -4px 12px rgba(0,0,0,0.15);">
+            <i class="fas fa-exchange-alt me-2"></i>
+            This system is in read-only migration mode.
+            <a href="{{ \App\Models\Setting::get('migration_mode_new_url', 'https://my.thanksdoc.co.uk') }}" target="_blank" style="color: white; text-decoration: underline; font-weight: 700; margin-left: 8px;">
+                Go to new EHR <i class="fas fa-external-link-alt ms-1"></i>
+            </a>
+        </div>
+    @endif
 </body>
 </html>
 
