@@ -82,5 +82,6 @@ class Kernel extends HttpKernel
         // API Middleware for Mobile App
         'patient.api' => \App\Http\Middleware\PatientApiMiddleware::class,
         'admin.api' => \App\Http\Middleware\AdminApiMiddleware::class,
+        'migration.check' => \App\Http\Middleware\CheckMigrationRestrictions::class,
     ];
 }

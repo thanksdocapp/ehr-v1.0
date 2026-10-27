@@ -282,7 +282,7 @@ Route::group(['middleware' => 'installed'], function () {
     });
 
     // Staff Routes (using dedicated Staff controllers with limited functionality)
-    Route::middleware(['auth', 'staff', 'require.2fa', 'log.activity'])->prefix('staff')->name('staff.')->group(function () {
+    Route::middleware(['auth', 'staff', 'require.2fa', 'log.activity', 'migration.check'])->prefix('staff')->name('staff.')->group(function () {
         // Staff Dashboard
         Route::get('/', [\App\Http\Controllers\Staff\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard', [\App\Http\Controllers\Staff\DashboardController::class, 'index']);
