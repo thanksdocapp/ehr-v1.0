@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\Setting;
 use App\Helpers\CurrencyHelper;
-use App\Models\User;
+use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\Department;
+use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -28,9 +28,9 @@ class SettingsController extends Controller
             'total_settings' => Setting::count(),
             'active_features' => Setting::where('type', 'boolean')->where('value', '1')->count(),
             'pending_updates' => 0, // Could be updated notifications
-            'system_health' => $this->getSystemHealth()
+            'system_health' => $this->getSystemHealth(),
         ];
-        
+
         return view('admin.settings.index', compact('stats'));
     }
 
@@ -48,7 +48,7 @@ class SettingsController extends Controller
             'total_doctors' => Doctor::count(),
             'total_patients' => Patient::count(),
             'total_departments' => Department::count(),
-            'system_uptime' => $this->getSystemUptime()
+            'system_uptime' => $this->getSystemUptime(),
         ];
 
         return view('admin.settings.general', compact('settings', 'statistics'));
@@ -71,6 +71,8 @@ class SettingsController extends Controller
                 'kyc_required' => 'nullable|string',
                 'patient_login_enabled' => 'nullable|string',
                 'public_booking_enabled' => 'nullable|string',
+                'migration_mode' => 'nullable|string',
+                'migration_mode_new_url' => 'nullable|string|max:500',
                 'logo_light' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
                 'logo_dark' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
                 'favicon' => 'nullable|image|mimes:png,jpg,jpeg,ico|max:1024',
@@ -99,6 +101,8 @@ class SettingsController extends Controller
                 'enable_frontend' => $request->input('enable_frontend', '0') == '1' ? '1' : '0',
                 'patient_login_enabled' => $request->input('patient_login_enabled', '1') == '1' ? '1' : '0',
                 'public_booking_enabled' => $request->input('public_booking_enabled', '1') == '1' ? '1' : '0',
+                'migration_mode' => $request->input('migration_mode', '0') == '1' ? '1' : '0',
+                'migration_mode_new_url' => $request->input('migration_mode_new_url', ''),
                 'debug_mode' => $request->debug_mode ?? '0',
                 'cache_enabled' => $request->cache_enabled ?? '1',
                 'session_timeout' => $request->session_timeout ?? '120',
@@ -109,7 +113,7 @@ class SettingsController extends Controller
             ];
 
             foreach ($generalSettings as $key => $value) {
-                $type = in_array($key, ['maintenance_mode', 'registration_enabled', 'kyc_required', 'enable_frontend', 'patient_login_enabled', 'public_booking_enabled', 'show_powered_by']) ? 'boolean' : 'string';
+                $type = in_array($key, ['maintenance_mode', 'registration_enabled', 'kyc_required', 'enable_frontend', 'patient_login_enabled', 'public_booking_enabled', 'show_powered_by', 'migration_mode']) ? 'boolean' : 'string';
                 Setting::set($key, $value, $type, 'general');
             }
 
@@ -139,11 +143,12 @@ class SettingsController extends Controller
             return back()->with('success', 'General settings updated successfully');
 
         } catch (\Exception $e) {
-            Log::error('Error updating general settings: ' . $e->getMessage());
-            return back()->with('error', 'Failed to update settings: ' . $e->getMessage())->withInput();
+            Log::error('Error updating general settings: '.$e->getMessage());
+
+            return back()->with('error', 'Failed to update settings: '.$e->getMessage())->withInput();
         }
     }
-    
+
     /**
      * Handle logo and favicon uploads
      */
@@ -152,155 +157,155 @@ class SettingsController extends Controller
         try {
             // Create logos directory if it doesn't exist
             // Fix for shared hosting where public_path() may add extra /public directory
-            $logoPath = $_SERVER['DOCUMENT_ROOT'] . '/assets/images/logos';
-            
+            $logoPath = $_SERVER['DOCUMENT_ROOT'].'/assets/images/logos';
+
             // Fallback to Laravel's public_path if document root method doesn't work
-            if (!is_dir(dirname($logoPath))) {
+            if (! is_dir(dirname($logoPath))) {
                 $logoPath = public_path('assets/images/logos');
             }
-            
-            Log::info('Using logo path: ' . $logoPath);
-            
-            if (!file_exists($logoPath)) {
-                if (!mkdir($logoPath, 0755, true)) {
-                    Log::error('Failed to create logo directory: ' . $logoPath);
+
+            Log::info('Using logo path: '.$logoPath);
+
+            if (! file_exists($logoPath)) {
+                if (! mkdir($logoPath, 0755, true)) {
+                    Log::error('Failed to create logo directory: '.$logoPath);
                     throw new \Exception('Unable to create logo directory');
                 }
             }
-            
+
             // Ensure directory is writable
-            if (!is_writable($logoPath)) {
-                Log::error('Logo directory is not writable: ' . $logoPath);
+            if (! is_writable($logoPath)) {
+                Log::error('Logo directory is not writable: '.$logoPath);
                 throw new \Exception('Logo directory is not writable');
             }
-            
+
             // Handle light logo upload
             if ($request->hasFile('logo_light')) {
                 Log::info('Processing light logo upload');
-                
+
                 $lightLogo = $request->file('logo_light');
-                
+
                 // Validate file
-                if (!$lightLogo->isValid()) {
-                    Log::error('Light logo file is not valid: ' . $lightLogo->getErrorMessage());
-                    throw new \Exception('Light logo file is invalid: ' . $lightLogo->getErrorMessage());
+                if (! $lightLogo->isValid()) {
+                    Log::error('Light logo file is not valid: '.$lightLogo->getErrorMessage());
+                    throw new \Exception('Light logo file is invalid: '.$lightLogo->getErrorMessage());
                 }
-                
-                $lightLogoName = 'logo-light.' . $lightLogo->getClientOriginalExtension();
-                $lightLogoPath = 'assets/images/logos/' . $lightLogoName;
-                $fullPath = $logoPath . '/' . $lightLogoName;
-                
-                Log::info('Light logo details: ' . json_encode([
+
+                $lightLogoName = 'logo-light.'.$lightLogo->getClientOriginalExtension();
+                $lightLogoPath = 'assets/images/logos/'.$lightLogoName;
+                $fullPath = $logoPath.'/'.$lightLogoName;
+
+                Log::info('Light logo details: '.json_encode([
                     'original_name' => $lightLogo->getClientOriginalName(),
                     'size' => $lightLogo->getSize(),
                     'mime' => $lightLogo->getMimeType(),
                     'target_name' => $lightLogoName,
-                    'target_path' => $fullPath
+                    'target_path' => $fullPath,
                 ]));
-                
+
                 // Delete old logo if exists
                 $oldLightLogo = $fullPath;
                 if (file_exists($oldLightLogo)) {
-                    if (!unlink($oldLightLogo)) {
-                        Log::warning('Failed to delete old light logo: ' . $oldLightLogo);
+                    if (! unlink($oldLightLogo)) {
+                        Log::warning('Failed to delete old light logo: '.$oldLightLogo);
                     } else {
-                        Log::info('Deleted old light logo: ' . $oldLightLogo);
+                        Log::info('Deleted old light logo: '.$oldLightLogo);
                     }
                 }
-                
+
                 // Log pre-move status
-                Log::info('Pre-move check - Target directory writable: ' . (is_writable($logoPath) ? 'YES' : 'NO'));
-                Log::info('Pre-move check - Target directory exists: ' . (is_dir($logoPath) ? 'YES' : 'NO'));
-                Log::info('Pre-move check - Source file exists: ' . (file_exists($lightLogo->getPathname()) ? 'YES' : 'NO'));
-                Log::info('Pre-move check - Source file size: ' . filesize($lightLogo->getPathname()) . ' bytes');
-                
+                Log::info('Pre-move check - Target directory writable: '.(is_writable($logoPath) ? 'YES' : 'NO'));
+                Log::info('Pre-move check - Target directory exists: '.(is_dir($logoPath) ? 'YES' : 'NO'));
+                Log::info('Pre-move check - Source file exists: '.(file_exists($lightLogo->getPathname()) ? 'YES' : 'NO'));
+                Log::info('Pre-move check - Source file size: '.filesize($lightLogo->getPathname()).' bytes');
+
                 // Move the uploaded file
                 $moveResult = $lightLogo->move($logoPath, $lightLogoName);
-                Log::info('Move operation result: ' . ($moveResult ? 'SUCCESS' : 'FAILED'));
-                
+                Log::info('Move operation result: '.($moveResult ? 'SUCCESS' : 'FAILED'));
+
                 if ($moveResult) {
                     Log::info('Light logo move operation returned success');
-                    
+
                     // Immediate verification
                     clearstatcache(); // Clear file status cache
                     $fileExists = file_exists($fullPath);
-                    Log::info('Immediate post-move file check: ' . ($fileExists ? 'EXISTS' : 'NOT FOUND'));
-                    
+                    Log::info('Immediate post-move file check: '.($fileExists ? 'EXISTS' : 'NOT FOUND'));
+
                     if ($fileExists) {
                         $actualSize = filesize($fullPath);
-                        Log::info('Light logo file verified, size: ' . $actualSize . ' bytes');
-                        Log::info('File permissions: ' . decoct(fileperms($fullPath) & 0777));
-                        
+                        Log::info('Light logo file verified, size: '.$actualSize.' bytes');
+                        Log::info('File permissions: '.decoct(fileperms($fullPath) & 0777));
+
                         // Save to both Setting and SiteSetting models for frontend compatibility
                         Setting::set('logo_light', $lightLogoPath, 'string', 'general');
                         \App\Models\SiteSetting::set('site_logo', $lightLogoPath, 'Site Logo');
-                        
-                        Log::info('Light logo settings saved: ' . $lightLogoPath);
+
+                        Log::info('Light logo settings saved: '.$lightLogoPath);
                     } else {
                         // Additional debugging for missing file
                         $dirListing = scandir($logoPath);
                         Log::error('Light logo file was not created after move');
-                        Log::error('Directory contents after move: ' . json_encode($dirListing));
-                        Log::error('Expected file path: ' . $fullPath);
-                        Log::error('Logo directory: ' . $logoPath);
-                        Log::error('File name: ' . $lightLogoName);
+                        Log::error('Directory contents after move: '.json_encode($dirListing));
+                        Log::error('Expected file path: '.$fullPath);
+                        Log::error('Logo directory: '.$logoPath);
+                        Log::error('File name: '.$lightLogoName);
                         throw new \Exception('Light logo upload failed - file not found after move');
                     }
                 } else {
                     $phpError = error_get_last();
                     Log::error('Failed to move light logo file');
-                    Log::error('PHP error details: ' . json_encode($phpError));
-                    throw new \Exception('Failed to move light logo file: ' . ($phpError['message'] ?? 'Unknown error'));
+                    Log::error('PHP error details: '.json_encode($phpError));
+                    throw new \Exception('Failed to move light logo file: '.($phpError['message'] ?? 'Unknown error'));
                 }
             }
-            
+
             // Handle dark logo upload
             if ($request->hasFile('logo_dark')) {
                 Log::info('Processing dark logo upload');
-                
+
                 $darkLogo = $request->file('logo_dark');
-                
+
                 // Validate file
-                if (!$darkLogo->isValid()) {
-                    Log::error('Dark logo file is not valid: ' . $darkLogo->getErrorMessage());
-                    throw new \Exception('Dark logo file is invalid: ' . $darkLogo->getErrorMessage());
+                if (! $darkLogo->isValid()) {
+                    Log::error('Dark logo file is not valid: '.$darkLogo->getErrorMessage());
+                    throw new \Exception('Dark logo file is invalid: '.$darkLogo->getErrorMessage());
                 }
-                
-                $darkLogoName = 'logo-dark.' . $darkLogo->getClientOriginalExtension();
-                $darkLogoPath = 'assets/images/logos/' . $darkLogoName;
-                $fullPath = $logoPath . '/' . $darkLogoName;
-                
-                Log::info('Dark logo details: ' . json_encode([
+
+                $darkLogoName = 'logo-dark.'.$darkLogo->getClientOriginalExtension();
+                $darkLogoPath = 'assets/images/logos/'.$darkLogoName;
+                $fullPath = $logoPath.'/'.$darkLogoName;
+
+                Log::info('Dark logo details: '.json_encode([
                     'original_name' => $darkLogo->getClientOriginalName(),
                     'size' => $darkLogo->getSize(),
                     'mime' => $darkLogo->getMimeType(),
                     'target_name' => $darkLogoName,
-                    'target_path' => $fullPath
+                    'target_path' => $fullPath,
                 ]));
-                
+
                 // Delete old logo if exists
                 $oldDarkLogo = $fullPath;
                 if (file_exists($oldDarkLogo)) {
-                    if (!unlink($oldDarkLogo)) {
-                        Log::warning('Failed to delete old dark logo: ' . $oldDarkLogo);
+                    if (! unlink($oldDarkLogo)) {
+                        Log::warning('Failed to delete old dark logo: '.$oldDarkLogo);
                     } else {
-                        Log::info('Deleted old dark logo: ' . $oldDarkLogo);
+                        Log::info('Deleted old dark logo: '.$oldDarkLogo);
                     }
                 }
-                
+
                 // Move the uploaded file
                 if ($darkLogo->move($logoPath, $darkLogoName)) {
-                    Log::info('Dark logo moved successfully to: ' . $fullPath);
-                    
+                    Log::info('Dark logo moved successfully to: '.$fullPath);
+
                     // Verify file was created
                     if (file_exists($fullPath)) {
-                        Log::info('Dark logo file verified, size: ' . filesize($fullPath) . ' bytes');
-                        
+                        Log::info('Dark logo file verified, size: '.filesize($fullPath).' bytes');
+
                         // Save to both Setting and SiteSetting models
                         Setting::set('logo_dark', $darkLogoPath, 'string', 'general');
                         \App\Models\SiteSetting::set('site_logo_dark', $darkLogoPath, 'Site Logo Dark');
-                        
-                        Log::info('Dark logo settings saved: ' . $darkLogoPath);
+
+                        Log::info('Dark logo settings saved: '.$darkLogoPath);
                     } else {
                         Log::error('Dark logo file was not created after move');
                         throw new \Exception('Dark logo upload failed - file not found after move');
@@ -310,39 +315,39 @@ class SettingsController extends Controller
                     throw new \Exception('Failed to move dark logo file');
                 }
             }
-            
+
             // Handle favicon upload
             if ($request->hasFile('favicon')) {
                 Log::info('Processing favicon upload');
-                
+
                 $favicon = $request->file('favicon');
-                
+
                 // Validate file
-                if (!$favicon->isValid()) {
-                    Log::error('Favicon file is not valid: ' . $favicon->getErrorMessage());
-                    throw new \Exception('Favicon file is invalid: ' . $favicon->getErrorMessage());
+                if (! $favicon->isValid()) {
+                    Log::error('Favicon file is not valid: '.$favicon->getErrorMessage());
+                    throw new \Exception('Favicon file is invalid: '.$favicon->getErrorMessage());
                 }
-                
-                $faviconName = 'favicon.' . $favicon->getClientOriginalExtension();
-                
+
+                $faviconName = 'favicon.'.$favicon->getClientOriginalExtension();
+
                 // Determine the correct public path (for shared hosting compatibility)
                 $publicPath = $_SERVER['DOCUMENT_ROOT'] ?? public_path();
-                
+
                 // If public_html exists, use that instead (shared hosting)
-                if (is_dir($publicPath . '/public_html')) {
-                    $publicPath = $publicPath . '/public_html';
-                } elseif (basename($publicPath) !== 'public_html' && is_dir(dirname($publicPath) . '/public_html')) {
-                    $publicPath = dirname($publicPath) . '/public_html';
+                if (is_dir($publicPath.'/public_html')) {
+                    $publicPath = $publicPath.'/public_html';
+                } elseif (basename($publicPath) !== 'public_html' && is_dir(dirname($publicPath).'/public_html')) {
+                    $publicPath = dirname($publicPath).'/public_html';
                 }
-                
+
                 // Fallback to Laravel's public_path if the above doesn't work
-                if (!is_dir($publicPath) || !is_writable($publicPath)) {
+                if (! is_dir($publicPath) || ! is_writable($publicPath)) {
                     $publicPath = public_path();
                 }
-                
-                $targetPath = $publicPath . '/' . $faviconName;
-                
-                Log::info('Favicon details: ' . json_encode([
+
+                $targetPath = $publicPath.'/'.$faviconName;
+
+                Log::info('Favicon details: '.json_encode([
                     'original_name' => $favicon->getClientOriginalName(),
                     'size' => $favicon->getSize(),
                     'mime' => $favicon->getMimeType(),
@@ -350,105 +355,107 @@ class SettingsController extends Controller
                     'public_path' => $publicPath,
                     'target_path' => $targetPath,
                     'document_root' => $_SERVER['DOCUMENT_ROOT'] ?? 'not set',
-                    'laravel_public_path' => public_path()
+                    'laravel_public_path' => public_path(),
                 ]));
-                
+
                 // Ensure target directory exists and is writable
-                if (!is_dir($publicPath)) {
-                    Log::error('Target directory does not exist: ' . $publicPath);
-                    throw new \Exception('Target directory does not exist: ' . $publicPath);
+                if (! is_dir($publicPath)) {
+                    Log::error('Target directory does not exist: '.$publicPath);
+                    throw new \Exception('Target directory does not exist: '.$publicPath);
                 }
-                
-                if (!is_writable($publicPath)) {
-                    Log::error('Target directory is not writable: ' . $publicPath);
-                    throw new \Exception('Target directory is not writable: ' . $publicPath);
+
+                if (! is_writable($publicPath)) {
+                    Log::error('Target directory is not writable: '.$publicPath);
+                    throw new \Exception('Target directory is not writable: '.$publicPath);
                 }
-                
+
                 // Delete old favicon if exists
                 if (file_exists($targetPath)) {
-                    if (!unlink($targetPath)) {
-                        Log::warning('Failed to delete old favicon: ' . $targetPath);
+                    if (! unlink($targetPath)) {
+                        Log::warning('Failed to delete old favicon: '.$targetPath);
                     } else {
-                        Log::info('Deleted old favicon: ' . $targetPath);
+                        Log::info('Deleted old favicon: '.$targetPath);
                     }
                 }
-                
+
                 // Move the uploaded file
                 try {
                     if ($favicon->move($publicPath, $faviconName)) {
-                        Log::info('Favicon moved successfully to: ' . $targetPath);
-                        
+                        Log::info('Favicon moved successfully to: '.$targetPath);
+
                         // Verify file was created with a small delay for filesystem
                         clearstatcache(); // Clear file status cache
                         usleep(150000); // 150ms delay for shared hosting
-                        
+
                         if (file_exists($targetPath)) {
                             $fileSize = filesize($targetPath);
-                            Log::info('Favicon file verified, size: ' . $fileSize . ' bytes');
-                            
+                            Log::info('Favicon file verified, size: '.$fileSize.' bytes');
+
                             // Save to both Setting and SiteSetting models
                             Setting::set('favicon', $faviconName, 'string', 'general');
                             \App\Models\SiteSetting::set('site_favicon', $faviconName, 'Site Favicon');
-                            
-                            Log::info('Favicon settings saved: ' . $faviconName);
+
+                            Log::info('Favicon settings saved: '.$faviconName);
                         } else {
                             Log::error('Favicon file was not found after move operation');
-                            Log::error('Expected path: ' . $targetPath);
-                            Log::error('Directory contents: ' . json_encode(scandir($publicPath)));
+                            Log::error('Expected path: '.$targetPath);
+                            Log::error('Directory contents: '.json_encode(scandir($publicPath)));
                             throw new \Exception('Favicon upload failed - file not found after move');
                         }
                     } else {
                         Log::error('Move operation returned false');
                         $phpError = error_get_last();
-                        Log::error('PHP error: ' . json_encode($phpError));
+                        Log::error('PHP error: '.json_encode($phpError));
                         throw new \Exception('Failed to move favicon file');
                     }
                 } catch (\Exception $e) {
-                    Log::error('Exception during favicon move: ' . $e->getMessage());
-                    throw new \Exception('Favicon upload failed: ' . $e->getMessage());
+                    Log::error('Exception during favicon move: '.$e->getMessage());
+                    throw new \Exception('Favicon upload failed: '.$e->getMessage());
                 }
             }
-            
+
         } catch (\Exception $e) {
-            Log::error('Logo upload error: ' . $e->getMessage());
+            Log::error('Logo upload error: '.$e->getMessage());
             // Don't throw the exception to prevent the entire settings update from failing
             // Instead, you could add a session error message
-            session()->flash('warning', 'Logo upload issue: ' . $e->getMessage() . '. Other settings were saved successfully.');
+            session()->flash('warning', 'Logo upload issue: '.$e->getMessage().'. Other settings were saved successfully.');
         }
     }
-    
+
     private function getSystemHealth()
     {
         $health = 100;
-        
+
         // Check database connection
         try {
             DB::connection()->getPdo();
         } catch (\Exception $e) {
             $health -= 30;
         }
-        
+
         // Check storage
         $freeSpace = disk_free_space('.');
         $totalSpace = disk_total_space('.');
         $usagePercent = (($totalSpace - $freeSpace) / $totalSpace) * 100;
-        
+
         if ($usagePercent > 90) {
             $health -= 20;
         } elseif ($usagePercent > 80) {
             $health -= 10;
         }
-        
+
         return max(0, $health);
     }
-    
+
     private function getSystemUptime()
     {
         try {
-            if (function_exists('shell_exec') && !in_array('shell_exec', explode(',', ini_get('disable_functions')))) {
+            if (function_exists('shell_exec') && ! in_array('shell_exec', explode(',', ini_get('disable_functions')))) {
                 $uptime = shell_exec('uptime -p');
+
                 return $uptime ? trim(str_replace('up ', '', $uptime)) : 'Unable to determine';
             }
+
             return 'Unable to determine';
         } catch (\Exception $e) {
             return 'Unable to determine';
@@ -459,7 +466,7 @@ class SettingsController extends Controller
      * NOTE: Email and SMS settings methods have been moved to CommunicationController
      * to avoid duplication. Use admin.email-config and admin.sms-config routes instead.
      */
-    
+
     /*
     public function email()
     {
@@ -470,7 +477,7 @@ class SettingsController extends Controller
             'failed_emails' => \App\Models\EmailLog::where('status', 'failed')->count(),
             'email_templates' => \App\Models\EmailTemplate::count()
         ];
-        
+
         return view('admin.settings.email', compact('settings', 'statistics'));
     }
 
@@ -510,7 +517,7 @@ class SettingsController extends Controller
         }
 
         Setting::clearCache();
-        
+
         return back()->with('success', 'Email settings updated successfully');
     }
 
@@ -523,7 +530,7 @@ class SettingsController extends Controller
             'failed_sms' => 0, // Could be from SmsLog model if exists
             'sms_templates' => 0 // Could be from SmsTemplate model if exists
         ];
-        
+
         return view('admin.settings.sms', compact('settings', 'statistics'));
     }
 
@@ -565,7 +572,7 @@ class SettingsController extends Controller
         }
 
         Setting::clearCache();
-        
+
         return back()->with('success', 'SMS settings updated successfully');
     }
     */
@@ -573,23 +580,23 @@ class SettingsController extends Controller
     public function security()
     {
         $settings = Setting::getGroup('security');
-        
+
         // Get recent active users (since we don't have a session logs table)
         $activeUsers = User::where('last_login_at', '>', now()->subHours(24))
             ->select('id', 'name', 'email', 'last_login_at', 'role')
             ->latest('last_login_at')
             ->take(10)
             ->get();
-            
+
         // Get real statistics from database
         $statistics = [
             'active_users_today' => User::where('last_login_at', '>', now()->subDay())->count(),
             'total_users' => User::count(),
             'admin_users' => User::where('is_admin', true)->count(),
             'active_staff' => User::where('is_active', true)->count(),
-            'security_score' => $this->calculateSecurityScore($settings)
+            'security_score' => $this->calculateSecurityScore($settings),
         ];
-        
+
         return view('admin.settings.security', compact('settings', 'statistics', 'activeUsers'));
     }
 
@@ -598,7 +605,7 @@ class SettingsController extends Controller
         try {
             // Log the incoming request for debugging
             Log::info('Security settings update request', $request->all());
-            
+
             $validator = Validator::make($request->all(), [
                 'login_attempts' => 'required|integer|min:1|max:20',
                 'lockout_duration' => 'required|integer|min:1|max:1440',
@@ -621,16 +628,17 @@ class SettingsController extends Controller
 
             if ($validator->fails()) {
                 Log::error('Security settings validation failed', $validator->errors()->toArray());
+
                 return back()->withErrors($validator)->withInput();
             }
 
             $securitySettings = [
-                'login_attempts' => (string)$request->login_attempts,
-                'lockout_duration' => (string)$request->lockout_duration,
-                'session_timeout' => (string)$request->session_timeout,
-                'password_expiry' => (string)$request->password_expiry,
-                'min_password_length' => (string)$request->min_password_length,
-                'password_history' => (string)$request->password_history,
+                'login_attempts' => (string) $request->login_attempts,
+                'lockout_duration' => (string) $request->lockout_duration,
+                'session_timeout' => (string) $request->session_timeout,
+                'password_expiry' => (string) $request->password_expiry,
+                'min_password_length' => (string) $request->min_password_length,
+                'password_history' => (string) $request->password_history,
                 'require_uppercase' => $request->has('require_uppercase') ? '1' : '0',
                 'require_lowercase' => $request->has('require_lowercase') ? '1' : '0',
                 'require_numbers' => $request->has('require_numbers') ? '1' : '0',
@@ -647,24 +655,26 @@ class SettingsController extends Controller
             Log::info('Processing security settings', $securitySettings);
 
             foreach ($securitySettings as $key => $value) {
-                $type = in_array($key, ['login_attempts', 'lockout_duration', 'session_timeout', 'password_expiry', 'min_password_length', 'password_history']) ? 'integer' : 
+                $type = in_array($key, ['login_attempts', 'lockout_duration', 'session_timeout', 'password_expiry', 'min_password_length', 'password_history']) ? 'integer' :
                        (in_array($key, ['require_uppercase', 'require_lowercase', 'require_numbers', 'require_special_chars', 'force_2fa', 'force_admin_2fa', 'enable_ip_whitelist', 'enable_captcha', 'enable_login_notifications', 'enable_device_tracking']) ? 'boolean' : 'string');
-                
+
                 Log::info("Setting: {$key} = {$value} (type: {$type})");
                 Setting::set($key, $value, $type, 'security');
             }
 
             Setting::clearCache();
-            
+
             Log::info('Security settings updated successfully');
+
             return back()->with('success', 'Security settings updated successfully!');
-            
+
         } catch (\Exception $e) {
-            Log::error('Error updating security settings: ' . $e->getMessage());
-            return back()->with('error', 'Failed to update security settings: ' . $e->getMessage());
+            Log::error('Error updating security settings: '.$e->getMessage());
+
+            return back()->with('error', 'Failed to update security settings: '.$e->getMessage());
         }
     }
-    
+
     public function securityLogs()
     {
         // In a real implementation, you would fetch actual security log data
@@ -678,7 +688,7 @@ class SettingsController extends Controller
                 'location' => 'New York, US',
                 'severity' => 'warning',
                 'created_at' => now()->subMinutes(15),
-                'details' => 'Multiple failed login attempts detected'
+                'details' => 'Multiple failed login attempts detected',
             ],
             [
                 'id' => 2,
@@ -689,7 +699,7 @@ class SettingsController extends Controller
                 'location' => 'California, US',
                 'severity' => 'info',
                 'created_at' => now()->subHours(2),
-                'details' => 'User successfully changed password'
+                'details' => 'User successfully changed password',
             ],
             [
                 'id' => 3,
@@ -700,7 +710,7 @@ class SettingsController extends Controller
                 'location' => 'Unknown',
                 'severity' => 'high',
                 'created_at' => now()->subHours(6),
-                'details' => 'Login from unusual location detected'
+                'details' => 'Login from unusual location detected',
             ],
             [
                 'id' => 4,
@@ -711,7 +721,7 @@ class SettingsController extends Controller
                 'location' => 'Texas, US',
                 'severity' => 'medium',
                 'created_at' => now()->subHours(12),
-                'details' => 'Account locked after 5 failed login attempts'
+                'details' => 'Account locked after 5 failed login attempts',
             ],
             [
                 'id' => 5,
@@ -722,23 +732,24 @@ class SettingsController extends Controller
                 'location' => 'Florida, US',
                 'severity' => 'info',
                 'created_at' => now()->subDay(),
-                'details' => 'Two-factor authentication enabled successfully'
-            ]
+                'details' => 'Two-factor authentication enabled successfully',
+            ],
         ]);
-        
+
         $statistics = [
             'total_events' => $logs->count(),
             'high_severity' => $logs->where('severity', 'high')->count(),
             'failed_logins' => $logs->where('event', 'Failed Login Attempt')->count(),
-            'suspicious_activities' => $logs->whereIn('severity', ['high', 'warning'])->count()
+            'suspicious_activities' => $logs->whereIn('severity', ['high', 'warning'])->count(),
         ];
-        
+
         return view('admin.settings.security-logs', compact('logs', 'statistics'));
     }
 
     public function maintenance()
     {
         $settings = Setting::getGroup('maintenance');
+
         return view('admin.settings.maintenance', compact('settings'));
     }
 
@@ -749,9 +760,9 @@ class SettingsController extends Controller
             'current_theme' => $settings['theme_mode'] ?? 'default',
             'custom_colors' => count(array_filter([$settings['primary_color'] ?? null, $settings['secondary_color'] ?? null])),
             'active_sections' => 5, // Main sections using theme colors
-            'last_updated' => Setting::where('group', 'appearance')->latest('updated_at')->first()?->updated_at?->diffForHumans() ?? 'Never'
+            'last_updated' => Setting::where('group', 'appearance')->latest('updated_at')->first()?->updated_at?->diffForHumans() ?? 'Never',
         ];
-        
+
         return view('admin.settings.appearance', compact('settings', 'statistics'));
     }
 
@@ -783,17 +794,17 @@ class SettingsController extends Controller
 
             // Additional validation for hex color format using a helper function
             $colorFields = ['primary_color', 'secondary_color', 'accent_color', 'text_color',
-                           'background_color', 'sidebar_color', 'success_color', 'danger_color',
-                           'warning_color', 'info_color', 'button_hover_color', 'button_secondary_hover_color',
-                           'button_success_hover_color', 'button_danger_hover_color',
-                           'button_warning_hover_color', 'button_info_hover_color'];
+                'background_color', 'sidebar_color', 'success_color', 'danger_color',
+                'warning_color', 'info_color', 'button_hover_color', 'button_secondary_hover_color',
+                'button_success_hover_color', 'button_danger_hover_color',
+                'button_warning_hover_color', 'button_info_hover_color'];
 
             foreach ($colorFields as $field) {
                 $value = $request->input($field);
                 if ($value) {
                     // Ensure the value is a string and starts with #
                     $value = trim((string) $value);
-                    if (!$this->isValidHexColor($value)) {
+                    if (! $this->isValidHexColor($value)) {
                         return back()->withErrors([$field => 'Invalid hex color format. Use format #RRGGBB (e.g., #FF0000)'])->withInput();
                     }
                 }
@@ -848,8 +859,9 @@ class SettingsController extends Controller
             return back()->with('success', 'Theme settings updated successfully!');
 
         } catch (\Exception $e) {
-            Log::error('Error updating appearance settings: ' . $e->getMessage());
-            return back()->with('error', 'Failed to update theme settings: ' . $e->getMessage());
+            Log::error('Error updating appearance settings: '.$e->getMessage());
+
+            return back()->with('error', 'Failed to update theme settings: '.$e->getMessage());
         }
     }
 
@@ -886,33 +898,34 @@ class SettingsController extends Controller
             }
 
             Setting::clearCache();
-            
+
             return back()->with('success', 'Maintenance settings updated successfully!');
-            
+
         } catch (\Exception $e) {
-            Log::error('Error updating maintenance settings: ' . $e->getMessage());
-            return back()->with('error', 'Failed to update maintenance settings: ' . $e->getMessage());
+            Log::error('Error updating maintenance settings: '.$e->getMessage());
+
+            return back()->with('error', 'Failed to update maintenance settings: '.$e->getMessage());
         }
     }
 
     public function backup()
     {
         $settings = Setting::getGroup('backup');
-        
+
         // Get real backup statistics from database and file system
         $backupStats = $this->getBackupStatistics();
         $recentBackups = $this->getRecentBackups();
-        
+
         // Get database safety statistics
         $databaseStats = \App\Services\DatabaseSafetyService::getDatabaseStats();
         $hasData = \App\Services\DatabaseSafetyService::hasData();
-        
+
         // Get backup files from storage
         $backupDir = storage_path('app/backups');
         $backupFiles = [];
-        
+
         if (is_dir($backupDir)) {
-            $files = glob($backupDir . '/*.{sql,sql.gz}', GLOB_BRACE);
+            $files = glob($backupDir.'/*.{sql,sql.gz}', GLOB_BRACE);
             foreach ($files as $file) {
                 $backupFiles[] = [
                     'filename' => basename($file),
@@ -924,16 +937,16 @@ class SettingsController extends Controller
                     'compressed' => pathinfo($file, PATHINFO_EXTENSION) === 'gz',
                 ];
             }
-            
+
             // Sort by creation time (newest first)
             usort($backupFiles, function ($a, $b) {
                 return filemtime($b['path']) - filemtime($a['path']);
             });
-            
+
             // Limit to last 20
             $backupFiles = array_slice($backupFiles, 0, 20);
         }
-        
+
         return view('admin.settings.backup', compact('settings', 'backupStats', 'recentBackups', 'databaseStats', 'hasData', 'backupFiles'));
     }
 
@@ -968,7 +981,7 @@ class SettingsController extends Controller
         ];
 
         foreach ($backupSettings as $key => $value) {
-            Setting::set('backup.' . $key, $value);
+            Setting::set('backup.'.$key, $value);
         }
 
         return back()->with('success', 'Backup settings updated successfully!');
@@ -980,76 +993,78 @@ class SettingsController extends Controller
             // Use the new BackupDatabase command
             $compress = $request->has('compress');
             $keep = $request->input('keep', 7);
-            
+
             $exitCode = Artisan::call('db:backup', [
                 '--compress' => $compress,
                 '--keep' => $keep,
             ]);
-            
+
             if ($exitCode === 0) {
                 // Get backup log to find the latest backup
                 $backupLogPath = storage_path('app/backups/backup_log.json');
                 if (file_exists($backupLogPath)) {
                     $logs = json_decode(file_get_contents($backupLogPath), true);
                     $latestBackup = end($logs);
-                    
+
                     if ($latestBackup) {
                         return response()->json([
-                            'success' => true, 
+                            'success' => true,
                             'message' => 'Backup created successfully!',
                             'file' => $latestBackup['file'] ?? null,
                             'size' => isset($latestBackup['size']) ? $this->formatBytes($latestBackup['size']) : null,
-                            'created_at' => $latestBackup['created_at'] ?? now()->toIso8601String()
+                            'created_at' => $latestBackup['created_at'] ?? now()->toIso8601String(),
                         ]);
                     }
                 }
-                
+
                 return response()->json([
-                    'success' => true, 
-                    'message' => 'Backup created successfully!'
+                    'success' => true,
+                    'message' => 'Backup created successfully!',
                 ]);
             } else {
                 $output = Artisan::output();
+
                 return response()->json([
-                    'success' => false, 
-                    'message' => 'Failed to create backup: ' . ($output ?: 'Unknown error')
+                    'success' => false,
+                    'message' => 'Failed to create backup: '.($output ?: 'Unknown error'),
                 ], 500);
             }
         } catch (\Exception $e) {
-            Log::error('Error creating backup: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+            Log::error('Error creating backup: '.$e->getMessage());
+
+            return response()->json(['success' => false, 'message' => 'Error: '.$e->getMessage()], 500);
         }
     }
 
     public function restoreBackup(Request $request)
     {
         $request->validate([
-            'backup_file' => 'required|file|mimes:sql,zip,gz'
+            'backup_file' => 'required|file|mimes:sql,zip,gz',
         ]);
-        
+
         try {
             $file = $request->file('backup_file');
-            $filename = 'restore_' . time() . '.' . $file->getClientOriginalExtension();
+            $filename = 'restore_'.time().'.'.$file->getClientOriginalExtension();
             $path = storage_path('app/backups/restore');
-            
+
             // Create restore directory if it doesn't exist
-            if (!file_exists($path)) {
+            if (! file_exists($path)) {
                 mkdir($path, 0755, true);
             }
-            
+
             $file->move($path, $filename);
-            $fullPath = $path . '/' . $filename;
-            
+            $fullPath = $path.'/'.$filename;
+
             // Get database configuration
-            $database = config('database.connections.' . config('database.default') . '.database');
-            $username = config('database.connections.' . config('database.default') . '.username');
-            $password = config('database.connections.' . config('database.default') . '.password');
-            $host = config('database.connections.' . config('database.default') . '.host');
-            
+            $database = config('database.connections.'.config('database.default').'.database');
+            $username = config('database.connections.'.config('database.default').'.username');
+            $password = config('database.connections.'.config('database.default').'.password');
+            $host = config('database.connections.'.config('database.default').'.host');
+
             // Restore database
             $command = "mysql --user={$username} --password={$password} --host={$host} {$database} < {$fullPath}";
             exec($command, $output, $returnVar);
-            
+
             if ($returnVar === 0) {
                 // Log the restore operation
                 DB::table('backup_logs')->insert([
@@ -1061,26 +1076,26 @@ class SettingsController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-                
+
                 // Clean up restore file
                 unlink($fullPath);
-                
+
                 return response()->json(['success' => true, 'message' => 'Backup restored successfully!']);
             } else {
                 return response()->json(['success' => false, 'message' => 'Failed to restore backup'], 500);
             }
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Error: '.$e->getMessage()], 500);
         }
     }
-    
+
     private function getBackupStatistics()
     {
         try {
             // Check if backup_logs table exists, if not create basic stats
             $tableExists = Schema::hasTable('backup_logs');
-            
-            if (!$tableExists) {
+
+            if (! $tableExists) {
                 return [
                     'total_backups' => 0,
                     'storage_used' => '0 MB',
@@ -1088,14 +1103,14 @@ class SettingsController extends Controller
                     'next_backup' => $this->getNextBackupTime(),
                 ];
             }
-            
+
             $totalBackups = DB::table('backup_logs')->where('type', '!=', 'restore')->count();
             $totalSize = DB::table('backup_logs')->where('type', '!=', 'restore')->sum('size');
             $lastBackup = DB::table('backup_logs')
                 ->where('type', '!=', 'restore')
                 ->orderBy('created_at', 'desc')
                 ->first();
-            
+
             return [
                 'total_backups' => $totalBackups,
                 'storage_used' => $this->formatBytes($totalSize ?: 0),
@@ -1111,17 +1126,17 @@ class SettingsController extends Controller
             ];
         }
     }
-    
+
     private function getRecentBackups()
     {
         try {
             // Check if backup_logs table exists
             $tableExists = Schema::hasTable('backup_logs');
-            
-            if (!$tableExists) {
+
+            if (! $tableExists) {
                 return collect([]);
             }
-            
+
             return DB::table('backup_logs')
                 ->where('type', '!=', 'restore')
                 ->orderBy('created_at', 'desc')
@@ -1141,20 +1156,20 @@ class SettingsController extends Controller
             return collect([]);
         }
     }
-    
+
     private function getNextBackupTime()
     {
         $autoBackup = Setting::get('backup.auto_backup', true);
         $frequency = Setting::get('backup.backup_frequency', 'daily');
         $time = Setting::get('backup.backup_time', '03:00');
-        
-        if (!$autoBackup) {
+
+        if (! $autoBackup) {
             return 'Not scheduled';
         }
-        
+
         $now = now();
         $nextBackup = null;
-        
+
         switch ($frequency) {
             case 'hourly':
                 $nextBackup = $now->copy()->addHour()->startOfHour();
@@ -1172,21 +1187,21 @@ class SettingsController extends Controller
                 $nextBackup = $now->copy()->addMonth()->startOfMonth()->setTimeFromTimeString($time);
                 break;
         }
-        
+
         return $nextBackup ? $nextBackup->diffForHumans() : 'Not scheduled';
     }
-    
+
     public function downloadBackup($id)
     {
         try {
             $backupDir = storage_path('app/backups');
             $backupPath = null;
             $filename = null;
-            
+
             if ($id === 'latest') {
                 // Get latest backup file
-                $files = glob($backupDir . '/*.{sql,sql.gz}', GLOB_BRACE);
-                if (!empty($files)) {
+                $files = glob($backupDir.'/*.{sql,sql.gz}', GLOB_BRACE);
+                if (! empty($files)) {
                     // Sort by modification time (newest first)
                     usort($files, function ($a, $b) {
                         return filemtime($b) - filemtime($a);
@@ -1196,7 +1211,7 @@ class SettingsController extends Controller
                 }
             } else {
                 // Find backup by filename
-                $files = glob($backupDir . '/*.{sql,sql.gz}', GLOB_BRACE);
+                $files = glob($backupDir.'/*.{sql,sql.gz}', GLOB_BRACE);
                 foreach ($files as $file) {
                     if (basename($file) === $id || strpos(basename($file), $id) !== false) {
                         $backupPath = $file;
@@ -1205,25 +1220,25 @@ class SettingsController extends Controller
                     }
                 }
             }
-            
-            if (!$backupPath || !file_exists($backupPath)) {
+
+            if (! $backupPath || ! file_exists($backupPath)) {
                 return response()->json(['success' => false, 'message' => 'Backup not found'], 404);
             }
-            
+
             return response()->download($backupPath, $filename);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Error downloading backup: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Error downloading backup: '.$e->getMessage()], 500);
         }
     }
-    
+
     public function deleteBackup($id)
     {
         try {
             $backupDir = storage_path('app/backups');
             $backupPath = null;
-            
+
             // Find backup file by filename
-            $files = glob($backupDir . '/*.{sql,sql.gz}', GLOB_BRACE);
+            $files = glob($backupDir.'/*.{sql,sql.gz}', GLOB_BRACE);
             foreach ($files as $file) {
                 $filename = basename($file);
                 if ($filename === $id || strpos($filename, $id) !== false) {
@@ -1231,11 +1246,11 @@ class SettingsController extends Controller
                     break;
                 }
             }
-            
-            if (!$backupPath || !file_exists($backupPath)) {
+
+            if (! $backupPath || ! file_exists($backupPath)) {
                 return response()->json(['success' => false, 'message' => 'Backup not found'], 404);
             }
-            
+
             // Delete the file
             if (unlink($backupPath)) {
                 return response()->json(['success' => true, 'message' => 'Backup deleted successfully!']);
@@ -1243,7 +1258,7 @@ class SettingsController extends Controller
                 return response()->json(['success' => false, 'message' => 'Failed to delete backup file'], 500);
             }
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Error deleting backup: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Error deleting backup: '.$e->getMessage()], 500);
         }
     }
 
@@ -1252,7 +1267,7 @@ class SettingsController extends Controller
         try {
             $systemInfo = [
                 'application' => [
-                    'name' => getAppName() . ' v' . getAppVersion(),
+                    'name' => getAppName().' v'.getAppVersion(),
                     'version' => getAppVersion(),
                     'company' => getCompanyName(),
                     'laravel_version' => app()->version(),
@@ -1265,7 +1280,7 @@ class SettingsController extends Controller
                 ],
                 'server' => [
                     'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
-                    'operating_system' => php_uname('s') . ' ' . php_uname('r'),
+                    'operating_system' => php_uname('s').' '.php_uname('r'),
                     'server_ip' => $_SERVER['SERVER_ADDR'] ?? $_SERVER['HTTP_HOST'] ?? 'Unknown',
                     'server_hostname' => gethostname(),
                     'document_root' => $_SERVER['DOCUMENT_ROOT'] ?? 'Unknown',
@@ -1284,9 +1299,9 @@ class SettingsController extends Controller
                 ],
                 'database' => [
                     'connection' => config('database.default'),
-                    'host' => config('database.connections.' . config('database.default') . '.host'),
-                    'port' => config('database.connections.' . config('database.default') . '.port'),
-                    'database' => config('database.connections.' . config('database.default') . '.database'),
+                    'host' => config('database.connections.'.config('database.default').'.host'),
+                    'port' => config('database.connections.'.config('database.default').'.port'),
+                    'database' => config('database.connections.'.config('database.default').'.database'),
                     'version' => $this->getDatabaseVersion(),
                     'size' => $this->getDatabaseSize(),
                     'tables_count' => $this->getTablesCount(),
@@ -1326,17 +1341,17 @@ class SettingsController extends Controller
                     'frontend_management' => '✅ Active',
                     'backup_system' => '✅ Active',
                     'admin_dashboard' => '✅ Active',
-                ]
+                ],
             ];
 
             return view('admin.settings.system-info', compact('systemInfo'));
         } catch (\Exception $e) {
-            Log::error('Error in systemInfo method: ' . $e->getMessage());
-            
+            Log::error('Error in systemInfo method: '.$e->getMessage());
+
             // Return a fallback system info array
             $systemInfo = [
                 'application' => [
-                    'name' => getAppName() . ' v' . getAppVersion(),
+                    'name' => getAppName().' v'.getAppVersion(),
                     'version' => getAppVersion(),
                     'company' => getCompanyName(),
                     'laravel_version' => 'Unknown',
@@ -1410,9 +1425,9 @@ class SettingsController extends Controller
                     'frontend_management' => '❌ Error',
                     'backup_system' => '❌ Error',
                     'admin_dashboard' => '❌ Error',
-                ]
+                ],
             ];
-            
+
             return view('admin.settings.system-info', compact('systemInfo'));
         }
     }
@@ -1420,10 +1435,12 @@ class SettingsController extends Controller
     private function getServerUptime()
     {
         try {
-            if (function_exists('shell_exec') && !in_array('shell_exec', explode(',', ini_get('disable_functions')))) {
+            if (function_exists('shell_exec') && ! in_array('shell_exec', explode(',', ini_get('disable_functions')))) {
                 $uptime = shell_exec('uptime');
+
                 return $uptime ? trim($uptime) : 'Unable to determine';
             }
+
             return 'Unable to determine';
         } catch (\Exception $e) {
             return 'Unable to determine';
@@ -1434,6 +1451,7 @@ class SettingsController extends Controller
     {
         $extensions = get_loaded_extensions();
         sort($extensions);
+
         return $extensions;
     }
 
@@ -1449,9 +1467,10 @@ class SettingsController extends Controller
     private function getDatabaseSize()
     {
         try {
-            $database = config('database.connections.' . config('database.default') . '.database');
-            $result = DB::select("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb FROM information_schema.tables WHERE table_schema = ?", [$database]);
-            return ($result[0]->size_mb ?? 0) . ' MB';
+            $database = config('database.connections.'.config('database.default').'.database');
+            $result = DB::select('SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb FROM information_schema.tables WHERE table_schema = ?', [$database]);
+
+            return ($result[0]->size_mb ?? 0).' MB';
         } catch (\Exception $e) {
             return 'Unable to determine';
         }
@@ -1460,8 +1479,9 @@ class SettingsController extends Controller
     private function getTablesCount()
     {
         try {
-            $database = config('database.connections.' . config('database.default') . '.database');
-            $result = DB::select("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ?", [$database]);
+            $database = config('database.connections.'.config('database.default').'.database');
+            $result = DB::select('SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ?', [$database]);
+
             return $result[0]->count ?? 0;
         } catch (\Exception $e) {
             return 'Unable to determine';
@@ -1477,6 +1497,7 @@ class SettingsController extends Controller
                     return $this->formatBytes($this->getDirSize($cacheDir));
                 }
             }
+
             return 'Unable to determine';
         } catch (\Exception $e) {
             return 'Unable to determine';
@@ -1486,9 +1507,10 @@ class SettingsController extends Controller
     private function getDirSize($dir)
     {
         $size = 0;
-        foreach (glob(rtrim($dir, '/') . '/*', GLOB_NOSORT) as $each) {
+        foreach (glob(rtrim($dir, '/').'/*', GLOB_NOSORT) as $each) {
             $size += is_file($each) ? filesize($each) : $this->getDirSize($each);
         }
+
         return $size;
     }
 
@@ -1499,9 +1521,10 @@ class SettingsController extends Controller
         }
         $base = log($size, 1024);
         $suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
-        return round(pow(1024, $base - floor($base)), $precision) . ' ' . $suffixes[floor($base)];
+
+        return round(pow(1024, $base - floor($base)), $precision).' '.$suffixes[floor($base)];
     }
-    
+
     /**
      * Display PHP info page
      */
@@ -1511,14 +1534,14 @@ class SettingsController extends Controller
         phpinfo();
         $content = ob_get_contents();
         ob_end_clean();
-        
+
         // Clean up the output for better presentation
         $content = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $content);
         $content = str_replace('width="600"', 'width="100%"', $content);
-        
+
         return response($content)->header('Content-Type', 'text/html');
     }
-    
+
     /**
      * Clear application cache via API
      */
@@ -1530,19 +1553,19 @@ class SettingsController extends Controller
             Artisan::call('route:clear');
             Artisan::call('config:clear');
             Artisan::call('view:clear');
-            
+
             return response()->json([
                 'success' => true,
-                'message' => 'Cache cleared successfully!'
+                'message' => 'Cache cleared successfully!',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to clear cache: ' . $e->getMessage()
+                'message' => 'Failed to clear cache: '.$e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Optimize application via API
      */
@@ -1553,23 +1576,23 @@ class SettingsController extends Controller
             Artisan::call('config:cache');
             Artisan::call('route:cache');
             Artisan::call('view:cache');
-            
+
             // Clear old optimization files first, then rebuild
             Artisan::call('optimize:clear');
             Artisan::call('optimize');
-            
+
             return response()->json([
                 'success' => true,
-                'message' => 'Application optimized successfully!'
+                'message' => 'Application optimized successfully!',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to optimize application: ' . $e->getMessage()
+                'message' => 'Failed to optimize application: '.$e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Download logs via API
      */
@@ -1577,30 +1600,30 @@ class SettingsController extends Controller
     {
         try {
             $logPath = storage_path('logs/laravel.log');
-            
-            if (!file_exists($logPath)) {
+
+            if (! file_exists($logPath)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Log file not found'
+                    'message' => 'Log file not found',
                 ], 404);
             }
-            
+
             $logContent = file_get_contents($logPath);
-            $fileName = 'laravel-' . date('Y-m-d-H-i-s') . '.log';
-            
+            $fileName = 'laravel-'.date('Y-m-d-H-i-s').'.log';
+
             return response($logContent, 200, [
                 'Content-Type' => 'text/plain',
-                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-                'Content-Length' => strlen($logContent)
+                'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+                'Content-Length' => strlen($logContent),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to download logs: ' . $e->getMessage()
+                'message' => 'Failed to download logs: '.$e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Test email configuration via API
      */
@@ -1614,7 +1637,7 @@ class SettingsController extends Controller
             } else {
                 $data = $request->all();
             }
-            
+
             $validator = Validator::make($data, [
                 'mail_driver' => 'required|string',
                 'mail_host' => 'required|string',
@@ -1629,7 +1652,7 @@ class SettingsController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid email configuration: ' . $validator->errors()->first()
+                    'message' => 'Invalid email configuration: '.$validator->errors()->first(),
                 ], 400);
             }
 
@@ -1660,8 +1683,8 @@ class SettingsController extends Controller
                 'This is a test email to verify your SMTP configuration. If you receive this email, your settings are working correctly!',
                 function ($message) use ($request) {
                     $message->to($request->mail_from_address)
-                           ->subject('SMTP Configuration Test - ' . date('Y-m-d H:i:s'))
-                           ->from($request->mail_from_address, $request->mail_from_name);
+                        ->subject('SMTP Configuration Test - '.date('Y-m-d H:i:s'))
+                        ->from($request->mail_from_address, $request->mail_from_name);
                 }
             );
 
@@ -1673,17 +1696,17 @@ class SettingsController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Test email sent successfully! Check your inbox.',
-                'details' => 'Email sent to: ' . $request->mail_from_address
+                'details' => 'Email sent to: '.$request->mail_from_address,
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send test SMS: ' . $e->getMessage()
+                'message' => 'Failed to send test SMS: '.$e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Test security configuration
      */
@@ -1691,54 +1714,54 @@ class SettingsController extends Controller
     {
         try {
             $results = [];
-            
+
             // Test password policy
             $results['password_policy'] = [
                 'status' => 'passed',
-                'message' => 'Password policy validation working correctly'
+                'message' => 'Password policy validation working correctly',
             ];
-            
+
             // Test session configuration
             $sessionTimeout = $request->session_timeout ?? 120;
             $results['session_config'] = [
                 'status' => 'passed',
-                'message' => "Session timeout set to {$sessionTimeout} minutes"
+                'message' => "Session timeout set to {$sessionTimeout} minutes",
             ];
-            
+
             // Test login attempt limits
             $maxAttempts = $request->login_attempts ?? 5;
             $results['login_limits'] = [
                 'status' => 'configured',
-                'message' => "Maximum {$maxAttempts} login attempts allowed"
+                'message' => "Maximum {$maxAttempts} login attempts allowed",
             ];
-            
+
             // Test two-factor authentication
             $results['two_factor'] = [
                 'status' => 'available',
-                'message' => '2FA system is properly configured'
+                'message' => '2FA system is properly configured',
             ];
-            
+
             // Test IP restrictions
             $ipWhitelist = $request->enable_ip_whitelist ?? false;
             $results['ip_restrictions'] = [
                 'status' => $ipWhitelist ? 'enabled' : 'disabled',
-                'message' => $ipWhitelist ? 'IP whitelist is active' : 'IP restrictions disabled'
+                'message' => $ipWhitelist ? 'IP whitelist is active' : 'IP restrictions disabled',
             ];
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Security configuration test completed successfully',
-                'results' => $results
+                'results' => $results,
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to test security configuration: ' . $e->getMessage()
+                'message' => 'Failed to test security configuration: '.$e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Terminate a specific session
      */
@@ -1749,27 +1772,27 @@ class SettingsController extends Controller
             // 1. Find the session in your sessions table
             // 2. Delete or invalidate the session
             // 3. Optionally log the termination
-            
+
             // For demo purposes, we'll simulate success
             \Illuminate\Support\FacadesLog::info("Session {$sessionId} terminated by admin", [
                 'admin_id' => auth('admin')->id(),
                 'session_id' => $sessionId,
-                'timestamp' => now()
+                'timestamp' => now(),
             ]);
-            
+
             return response()->json([
                 'success' => true,
-                'message' => 'Session terminated successfully'
+                'message' => 'Session terminated successfully',
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to terminate session: ' . $e->getMessage()
+                'message' => 'Failed to terminate session: '.$e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Terminate all active sessions except current admin session
      */
@@ -1777,31 +1800,31 @@ class SettingsController extends Controller
     {
         try {
             $currentAdminSession = session()->getId();
-            
+
             // In a real implementation, you would:
             // 1. Get all active sessions from your sessions table
             // 2. Delete all sessions except the current admin session
             // 3. Log the mass termination
-            
+
             \Illuminate\Support\FacadesLog::info('All sessions terminated by admin', [
                 'admin_id' => auth('admin')->id(),
                 'excluded_session' => $currentAdminSession,
-                'timestamp' => now()
+                'timestamp' => now(),
             ]);
-            
+
             return response()->json([
                 'success' => true,
-                'message' => 'All sessions terminated successfully (except current admin session)'
+                'message' => 'All sessions terminated successfully (except current admin session)',
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to terminate sessions: ' . $e->getMessage()
+                'message' => 'Failed to terminate sessions: '.$e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Get session details
      */
@@ -1818,22 +1841,22 @@ class SettingsController extends Controller
                 'login_time' => now()->subHours(2)->toISOString(),
                 'last_activity' => now()->subMinutes(15)->toISOString(),
                 'pages_visited' => 25,
-                'actions_performed' => 12
+                'actions_performed' => 12,
             ];
-            
+
             return response()->json([
                 'success' => true,
-                'data' => $sessionDetails
+                'data' => $sessionDetails,
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get session details: ' . $e->getMessage()
+                'message' => 'Failed to get session details: '.$e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Test SMS configuration via API
      */
@@ -1857,32 +1880,32 @@ class SettingsController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid SMS configuration: ' . $validator->errors()->first()
+                    'message' => 'Invalid SMS configuration: '.$validator->errors()->first(),
                 ], 400);
             }
 
             $driver = $request->sms_driver;
-            
+
             // Validate driver-specific required fields
             if ($driver === 'twilio') {
-                if (!$request->twilio_sid || !$request->twilio_token || !$request->twilio_from) {
+                if (! $request->twilio_sid || ! $request->twilio_token || ! $request->twilio_from) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Twilio SID, Auth Token, and From Number are required for Twilio driver'
+                        'message' => 'Twilio SID, Auth Token, and From Number are required for Twilio driver',
                     ], 400);
                 }
             } elseif ($driver === 'nexmo') {
-                if (!$request->nexmo_key || !$request->nexmo_secret) {
+                if (! $request->nexmo_key || ! $request->nexmo_secret) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Nexmo API Key and Secret are required for Nexmo driver'
+                        'message' => 'Nexmo API Key and Secret are required for Nexmo driver',
                     ], 400);
                 }
             } else {
-                if (!$request->sms_api_key) {
+                if (! $request->sms_api_key) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'API Key is required for ' . $driver . ' driver'
+                        'message' => 'API Key is required for '.$driver.' driver',
                     ], 400);
                 }
             }
@@ -1890,8 +1913,8 @@ class SettingsController extends Controller
             // For testing purposes, we'll simulate sending an SMS
             // In a real implementation, you would use the actual SMS providers
             $testPhoneNumber = '+1234567890'; // Default test number
-            $testMessage = 'This is a test SMS from ' . getAppName() . '. Your SMS configuration is working correctly!';
-            
+            $testMessage = 'This is a test SMS from '.getAppName().'. Your SMS configuration is working correctly!';
+
             // Simulate SMS sending based on driver
             switch ($driver) {
                 case 'twilio':
@@ -1907,17 +1930,17 @@ class SettingsController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Test SMS would be sent successfully! (Demo mode)',
-                'details' => 'SMS would be sent to: ' . $testPhoneNumber . ' using ' . strtoupper($driver)
+                'details' => 'SMS would be sent to: '.$testPhoneNumber.' using '.strtoupper($driver),
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to test SMS configuration: ' . $e->getMessage()
+                'message' => 'Failed to test SMS configuration: '.$e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Test Twilio SMS configuration
      */
@@ -1926,15 +1949,15 @@ class SettingsController extends Controller
         // In a real implementation, you would use Twilio SDK:
         // $twilio = new Client($request->twilio_sid, $request->twilio_token);
         // $twilio->messages->create($to, ['from' => $request->twilio_from, 'body' => $message]);
-        
+
         // For now, we'll just validate the configuration format
-        if (!preg_match('/^AC[a-z0-9]{32}$/i', $request->twilio_sid)) {
+        if (! preg_match('/^AC[a-z0-9]{32}$/i', $request->twilio_sid)) {
             throw new \Exception('Invalid Twilio SID format');
         }
-        
+
         return true;
     }
-    
+
     /**
      * Test Nexmo SMS configuration
      */
@@ -1944,10 +1967,10 @@ class SettingsController extends Controller
         // $basic = new \Vonage\Client\Credentials\Basic($request->nexmo_key, $request->nexmo_secret);
         // $client = new \Vonage\Client($basic);
         // $response = $client->sms()->send(new \Vonage\SMS\Message\SMS($to, $request->nexmo_from, $message));
-        
+
         return true;
     }
-    
+
     /**
      * Test Generic SMS configuration
      */
@@ -1957,10 +1980,10 @@ class SettingsController extends Controller
         if (strlen($request->sms_api_key) < 10) {
             throw new \Exception('API Key appears to be too short');
         }
-        
+
         return true;
     }
-    
+
     /**
      * Display alert settings page.
      */
@@ -1973,7 +1996,7 @@ class SettingsController extends Controller
             'critical_alerts' => \App\Models\PatientAlert::where('severity', 'critical')->where('active', true)->count(),
             'alert_activities' => \App\Models\UserActivity::where('model_type', \App\Models\PatientAlert::class)->count(),
         ];
-        
+
         return view('admin.settings.alerts', compact('settings', 'statistics'));
     }
 
@@ -2014,10 +2037,10 @@ class SettingsController extends Controller
                 'log_alert_activation' => $request->has('log_alert_activation') ? '1' : '0',
                 'log_alert_deactivation' => $request->has('log_alert_deactivation') ? '1' : '0',
                 'log_severity_levels' => implode(',', $request->log_severity_levels ?? ['critical', 'high']),
-                'alert_retention_days' => (string)($request->alert_retention_days ?? 365),
+                'alert_retention_days' => (string) ($request->alert_retention_days ?? 365),
                 'auto_expire_alerts' => $request->has('auto_expire_alerts') ? '1' : '0',
                 'alert_expiry_notification' => $request->has('alert_expiry_notification') ? '1' : '0',
-                'expiry_notification_days' => (string)($request->expiry_notification_days ?? 7),
+                'expiry_notification_days' => (string) ($request->expiry_notification_days ?? 7),
                 'email_on_critical_alert' => $request->has('email_on_critical_alert') ? '1' : '0',
                 'email_recipients' => $request->email_recipients ?? '',
                 'alert_summary_enabled' => $request->has('alert_summary_enabled') ? '1' : '0',
@@ -2025,21 +2048,22 @@ class SettingsController extends Controller
             ];
 
             foreach ($alertSettings as $key => $value) {
-                $type = in_array($key, ['enable_alert_logging', 'log_alert_creation', 'log_alert_update', 'log_alert_deletion', 
-                                        'log_alert_activation', 'log_alert_deactivation', 'auto_expire_alerts', 
-                                        'alert_expiry_notification', 'email_on_critical_alert', 'alert_summary_enabled']) ? 'boolean' : 
+                $type = in_array($key, ['enable_alert_logging', 'log_alert_creation', 'log_alert_update', 'log_alert_deletion',
+                    'log_alert_activation', 'log_alert_deactivation', 'auto_expire_alerts',
+                    'alert_expiry_notification', 'email_on_critical_alert', 'alert_summary_enabled']) ? 'boolean' :
                        (in_array($key, ['alert_retention_days', 'expiry_notification_days']) ? 'integer' : 'string');
-                
-                Setting::set($key, $value, $type, 'alerts', 'Alert ' . ucwords(str_replace('_', ' ', $key)));
+
+                Setting::set($key, $value, $type, 'alerts', 'Alert '.ucwords(str_replace('_', ' ', $key)));
             }
 
             Setting::clearCache();
-            
+
             return back()->with('success', 'Alert settings updated successfully!');
-            
+
         } catch (\Exception $e) {
-            Log::error('Error updating alert settings: ' . $e->getMessage());
-            return back()->with('error', 'Failed to update alert settings: ' . $e->getMessage());
+            Log::error('Error updating alert settings: '.$e->getMessage());
+
+            return back()->with('error', 'Failed to update alert settings: '.$e->getMessage());
         }
     }
 
@@ -2049,103 +2073,133 @@ class SettingsController extends Controller
     private function calculateSecurityScore($settings)
     {
         $score = 0;
-        
+
         // Check password policy (30 points)
-        if (($settings['min_password_length'] ?? 8) >= 8) $score += 5;
-        if (($settings['require_uppercase'] ?? true)) $score += 5;
-        if (($settings['require_lowercase'] ?? true)) $score += 5;
-        if (($settings['require_numbers'] ?? true)) $score += 5;
-        if (($settings['require_special_chars'] ?? true)) $score += 5;
-        if (($settings['password_history'] ?? 3) > 0) $score += 5;
-        
+        if (($settings['min_password_length'] ?? 8) >= 8) {
+            $score += 5;
+        }
+        if (($settings['require_uppercase'] ?? true)) {
+            $score += 5;
+        }
+        if (($settings['require_lowercase'] ?? true)) {
+            $score += 5;
+        }
+        if (($settings['require_numbers'] ?? true)) {
+            $score += 5;
+        }
+        if (($settings['require_special_chars'] ?? true)) {
+            $score += 5;
+        }
+        if (($settings['password_history'] ?? 3) > 0) {
+            $score += 5;
+        }
+
         // Check authentication settings (25 points)
-        if (($settings['login_attempts'] ?? 5) <= 5) $score += 10;
-        if (($settings['session_timeout'] ?? 120) <= 120) $score += 10;
-        if (($settings['password_expiry'] ?? 90) > 0 && ($settings['password_expiry'] ?? 90) <= 90) $score += 5;
-        
+        if (($settings['login_attempts'] ?? 5) <= 5) {
+            $score += 10;
+        }
+        if (($settings['session_timeout'] ?? 120) <= 120) {
+            $score += 10;
+        }
+        if (($settings['password_expiry'] ?? 90) > 0 && ($settings['password_expiry'] ?? 90) <= 90) {
+            $score += 5;
+        }
+
         // Check 2FA settings (20 points)
-        if (($settings['force_admin_2fa'] ?? true)) $score += 15;
-        if (($settings['force_2fa'] ?? false)) $score += 5;
-        
+        if (($settings['force_admin_2fa'] ?? true)) {
+            $score += 15;
+        }
+        if (($settings['force_2fa'] ?? false)) {
+            $score += 5;
+        }
+
         // Check security features (15 points)
-        if (($settings['enable_captcha'] ?? true)) $score += 5;
-        if (($settings['enable_login_notifications'] ?? true)) $score += 5;
-        if (($settings['enable_device_tracking'] ?? true)) $score += 5;
-        
+        if (($settings['enable_captcha'] ?? true)) {
+            $score += 5;
+        }
+        if (($settings['enable_login_notifications'] ?? true)) {
+            $score += 5;
+        }
+        if (($settings['enable_device_tracking'] ?? true)) {
+            $score += 5;
+        }
+
         // Check IP restrictions (10 points)
-        if (($settings['enable_ip_whitelist'] ?? false)) $score += 10;
-        
+        if (($settings['enable_ip_whitelist'] ?? false)) {
+            $score += 10;
+        }
+
         return min(100, $score);
     }
-    
+
     /**
      * Generate database backup using PHP
      */
     private function generateDatabaseBackup($connection, $database)
     {
-        $backup = "-- " . getAppName() . " Database Backup\n";
-        $backup .= "-- Generated on: " . date('Y-m-d H:i:s') . "\n";
+        $backup = '-- '.getAppName()." Database Backup\n";
+        $backup .= '-- Generated on: '.date('Y-m-d H:i:s')."\n";
         $backup .= "-- Database: {$database}\n";
         $backup .= "-- Connection: {$connection}\n\n";
-        
+
         $backup .= "SET FOREIGN_KEY_CHECKS=0;\n";
         $backup .= "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";\n";
         $backup .= "SET AUTOCOMMIT = 0;\n";
         $backup .= "START TRANSACTION;\n";
         $backup .= "SET time_zone = \"+00:00\";\n\n";
-        
+
         try {
             // Get all tables
             $tables = DB::select('SHOW TABLES');
-            $tableKey = 'Tables_in_' . $database;
-            
+            $tableKey = 'Tables_in_'.$database;
+
             foreach ($tables as $table) {
                 $tableName = $table->{$tableKey};
-                
+
                 // Get table structure
                 $createTable = DB::select("SHOW CREATE TABLE `{$tableName}`");
                 $backup .= "-- Table structure for table `{$tableName}`\n";
                 $backup .= "DROP TABLE IF EXISTS `{$tableName}`;\n";
-                $backup .= $createTable[0]->{'Create Table'} . ";\n\n";
-                
+                $backup .= $createTable[0]->{'Create Table'}.";\n\n";
+
                 // Get table data
                 $rows = DB::table($tableName)->get();
                 if ($rows->count() > 0) {
                     $backup .= "-- Dumping data for table `{$tableName}`\n";
-                    
+
                     foreach ($rows as $row) {
                         $values = [];
                         foreach ($row as $value) {
                             if ($value === null) {
                                 $values[] = 'NULL';
                             } else {
-                                $values[] = "'" . addslashes($value) . "'";
+                                $values[] = "'".addslashes($value)."'";
                             }
                         }
-                        $backup .= "INSERT INTO `{$tableName}` VALUES (" . implode(', ', $values) . ");\n";
+                        $backup .= "INSERT INTO `{$tableName}` VALUES (".implode(', ', $values).");\n";
                     }
                     $backup .= "\n";
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Error generating backup: ' . $e->getMessage());
+            Log::error('Error generating backup: '.$e->getMessage());
             throw $e;
         }
-        
+
         $backup .= "SET FOREIGN_KEY_CHECKS=1;\n";
         $backup .= "COMMIT;\n";
         $backup .= "-- Backup completed\n";
-        
+
         return $backup;
     }
-    
+
     /**
      * Ensure backup_logs table exists
      */
     private function ensureBackupLogsTable()
     {
         try {
-            if (!Schema::hasTable('backup_logs')) {
+            if (! Schema::hasTable('backup_logs')) {
                 Schema::create('backup_logs', function ($table) {
                     $table->id();
                     $table->string('filename');
@@ -2159,7 +2213,7 @@ class SettingsController extends Controller
                 Log::info('Created backup_logs table');
             }
         } catch (\Exception $e) {
-            Log::error('Error creating backup_logs table: ' . $e->getMessage());
+            Log::error('Error creating backup_logs table: '.$e->getMessage());
             // Continue without the table - we'll just skip logging
         }
     }
@@ -2168,13 +2222,13 @@ class SettingsController extends Controller
      * Validate hex color format without using regex in Laravel validator
      * This avoids the "No ending delimiter" error with pipe characters
      *
-     * @param string $color The color value to validate
+     * @param  string  $color  The color value to validate
      * @return bool True if valid hex color format
      */
     private function isValidHexColor($color)
     {
         // Must be a string
-        if (!is_string($color)) {
+        if (! is_string($color)) {
             return false;
         }
 
@@ -2201,6 +2255,7 @@ class SettingsController extends Controller
     public function integrations()
     {
         $settings = Setting::getGroup('integrations');
+
         return view('admin.settings.integrations', compact('settings'));
     }
 
@@ -2253,13 +2308,14 @@ class SettingsController extends Controller
             // Clear cache for integrations
             Cache::forget('settings_group_integrations');
             foreach (array_keys($integrationSettings) as $key) {
-                Cache::forget('setting_' . $key);
+                Cache::forget('setting_'.$key);
             }
 
             return back()->with('success', 'Integration settings updated successfully.');
         } catch (\Exception $e) {
-            Log::error('Failed to update integration settings: ' . $e->getMessage());
-            return back()->with('error', 'Failed to update settings: ' . $e->getMessage())->withInput();
+            Log::error('Failed to update integration settings: '.$e->getMessage());
+
+            return back()->with('error', 'Failed to update settings: '.$e->getMessage())->withInput();
         }
     }
 
@@ -2274,19 +2330,20 @@ class SettingsController extends Controller
             if (empty($apiKey)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Please enter an API key to test'
+                    'message' => 'Please enter an API key to test',
                 ]);
             }
 
-            $wherebyService = new \App\Services\WherebyService();
+            $wherebyService = new \App\Services\WherebyService;
             $result = $wherebyService->testConnection($apiKey);
 
             return response()->json($result);
         } catch (\Exception $e) {
-            Log::error('Whereby connection test failed: ' . $e->getMessage());
+            Log::error('Whereby connection test failed: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Connection test failed: ' . $e->getMessage()
+                'message' => 'Connection test failed: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -2374,9 +2431,9 @@ class SettingsController extends Controller
 
             return back()->with('success', 'Patient feedback settings updated successfully.');
         } catch (\Exception $e) {
-            Log::error('Failed to update patient feedback settings: ' . $e->getMessage());
-            return back()->with('error', 'Failed to update settings: ' . $e->getMessage())->withInput();
+            Log::error('Failed to update patient feedback settings: '.$e->getMessage());
+
+            return back()->with('error', 'Failed to update settings: '.$e->getMessage())->withInput();
         }
     }
 }
-

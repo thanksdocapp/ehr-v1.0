@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Doctor;
-use App\Models\Department;
 use App\Models\BookingService;
+use App\Models\Department;
+use App\Models\Doctor;
 use App\Models\Setting;
-use App\Services\SlotAvailabilityService;
 use App\Services\PublicBookingService;
+use App\Services\SlotAvailabilityService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class PublicBookingController extends Controller
 {
     protected $slotAvailabilityService;
+
     protected $bookingService;
 
     public function __construct(SlotAvailabilityService $slotAvailabilityService, PublicBookingService $bookingService)
@@ -31,6 +32,10 @@ class PublicBookingController extends Controller
         if ($enabled != '1') {
             abort(404, 'Online booking is currently unavailable.');
         }
+
+        if (Setting::get('migration_mode', '0') == '1') {
+            abort(response()->view('public-booking.migrated', [], 200));
+        }
     }
 
     /**
@@ -41,12 +46,12 @@ class PublicBookingController extends Controller
         $this->checkBookingEnabled();
 
         $doctor = Doctor::where('slug', $slug)->active()->firstOrFail();
-        
+
         // For single doctor link, show that doctor pre-selected
         return view('public-booking.service-selection', [
             'doctor' => $doctor,
             'doctors' => collect([$doctor]), // Single doctor in collection
-            'step' => 1
+            'step' => 1,
         ]);
     }
 
@@ -58,7 +63,7 @@ class PublicBookingController extends Controller
         $this->checkBookingEnabled();
 
         $department = Department::where('slug', $slug)->active()->firstOrFail();
-        
+
         // Get active doctors for this department
         $doctors = Doctor::byDepartment($department->id)
             ->active()
@@ -67,7 +72,7 @@ class PublicBookingController extends Controller
         return view('public-booking.service-selection', [
             'department' => $department,
             'doctors' => $doctors,
-            'step' => 1
+            'step' => 1,
         ]);
     }
 
@@ -82,7 +87,7 @@ class PublicBookingController extends Controller
         $doctor = Doctor::where('id', $doctorId)->active()->firstOrFail();
 
         // Verify service is available for this doctor
-        if (!$service->isAvailableForDoctor($doctor->id)) {
+        if (! $service->isAvailableForDoctor($doctor->id)) {
             abort(404, 'This service is not available for the selected doctor.');
         }
 
@@ -94,7 +99,7 @@ class PublicBookingController extends Controller
             'doctor' => $doctor,
             'doctors' => collect([$doctor]), // Single doctor pre-selected
             'department' => $department,
-            'step' => 1
+            'step' => 1,
         ]);
     }
 
@@ -118,12 +123,12 @@ class PublicBookingController extends Controller
         $service = BookingService::findOrFail($request->service_id);
 
         // If department_id is provided but no doctor_id, show doctor selection
-        if ($request->department_id && !$request->doctor_id) {
+        if ($request->department_id && ! $request->doctor_id) {
             $department = Department::findOrFail($request->department_id);
             $doctors = Doctor::byDepartment($department->id)
                 ->active()
                 ->get()
-                ->filter(function($doctor) use ($service) {
+                ->filter(function ($doctor) use ($service) {
                     return $service->isAvailableForDoctor($doctor->id);
                 });
 
@@ -131,7 +136,7 @@ class PublicBookingController extends Controller
                 'department' => $department,
                 'service' => $service,
                 'doctors' => $doctors,
-                'step' => 2
+                'step' => 2,
             ]);
         }
 
@@ -140,14 +145,14 @@ class PublicBookingController extends Controller
             $doctor = Doctor::findOrFail($request->doctor_id);
 
             // Check if service is available for this doctor
-            if (!$service->isAvailableForDoctor($doctor->id)) {
+            if (! $service->isAvailableForDoctor($doctor->id)) {
                 return redirect()->back()->with('error', 'Selected service is not available for this doctor.');
             }
 
             return view('public-booking.date-time-selection', [
                 'doctor' => $doctor,
                 'service' => $service,
-                'step' => 2
+                'step' => 2,
             ]);
         }
 
@@ -183,13 +188,13 @@ class PublicBookingController extends Controller
         );
 
         $selectedSlot = collect($slots)->firstWhere('start', $request->appointment_time);
-        if (!$selectedSlot) {
+        if (! $selectedSlot) {
             return redirect()->back()->with('error', 'Selected time slot is no longer available.');
         }
 
         // Get department_id from request (if booking through clinic link) or from doctor
         $departmentId = $request->department_id ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
-        
+
         return view('public-booking.patient-details', [
             'doctor' => $doctor,
             'service' => $service,
@@ -197,7 +202,7 @@ class PublicBookingController extends Controller
             'appointment_time' => $request->appointment_time,
             'consultation_type' => $request->consultation_type ?? 'in_person',
             'department_id' => $departmentId,
-            'step' => 3
+            'step' => 3,
         ]);
     }
 
@@ -227,14 +232,14 @@ class PublicBookingController extends Controller
                     'appointment_time' => $bookingData['appointment_time'],
                     'patient_data' => $bookingData['patient_data'] ?? [],
                     'price' => $price,
-                    'step' => 4
+                    'step' => 4,
                 ]);
             }
         }
 
         // No valid session data - show error page instead of redirecting
         return response()->view('public-booking.session-expired', [
-            'message' => 'Your booking session has expired. Please start a new booking.'
+            'message' => 'Your booking session has expired. Please start a new booking.',
         ]);
     }
 
@@ -266,14 +271,14 @@ class PublicBookingController extends Controller
             // Appointment exists but no pending payment - show success
             if ($appointment) {
                 return redirect()->route('public.booking.success', [
-                    'appointmentNumber' => $appointment->appointment_number
+                    'appointmentNumber' => $appointment->appointment_number,
                 ]);
             }
         }
 
         // No valid session data - show error page instead of redirecting
         return response()->view('public-booking.session-expired', [
-            'message' => 'Your booking session has expired. Please start a new booking.'
+            'message' => 'Your booking session has expired. Please start a new booking.',
         ]);
     }
 
@@ -305,7 +310,7 @@ class PublicBookingController extends Controller
         ]);
 
         // Set default consultation type to in_person (doctors will decide later)
-        if (!$request->has('consultation_type') || !$request->consultation_type) {
+        if (! $request->has('consultation_type') || ! $request->consultation_type) {
             $request->merge(['consultation_type' => 'in_person']);
         }
 
@@ -324,22 +329,22 @@ class PublicBookingController extends Controller
         );
 
         $selectedSlot = collect($slots)->firstWhere('start', $request->appointment_time);
-        if (!$selectedSlot) {
+        if (! $selectedSlot) {
             return redirect()->back()->with('error', 'Selected time slot is no longer available.')->withInput();
         }
 
         // Calculate price
         $price = $service->getPriceForDoctor($doctor->id);
-        
+
         // Get department_id from request (if booking through clinic link) or from doctor
         $departmentId = $request->department_id ?? $doctor->department_id ?? $doctor->primaryDepartment()?->id;
-        
+
         $patientData = $request->only([
             'first_name', 'last_name', 'email', 'phone', 'notes', 'consultation_type',
             'gender', 'consent_share_with_gp',
-            'gp_name', 'gp_email', 'gp_phone', 'gp_address'
+            'gp_name', 'gp_email', 'gp_phone', 'gp_address',
         ]);
-        
+
         // Convert date_of_birth from dd/mm/yyyy to Y-m-d format
         if ($request->has('date_of_birth') && $request->date_of_birth) {
             $patientData['date_of_birth'] = parseDateInput($request->date_of_birth);
@@ -357,7 +362,7 @@ class PublicBookingController extends Controller
                 'appointment_time' => $request->appointment_time,
                 'patient_data' => $patientData,
                 'department_id' => $departmentId,
-            ]
+            ],
         ]);
 
         return view('public-booking.review', [
@@ -367,7 +372,7 @@ class PublicBookingController extends Controller
             'appointment_time' => $request->appointment_time,
             'patient_data' => $patientData,
             'price' => $price,
-            'step' => 4
+            'step' => 4,
         ]);
     }
 
@@ -380,6 +385,7 @@ class PublicBookingController extends Controller
             $this->checkBookingEnabled();
         } catch (\Exception $e) {
             \Log::error('Public booking check failed', ['error' => $e->getMessage()]);
+
             // Stay on page with error popup instead of redirecting
             return redirect()->back()
                 ->with('error', 'Online booking is currently unavailable.')
@@ -412,7 +418,7 @@ class PublicBookingController extends Controller
             'gp_phone' => 'required_if:consent_share_with_gp,1|nullable|string|max:20',
             'gp_address' => 'required_if:consent_share_with_gp,1|nullable|string|max:500',
         ];
-        
+
         // Require date_of_birth and gender if they are provided (not empty strings)
         // They should always be provided from the patient-details form, but handle edge cases
         if ($request->has('date_of_birth') && trim($request->date_of_birth) !== '') {
@@ -421,7 +427,7 @@ class PublicBookingController extends Controller
             // If not provided, make it nullable (for backward compatibility)
             $rules['date_of_birth'] = 'nullable|date|before_or_equal:today';
         }
-        
+
         if ($request->has('gender') && trim($request->gender) !== '') {
             $rules['gender'] = 'required|in:male,female,other';
         } else {
@@ -430,7 +436,7 @@ class PublicBookingController extends Controller
         }
 
         // Set default consultation type to in_person (doctors will decide later)
-        if (!$request->has('consultation_type') || !$request->consultation_type) {
+        if (! $request->has('consultation_type') || ! $request->consultation_type) {
             $request->merge(['consultation_type' => 'in_person']);
         }
 
@@ -446,9 +452,9 @@ class PublicBookingController extends Controller
         if ($validator->fails()) {
             \Log::warning('Public booking confirmation validation failed', [
                 'errors' => $validator->errors()->toArray(),
-                'input' => $request->all()
+                'input' => $request->all(),
             ]);
-            
+
             // Try to redirect back to review page with errors
             return redirect()->back()
                 ->withErrors($validator)
@@ -482,18 +488,19 @@ class PublicBookingController extends Controller
                     \Log::info('Redirecting to payment page (patient not created yet)', [
                         'pending_booking_id' => $pendingBooking->id,
                         'invoice_id' => $invoice->id,
-                        'token_preview' => substr($invoice->payment_token, 0, 10) . '...'
+                        'token_preview' => substr($invoice->payment_token, 0, 10).'...',
                     ]);
 
                     // Store pending booking token in session for payment callback
                     session(['pending_booking_token' => $pendingBooking->booking_token]);
 
                     $paymentUrl = route('public.billing.pay', ['token' => $invoice->payment_token]);
+
                     return redirect($paymentUrl);
                 } else {
                     \Log::warning('Invoice created but payment token is missing', [
                         'pending_booking_id' => $pendingBooking->id,
-                        'invoice_id' => $invoice->id
+                        'invoice_id' => $invoice->id,
                     ]);
                 }
             }
@@ -509,7 +516,7 @@ class PublicBookingController extends Controller
                 session(['booking_appointment_number' => $appointment->appointment_number]);
 
                 return redirect()->route('public.booking.success', [
-                    'appointmentNumber' => $appointment->appointment_number
+                    'appointmentNumber' => $appointment->appointment_number,
                 ]);
             }
 
@@ -521,13 +528,13 @@ class PublicBookingController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
-                'data' => $request->all()
+                'data' => $request->all(),
             ]);
 
             // Show detailed error message for debugging
-            $errorMsg = 'Failed to create appointment: ' . $e->getMessage();
+            $errorMsg = 'Failed to create appointment: '.$e->getMessage();
             if (config('app.debug')) {
-                $errorMsg .= ' (Line ' . $e->getLine() . ' in ' . basename($e->getFile()) . ')';
+                $errorMsg .= ' (Line '.$e->getLine().' in '.basename($e->getFile()).')';
             }
 
             return redirect()->back()
@@ -546,7 +553,7 @@ class PublicBookingController extends Controller
             ->firstOrFail();
 
         return view('public-booking.success', [
-            'appointment' => $appointment
+            'appointment' => $appointment,
         ]);
     }
 
@@ -558,8 +565,8 @@ class PublicBookingController extends Controller
     {
         $doctor = Doctor::findOrFail($doctorId);
         $services = $this->getServicesForDoctor($doctor->id);
-        
-        $servicesData = $services->map(function($service) use ($doctor) {
+
+        $servicesData = $services->map(function ($service) use ($doctor) {
             // Use getPriceForDoctor and getDurationForDoctor to get custom prices if set
             return [
                 'id' => $service->id,
@@ -572,7 +579,7 @@ class PublicBookingController extends Controller
         });
 
         return response()->json([
-            'services' => $servicesData
+            'services' => $servicesData,
         ]);
     }
 
@@ -600,7 +607,7 @@ class PublicBookingController extends Controller
 
         return response()->json([
             'slots' => $slots,
-            'date' => $request->date
+            'date' => $request->date,
         ]);
     }
 
@@ -611,7 +618,7 @@ class PublicBookingController extends Controller
     private function getServicesForDoctor($doctorId)
     {
         $doctor = Doctor::findOrFail($doctorId);
-        
+
         // Only get services created by this doctor's user account (order by sort_order)
         return BookingService::where('created_by', $doctor->user_id)
             ->where('is_active', true)
@@ -619,4 +626,3 @@ class PublicBookingController extends Controller
             ->get();
     }
 }
-

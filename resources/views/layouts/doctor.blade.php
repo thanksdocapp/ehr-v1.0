@@ -2397,6 +2397,19 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
+
+            @if(session('migration_blocked'))
+                <div class="alert alert-warning alert-dismissible fade show" role="alert" style="border-left: 4px solid #d97706; border-radius: 12px;">
+                    <i class="fas fa-lock me-2"></i>
+                    <strong>Feature restricted.</strong> This system is in migration mode and that action is not available.
+                    Please use the
+                    <a href="{{ \App\Models\Setting::get('migration_mode_new_url', 'https://my.thanksdoc.co.uk') }}" target="_blank" class="alert-link">
+                        new EHR <i class="fas fa-external-link-alt" style="font-size: 11px;"></i>
+                    </a>
+                    instead.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
             
             @yield('content')
         </main>
@@ -2740,6 +2753,9 @@
                 Go to new EHR <i class="fas fa-external-link-alt ms-1"></i>
             </a>
         </div>
+        <style>
+            body { padding-bottom: 45px !important; }
+        </style>
     @endif
 </body>
 </html>
