@@ -32,6 +32,7 @@ class Doctor extends Model
         'specialties',
         'email',
         'phone',
+        'migration_contact_whatsapp',
         'room_number',
         'consultation_fee',
         'availability',
@@ -41,7 +42,7 @@ class Doctor extends Model
         'sort_order',
         'is_featured',
         'is_active',
-        'status'
+        'status',
     ];
 
     protected $casts = [
@@ -53,7 +54,7 @@ class Doctor extends Model
         'is_available_online' => 'boolean',
         'is_featured' => 'boolean',
         'is_active' => 'boolean',
-        'sort_order' => 'integer'
+        'sort_order' => 'integer',
     ];
 
     // Relationships
@@ -80,8 +81,8 @@ class Doctor extends Model
     // Get primary department from pivot table
     public function primaryDepartment()
     {
-        return $this->departments()->wherePivot('is_primary', true)->first() 
-            ?? $this->departments()->first() 
+        return $this->departments()->wherePivot('is_primary', true)->first()
+            ?? $this->departments()->first()
             ?? $this->department; // Fallback to old department_id
     }
 
@@ -131,29 +132,29 @@ class Doctor extends Model
     public function scopeByDepartment($query, $departmentId)
     {
         // Support both old department_id and new pivot table
-        return $query->where(function($q) use ($departmentId) {
+        return $query->where(function ($q) use ($departmentId) {
             $q->where('department_id', $departmentId)
-              ->orWhereHas('departments', function($deptQuery) use ($departmentId) {
-                  $deptQuery->where('departments.id', $departmentId);
-              });
+                ->orWhereHas('departments', function ($deptQuery) use ($departmentId) {
+                    $deptQuery->where('departments.id', $departmentId);
+                });
         });
     }
 
     // Scope to get doctors with any of the given departments
     public function scopeByDepartments($query, array $departmentIds)
     {
-        return $query->where(function($q) use ($departmentIds) {
+        return $query->where(function ($q) use ($departmentIds) {
             $q->whereIn('department_id', $departmentIds)
-              ->orWhereHas('departments', function($deptQuery) use ($departmentIds) {
-                  $deptQuery->whereIn('departments.id', $departmentIds);
-              });
+                ->orWhereHas('departments', function ($deptQuery) use ($departmentIds) {
+                    $deptQuery->whereIn('departments.id', $departmentIds);
+                });
         });
     }
 
     // Accessors
     public function getFullNameAttribute()
     {
-        return $this->title . ' ' . $this->first_name . ' ' . $this->last_name;
+        return $this->title.' '.$this->first_name.' '.$this->last_name;
     }
 
     // Frontend compatibility - name accessor
@@ -173,17 +174,17 @@ class Doctor extends Model
         if ($this->photo) {
             // Clean the photo path
             $photoPath = ltrim($this->photo, '/');
-            
+
             // Check if path already contains 'uploads/doctors/'
             if (str_starts_with($photoPath, 'uploads/doctors/')) {
                 // Use the path as is
                 return Storage::disk('public')->url($photoPath);
             } else {
                 // Add the uploads/doctors/ prefix
-                return Storage::disk('public')->url('uploads/doctors/' . $photoPath);
+                return Storage::disk('public')->url('uploads/doctors/'.$photoPath);
             }
         }
-        
+
         return asset('assets/images/default-doctor.svg');
     }
 
@@ -195,7 +196,7 @@ class Doctor extends Model
 
     public function getExperienceTextAttribute()
     {
-        return $this->experience_years . '+ years experience';
+        return $this->experience_years.'+ years experience';
     }
 
     /**
@@ -203,26 +204,26 @@ class Doctor extends Model
      */
     public function getDepartmentLogoUrlAttribute()
     {
-        if (!$this->department_logo) {
+        if (! $this->department_logo) {
             return null;
         }
 
-        $logoPath = 'uploads/doctors/' . $this->department_logo;
-        
+        $logoPath = 'uploads/doctors/'.$this->department_logo;
+
         // Get the storage URL - this uses the 'url' config from filesystems.php
         // which is set to '/storage-access' for this application
         $url = Storage::disk('public')->url($logoPath);
-        
+
         // Storage::url() returns full URL if APP_URL is set in config, otherwise relative path
         // The config has: 'url' => env('APP_URL') ? env('APP_URL').'/storage-access' : '/storage-access'
         // So if APP_URL is set, it returns full URL like 'https://domain.com/storage-access/...'
         // Otherwise it returns '/storage-access/...' which we need to convert
-        
-        if (!str_starts_with($url, 'http')) {
+
+        if (! str_starts_with($url, 'http')) {
             // Relative path, make it absolute
             return url($url);
         }
-        
+
         // Already absolute URL
         return $url;
     }
@@ -249,7 +250,7 @@ class Doctor extends Model
 
     public function isAvailableOn($day)
     {
-        if (!$this->availability) {
+        if (! $this->availability) {
             return false;
         }
 
@@ -258,7 +259,7 @@ class Doctor extends Model
 
     public function getAvailableTimesOn($day)
     {
-        if (!$this->isAvailableOn($day)) {
+        if (! $this->isAvailableOn($day)) {
             return [];
         }
 

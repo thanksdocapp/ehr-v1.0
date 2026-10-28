@@ -97,6 +97,19 @@
                                 @enderror
                                 <small class="text-muted">Your medical specialisation</small>
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="migration_contact_whatsapp" class="form-label fw-semibold">
+                                    <i class="fab fa-whatsapp me-1 text-success"></i>Patient Contact / WhatsApp
+                                </label>
+                                <input type="tel" name="migration_contact_whatsapp" id="migration_contact_whatsapp" 
+                                       class="form-control @error('migration_contact_whatsapp') is-invalid @enderror" 
+                                       value="{{ old('migration_contact_whatsapp', $user->doctor->migration_contact_whatsapp ?? '') }}" 
+                                       placeholder="+44 7xxx xxxxxx">
+                                @error('migration_contact_whatsapp')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">Shown to patients on your old booking page so they can reach you for the new link</small>
+                            </div>
                         </div>
                         @endif
 

@@ -22,9 +22,9 @@ class ProfileUpdateRequest extends FormRequest
             'bio' => ['nullable', 'string', 'max:1000'],
         ];
 
-        // Add specialization validation for doctors
         if ($this->user()->role === 'doctor') {
             $rules['specialization'] = ['nullable', 'string', 'max:255'];
+            $rules['migration_contact_whatsapp'] = ['nullable', 'string', 'max:30'];
         }
 
         return $rules;

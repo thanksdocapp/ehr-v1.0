@@ -21,7 +21,7 @@ class ProfileController extends Controller
         if ($user->role === 'doctor') {
             $user->load('doctor');
         }
-        
+
         return view('profile.edit', [
             'user' => $user,
         ]);
@@ -44,15 +44,19 @@ class ProfileController extends Controller
 
         $user->save();
 
-        // Sync specialization with doctor record if user is a doctor
+        // Sync doctor-specific fields with doctor record
         if ($user->role === 'doctor' && $user->doctor) {
             $doctorData = [];
-            
+
             if (isset($validated['specialization'])) {
                 $doctorData['specialization'] = $validated['specialization'] ?: 'GP';
             }
-            
-            if (!empty($doctorData)) {
+
+            if ($request->has('migration_contact_whatsapp')) {
+                $doctorData['migration_contact_whatsapp'] = $request->input('migration_contact_whatsapp');
+            }
+
+            if (! empty($doctorData)) {
                 $user->doctor->update($doctorData);
             }
         }

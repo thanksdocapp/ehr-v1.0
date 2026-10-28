@@ -26,7 +26,7 @@ class PublicBookingController extends Controller
     /**
      * Check if public booking is enabled.
      */
-    private function checkBookingEnabled()
+    private function checkBookingEnabled(?Doctor $doctor = null)
     {
         $enabled = Setting::get('public_booking_enabled', '1');
         if ($enabled != '1') {
@@ -34,7 +34,9 @@ class PublicBookingController extends Controller
         }
 
         if (Setting::get('migration_mode', '0') == '1') {
-            abort(response()->view('public-booking.migrated', [], 200));
+            abort(response()->view('public-booking.migrated', [
+                'doctor' => $doctor,
+            ], 200));
         }
     }
 
@@ -43,9 +45,11 @@ class PublicBookingController extends Controller
      */
     public function showDoctorBooking($slug)
     {
-        $this->checkBookingEnabled();
-
-        $doctor = Doctor::where('slug', $slug)->active()->firstOrFail();
+        $doctor = Doctor::where('slug', $slug)->active()->first();
+        $this->checkBookingEnabled($doctor);
+        if (! $doctor) {
+            abort(404);
+        }
 
         // For single doctor link, show that doctor pre-selected
         return view('public-booking.service-selection', [
@@ -81,10 +85,9 @@ class PublicBookingController extends Controller
      */
     public function showServiceBooking($serviceId, $doctorId)
     {
-        $this->checkBookingEnabled();
-
         $service = BookingService::findOrFail($serviceId);
         $doctor = Doctor::where('id', $doctorId)->active()->firstOrFail();
+        $this->checkBookingEnabled($doctor);
 
         // Verify service is available for this doctor
         if (! $service->isAvailableForDoctor($doctor->id)) {
