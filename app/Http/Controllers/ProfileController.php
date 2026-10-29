@@ -22,7 +22,7 @@ class ProfileController extends Controller
         if ($user->role === 'doctor') {
             $user->load('doctor');
         }
-        
+
         return view('profile.edit', [
             'user' => $user,
         ]);
@@ -75,6 +75,10 @@ class ProfileController extends Controller
 
             if ($clinicPostBookingUrlUpdate) {
                 $doctorData['clinic_post_booking_redirect_url'] = $clinicPostBookingUrl;
+            }
+
+            if ($request->has('migration_contact_whatsapp')) {
+                $doctorData['migration_contact_whatsapp'] = $request->input('migration_contact_whatsapp');
             }
 
             if ($doctorData !== []) {

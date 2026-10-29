@@ -518,6 +518,32 @@
 
                         <div class="form-group">
                             <label class="form-label">
+                                <i class="fas fa-exchange-alt me-1"></i>EHR Migration Mode
+                            </label>
+                            <div class="form-check form-switch">
+                                <input type="hidden" name="migration_mode" value="0">
+                                <input class="form-check-input" type="checkbox" id="migration_mode" 
+                                       name="migration_mode" value="1" 
+                                       {{ old('migration_mode', $settings['migration_mode'] ?? '0') == '1' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="migration_mode">
+                                    Enable Migration Mode
+                                </label>
+                            </div>
+                            <div class="form-help">When enabled, doctors are restricted to read-only access (services, patients, appointments, settlements viewable) and public booking pages show a notice directing patients to the new EHR. Admins are not affected.</div>
+                        </div>
+
+                        <div class="form-group" id="migration_mode_url_group" style="{{ old('migration_mode', $settings['migration_mode'] ?? '0') == '1' ? '' : 'display:none;' }}">
+                            <label for="migration_mode_new_url" class="form-label">
+                                <i class="fas fa-link me-1"></i>New EHR URL
+                            </label>
+                            <input type="text" class="form-control" id="migration_mode_new_url" name="migration_mode_new_url" 
+                                   value="{{ old('migration_mode_new_url', $settings['migration_mode_new_url'] ?? 'https://my.thanksdoc.co.uk') }}" 
+                                   placeholder="https://my.thanksdoc.co.uk">
+                            <div class="form-help">The URL of the new EHR system that doctors and patients should use</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
                                 <i class="fas fa-calendar-check me-1"></i>Public Online Booking
                             </label>
                             <div class="form-check form-switch">
@@ -610,6 +636,10 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
+    $('#migration_mode').on('change', function() {
+        $('#migration_mode_url_group').toggle(this.checked);
+    });
+
     // Currency code to symbol mapping
     const currencySymbols = {
         'USD': '$',

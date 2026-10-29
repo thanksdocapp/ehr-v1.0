@@ -50,6 +50,7 @@ class ProfileUpdateRequest extends FormRequest
             };
             $rules['post_booking_redirect_url'] = ['nullable', 'string', 'max:2048', $httpsBookingUrlRule];
             $rules['clinic_post_booking_redirect_url'] = ['nullable', 'string', 'max:2048', $httpsBookingUrlRule];
+            $rules['migration_contact_whatsapp'] = ['nullable', 'string', 'max:30'];
         }
 
         return $rules;

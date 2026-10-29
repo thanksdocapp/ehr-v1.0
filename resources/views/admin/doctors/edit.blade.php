@@ -249,6 +249,24 @@ use Illuminate\Support\Facades\Storage;
                             </div>
                         </div>
 
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="migration_contact_whatsapp" class="form-label">
+                                        <i class="fab fa-whatsapp me-1 text-success"></i>Patient Contact / WhatsApp
+                                    </label>
+                                    <input type="tel" class="form-control @error('migration_contact_whatsapp') is-invalid @enderror"
+                                           id="migration_contact_whatsapp" name="migration_contact_whatsapp"
+                                           value="{{ old('migration_contact_whatsapp') ?? $doctor->migration_contact_whatsapp }}"
+                                           placeholder="+447459778835">
+                                    @error('migration_contact_whatsapp')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Shown to patients on the old booking page during migration</small>
+                                </div>
+                            </div>
+                        </div>
+
                         <input type="hidden" name="title" value="Dr.">
 
                         <div class="form-group">
